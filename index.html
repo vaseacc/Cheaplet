@@ -459,4 +459,376 @@
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label for="sort">
+                    <label for="sort">Sort by:</label>
+                    <select id="sort-filter"> <!-- Renamed to avoid conflict -->
+                        <option value="newest">Newest First</option>
+                        <option value="price-low">Price: Low to High</option>
+                        <option value="price-high">Price: High to Low</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <input type="text" placeholder="Search listings..." id="search-input">
+                </div>
+            </div>
+        </section>
+
+        <!-- Listings -->
+        <section class="listings">
+            <div class="listings-header">
+                <h2>Recent Listings</h2>
+                <span id="itemCount">Loading...</span>
+            </div>
+            <div class="listings-grid" id="listings-container">
+                <!-- Listings will be dynamically inserted here by JavaScript -->
+            </div>
+        </section>
+
+        <!-- How it works -->
+        <section class="how-it-works">
+            <h2 class="section-title">How Cheaplet Works</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-icon">1</div>
+                    <h3>List Your Item</h3>
+                    <p>Snap a photo, set a price under $50, and post your listing in seconds.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">2</div>
+                    <h3>Connect Locally</h3>
+                    <p>Buyers in your area will message you through the app to arrange pickup.</p>
+                </div>
+                <div class="step">
+                    <div class="step-icon">3</div>
+                    <h3>Complete the Sale</h3>
+                    <p>Meet up, exchange the item for cash or digital payment, and both parties leave a review.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h3>Cheaplet</h3>
+                    <ul>
+                        <li><a href="#">About Us</a></li>
+                        <li><a href="#">Careers</a></li>
+                        <li><a href="#">Press</a></li>
+                        <li><a href="#">Blog</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Help</h3>
+                    <ul>
+                        <li><a href="#">FAQ</a></li>
+                        <li><a href="#">Safety Tips</a></li>
+                        <li><a href="#">Contact Support</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Policies</h3>
+                    <ul>
+                        <li><a href="#">Terms of Service</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Cookie Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright">
+                &copy; 2023 Cheaplet. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modular Firebase SDK Imports -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-analytics.js"; // Optional
+
+        // Your web app's Firebase configuration
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+            apiKey: "AIzaSyDYl9fSWCnkX5iqiesmCm6TTsFW4SRKOtE",
+            authDomain: "chaeplet.firebaseapp.com",
+            projectId: "chaeplet",
+            storageBucket: "chaeplet.firebasestorage.app",
+            messagingSenderId: "1060739540468",
+            appId: "1:1060739540468:web:414048cdc72864b66dc5a1",
+            measurementId: "G-Z89ZJY1MLV"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app); // Get Auth service
+        const db = getFirestore(app); // Get Firestore service
+        const analytics = getAnalytics(app); // Initialize analytics (optional)
+
+        // --- DOM Elements for Firebase Forms ---
+        const authFormsSection = document.getElementById('auth-forms');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const loginBtn = document.getElementById('loginBtn');
+        const registerBtn = document.getElementById('registerBtn');
+        const authError = document.getElementById('auth-error');
+        const toggleAuthModeLink = document.getElementById('toggleAuthMode'); // To switch between login/register text
+
+        const listingFormSection = document.getElementById('listing-form');
+        const listingTitleInput = document.getElementById('listing-title');
+        const listingDescriptionInput = document.getElementById('listing-description');
+        const listingPriceInput = document.getElementById('listing-price');
+        const listingCategorySelect = document.getElementById('listing-category');
+        const listingLocationInput = document.getElementById('listing-location');
+        const postListingBtn = document.getElementById('postListingBtn');
+        const listingError = document.getElementById('listing-error');
+
+        const listingsContainer = document.getElementById('listings-container');
+        const itemCountSpan = document.getElementById('itemCount');
+
+        // Header buttons
+        const loginRegisterBtn = document.getElementById('loginRegisterBtn');
+        const listAnItemBtn = document.getElementById('listAnItemBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const userEmailDisplay = document.getElementById('userEmailDisplay');
+        const startBrowsingBtn = document.getElementById('startBrowsingBtn');
+
+
+        // --- Firebase Auth Logic ---
+
+        let isLoginMode = true; // State for login/register form
+
+        function toggleAuthFormVisibility(show) {
+            authFormsSection.style.display = show ? 'block' : 'none';
+            listingFormSection.style.display = 'none'; // Hide listing form if auth form is shown
+        }
+
+        function toggleListingFormVisibility(show) {
+            listingFormSection.style.display = show ? 'block' : 'none';
+            authFormsSection.style.display = 'none'; // Hide auth form if listing form is shown
+        }
+
+        function updateAuthModeUI() {
+            if (isLoginMode) {
+                loginBtn.style.display = 'inline-block';
+                registerBtn.style.display = 'none';
+                toggleAuthModeLink.textContent = 'New user? Register here.';
+                authFormsSection.querySelector('h2').textContent = 'Log In to Cheaplet';
+                authFormsSection.querySelector('p').textContent = 'Welcome back! Please log in to your account.';
+            } else {
+                loginBtn.style.display = 'none';
+                registerBtn.style.display = 'inline-block';
+                toggleAuthModeLink.textContent = 'Already have an account? Log in.';
+                authFormsSection.querySelector('h2').textContent = 'Register for Cheaplet';
+                authFormsSection.querySelector('p').textContent = 'Create an account to start buying and selling.';
+            }
+            authError.textContent = ''; // Clear errors when switching modes
+        }
+
+        toggleAuthModeLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            isLoginMode = !isLoginMode;
+            updateAuthModeUI();
+        });
+
+        loginBtn.addEventListener('click', async () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            authError.textContent = '';
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                console.log('User logged in!');
+                toggleAuthFormVisibility(false); // Hide form on successful login
+            } catch (error) {
+                authError.textContent = error.message;
+                console.error('Login error:', error.message);
+            }
+        });
+
+        registerBtn.addEventListener('click', async () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            authError.textContent = '';
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+                console.log('User registered and logged in!');
+                toggleAuthFormVisibility(false); // Hide form on successful registration
+            } catch (error) {
+                authError.textContent = error.message;
+                console.error('Registration error:', error.message);
+            }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                console.log('User logged out!');
+            } catch (error) {
+                console.error('Logout error:', error.message);
+            }
+        });
+
+        // Listen for authentication state changes (important for UI updates)
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                // User is logged in
+                console.log('User is signed in:', user.email);
+                userEmailDisplay.textContent = `Welcome, ${user.email}!`;
+                userEmailDisplay.style.display = 'inline';
+                loginRegisterBtn.style.display = 'none'; // Hide login/register
+                logoutBtn.style.display = 'inline-block'; // Show logout
+                listAnItemBtn.style.display = 'inline-block'; // Show list item button
+            } else {
+                // User is logged out
+                console.log('No user is signed in.');
+                userEmailDisplay.style.display = 'none';
+                loginRegisterBtn.style.display = 'inline-block'; // Show login/register
+                logoutBtn.style.display = 'none'; // Hide logout
+                listAnItemBtn.style.display = 'none'; // Hide list item button
+                toggleAuthFormVisibility(false); // Ensure auth forms are hidden
+                toggleListingFormVisibility(false); // Ensure listing forms are hidden
+            }
+        });
+
+        // --- Item Posting Logic ---
+        postListingBtn.addEventListener('click', async () => {
+            const user = auth.currentUser;
+            if (!user) {
+                listingError.textContent = 'You must be logged in to post an item.';
+                return;
+            }
+
+            // Basic validation
+            if (!listingTitleInput.value || !listingDescriptionInput.value || !listingPriceInput.value || !listingCategorySelect.value || !listingLocationInput.value) {
+                listingError.textContent = 'Please fill in all fields.';
+                return;
+            }
+            if (parseFloat(listingPriceInput.value) > 49.99) {
+                listingError.textContent = 'Price must be under $50.';
+                return;
+            }
+
+            listingError.textContent = ''; // Clear previous errors
+            try {
+                await addDoc(collection(db, 'listings'), {
+                    title: listingTitleInput.value,
+                    description: listingDescriptionInput.value,
+                    price: parseFloat(listingPriceInput.value),
+                    category: listingCategorySelect.value,
+                    location: listingLocationInput.value,
+                    posterUid: user.uid,
+                    posterEmail: user.email,
+                    timestamp: serverTimestamp()
+                    // imageUrl: 'URL_OF_UPLOADED_IMAGE' // Add this if you integrate Firebase Storage
+                });
+                console.log('Listing posted successfully!');
+                alert('Your item has been listed!'); // User feedback
+                // Clear form
+                listingTitleInput.value = '';
+                listingDescriptionInput.value = '';
+                listingPriceInput.value = '';
+                listingCategorySelect.value = '';
+                listingLocationInput.value = '';
+                toggleListingFormVisibility(false); // Hide form after posting
+            } catch (error) {
+                listingError.textContent = error.message;
+                console.error('Error posting listing:', error.message);
+            }
+        });
+
+        // --- Dynamic Listing Display from Firestore ---
+        function renderListing(listingDoc) {
+            const data = listingDoc.data();
+            const listingId = listingDoc.id;
+
+            const listingCard = document.createElement('div');
+            listingCard.className = 'listing-card';
+            listingCard.innerHTML = `
+                <div class="listing-image">
+                    ${data.imageUrl ? `<img src="${data.imageUrl}" alt="${data.title}" style="width:100%; height:100%; object-fit:cover;">` : 'Image'}
+                </div>
+                <div class="listing-details">
+                    <div class="listing-price">$${data.price ? data.price.toFixed(2) : '0.00'}</div>
+                    <h3 class="listing-title">${data.title}</h3>
+                    <div class="listing-location">${data.location}</div>
+                    <div class="listing-meta">
+                        <span>${data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : 'Just now'}</span>
+                        <span>${data.category}</span>
+                    </div>
+                </div>
+            `;
+            // Add click listener for individual listing cards if needed (e.g., to show detail page)
+            listingCard.addEventListener('click', () => {
+                alert(`Clicked on: ${data.title} (ID: ${listingId})`);
+                // In a real app, this would navigate to a detail page or open a modal
+            });
+            return listingCard;
+        }
+
+        // Fetch listings in real-time and update the UI
+        const listingsQuery = query(collection(db, 'listings'), orderBy('timestamp', 'desc'));
+        onSnapshot(listingsQuery, snapshot => {
+            listingsContainer.innerHTML = ''; // Clear existing listings
+            let count = 0;
+            snapshot.forEach(doc => {
+                listingsContainer.appendChild(renderListing(doc));
+                count++;
+            });
+            itemCountSpan.textContent = `${count} items found`;
+        }, error => {
+            console.error("Error fetching listings:", error);
+            itemCountSpan.textContent = `Error loading items.`;
+        });
+
+
+        // --- Existing JavaScript from your original code ---
+        document.addEventListener('DOMContentLoaded', function() {
+            // Updated: Header buttons to control Firebase forms
+            loginRegisterBtn.addEventListener('click', function() {
+                isLoginMode = true; // Default to login when clicked
+                updateAuthModeUI();
+                toggleAuthFormVisibility(true);
+            });
+
+            listAnItemBtn.addEventListener('click', function() {
+                if (auth.currentUser) {
+                    toggleListingFormVisibility(true);
+                } else {
+                    alert('Please log in to list an item.');
+                    isLoginMode = true;
+                    updateAuthModeUI();
+                    toggleAuthFormVisibility(true); // Show login form if not logged in
+                }
+            });
+
+            startBrowsingBtn.addEventListener('click', function() {
+                window.scrollTo({
+                    top: document.querySelector('.filters').offsetTop - 20,
+                    behavior: 'smooth'
+                });
+            });
+
+            // Filter functionality (still placeholder, actual filtering would query Firestore)
+            const filterSelects = document.querySelectorAll('.filters select');
+            filterSelects.forEach(select => {
+                select.addEventListener('change', function() {
+                    console.log('Filter changed: ' + this.id + ' = ' + this.value);
+                    // TODO: Implement Firestore queries based on these filters
+                });
+            });
+
+            const searchInput = document.getElementById('search-input');
+            searchInput.addEventListener('input', function() {
+                console.log('Search input: ' + this.value);
+                // TODO: Implement Firestore queries for search
+            });
+
+            // Initial UI update for auth mode
+            updateAuthModeUI();
+        });
+    </script>
+</body>
+</html>
