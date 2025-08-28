@@ -1,846 +1,132 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cheaplet - Everything Under $50</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* Global Styles */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background-color: #f8f9fa;
-            color: #333;
-            line-height: 1.6;
-        }
-        
-        .container {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-        
-        /* Header Styles */
-        header {
-            background-color: #4CAF50;
-            color: white;
-            padding: 15px 0;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-        }
-        
-        .logo span {
-            color: #FFD700;
-        }
-        
-        nav ul {
-            display: flex;
-            list-style: none;
-        }
-        
-        nav ul li {
-            margin-left: 20px;
-        }
-        
-        nav ul li a {
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            transition: opacity 0.3s;
-            padding: 8px 5px;
-            border-bottom: 2px solid transparent;
-        }
-        
-        nav ul li a:hover, nav ul li a.active {
-            opacity: 0.9;
-            border-bottom: 2px solid #FFD700;
-        }
-        
-        .btn {
-            background-color: #FFD700;
-            color: #333;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .btn:hover {
-            background-color: #FFC400;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        
-        .btn i {
-            font-size: 0.9em;
-        }
-        
-        /* Hero Section */
-        .hero {
-            background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1560472355-536de3962603?ixlib=rb-4.0.3&auto=format&fit=crop&w=1500&q=80');
-            background-size: cover;
-            background-position: center;
-            color: white;
-            text-align: center;
-            padding: 100px 20px;
-            margin-bottom: 40px;
-        }
-        
-        .hero h1 {
-            font-size: 2.8rem;
-            margin-bottom: 20px;
-            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
-        }
-        
-        .hero p {
-            font-size: 1.2rem;
-            max-width: 700px;
-            margin: 0 auto 30px;
-        }
-        
-        /* Filters */
-        .filters {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            margin-bottom: 30px;
-        }
-        
-        .filter-options {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            align-items: center;
-        }
-        
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            min-width: 150px;
-        }
-        
-        .filter-group label {
-            margin-bottom: 6px;
-            font-weight: 500;
-            font-size: 0.9rem;
-            color: #555;
-        }
-        
-        select, input[type="text"] {
-            padding: 10px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 0.95rem;
-        }
-        
-        input[type="text"] {
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%23555" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>');
-            background-repeat: no-repeat;
-            background-position: 12px center;
-            padding-left: 40px;
-            background-size: 16px;
-        }
-        
-        /* Listings Grid */
-        .listings-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .listings-count {
-            color: #666;
-            font-size: 0.95rem;
-        }
-        
-        .listings-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
-        }
-        
-        .listing-card {
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
-            cursor: pointer;
-        }
-        
-        .listing-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
-        }
-        
-        .listing-image {
-            height: 180px;
-            background-color: #eee;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #777;
-            font-size: 14px;
-            overflow: hidden;
-            position: relative;
-        }
-        
-        .listing-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.5s;
-        }
-        
-        .listing-card:hover .listing-image img {
-            transform: scale(1.05);
-        }
-        
-        .listing-details {
-            padding: 15px;
-        }
-        
-        .listing-price {
-            color: #4CAF50;
-            font-weight: bold;
-            font-size: 1.2rem;
-            margin-bottom: 8px;
-        }
-        
-        .listing-title {
-            font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 1.1rem;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        
-        .listing-location {
-            color: #777;
-            font-size: 0.9rem;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .listing-location i {
-            font-size: 0.8rem;
-        }
-        
-        .listing-meta {
-            display: flex;
-            justify-content: space-between;
-            color: #999;
-            font-size: 0.85rem;
-            border-top: 1px solid #eee;
-            padding-top: 12px;
-        }
-        
-        /* How it works section */
-        .how-it-works {
-            background-color: white;
-            padding: 50px 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            margin-bottom: 40px;
-        }
-        
-        .section-title {
-            text-align: center;
-            margin-bottom: 40px;
-            font-size: 1.8rem;
-            color: #333;
-            position: relative;
-        }
-        
-        .section-title:after {
-            content: '';
-            display: block;
-            width: 60px;
-            height: 3px;
-            background: #4CAF50;
-            margin: 15px auto 0;
-            border-radius: 2px;
-        }
-        
-        .steps {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 30px;
-        }
-        
-        .step {
-            text-align: center;
-            padding: 20px;
-            transition: transform 0.3s;
-        }
-        
-        .step:hover {
-            transform: translateY(-5px);
-        }
-        
-        .step-icon {
-            background-color: #E8F5E9;
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            font-size: 2rem;
-            color: #4CAF50;
-            transition: all 0.3s;
-        }
-        
-        .step:hover .step-icon {
-            background-color: #4CAF50;
-            color: white;
-            transform: scale(1.1);
-        }
-        
-        .step h3 {
-            margin-bottom: 15px;
-            color: #333;
-        }
-        
-        /* Footer */
-        footer {
-            background-color: #2E7D32;
-            color: white;
-            padding: 50px 0 20px;
-        }
-        
-        .footer-content {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 30px;
-            margin-bottom: 30px;
-        }
-        
-        .footer-column h3 {
-            margin-bottom: 20px;
-            font-size: 1.2rem;
-            position: relative;
-            padding-bottom: 10px;
-        }
-        
-        .footer-column h3:after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 30px;
-            height: 2px;
-            background: #FFD700;
-        }
-        
-        .footer-column ul {
-            list-style: none;
-        }
-        
-        .footer-column ul li {
-            margin-bottom: 12px;
-        }
-        
-        .footer-column ul li a {
-            color: #ddd;
-            text-decoration: none;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .footer-column ul li a i {
-            font-size: 0.8rem;
-            transition: transform 0.3s;
-        }
-        
-        .footer-column ul li a:hover {
-            color: white;
-        }
-        
-        .footer-column ul li a:hover i {
-            transform: translateX(3px);
-        }
-        
-        .copyright {
-            text-align: center;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            font-size: 0.9rem;
-            color: #ccc;
-        }
-        
-        /* Mobile menu */
-        .mobile-menu-btn {
-            display: none;
-            background: none;
-            border: none;
-            color: white;
-            font-size: 1.5rem;
-            cursor: pointer;
-        }
-        
-        /* Responsive Design */
-        @media (max-width: 900px) {
-            .hero h1 {
-                font-size: 2.2rem;
-            }
-            
-            .filter-group {
-                min-width: 120px;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .header-content {
-                flex-direction: row;
-                text-align: left;
-            }
-            
-            .mobile-menu-btn {
-                display: block;
-            }
-            
-            nav {
-                position: fixed;
-                top: 70px;
-                left: -100%;
-                width: 80%;
-                height: calc(100vh - 70px);
-                background: #2E7D32;
-                transition: all 0.3s;
-                z-index: 99;
-                padding: 20px;
-                box-shadow: 2px 0 5px rgba(0,0,0,0.1);
-            }
-            
-            nav.active {
-                left: 0;
-            }
-            
-            nav ul {
-                flex-direction: column;
-                margin-top: 15px;
-            }
-            
-            nav ul li {
-                margin: 10px 0;
-            }
-            
-            .hero {
-                padding: 80px 20px;
-            }
-            
-            .hero h1 {
-                font-size: 2rem;
-            }
-            
-            .filter-options {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .filter-group {
-                width: 100%;
-                margin-bottom: 15px;
-            }
-            
-            .listings-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .hero h1 {
-                font-size: 1.8rem;
-            }
-            
-            .hero p {
-                font-size: 1rem;
-            }
-            
-            .btn {
-                padding: 8px 16px;
-                font-size: 0.9rem;
-            }
-            
-            .steps {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- Header -->
-    <header>
-        <div class="container header-content">
-            <div class="logo">
-                Cheap<span>let</span>
-            </div>
-            <button class="mobile-menu-btn">
-                <i class="fas fa-bars"></i>
-            </button>
-            <nav id="main-nav">
-                <ul>
-                    <li><a href="#" class="active">Home</a></li>
-                    <li><a href="#">Browse</a></li>
-                    <li><a href="#">How It Works</a></li>
-                    <li><a href="#">About</a></li>
-                </ul>
-            </nav>
-            <button class="btn"><i class="fas fa-plus"></i>List an Item</button>
-        </div>
-    </header>
+<script>
+    // IMPORTANT: Replace with your actual configuration from the Firebase console
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="container">
-            <h1>Everything Under $50</h1>
-            <p>Cheaplet is the online marketplace focused exclusively on affordable finds. Discover secondhand, clearance, and giveaway items in your area.</p>
-            <button class="btn"><i class="fas fa-search"></i>Start Browsing</button>
-        </div>
-    </section>
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-    <!-- Main Content -->
-    <main class="container">
-        <!-- Filters -->
-        <section class="filters">
-            <div class="filter-options">
-                <div class="filter-group">
-                    <label for="category">Category</label>
-                    <select id="category">
-                        <option value="all">All Categories</option>
-                        <option value="furniture">Furniture</option>
-                        <option value="electronics">Electronics</option>
-                        <option value="clothing">Clothing</option>
-                        <option value="books">Books & Media</option>
-                        <option value="toys">Toys & Games</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="location">Location</label>
-                    <select id="location">
-                        <option value="all">Anywhere</option>
-                        <option value="local">Within 5 miles</option>
-                        <option value="city">Within my city</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="sort">Sort by</label>
-                    <select id="sort">
-                        <option value="newest">Newest First</option>
-                        <option value="price-low">Price: Low to High</option>
-                        <option value="price-high">Price: High to Low</option>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="search">Search</label>
-                    <input type="text" id="search" placeholder="Search listings...">
-                </div>
-            </div>
-        </section>
+    document.addEventListener('DOMContentLoaded', function() {
+        const listingsGrid = document.querySelector('.listings-grid');
+        const listingsCount = document.querySelector('.listings-header span');
+        
+        // --- MODAL AND FORM ELEMENTS ---
+        const modal = document.getElementById('listingModal');
+        const listAnItemBtn = document.querySelector('.header-content .btn'); // The button in the header
+        const closeBtn = document.querySelector('.close-btn');
+        const listingForm = document.getElementById('listingForm');
 
-        <!-- Listings -->
-        <section class="listings">
-            <div class="listings-header">
-                <h2>Recent Listings</h2>
-                <span class="listings-count">124 items found</span>
-            </div>
-            <div class="listings-grid">
-                <!-- Listing 1 -->
-                <div class="listing-card" data-category="furniture" data-price="15" data-date="2">
-                    <div class="listing-image">
-                        <img src="https://images.unsplash.com/photo-1533090368676-1fd25485db88?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80" alt="Vintage Coffee Table">
-                    </div>
+        // --- FUNCTIONS ---
+        
+        // Function to open the modal
+        function openModal() {
+            modal.style.display = 'block';
+        }
+
+        // Function to close the modal
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+        
+        // Function to render a single listing card
+        function renderListing(doc) {
+            const listing = doc.data();
+            const card = `
+                <div class="listing-card" data-id="${doc.id}">
+                    <div class="listing-image">Image</div>
                     <div class="listing-details">
-                        <div class="listing-price">$15</div>
-                        <h3 class="listing-title">Vintage Coffee Table</h3>
-                        <div class="listing-location"><i class="fas fa-map-marker-alt"></i>Brooklyn, NY</div>
+                        <div class="listing-price">$${listing.price}</div>
+                        <h3 class="listing-title">${listing.title}</h3>
+                        <div class="listing-location">${listing.location}</div>
                         <div class="listing-meta">
-                            <span>2 days ago</span>
-                            <span>Furniture</span>
+                            <span>${new Date(listing.timestamp.seconds * 1000).toLocaleDateString()}</span>
+                            <span>${listing.category}</span>
                         </div>
                     </div>
                 </div>
-                
-                <!-- Listing 2 -->
-                <div class="listing-card" data-category="electronics" data-price="35" data-date="1">
-                    <div class="listing-image">
-                        <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80" alt="Wireless Headphones">
-                    </div>
-                    <div class="listing-details">
-                        <div class="listing-price">$35</div>
-                        <h3 class="listing-title">Wireless Headphones</h3>
-                        <div class="listing-location"><i class="fas fa-map-marker-alt"></i>Queens, NY</div>
-                        <div class="listing-meta">
-                            <span>1 day ago</span>
-                            <span>Electronics</span>
+            `;
+            // Prepend new items so they appear at the top without a refresh
+            listingsGrid.insertAdjacentHTML('afterbegin', card);
+        }
+        
+        // Function to fetch all listings from Firestore
+        function fetchListings() {
+            db.collection('listings').orderBy('timestamp', 'desc').get().then(snapshot => {
+                listingsGrid.innerHTML = ''; // Clear static listings
+                listingsCount.textContent = `${snapshot.size} items found`;
+                snapshot.forEach(doc => {
+                    // This re-renders every card, but it's fine for now
+                    const listing = doc.data();
+                    const cardHTML = `
+                        <div class="listing-card" data-id="${doc.id}">
+                            <div class="listing-image">Image</div>
+                            <div class="listing-details">
+                                <div class="listing-price">$${listing.price}</div>
+                                <h3 class="listing-title">${listing.title}</h3>
+                                <div class="listing-location">${listing.location}</div>
+                                <div class="listing-meta">
+                                    <span>${new Date(listing.timestamp.seconds * 1000).toLocaleDateString()}</span>
+                                    <span>${listing.category}</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                
-                <!-- Listing 3 -->
-                <div class="listing-card" data-category="clothing" data-price="8" data-date="3">
-                    <div class="listing-image">
-                        <img src="https://images.unsplash.com/photo-1541099649105-f69ad21f3246?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80" alt="Designer Jeans">
-                    </div>
-                    <div class="listing-details">
-                        <div class="listing-price">$8</div>
-                        <h3 class="listing-title">Designer Jeans (Size 32)</h3>
-                        <div class="listing-location"><i class="fas fa-map-marker-alt"></i>Manhattan, NY</div>
-                        <div class="listing-meta">
-                            <span>3 days ago</span>
-                            <span>Clothing</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Listing 4 -->
-                <div class="listing-card" data-category="toys" data-price="25" data-date="5">
-                    <div class="listing-image">
-                        <img src="https://images.unsplash.com/photo-1587654780291-39c9404d746b?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80" alt="Board Game Collection">
-                    </div>
-                    <div class="listing-details">
-                        <div class="listing-price">$25</div>
-                        <h3 class="listing-title">Board Game Collection</h3>
-                        <div class="listing-location"><i class="fas fa-map-marker-alt"></i>Jersey City, NJ</div>
-                        <div class="listing-meta">
-                            <span>5 days ago</span>
-                            <span>Toys & Games</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Listing 5 -->
-                <div class="listing-card" data-category="books" data-price="12" data-date="7">
-                    <div class="listing-image">
-                        <img src="https://images.unsplash.com/photo-1544947950-fa07a98d237f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80" alt="Book Series">
-                    </div>
-                    <div class="listing-details">
-                        <div class="listing-price">$12</div>
-                        <h3 class="listing-title">Book Series - Like New</h3>
-                        <div class="listing-location"><i class="fas fa-map-marker-alt"></i>Staten Island, NY</div>
-                        <div class="listing-meta">
-                            <span>1 week ago</span>
-                            <span>Books & Media</span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Listing 6 -->
-                <div class="listing-card" data-category="furniture" data-price="45" data-date="2">
-                    <div class="listing-image">
-                        <img src="https://images.unsplash.com/photo-1592078615290-033ee584e267?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80" alt="Office Chair">
-                    </div>
-                    <div class="listing-details">
-                        <div class="listing-price">$45</div>
-                        <h3 class="listing-title">Office Chair - Ergonomic</h3>
-                        <div class="listing-location"><i class="fas fa-map-marker-alt"></i>Bronx, NY</div>
-                        <div class="listing-meta">
-                            <span>2 days ago</span>
-                            <span>Furniture</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- How it works -->
-        <section class="how-it-works">
-            <h2 class="section-title">How Cheaplet Works</h2>
-            <div class="steps">
-                <div class="step">
-                    <div class="step-icon"><i class="fas fa-camera"></i></div>
-                    <h3>List Your Item</h3>
-                    <p>Snap a photo, set a price under $50, and post your listing in seconds.</p>
-                </div>
-                <div class="step">
-                    <div class="step-icon"><i class="fas fa-comments"></i></div>
-                    <h3>Connect Locally</h3>
-                    <p>Buyers in your area will message you through the app to arrange pickup.</p>
-                </div>
-                <div class="step">
-                    <div class="step-icon"><i class="fas fa-handshake"></i></div>
-                    <h3>Complete the Sale</h3>
-                    <p>Meet up, exchange the item for cash or digital payment, and both parties leave a review.</p>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- Footer -->
-    <footer>
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-column">
-                    <h3>Cheaplet</h3>
-                    <ul>
-                        <li><a href="#"><i class="fas fa-chevron-right"></i>About Us</a></li>
-                        <li><a href="#"><i class="fas fa-chevron-right"></i>Careers</a></li>
-                        <li><a href="#"><i class="fas fa-chevron-right"></i>Press</a></li>
-                        <li><a href="#"><i class="fas fa-chevron-right"></i>Blog</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h3>Help</h3>
-                    <ul>
-                        <li><a href="#"><i class="fas fa-chevron-right"></i>FAQ</a></li>
-                        <li><a href="#"><i class="fas fa-chevron-right"></i>Safety Tips</a></li>
-                        <li><a href="#"><i class="fas fa-chevron-right"></i>Contact Support</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h3>Policies</h3>
-                    <ul>
-                        <li><a href="#"><i class="fas fa-chevron-right"></i>Terms of Service</a></li>
-                        <li><a href="#"><i class="fas fa-chevron-right"></i>Privacy Policy</a></li>
-                        <li><a href="#"><i class="fas fa-chevron-right"></i>Cookie Policy</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="copyright">
-                &copy; 2023 Cheaplet. All rights reserved.
-            </div>
-        </div>
-    </footer>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Mobile menu toggle
-            const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
-            const mainNav = document.getElementById('main-nav');
-            
-            mobileMenuBtn.addEventListener('click', function() {
-                mainNav.classList.toggle('active');
+                    `;
+                    listingsGrid.innerHTML += cardHTML;
+                });
+            }).catch(error => {
+                console.error("Error fetching listings: ", error);
             });
-            
-            // Filter functionality
-            const categoryFilter = document.getElementById('category');
-            const locationFilter = document.getElementById('location');
-            const sortFilter = document.getElementById('sort');
-            const searchFilter = document.getElementById('search');
-            const listingCards = document.querySelectorAll('.listing-card');
-            const listingsCount = document.querySelector('.listings-count');
-            
-            function filterListings() {
-                const categoryValue = categoryFilter.value;
-                const locationValue = locationFilter.value;
-                const sortValue = sortFilter.value;
-                const searchValue = searchFilter.value.toLowerCase();
-                
-                let visibleCount = 0;
-                
-                // First filter by category and search
-                listingCards.forEach(card => {
-                    const cardCategory = card.getAttribute('data-category');
-                    const cardTitle = card.querySelector('.listing-title').textContent.toLowerCase();
-                    const cardLocation = card.querySelector('.listing-location').textContent.toLowerCase();
-                    
-                    const categoryMatch = categoryValue === 'all' || cardCategory === categoryValue;
-                    const searchMatch = cardTitle.includes(searchValue) || cardLocation.includes(searchValue);
-                    
-                    if (categoryMatch && searchMatch) {
-                        card.style.display = 'block';
-                        visibleCount++;
-                    } else {
-                        card.style.display = 'none';
-                    }
-                });
-                
-                // Update listings count
-                listingsCount.textContent = `${visibleCount} items found`;
-                
-                // Sort functionality (simplified version)
-                if (sortValue !== 'newest') {
-                    const container = document.querySelector('.listings-grid');
-                    const cards = Array.from(container.querySelectorAll('.listing-card:not([style*="display: none"])'));
-                    
-                    cards.sort((a, b) => {
-                        const aPrice = parseFloat(a.getAttribute('data-price'));
-                        const bPrice = parseFloat(b.getAttribute('data-price'));
-                        
-                        if (sortValue === 'price-low') {
-                            return aPrice - bPrice;
-                        } else {
-                            return bPrice - aPrice;
-                        }
-                    });
-                    
-                    // Remove all cards and re-add in sorted order
-                    cards.forEach(card => {
-                        container.appendChild(card);
-                    });
-                }
+        }
+
+        // --- EVENT LISTENERS ---
+
+        // Listen for clicks on the main "List an Item" button to open the modal
+        listAnItemBtn.addEventListener('click', openModal);
+
+        // Listen for clicks on the 'X' to close the modal
+        closeBtn.addEventListener('click', closeModal);
+
+        // Close the modal if user clicks outside of the content area
+        window.addEventListener('click', function(event) {
+            if (event.target == modal) {
+                closeModal();
             }
-            
-            // Add event listeners to filters
-            categoryFilter.addEventListener('change', filterListings);
-            locationFilter.addEventListener('change', filterListings);
-            sortFilter.addEventListener('change', filterListings);
-            searchFilter.addEventListener('input', filterListings);
-            
-            // Listing click handler
-            listingCards.forEach(card => {
-                card.addEventListener('click', function() {
-                    const title = this.querySelector('.listing-title').textContent;
-                    alert(`Viewing details for: ${title}`);
-                });
-            });
-            
-            // Button click handlers
-            const buttons = document.querySelectorAll('.btn');
-            buttons.forEach(button => {
-                button.addEventListener('click', function() {
-                    if (this.textContent.includes('List an Item')) {
-                        alert('Listing creation form would open here');
-                    } else if (this.textContent.includes('Start Browsing')) {
-                        document.querySelector('.filters').scrollIntoView({ 
-                            behavior: 'smooth' 
-                        });
-                    }
-                });
+        });
+
+        // Listen for the form submission
+        listingForm.addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent the page from reloading
+
+            // Get values from the form
+            const newItem = {
+                title: listingForm.itemTitle.value,
+                price: Number(listingForm.itemPrice.value),
+                location: listingForm.itemLocation.value,
+                category: listingForm.itemCategory.value,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp() // Use server time
+            };
+
+            // Save the new item to Firestore
+            db.collection('listings').add(newItem).then(() => {
+                console.log('Listing added successfully!');
+                listingForm.reset(); // Clear the form fields
+                closeModal(); // Close the modal
+                fetchListings(); // Refresh the listings on the page
+            }).catch(error => {
+                console.error("Error adding document: ", error);
+                alert("There was an error submitting your listing. Please try again.");
             });
         });
-    </script>
-</body>
-</html>
+        
+        // --- INITIAL LOAD ---
+        fetchListings();
+        
+    });
+</script>
