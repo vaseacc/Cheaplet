@@ -303,15 +303,33 @@
             color: #ccc;
         }
 
+        /* NEW: Fullscreen Overlay for Forms */
+        .form-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); /* Dark semi-transparent background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000; /* Above all other content */
+            backdrop-filter: blur(5px); /* Optional: blur background content */
+            -webkit-backdrop-filter: blur(5px); /* For Safari */
+        }
+
         /* New styles for Firebase forms */
         .firebase-form-section {
             background-color: white;
             padding: 30px;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            margin: 40px auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); /* More prominent shadow */
+            margin: auto; /* Centering within flex container */
             max-width: 500px;
+            width: 90%; /* Responsive width */
             text-align: center;
+            position: relative; /* For close button positioning */
         }
 
         .firebase-form-section h2 {
@@ -362,6 +380,23 @@
         #logoutBtn:hover {
             background-color: #d32f2f;
         }
+
+        /* NEW: Close button for forms */
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #aaa;
+            background: none;
+            border: none;
+            padding: 0;
+            line-height: 1;
+        }
+        .close-btn:hover {
+            color: #333;
+        }
     </style>
 </head>
 <body>
@@ -399,47 +434,53 @@
 
     <!-- Main Content -->
     <main class="container">
-        <!-- Firebase Login/Register Forms -->
-        <section id="auth-forms" class="firebase-form-section" style="display: none;">
-            <h2>Join Cheaplet</h2>
-            <p>Please log in or register to continue.</p>
-            <input type="email" id="email" placeholder="Email" required>
-            <input type="password" id="password" placeholder="Password" required>
-            <button class="btn" id="loginBtn">Login</button>
-            <button class="btn" id="registerBtn">Register</button>
-            <p id="auth-error" style="color: red;"></p>
-            <p style="margin-top: 15px;">
-                <a href="#" id="toggleAuthMode">New user? Register here.</a>
-            </p>
-        </section>
+        <!-- Firebase Login/Register Forms (NOW WRAPPED IN AN OVERLAY) -->
+        <div id="auth-overlay" class="form-overlay" style="display: none;">
+            <section id="auth-forms" class="firebase-form-section">
+                <button class="close-btn" id="closeAuthForm">&times;</button>
+                <h2>Join Cheaplet</h2>
+                <p>Please log in or register to continue.</p>
+                <input type="email" id="email" placeholder="Email" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <button class="btn" id="loginBtn">Login</button>
+                <button class="btn" id="registerBtn">Register</button>
+                <p id="auth-error" style="color: red;"></p>
+                <p style="margin-top: 15px;">
+                    <a href="#" id="toggleAuthMode">New user? Register here.</a>
+                </p>
+            </section>
+        </div>
 
-        <!-- Firebase Item Listing Form -->
-        <section id="listing-form" class="firebase-form-section" style="display: none;">
-            <h2>List a New Item (Under $50)</h2>
-            <input type="text" id="listing-title" placeholder="Item Title (e.g., Vintage Coffee Table)" required>
-            <textarea id="listing-description" placeholder="Description of your item..." required></textarea>
-            <input type="number" id="listing-price" placeholder="Price (e.g., 15.00)" min="0" max="49.99" step="0.01" required>
-            <select id="listing-category" required>
-                <option value="">Select Category</option>
-                <option value="furniture">Furniture</option>
-                <option value="electronics">Electronics</option>
-                <option value="clothing">Clothing</option>
-                <option value="books">Books & Media</option>
-                <option value="toys">Toys & Games</option>
-                <option value="other">Other</option>
-            </select>
-            <input type="text" id="listing-location" placeholder="Your Location (e.g., Brooklyn, NY)" required>
-            <!-- Image upload can be added here later with Firebase Storage -->
-            <!-- <input type="file" id="listing-image" accept="image/*"> -->
-            <button class="btn" id="postListingBtn">Post Item</button>
-            <p id="listing-error" style="color: red;"></p>
-        </section>
+        <!-- Firebase Item Listing Form (NOW WRAPPED IN AN OVERLAY) -->
+        <div id="listing-overlay" class="form-overlay" style="display: none;">
+            <section id="listing-form" class="firebase-form-section">
+                <button class="close-btn" id="closeListingForm">&times;</button>
+                <h2>List a New Item (Under $50)</h2>
+                <input type="text" id="listing-title" placeholder="Item Title (e.g., Vintage Coffee Table)" required>
+                <textarea id="listing-description" placeholder="Description of your item..." required></textarea>
+                <input type="number" id="listing-price" placeholder="Price (e.g., 15.00)" min="0" max="49.99" step="0.01" required>
+                <select id="listing-category" required>
+                    <option value="">Select Category</option>
+                    <option value="furniture">Furniture</option>
+                    <option value="electronics">Electronics</option>
+                    <option value="clothing">Clothing</option>
+                    <option value="books">Books & Media</option>
+                    <option value="toys">Toys & Games</option>
+                    <option value="other">Other</option>
+                </select>
+                <input type="text" id="listing-location" placeholder="Your Location (e.g., Brooklyn, NY)" required>
+                <!-- Image upload can be added here later with Firebase Storage -->
+                <!-- <input type="file" id="listing-image" accept="image/*"> -->
+                <button class="btn" id="postListingBtn">Post Item</button>
+                <p id="listing-error" style="color: red;"></p>
+            </section>
+        </div>
 
         <!-- Filters -->
         <section class="filters">
             <div class="filter-options">
                 <div class="filter-group">
-                    <label for="category">Category:</label>
+                    <label for="category-filter">Category:</label>
                     <select id="category-filter"> <!-- Renamed to avoid conflict -->
                         <option value="all">All Categories</option>
                         <option value="furniture">Furniture</option>
@@ -451,7 +492,7 @@
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label for="location">Location:</label>
+                    <label for="location-filter">Location:</label>
                     <select id="location-filter"> <!-- Renamed to avoid conflict -->
                         <option value="all">Anywhere</option>
                         <option value="local">Within 5 miles</option>
@@ -459,7 +500,7 @@
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label for="sort">Sort by:</label>
+                    <label for="sort-filter">Sort by:</label>
                     <select id="sort-filter"> <!-- Renamed to avoid conflict -->
                         <option value="newest">Newest First</option>
                         <option value="price-low">Price: Low to High</option>
@@ -569,15 +610,20 @@
         const analytics = getAnalytics(app); // Initialize analytics (optional)
 
         // --- DOM Elements for Firebase Forms ---
-        const authFormsSection = document.getElementById('auth-forms');
+        // Changed to target the overlays now
+        const authOverlay = document.getElementById('auth-overlay');
+        const listingOverlay = document.getElementById('listing-overlay');
+
+        const authFormsSection = document.getElementById('auth-forms'); // Still need this for content
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
         const loginBtn = document.getElementById('loginBtn');
         const registerBtn = document.getElementById('registerBtn');
         const authError = document.getElementById('auth-error');
         const toggleAuthModeLink = document.getElementById('toggleAuthMode'); // To switch between login/register text
+        const closeAuthFormBtn = document.getElementById('closeAuthForm');
 
-        const listingFormSection = document.getElementById('listing-form');
+        const listingFormSection = document.getElementById('listing-form'); // Still need this for content
         const listingTitleInput = document.getElementById('listing-title');
         const listingDescriptionInput = document.getElementById('listing-description');
         const listingPriceInput = document.getElementById('listing-price');
@@ -585,6 +631,8 @@
         const listingLocationInput = document.getElementById('listing-location');
         const postListingBtn = document.getElementById('postListingBtn');
         const listingError = document.getElementById('listing-error');
+        const closeListingFormBtn = document.getElementById('closeListingForm');
+
 
         const listingsContainer = document.getElementById('listings-container');
         const itemCountSpan = document.getElementById('itemCount');
@@ -602,13 +650,17 @@
         let isLoginMode = true; // State for login/register form
 
         function toggleAuthFormVisibility(show) {
-            authFormsSection.style.display = show ? 'block' : 'none';
-            listingFormSection.style.display = 'none'; // Hide listing form if auth form is shown
+            authOverlay.style.display = show ? 'flex' : 'none'; // Use flex for centering
+            // Also ensure the body overflow is handled to prevent scrolling underneath
+            document.body.style.overflow = show ? 'hidden' : 'auto';
+            listingOverlay.style.display = 'none'; // Hide listing form if auth form is shown
         }
 
         function toggleListingFormVisibility(show) {
-            listingFormSection.style.display = show ? 'block' : 'none';
-            authFormsSection.style.display = 'none'; // Hide auth form if listing form is shown
+            listingOverlay.style.display = show ? 'flex' : 'none'; // Use flex for centering
+            // Also ensure the body overflow is handled to prevent scrolling underneath
+            document.body.style.overflow = show ? 'hidden' : 'auto';
+            authOverlay.style.display = 'none'; // Hide auth form if listing form is shown
         }
 
         function updateAuthModeUI() {
@@ -632,6 +684,15 @@
             e.preventDefault();
             isLoginMode = !isLoginMode;
             updateAuthModeUI();
+        });
+
+        // NEW: Close button event listeners
+        closeAuthFormBtn.addEventListener('click', () => {
+            toggleAuthFormVisibility(false);
+        });
+
+        closeListingFormBtn.addEventListener('click', () => {
+            toggleListingFormVisibility(false);
         });
 
         loginBtn.addEventListener('click', async () => {
@@ -748,7 +809,7 @@
             listingCard.className = 'listing-card';
             listingCard.innerHTML = `
                 <div class="listing-image">
-                    ${data.imageUrl ? `<img src="${data.imageUrl}" alt="${data.title}" style="width:100%; height:100%; object-fit:cover;">` : 'Image'}
+                    ${data.imageUrl ? `<img src="${data.imageUrl}" alt="${data.title}" style="width:100%; height:100%; object-fit:cover;">` : 'Image Placeholder'}
                 </div>
                 <div class="listing-details">
                     <div class="listing-price">$${data.price ? data.price.toFixed(2) : '0.00'}</div>
@@ -789,46 +850,3 @@
             // Updated: Header buttons to control Firebase forms
             loginRegisterBtn.addEventListener('click', function() {
                 isLoginMode = true; // Default to login when clicked
-                updateAuthModeUI();
-                toggleAuthFormVisibility(true);
-            });
-
-            listAnItemBtn.addEventListener('click', function() {
-                if (auth.currentUser) {
-                    toggleListingFormVisibility(true);
-                } else {
-                    alert('Please log in to list an item.');
-                    isLoginMode = true;
-                    updateAuthModeUI();
-                    toggleAuthFormVisibility(true); // Show login form if not logged in
-                }
-            });
-
-            startBrowsingBtn.addEventListener('click', function() {
-                window.scrollTo({
-                    top: document.querySelector('.filters').offsetTop - 20,
-                    behavior: 'smooth'
-                });
-            });
-
-            // Filter functionality (still placeholder, actual filtering would query Firestore)
-            const filterSelects = document.querySelectorAll('.filters select');
-            filterSelects.forEach(select => {
-                select.addEventListener('change', function() {
-                    console.log('Filter changed: ' + this.id + ' = ' + this.value);
-                    // TODO: Implement Firestore queries based on these filters
-                });
-            });
-
-            const searchInput = document.getElementById('search-input');
-            searchInput.addEventListener('input', function() {
-                console.log('Search input: ' + this.value);
-                // TODO: Implement Firestore queries for search
-            });
-
-            // Initial UI update for auth mode
-            updateAuthModeUI();
-        });
-    </script>
-</body>
-</html>
