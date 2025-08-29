@@ -48,6 +48,7 @@
             font-weight: bold;
             display: flex;
             align-items: center;
+            cursor: pointer; /* Make logo clickable */
         }
 
         .logo span {
@@ -88,6 +89,16 @@
         .btn:hover {
             background-color: #FFC400;
         }
+
+        /* NEW: Secondary button style for "Cancel" */
+        .btn-secondary {
+            background-color: #ccc;
+            color: #333;
+        }
+        .btn-secondary:hover {
+            background-color: #bbb;
+        }
+
 
         /* Hero Section */
         .hero {
@@ -334,6 +345,15 @@
             min-width: 120px;
         }
 
+        /* NEW: Container for form buttons */
+        .form-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+
         .firebase-form-section #auth-error,
         .firebase-form-section #listing-error {
             margin-top: 15px;
@@ -368,7 +388,7 @@
     <!-- Header -->
     <header>
         <div class="container header-content">
-            <div class="logo">
+            <div class="logo" id="logo-link"> <!-- ADDED ID -->
                 Cheap<span>let</span>
             </div>
             <nav>
@@ -405,8 +425,11 @@
             <p>Please log in or register to continue.</p>
             <input type="email" id="email" placeholder="Email" required>
             <input type="password" id="password" placeholder="Password" required>
-            <button class="btn" id="loginBtn">Login</button>
-            <button class="btn" id="registerBtn">Register</button>
+            <div class="form-buttons"> <!-- ADDED WRAPPER -->
+                <button class="btn" id="loginBtn">Login</button>
+                <button class="btn" id="registerBtn">Register</button>
+                <button class="btn btn-secondary" id="cancelAuthFormBtn">Cancel</button> <!-- ADDED CANCEL BUTTON -->
+            </div>
             <p id="auth-error" style="color: red;"></p>
             <p style="margin-top: 15px;">
                 <a href="#" id="toggleAuthMode">New user? Register here.</a>
@@ -429,9 +452,10 @@
                 <option value="other">Other</option>
             </select>
             <input type="text" id="listing-location" placeholder="Your Location (e.g., Brooklyn, NY)" required>
-            <!-- Image upload can be added here later with Firebase Storage -->
-            <!-- <input type="file" id="listing-image" accept="image/*"> -->
-            <button class="btn" id="postListingBtn">Post Item</button>
+            <div class="form-buttons"> <!-- ADDED WRAPPER -->
+                <button class="btn" id="postListingBtn">Post Item</button>
+                <button class="btn btn-secondary" id="cancelListingFormBtn">Cancel</button> <!-- ADDED CANCEL BUTTON -->
+            </div>
             <p id="listing-error" style="color: red;"></p>
         </section>
 
@@ -440,7 +464,7 @@
             <div class="filter-options">
                 <div class="filter-group">
                     <label for="category">Category:</label>
-                    <select id="category-filter"> <!-- Renamed to avoid conflict -->
+                    <select id="category-filter">
                         <option value="all">All Categories</option>
                         <option value="furniture">Furniture</option>
                         <option value="electronics">Electronics</option>
@@ -452,7 +476,7 @@
                 </div>
                 <div class="filter-group">
                     <label for="location">Location:</label>
-                    <select id="location-filter"> <!-- Renamed to avoid conflict -->
+                    <select id="location-filter">
                         <option value="all">Anywhere</option>
                         <option value="local">Within 5 miles</option>
                         <option value="city">Within my city</option>
@@ -460,7 +484,7 @@
                 </div>
                 <div class="filter-group">
                     <label for="sort">Sort by:</label>
-                    <select id="sort-filter"> <!-- Renamed to avoid conflict -->
+                    <select id="sort-filter">
                         <option value="newest">Newest First</option>
                         <option value="price-low">Price: Low to High</option>
                         <option value="price-high">Price: High to Low</option>
@@ -548,10 +572,9 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-analytics.js"; // Optional
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-analytics.js";
 
         // Your web app's Firebase configuration
-        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
         const firebaseConfig = {
             apiKey: "AIzaSyDYl9fSWCnkX5iqiesmCm6TTsFW4SRKOtE",
             authDomain: "chaeplet.firebaseapp.com",
@@ -564,9 +587,9 @@
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app); // Get Auth service
-        const db = getFirestore(app); // Get Firestore service
-        const analytics = getAnalytics(app); // Initialize analytics (optional)
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const analytics = getAnalytics(app);
 
         // --- DOM Elements ---
         const authFormsSection = document.getElementById('auth-forms');
@@ -576,6 +599,7 @@
         const registerBtn = document.getElementById('registerBtn');
         const authError = document.getElementById('auth-error');
         const toggleAuthModeLink = document.getElementById('toggleAuthMode');
+        const cancelAuthFormBtn = document.getElementById('cancelAuthFormBtn'); // New
 
         const listingFormSection = document.getElementById('listing-form');
         const listingTitleInput = document.getElementById('listing-title');
@@ -585,9 +609,13 @@
         const listingLocationInput = document.getElementById('listing-location');
         const postListingBtn = document.getElementById('postListingBtn');
         const listingError = document.getElementById('listing-error');
+        const cancelListingFormBtn = document.getElementById('cancelListingFormBtn'); // New
 
         const listingsContainer = document.getElementById('listings-container');
         const itemCountSpan = document.getElementById('itemCount');
+
+        const logoLink = document.getElementById('logo-link'); // New
+        const navLinks = document.querySelectorAll('nav ul li a'); // New
 
         // Header buttons
         const loginRegisterBtn = document.getElementById('loginRegisterBtn');
@@ -596,7 +624,6 @@
         const userEmailDisplay = document.getElementById('userEmailDisplay');
         const startBrowsingBtn = document.getElementById('startBrowsingBtn');
 
-        // Select all main content sections that should be hidden/shown
         const mainContentSections = [
             document.querySelector('.hero'),
             document.querySelector('.filters'),
@@ -607,33 +634,37 @@
 
         // --- UI Visibility Logic ---
 
-        let isLoginMode = true; // State for login/register form
+        let isLoginMode = true;
 
-        // Function to control visibility of main content vs. forms
         function setMainContentVisibility(showMain) {
             mainContentSections.forEach(section => {
-                if (section) { // Check if section exists
-                    section.style.display = showMain ? '' : 'none'; // Use '' to revert to default display
+                if (section) {
+                    section.style.display = showMain ? '' : 'none';
                 }
             });
+        }
+        
+        // NEW: Central function to return to the main view
+        function returnToMainView() {
+            setMainContentVisibility(true);
+            authFormsSection.style.display = 'none';
+            listingFormSection.style.display = 'none';
         }
 
         function toggleAuthFormVisibility(show) {
             authFormsSection.style.display = show ? 'block' : 'none';
-            listingFormSection.style.display = 'none'; // Always hide other form
-            setMainContentVisibility(!show); // Hide main content if auth form is shown
+            listingFormSection.style.display = 'none';
+            setMainContentVisibility(!show);
             if (show) {
-                // Smooth scroll to the form
                 authFormsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
 
         function toggleListingFormVisibility(show) {
             listingFormSection.style.display = show ? 'block' : 'none';
-            authFormsSection.style.display = 'none'; // Always hide other form
-            setMainContentVisibility(!show); // Hide main content if listing form is shown
+            authFormsSection.style.display = 'none';
+            setMainContentVisibility(!show);
             if (show) {
-                // Smooth scroll to the form
                 listingFormSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
@@ -644,15 +675,13 @@
                 registerBtn.style.display = 'none';
                 toggleAuthModeLink.textContent = 'New user? Register here.';
                 authFormsSection.querySelector('h2').textContent = 'Log In to Cheaplet';
-                authFormsSection.querySelector('p:nth-of-type(1)').textContent = 'Welcome back! Please log in to your account.';
             } else {
                 loginBtn.style.display = 'none';
                 registerBtn.style.display = 'inline-block';
                 toggleAuthModeLink.textContent = 'Already have an account? Log in.';
                 authFormsSection.querySelector('h2').textContent = 'Register for Cheaplet';
-                authFormsSection.querySelector('p:nth-of-type(1)').textContent = 'Create an account to start buying and selling.';
             }
-            authError.textContent = ''; // Clear errors when switching modes
+            authError.textContent = '';
         }
 
         
@@ -670,11 +699,8 @@
             authError.textContent = '';
             try {
                 await signInWithEmailAndPassword(auth, email, password);
-                console.log('User logged in!');
-                // onAuthStateChanged will handle UI updates
             } catch (error) {
                 authError.textContent = error.message;
-                console.error('Login error:', error.message);
             }
         });
 
@@ -684,51 +710,33 @@
             authError.textContent = '';
             try {
                 await createUserWithEmailAndPassword(auth, email, password);
-                console.log('User registered and logged in!');
-                 // onAuthStateChanged will handle UI updates
             } catch (error) {
                 authError.textContent = error.message;
-                console.error('Registration error:', error.message);
             }
         });
 
         logoutBtn.addEventListener('click', async () => {
             try {
                 await signOut(auth);
-                console.log('User logged out!');
-                // onAuthStateChanged will handle UI updates
             } catch (error) {
                 console.error('Logout error:', error.message);
             }
         });
 
-        // Listen for authentication state changes (this is the single source of truth for UI)
         onAuthStateChanged(auth, user => {
             if (user) {
-                // User is logged in
-                console.log('User is signed in:', user.email);
                 userEmailDisplay.textContent = `Welcome, ${user.email}!`;
                 userEmailDisplay.style.display = 'inline';
                 loginRegisterBtn.style.display = 'none';
                 logoutBtn.style.display = 'inline-block';
                 listAnItemBtn.style.display = 'inline-block';
-
-                // Ensure main content is visible and forms are hidden after auth state change
-                setMainContentVisibility(true);
-                authFormsSection.style.display = 'none';
-                listingFormSection.style.display = 'none';
+                returnToMainView(); // On auth change, always return to main view
             } else {
-                // User is logged out
-                console.log('No user is signed in.');
                 userEmailDisplay.style.display = 'none';
                 loginRegisterBtn.style.display = 'inline-block';
                 logoutBtn.style.display = 'none';
                 listAnItemBtn.style.display = 'none';
-                
-                // Ensure main content is visible and forms are hidden after logout
-                setMainContentVisibility(true);
-                authFormsSection.style.display = 'none';
-                listingFormSection.style.display = 'none';
+                returnToMainView(); // On auth change, always return to main view
             }
         });
 
@@ -739,10 +747,8 @@
                 listingError.textContent = 'You must be logged in to post an item.';
                 return;
             }
-
-            // Basic validation
-            if (!listingTitleInput.value || !listingDescriptionInput.value || !listingPriceInput.value || !listingCategorySelect.value || !listingLocationInput.value) {
-                listingError.textContent = 'Please fill in all fields.';
+            if (!listingTitleInput.value || !listingPriceInput.value || !listingLocationInput.value) {
+                listingError.textContent = 'Please fill in all required fields.';
                 return;
             }
             if (parseFloat(listingPriceInput.value) > 49.99) {
@@ -750,7 +756,7 @@
                 return;
             }
 
-            listingError.textContent = ''; // Clear previous errors
+            listingError.textContent = '';
             try {
                 await addDoc(collection(db, 'listings'), {
                     title: listingTitleInput.value,
@@ -762,29 +768,21 @@
                     posterEmail: user.email,
                     timestamp: serverTimestamp()
                 });
-                console.log('Listing posted successfully!');
                 alert('Your item has been listed!');
-                
-                // Clear form
                 listingTitleInput.value = '';
                 listingDescriptionInput.value = '';
                 listingPriceInput.value = '';
                 listingCategorySelect.value = '';
                 listingLocationInput.value = '';
-                
-                // Hide form and show main content
-                toggleListingFormVisibility(false);
+                returnToMainView(); // Return to main view after posting
             } catch (error) {
                 listingError.textContent = error.message;
-                console.error('Error posting listing:', error.message);
             }
         });
 
         // --- Dynamic Listing Display from Firestore ---
         function renderListing(listingDoc) {
             const data = listingDoc.data();
-            const listingId = listingDoc.id;
-
             const listingCard = document.createElement('div');
             listingCard.className = 'listing-card';
             listingCard.innerHTML = `
@@ -801,22 +799,16 @@
                     </div>
                 </div>
             `;
-            listingCard.addEventListener('click', () => {
-                alert(`Clicked on: ${data.title} (ID: ${listingId})`);
-            });
             return listingCard;
         }
 
-        // Fetch listings in real-time and update the UI
         const listingsQuery = query(collection(db, 'listings'), orderBy('timestamp', 'desc'));
         onSnapshot(listingsQuery, snapshot => {
-            listingsContainer.innerHTML = ''; // Clear existing listings
-            let count = 0;
+            listingsContainer.innerHTML = '';
+            itemCountSpan.textContent = `${snapshot.size} items found`;
             snapshot.forEach(doc => {
                 listingsContainer.appendChild(renderListing(doc));
-                count++;
             });
-            itemCountSpan.textContent = `${count} items found`;
         }, error => {
             console.error("Error fetching listings:", error);
             itemCountSpan.textContent = `Error loading items.`;
@@ -825,7 +817,6 @@
 
         // --- Page Event Listeners ---
         document.addEventListener('DOMContentLoaded', function() {
-            // Header buttons to control form visibility
             loginRegisterBtn.addEventListener('click', function() {
                 isLoginMode = true;
                 updateAuthModeUI();
@@ -844,34 +835,23 @@
             });
 
             startBrowsingBtn.addEventListener('click', function() {
-                // Ensure main content is visible before scrolling
-                setMainContentVisibility(true);
-                authFormsSection.style.display = 'none';
-                listingFormSection.style.display = 'none';
-                window.scrollTo({
-                    top: document.querySelector('.filters').offsetTop - 20,
-                    behavior: 'smooth'
+                returnToMainView();
+                document.querySelector('.filters').scrollIntoView({ behavior: 'smooth' });
+            });
+
+            // NEW: Event listeners to exit forms
+            cancelAuthFormBtn.addEventListener('click', returnToMainView);
+            cancelListingFormBtn.addEventListener('click', returnToMainView);
+            logoLink.addEventListener('click', returnToMainView);
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault(); // Prevent hash from being added to URL
+                    returnToMainView();
                 });
             });
 
-            // Filter functionality (placeholder)
-            const filterSelects = document.querySelectorAll('.filters select');
-            filterSelects.forEach(select => {
-                select.addEventListener('change', function() {
-                    console.log('Filter changed: ' + this.id + ' = ' + this.value);
-                    // TODO: Implement Firestore queries based on these filters
-                });
-            });
-
-            const searchInput = document.getElementById('search-input');
-            searchInput.addEventListener('input', function() {
-                console.log('Search input: ' + this.value);
-                // TODO: Implement Firestore queries for search
-            });
-
-            // Initial UI setup
             updateAuthModeUI();
         });
     </script>
 </body>
-</html>```
+</html>
