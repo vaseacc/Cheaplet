@@ -90,7 +90,6 @@
             background-color: #FFC400;
         }
 
-        /* NEW: Secondary button style for "Cancel" */
         .btn-secondary {
             background-color: #ccc;
             color: #333;
@@ -345,7 +344,6 @@
             min-width: 120px;
         }
 
-        /* NEW: Container for form buttons */
         .form-buttons {
             display: flex;
             justify-content: center;
@@ -388,7 +386,7 @@
     <!-- Header -->
     <header>
         <div class="container header-content">
-            <div class="logo" id="logo-link"> <!-- ADDED ID -->
+            <div class="logo" id="logo-link">
                 Cheap<span>let</span>
             </div>
             <nav>
@@ -425,10 +423,10 @@
             <p>Please log in or register to continue.</p>
             <input type="email" id="email" placeholder="Email" required>
             <input type="password" id="password" placeholder="Password" required>
-            <div class="form-buttons"> <!-- ADDED WRAPPER -->
+            <div class="form-buttons">
                 <button class="btn" id="loginBtn">Login</button>
                 <button class="btn" id="registerBtn">Register</button>
-                <button class="btn btn-secondary" id="cancelAuthFormBtn">Cancel</button> <!-- ADDED CANCEL BUTTON -->
+                <button class="btn btn-secondary" id="cancelAuthFormBtn">Cancel</button>
             </div>
             <p id="auth-error" style="color: red;"></p>
             <p style="margin-top: 15px;">
@@ -452,9 +450,9 @@
                 <option value="other">Other</option>
             </select>
             <input type="text" id="listing-location" placeholder="Your Location (e.g., Brooklyn, NY)" required>
-            <div class="form-buttons"> <!-- ADDED WRAPPER -->
+            <div class="form-buttons">
                 <button class="btn" id="postListingBtn">Post Item</button>
-                <button class="btn btn-secondary" id="cancelListingFormBtn">Cancel</button> <!-- ADDED CANCEL BUTTON -->
+                <button class="btn btn-secondary" id="cancelListingFormBtn">Cancel</button>
             </div>
             <p id="listing-error" style="color: red;"></p>
         </section>
@@ -599,7 +597,7 @@
         const registerBtn = document.getElementById('registerBtn');
         const authError = document.getElementById('auth-error');
         const toggleAuthModeLink = document.getElementById('toggleAuthMode');
-        const cancelAuthFormBtn = document.getElementById('cancelAuthFormBtn'); // New
+        const cancelAuthFormBtn = document.getElementById('cancelAuthFormBtn');
 
         const listingFormSection = document.getElementById('listing-form');
         const listingTitleInput = document.getElementById('listing-title');
@@ -609,15 +607,14 @@
         const listingLocationInput = document.getElementById('listing-location');
         const postListingBtn = document.getElementById('postListingBtn');
         const listingError = document.getElementById('listing-error');
-        const cancelListingFormBtn = document.getElementById('cancelListingFormBtn'); // New
+        const cancelListingFormBtn = document.getElementById('cancelListingFormBtn');
 
         const listingsContainer = document.getElementById('listings-container');
         const itemCountSpan = document.getElementById('itemCount');
 
-        const logoLink = document.getElementById('logo-link'); // New
-        const navLinks = document.querySelectorAll('nav ul li a'); // New
+        const logoLink = document.getElementById('logo-link');
+        const navLinks = document.querySelectorAll('nav ul li a');
 
-        // Header buttons
         const loginRegisterBtn = document.getElementById('loginRegisterBtn');
         const listAnItemBtn = document.getElementById('listAnItemBtn');
         const logoutBtn = document.getElementById('logoutBtn');
@@ -633,18 +630,14 @@
 
 
         // --- UI Visibility Logic ---
-
         let isLoginMode = true;
 
         function setMainContentVisibility(showMain) {
             mainContentSections.forEach(section => {
-                if (section) {
-                    section.style.display = showMain ? '' : 'none';
-                }
+                if (section) section.style.display = showMain ? '' : 'none';
             });
         }
         
-        // NEW: Central function to return to the main view
         function returnToMainView() {
             setMainContentVisibility(true);
             authFormsSection.style.display = 'none';
@@ -655,18 +648,14 @@
             authFormsSection.style.display = show ? 'block' : 'none';
             listingFormSection.style.display = 'none';
             setMainContentVisibility(!show);
-            if (show) {
-                authFormsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+            if (show) authFormsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function toggleListingFormVisibility(show) {
             listingFormSection.style.display = show ? 'block' : 'none';
             authFormsSection.style.display = 'none';
             setMainContentVisibility(!show);
-            if (show) {
-                listingFormSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+            if (show) listingFormSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         function updateAuthModeUI() {
@@ -686,7 +675,6 @@
 
         
         // --- Firebase Auth Logic ---
-
         toggleAuthModeLink.addEventListener('click', (e) => {
             e.preventDefault();
             isLoginMode = !isLoginMode;
@@ -697,30 +685,21 @@
             const email = emailInput.value;
             const password = passwordInput.value;
             authError.textContent = '';
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (error) {
-                authError.textContent = error.message;
-            }
+            try { await signInWithEmailAndPassword(auth, email, password); } 
+            catch (error) { authError.textContent = error.message; }
         });
 
         registerBtn.addEventListener('click', async () => {
             const email = emailInput.value;
             const password = passwordInput.value;
             authError.textContent = '';
-            try {
-                await createUserWithEmailAndPassword(auth, email, password);
-            } catch (error) {
-                authError.textContent = error.message;
-            }
+            try { await createUserWithEmailAndPassword(auth, email, password); } 
+            catch (error) { authError.textContent = error.message; }
         });
 
         logoutBtn.addEventListener('click', async () => {
-            try {
-                await signOut(auth);
-            } catch (error) {
-                console.error('Logout error:', error.message);
-            }
+            try { await signOut(auth); } 
+            catch (error) { console.error('Logout error:', error.message); }
         });
 
         onAuthStateChanged(auth, user => {
@@ -730,13 +709,13 @@
                 loginRegisterBtn.style.display = 'none';
                 logoutBtn.style.display = 'inline-block';
                 listAnItemBtn.style.display = 'inline-block';
-                returnToMainView(); // On auth change, always return to main view
+                returnToMainView();
             } else {
                 userEmailDisplay.style.display = 'none';
                 loginRegisterBtn.style.display = 'inline-block';
                 logoutBtn.style.display = 'none';
                 listAnItemBtn.style.display = 'none';
-                returnToMainView(); // On auth change, always return to main view
+                returnToMainView();
             }
         });
 
@@ -747,28 +726,49 @@
                 listingError.textContent = 'You must be logged in to post an item.';
                 return;
             }
-            if (!listingTitleInput.value || !listingPriceInput.value || !listingLocationInput.value) {
-                listingError.textContent = 'Please fill in all required fields.';
+
+            // --- NEW: Robust Validation ---
+            listingError.textContent = ''; // Clear previous errors
+
+            if (!listingTitleInput.value.trim()) {
+                listingError.textContent = 'Please enter an item title.';
+                return;
+            }
+            if (!listingDescriptionInput.value.trim()) {
+                listingError.textContent = 'Please enter a description.';
+                return;
+            }
+            if (!listingPriceInput.value) {
+                listingError.textContent = 'Please enter a price.';
                 return;
             }
             if (parseFloat(listingPriceInput.value) > 49.99) {
                 listingError.textContent = 'Price must be under $50.';
                 return;
             }
+            if (!listingCategorySelect.value) {
+                listingError.textContent = 'Please select a category.';
+                return;
+            }
+            if (!listingLocationInput.value.trim()) {
+                listingError.textContent = 'Please enter your location.';
+                return;
+            }
+            // --- End of Validation ---
 
-            listingError.textContent = '';
             try {
                 await addDoc(collection(db, 'listings'), {
-                    title: listingTitleInput.value,
-                    description: listingDescriptionInput.value,
+                    title: listingTitleInput.value.trim(),
+                    description: listingDescriptionInput.value.trim(),
                     price: parseFloat(listingPriceInput.value),
                     category: listingCategorySelect.value,
-                    location: listingLocationInput.value,
+                    location: listingLocationInput.value.trim(),
                     posterUid: user.uid,
                     posterEmail: user.email,
                     timestamp: serverTimestamp()
                 });
                 alert('Your item has been listed!');
+                // Clear form
                 listingTitleInput.value = '';
                 listingDescriptionInput.value = '';
                 listingPriceInput.value = '';
@@ -776,7 +776,8 @@
                 listingLocationInput.value = '';
                 returnToMainView(); // Return to main view after posting
             } catch (error) {
-                listingError.textContent = error.message;
+                console.error("Error posting listing:", error);
+                listingError.textContent = "Could not post item. Check console for details.";
             }
         });
 
@@ -786,9 +787,7 @@
             const listingCard = document.createElement('div');
             listingCard.className = 'listing-card';
             listingCard.innerHTML = `
-                <div class="listing-image">
-                    ${data.imageUrl ? `<img src="${data.imageUrl}" alt="${data.title}" style="width:100%; height:100%; object-fit:cover;">` : 'Image'}
-                </div>
+                <div class="listing-image">${'Image'}</div>
                 <div class="listing-details">
                     <div class="listing-price">$${data.price ? data.price.toFixed(2) : '0.00'}</div>
                     <h3 class="listing-title">${data.title}</h3>
@@ -839,13 +838,13 @@
                 document.querySelector('.filters').scrollIntoView({ behavior: 'smooth' });
             });
 
-            // NEW: Event listeners to exit forms
+            // Event listeners to exit forms
             cancelAuthFormBtn.addEventListener('click', returnToMainView);
             cancelListingFormBtn.addEventListener('click', returnToMainView);
             logoLink.addEventListener('click', returnToMainView);
             navLinks.forEach(link => {
                 link.addEventListener('click', (e) => {
-                    e.preventDefault(); // Prevent hash from being added to URL
+                    e.preventDefault();
                     returnToMainView();
                 });
             });
