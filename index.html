@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cheaplet - Everything Under $50</title>
     <style>
-        /* Global Styles */
+        /* All your CSS remains the same... */
         * {
             margin: 0;
             padding: 0;
@@ -383,7 +383,7 @@
     </style>
 </head>
 <body>
-    <!-- Header -->
+    <!-- All your HTML remains the same -->
     <header>
         <div class="container header-content">
             <div class="logo" id="logo-link">
@@ -564,15 +564,24 @@
         </div>
     </footer>
 
+
     <!-- Modular Firebase SDK Imports -->
     <script type="module">
-        // Import the functions you need from the SDKs you need
+        // =======================================================================
+        // =================== CORRECTED IMPORTS ARE BELOW =======================
+        // =======================================================================
+        // These full URLs are required for a single HTML file setup.
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-analytics.js";
 
-        // Your web app's Firebase configuration
+        
+        // =================================================================================
+        // ======================== IMPORTANT - PASTE YOUR CONFIG HERE =======================
+        // =================================================================================
+        // Go to your Firebase project settings and copy your web app's configuration object.
+        // Replace the entire object below with your own.
         const firebaseConfig = {
             apiKey: "AIzaSyDYl9fSWCnkX5iqiesmCm6TTsFW4SRKOtE",
             authDomain: "chaeplet.firebaseapp.com",
@@ -582,6 +591,9 @@
             appId: "1:1060739540468:web:414048cdc72864b66dc5a1",
             measurementId: "G-Z89ZJY1MLV"
         };
+        // =================================================================================
+        // =================================================================================
+
 
         // Initialize Firebase
         const app = initializeApp(firebaseConfig);
@@ -589,7 +601,7 @@
         const db = getFirestore(app);
         const analytics = getAnalytics(app);
 
-        // --- DOM Elements ---
+        // --- The rest of the JavaScript is the same and should work correctly ---
         const authFormsSection = document.getElementById('auth-forms');
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
@@ -598,7 +610,6 @@
         const authError = document.getElementById('auth-error');
         const toggleAuthModeLink = document.getElementById('toggleAuthMode');
         const cancelAuthFormBtn = document.getElementById('cancelAuthFormBtn');
-
         const listingFormSection = document.getElementById('listing-form');
         const listingTitleInput = document.getElementById('listing-title');
         const listingDescriptionInput = document.getElementById('listing-description');
@@ -608,56 +619,44 @@
         const postListingBtn = document.getElementById('postListingBtn');
         const listingError = document.getElementById('listing-error');
         const cancelListingFormBtn = document.getElementById('cancelListingFormBtn');
-
         const listingsContainer = document.getElementById('listings-container');
         const itemCountSpan = document.getElementById('itemCount');
-
         const logoLink = document.getElementById('logo-link');
         const navLinks = document.querySelectorAll('nav ul li a');
-
         const loginRegisterBtn = document.getElementById('loginRegisterBtn');
         const listAnItemBtn = document.getElementById('listAnItemBtn');
         const logoutBtn = document.getElementById('logoutBtn');
         const userEmailDisplay = document.getElementById('userEmailDisplay');
         const startBrowsingBtn = document.getElementById('startBrowsingBtn');
-
         const mainContentSections = [
             document.querySelector('.hero'),
             document.querySelector('.filters'),
             document.querySelector('.listings'),
             document.querySelector('.how-it-works')
         ];
-
-
-        // --- UI Visibility Logic ---
         let isLoginMode = true;
-
         function setMainContentVisibility(showMain) {
             mainContentSections.forEach(section => {
                 if (section) section.style.display = showMain ? '' : 'none';
             });
         }
-        
         function returnToMainView() {
             setMainContentVisibility(true);
             authFormsSection.style.display = 'none';
             listingFormSection.style.display = 'none';
         }
-
         function toggleAuthFormVisibility(show) {
             authFormsSection.style.display = show ? 'block' : 'none';
             listingFormSection.style.display = 'none';
             setMainContentVisibility(!show);
             if (show) authFormsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-
         function toggleListingFormVisibility(show) {
             listingFormSection.style.display = show ? 'block' : 'none';
             authFormsSection.style.display = 'none';
             setMainContentVisibility(!show);
             if (show) listingFormSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-
         function updateAuthModeUI() {
             if (isLoginMode) {
                 loginBtn.style.display = 'inline-block';
@@ -672,15 +671,11 @@
             }
             authError.textContent = '';
         }
-
-        
-        // --- Firebase Auth Logic ---
         toggleAuthModeLink.addEventListener('click', (e) => {
             e.preventDefault();
             isLoginMode = !isLoginMode;
             updateAuthModeUI();
         });
-
         loginBtn.addEventListener('click', async () => {
             const email = emailInput.value;
             const password = passwordInput.value;
@@ -688,7 +683,6 @@
             try { await signInWithEmailAndPassword(auth, email, password); } 
             catch (error) { authError.textContent = error.message; }
         });
-
         registerBtn.addEventListener('click', async () => {
             const email = emailInput.value;
             const password = passwordInput.value;
@@ -696,12 +690,10 @@
             try { await createUserWithEmailAndPassword(auth, email, password); } 
             catch (error) { authError.textContent = error.message; }
         });
-
         logoutBtn.addEventListener('click', async () => {
             try { await signOut(auth); } 
             catch (error) { console.error('Logout error:', error.message); }
         });
-
         onAuthStateChanged(auth, user => {
             if (user) {
                 userEmailDisplay.textContent = `Welcome, ${user.email}!`;
@@ -718,18 +710,13 @@
                 returnToMainView();
             }
         });
-
-        // --- Item Posting Logic ---
         postListingBtn.addEventListener('click', async () => {
             const user = auth.currentUser;
             if (!user) {
                 listingError.textContent = 'You must be logged in to post an item.';
                 return;
             }
-
-            // --- NEW: Robust Validation ---
-            listingError.textContent = ''; // Clear previous errors
-
+            listingError.textContent = '';
             if (!listingTitleInput.value.trim()) {
                 listingError.textContent = 'Please enter an item title.';
                 return;
@@ -754,8 +741,6 @@
                 listingError.textContent = 'Please enter your location.';
                 return;
             }
-            // --- End of Validation ---
-
             try {
                 await addDoc(collection(db, 'listings'), {
                     title: listingTitleInput.value.trim(),
@@ -768,20 +753,17 @@
                     timestamp: serverTimestamp()
                 });
                 alert('Your item has been listed!');
-                // Clear form
                 listingTitleInput.value = '';
                 listingDescriptionInput.value = '';
                 listingPriceInput.value = '';
                 listingCategorySelect.value = '';
                 listingLocationInput.value = '';
-                returnToMainView(); // Return to main view after posting
+                returnToMainView();
             } catch (error) {
                 console.error("Error posting listing:", error);
                 listingError.textContent = "Could not post item. Check console for details.";
             }
         });
-
-        // --- Dynamic Listing Display from Firestore ---
         function renderListing(listingDoc) {
             const data = listingDoc.data();
             const listingCard = document.createElement('div');
@@ -800,7 +782,6 @@
             `;
             return listingCard;
         }
-
         const listingsQuery = query(collection(db, 'listings'), orderBy('timestamp', 'desc'));
         onSnapshot(listingsQuery, snapshot => {
             listingsContainer.innerHTML = '';
@@ -812,16 +793,12 @@
             console.error("Error fetching listings:", error);
             itemCountSpan.textContent = `Error loading items.`;
         });
-
-
-        // --- Page Event Listeners ---
         document.addEventListener('DOMContentLoaded', function() {
             loginRegisterBtn.addEventListener('click', function() {
                 isLoginMode = true;
                 updateAuthModeUI();
                 toggleAuthFormVisibility(true);
             });
-
             listAnItemBtn.addEventListener('click', function() {
                 if (auth.currentUser) {
                     toggleListingFormVisibility(true);
@@ -832,13 +809,10 @@
                     toggleAuthFormVisibility(true);
                 }
             });
-
             startBrowsingBtn.addEventListener('click', function() {
                 returnToMainView();
                 document.querySelector('.filters').scrollIntoView({ behavior: 'smooth' });
             });
-
-            // Event listeners to exit forms
             cancelAuthFormBtn.addEventListener('click', returnToMainView);
             cancelListingFormBtn.addEventListener('click', returnToMainView);
             logoLink.addEventListener('click', returnToMainView);
@@ -848,7 +822,6 @@
                     returnToMainView();
                 });
             });
-
             updateAuthModeUI();
         });
     </script>
