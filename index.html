@@ -230,7 +230,6 @@
             padding-top: 12px;
         }
         
-        /* ADDED: Styles for no listings message and form errors */
         .no-listings-message {
             grid-column: 1 / -1; /* Span all columns */
             text-align: center;
@@ -486,7 +485,6 @@
             <input type="text" id="listing-location" placeholder="Your Location (e.g., Brooklyn, NY)" required>
             <p id="location-error" class="form-field-error"></p>
             
-            <!-- ADDED: File input for image upload -->
             <label for="listing-image" style="font-weight: 500; margin-top: 10px; display: block;">Upload Image (Optional)</label>
             <input type="file" id="listing-image" accept="image/*" style="max-width: 350px; margin: 5px auto;">
             <p id="image-error" class="form-field-error"></p>
@@ -600,373 +598,350 @@
     <!-- Modular Firebase SDK Imports -->
     <script type="module">
         // =======================================================================
-        // =================== CORRECTED IMPORTS ARE BELOW =======================
+        // ================== NEW SECURE SCRIPT IS BELOW =========================
         // =======================================================================
-        // MODIFIED: Removed Firebase Storage imports
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-analytics.js";
 
-        
-        // =================================================================================
-        // ======================== IMPORTANT - PASTE YOUR CONFIG HERE =======================
-        // =================================================================================
-        const firebaseConfig = {
-            apiKey: "AIzaSyDYl9fSWCnkX5iqiesmCm6TTsFW4SRKOtE",
-            authDomain: "chaeplet.firebaseapp.com",
-            projectId: "chaeplet",
-            storageBucket: "chaeplet.appspot.com",
-            messagingSenderId: "1060739540468",
-            appId: "1:1060739540468:web:414048cdc72864b66dc5a1",
-            measurementId: "G-Z89ZJY1MLV"
-        };
-        // =================================================================================
-        // =================================================================================
+        // This is the main function that runs our entire application
+        async function main() {
+            // --- Step 1: Securely fetch configuration from our Netlify function ---
+            const response = await fetch('/.netlify/functions/config');
+            const config = await response.json();
 
-        // =================================================================================
-        // ===================== CLOUDINARY CONFIGURATION - ADD YOURS! =====================
-        // =================================================================================
-        const CLOUDINARY_CLOUD_NAME = "deih8iebq"; // <-- REPLACE with your Cloudinary Cloud Name
-        const CLOUDINARY_UPLOAD_PRESET = "Cheaplet"; // <-- REPLACE with your unsigned upload preset name
-        const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-        // =================================================================================
-        // =================================================================================
+            // --- Step 2: Use the fetched configuration ---
+            const firebaseConfig = config.firebaseConfig;
+            const CLOUDINARY_CLOUD_NAME = config.cloudinary.cloudName;
+            const CLOUDINARY_UPLOAD_PRESET = config.cloudinary.uploadPreset;
+            const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 
+            // --- Step 3: Initialize Firebase ---
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+            const analytics = getAnalytics(app);
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const analytics = getAnalytics(app);
+            // --- All of your original DOM selections and logic are below ---
+            // --- They are now safely inside this function ---
 
-        // --- DOM Element Selection ---
-        const authFormsSection = document.getElementById('auth-forms');
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
-        const passwordFeedback = document.getElementById('password-feedback');
-        const loginBtn = document.getElementById('loginBtn');
-        const registerBtn = document.getElementById('registerBtn');
-        const authError = document.getElementById('auth-error');
-        const toggleAuthModeLink = document.getElementById('toggleAuthMode');
-        const cancelAuthFormBtn = document.getElementById('cancelAuthFormBtn');
-        
-        const listingFormSection = document.getElementById('listing-form');
-        const listingTitleInput = document.getElementById('listing-title');
-        const listingDescriptionInput = document.getElementById('listing-description');
-        const listingPriceInput = document.getElementById('listing-price');
-        const listingCategorySelect = document.getElementById('listing-category');
-        const listingLocationInput = document.getElementById('listing-location');
-        const listingImageInput = document.getElementById('listing-image');
-        const postListingBtn = document.getElementById('postListingBtn');
-        
-        const listingsContainer = document.getElementById('listings-container');
-        const itemCountSpan = document.getElementById('itemCount');
-        const logoLink = document.getElementById('logo-link');
-        const navLinks = document.querySelectorAll('nav ul li a');
-        
-        const loginRegisterBtn = document.getElementById('loginRegisterBtn');
-        const listAnItemBtn = document.getElementById('listAnItemBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
-        const userEmailDisplay = document.getElementById('userEmailDisplay');
-        const startBrowsingBtn = document.getElementById('startBrowsingBtn');
-
-        const categoryFilter = document.getElementById('category-filter');
-        const sortFilter = document.getElementById('sort-filter');
-        const searchInput = document.getElementById('search-input');
-        
-        const mainContentSections = [
-            document.querySelector('.hero'),
-            document.querySelector('.filters'),
-            document.querySelector('.listings'),
-            document.querySelector('.how-it-works')
-        ];
-
-        let isLoginMode = true;
-
-        // --- UI Visibility Functions ---
-        function setMainContentVisibility(showMain) {
-            mainContentSections.forEach(section => {
-                if (section) section.style.display = showMain ? '' : 'none';
-            });
-        }
-        function returnToMainView() {
-            setMainContentVisibility(true);
-            authFormsSection.style.display = 'none';
-            listingFormSection.style.display = 'none';
-        }
-        function toggleAuthFormVisibility(show) {
-            authFormsSection.style.display = show ? 'block' : 'none';
-            listingFormSection.style.display = 'none';
-            setMainContentVisibility(!show);
-            if (show) authFormsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-        function toggleListingFormVisibility(show) {
-            listingFormSection.style.display = show ? 'block' : 'none';
-            authFormsSection.style.display = 'none';
-            setMainContentVisibility(!show);
-            if (show) listingFormSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-        function updateAuthModeUI() {
-            if (isLoginMode) {
-                loginBtn.style.display = 'inline-block';
-                registerBtn.style.display = 'none';
-                toggleAuthModeLink.textContent = 'New user? Register here.';
-                authFormsSection.querySelector('h2').textContent = 'Log In to Cheaplet';
-                passwordFeedback.style.display = 'none';
-            } else {
-                loginBtn.style.display = 'none';
-                registerBtn.style.display = 'inline-block';
-                toggleAuthModeLink.textContent = 'Already have an account? Log in.';
-                authFormsSection.querySelector('h2').textContent = 'Register for Cheaplet';
-                passwordFeedback.style.display = 'block';
-            }
-            authError.textContent = '';
-        }
-
-        // --- Authentication ---
-        toggleAuthModeLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            isLoginMode = !isLoginMode;
-            updateAuthModeUI();
-        });
-
-        passwordInput.addEventListener('input', () => {
-            if (isLoginMode) return;
-            const pass = passwordInput.value;
-            let strength = 'Weak';
-            let color = 'red';
-            if (pass.length >= 8 && /[A-Z]/.test(pass) && /[0-9]/.test(pass)) {
-                strength = 'Strong';
-                color = 'green';
-            } else if (pass.length >= 6) {
-                strength = 'Medium';
-                color = 'orange';
-            }
-            passwordFeedback.textContent = `Password Strength: ${strength}`;
-            passwordFeedback.style.color = color;
-        });
-
-        loginBtn.addEventListener('click', async () => {
-            const email = emailInput.value;
-            const password = passwordInput.value;
-            authError.textContent = '';
-            try { await signInWithEmailAndPassword(auth, email, password); } 
-            catch (error) { authError.textContent = error.message; }
-        });
-
-        registerBtn.addEventListener('click', async () => {
-            const email = emailInput.value;
-            const password = passwordInput.value;
-            authError.textContent = '';
-            if (password.length < 6) {
-                authError.textContent = "Password must be at least 6 characters long.";
-                return;
-            }
-            try { await createUserWithEmailAndPassword(auth, email, password); } 
-            catch (error) { authError.textContent = error.message; }
-        });
-
-        logoutBtn.addEventListener('click', async () => {
-            try { await signOut(auth); } 
-            catch (error) { console.error('Logout error:', error.message); }
-        });
-
-        onAuthStateChanged(auth, user => {
-            if (user) {
-                userEmailDisplay.textContent = `Welcome, ${user.email}!`;
-                userEmailDisplay.style.display = 'inline';
-                loginRegisterBtn.style.display = 'none';
-                logoutBtn.style.display = 'inline-block';
-                listAnItemBtn.style.display = 'inline-block';
-                returnToMainView();
-            } else {
-                userEmailDisplay.style.display = 'none';
-                loginRegisterBtn.style.display = 'inline-block';
-                logoutBtn.style.display = 'none';
-                listAnItemBtn.style.display = 'none';
-                if(listingFormSection.style.display === 'block'){
-                    returnToMainView();
-                }
-            }
-        });
-
-        // --- Listing Creation (MODIFIED FOR CLOUDINARY) ---
-        function validateListingForm() {
-            let isValid = true;
-            document.querySelectorAll('.form-field-error').forEach(el => el.textContent = '');
-
-            if (!listingTitleInput.value.trim()) {
-                document.getElementById('title-error').textContent = 'Please enter an item title.';
-                isValid = false;
-            }
-            if (!listingDescriptionInput.value.trim()) {
-                document.getElementById('description-error').textContent = 'Please enter a description.';
-                isValid = false;
-            }
-            if (!listingPriceInput.value) {
-                document.getElementById('price-error').textContent = 'Please enter a price.';
-                isValid = false;
-            } else if (parseFloat(listingPriceInput.value) > 49.99) {
-                document.getElementById('price-error').textContent = 'Price must be under $50.';
-                isValid = false;
-            }
-             if (!listingCategorySelect.value) {
-                document.getElementById('category-error').textContent = 'Please select a category.';
-                isValid = false;
-            }
-            if (!listingLocationInput.value.trim()) {
-                document.getElementById('location-error').textContent = 'Please enter your location.';
-                isValid = false;
-            }
-            if (listingImageInput.files[0] && listingImageInput.files[0].size > 5 * 1024 * 1024) { // 5MB limit
-                document.getElementById('image-error').textContent = 'Image file is too large (max 5MB).';
-                isValid = false;
-            }
-            return isValid;
-        }
-        
-        postListingBtn.addEventListener('click', async () => {
-            const user = auth.currentUser;
-            if (!user) {
-                alert('You must be logged in to post an item.');
-                return;
-            }
-            if (!validateListingForm()) return;
-
-            postListingBtn.disabled = true;
-            postListingBtn.textContent = 'Posting...';
-
-            let imageUrl = null;
-            try {
-                const imageFile = listingImageInput.files[0];
-                if (imageFile) {
-                    // Upload to Cloudinary
-                    const formData = new FormData();
-                    formData.append('file', imageFile);
-                    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-                    const response = await fetch(CLOUDINARY_UPLOAD_URL, {
-                        method: 'POST',
-                        body: formData,
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Image upload failed.');
-                    }
-                    const data = await response.json();
-                    imageUrl = data.secure_url;
-                }
-
-                // Save to Firestore
-                await addDoc(collection(db, 'listings'), {
-                    title: listingTitleInput.value.trim(),
-                    description: listingDescriptionInput.value.trim(),
-                    price: parseFloat(listingPriceInput.value),
-                    category: listingCategorySelect.value,
-                    location: listingLocationInput.value.trim(),
-                    imageUrl: imageUrl, // URL from Cloudinary
-                    posterUid: user.uid,
-                    posterEmail: user.email,
-                    timestamp: serverTimestamp()
-                });
-                
-                alert('Your item has been listed!');
-                listingTitleInput.value = '';
-                listingDescriptionInput.value = '';
-                listingPriceInput.value = '';
-                listingCategorySelect.value = '';
-                listingLocationInput.value = '';
-                listingImageInput.value = '';
-                returnToMainView();
-
-            } catch (error) {
-                console.error("Error posting listing:", error);
-                document.getElementById('image-error').textContent = "Could not post item. " + error.message;
-            } finally {
-                postListingBtn.disabled = false;
-                postListingBtn.textContent = 'Post Item';
-            }
-        });
-
-
-        // --- Fetching and Rendering Listings ---
-        function renderListing(listingDoc) {
-            const data = listingDoc.data();
-            const listingCard = document.createElement('div');
-            listingCard.className = 'listing-card';
+            const authFormsSection = document.getElementById('auth-forms');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const passwordFeedback = document.getElementById('password-feedback');
+            const loginBtn = document.getElementById('loginBtn');
+            const registerBtn = document.getElementById('registerBtn');
+            const authError = document.getElementById('auth-error');
+            const toggleAuthModeLink = document.getElementById('toggleAuthMode');
+            const cancelAuthFormBtn = document.getElementById('cancelAuthFormBtn');
             
-            const imageStyle = data.imageUrl ? `background-image: url('${data.imageUrl}')` : '';
-            const imageContent = data.imageUrl ? '' : 'No Image';
-
-            listingCard.innerHTML = `
-                <div class="listing-image" style="${imageStyle}">${imageContent}</div>
-                <div class="listing-details">
-                    <div class="listing-price">$${data.price ? data.price.toFixed(2) : '0.00'}</div>
-                    <h3 class="listing-title">${data.title}</h3>
-                    <div class="listing-location">${data.location}</div>
-                    <div class="listing-meta">
-                        <span>${data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : 'Just now'}</span>
-                        <span>${data.category}</span>
-                    </div>
-                </div>
-            `;
-            return listingCard;
-        }
-        
-        let unsubscribe;
-
-        function fetchAndRenderListings() {
-            if (unsubscribe) {
-                unsubscribe();
-            }
-
-            let q = collection(db, 'listings');
-            const constraints = [];
-
-            const category = categoryFilter.value;
-            if (category !== 'all') {
-                constraints.push(where('category', '==', category));
-            }
-
-            const sortBy = sortFilter.value;
-            if (sortBy === 'price-low') {
-                constraints.push(orderBy('price', 'asc'));
-            } else if (sortBy === 'price-high') {
-                constraints.push(orderBy('price', 'desc'));
-            } else {
-                constraints.push(orderBy('timestamp', 'desc'));
-            }
+            const listingFormSection = document.getElementById('listing-form');
+            const listingTitleInput = document.getElementById('listing-title');
+            const listingDescriptionInput = document.getElementById('listing-description');
+            const listingPriceInput = document.getElementById('listing-price');
+            const listingCategorySelect = document.getElementById('listing-category');
+            const listingLocationInput = document.getElementById('listing-location');
+            const listingImageInput = document.getElementById('listing-image');
+            const postListingBtn = document.getElementById('postListingBtn');
             
-            const finalQuery = query(q, ...constraints);
+            const listingsContainer = document.getElementById('listings-container');
+            const itemCountSpan = document.getElementById('itemCount');
+            const logoLink = document.getElementById('logo-link');
+            const navLinks = document.querySelectorAll('nav ul li a');
+            
+            const loginRegisterBtn = document.getElementById('loginRegisterBtn');
+            const listAnItemBtn = document.getElementById('listAnItemBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const userEmailDisplay = document.getElementById('userEmailDisplay');
+            const startBrowsingBtn = document.getElementById('startBrowsingBtn');
 
-            unsubscribe = onSnapshot(finalQuery, snapshot => {
-                listingsContainer.innerHTML = '';
-                const searchTerm = searchInput.value.toLowerCase();
-                
-                const filteredDocs = snapshot.docs.filter(doc => {
-                    return doc.data().title.toLowerCase().includes(searchTerm);
+            const categoryFilter = document.getElementById('category-filter');
+            const sortFilter = document.getElementById('sort-filter');
+            const searchInput = document.getElementById('search-input');
+            
+            const mainContentSections = [
+                document.querySelector('.hero'),
+                document.querySelector('.filters'),
+                document.querySelector('.listings'),
+                document.querySelector('.how-it-works')
+            ];
+
+            let isLoginMode = true;
+
+            function setMainContentVisibility(showMain) {
+                mainContentSections.forEach(section => {
+                    if (section) section.style.display = showMain ? '' : 'none';
                 });
-
-                itemCountSpan.textContent = `${filteredDocs.length} items found`;
-
-                if (filteredDocs.length === 0) {
-                    listingsContainer.innerHTML = `<div class="no-listings-message"><h3>No items found.</h3><p>Try adjusting your search or filters.</p></div>`;
+            }
+            function returnToMainView() {
+                setMainContentVisibility(true);
+                authFormsSection.style.display = 'none';
+                listingFormSection.style.display = 'none';
+            }
+            function toggleAuthFormVisibility(show) {
+                authFormsSection.style.display = show ? 'block' : 'none';
+                listingFormSection.style.display = 'none';
+                setMainContentVisibility(!show);
+                if (show) authFormsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            function toggleListingFormVisibility(show) {
+                listingFormSection.style.display = show ? 'block' : 'none';
+                authFormsSection.style.display = 'none';
+                setMainContentVisibility(!show);
+                if (show) listingFormSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            function updateAuthModeUI() {
+                if (isLoginMode) {
+                    loginBtn.style.display = 'inline-block';
+                    registerBtn.style.display = 'none';
+                    toggleAuthModeLink.textContent = 'New user? Register here.';
+                    authFormsSection.querySelector('h2').textContent = 'Log In to Cheaplet';
+                    passwordFeedback.style.display = 'none';
                 } else {
-                    filteredDocs.forEach(doc => {
-                        listingsContainer.appendChild(renderListing(doc));
-                    });
+                    loginBtn.style.display = 'none';
+                    registerBtn.style.display = 'inline-block';
+                    toggleAuthModeLink.textContent = 'Already have an account? Log in.';
+                    authFormsSection.querySelector('h2').textContent = 'Register for Cheaplet';
+                    passwordFeedback.style.display = 'block';
                 }
-            }, error => {
-                console.error("Error fetching listings:", error);
-                itemCountSpan.textContent = `Error loading items.`;
-                listingsContainer.innerHTML = `<div class="no-listings-message"><h3>Could not load items.</h3><p>Please check your connection or try again later.</p></div>`;
+                authError.textContent = '';
+            }
+
+            toggleAuthModeLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                isLoginMode = !isLoginMode;
+                updateAuthModeUI();
             });
-        }
 
+            passwordInput.addEventListener('input', () => {
+                if (isLoginMode) return;
+                const pass = passwordInput.value;
+                let strength = 'Weak';
+                let color = 'red';
+                if (pass.length >= 8 && /[A-Z]/.test(pass) && /[0-9]/.test(pass)) {
+                    strength = 'Strong';
+                    color = 'green';
+                } else if (pass.length >= 6) {
+                    strength = 'Medium';
+                    color = 'orange';
+                }
+                passwordFeedback.textContent = `Password Strength: ${strength}`;
+                passwordFeedback.style.color = color;
+            });
 
-        // --- Event Listeners ---
-        document.addEventListener('DOMContentLoaded', function() {
+            loginBtn.addEventListener('click', async () => {
+                const email = emailInput.value;
+                const password = passwordInput.value;
+                authError.textContent = '';
+                try { await signInWithEmailAndPassword(auth, email, password); } 
+                catch (error) { authError.textContent = error.message; }
+            });
+
+            registerBtn.addEventListener('click', async () => {
+                const email = emailInput.value;
+                const password = passwordInput.value;
+                authError.textContent = '';
+                if (password.length < 6) {
+                    authError.textContent = "Password must be at least 6 characters long.";
+                    return;
+                }
+                try { await createUserWithEmailAndPassword(auth, email, password); } 
+                catch (error) { authError.textContent = error.message; }
+            });
+
+            logoutBtn.addEventListener('click', async () => {
+                try { await signOut(auth); } 
+                catch (error) { console.error('Logout error:', error.message); }
+            });
+
+            onAuthStateChanged(auth, user => {
+                if (user) {
+                    userEmailDisplay.textContent = `Welcome, ${user.email}!`;
+                    userEmailDisplay.style.display = 'inline';
+                    loginRegisterBtn.style.display = 'none';
+                    logoutBtn.style.display = 'inline-block';
+                    listAnItemBtn.style.display = 'inline-block';
+                    returnToMainView();
+                } else {
+                    userEmailDisplay.style.display = 'none';
+                    loginRegisterBtn.style.display = 'inline-block';
+                    logoutBtn.style.display = 'none';
+                    listAnItemBtn.style.display = 'none';
+                    if(listingFormSection.style.display === 'block'){
+                        returnToMainView();
+                    }
+                }
+            });
+
+            function validateListingForm() {
+                let isValid = true;
+                document.querySelectorAll('.form-field-error').forEach(el => el.textContent = '');
+
+                if (!listingTitleInput.value.trim()) {
+                    document.getElementById('title-error').textContent = 'Please enter an item title.';
+                    isValid = false;
+                }
+                if (!listingDescriptionInput.value.trim()) {
+                    document.getElementById('description-error').textContent = 'Please enter a description.';
+                    isValid = false;
+                }
+                if (!listingPriceInput.value) {
+                    document.getElementById('price-error').textContent = 'Please enter a price.';
+                    isValid = false;
+                } else if (parseFloat(listingPriceInput.value) > 49.99) {
+                    document.getElementById('price-error').textContent = 'Price must be under $50.';
+                    isValid = false;
+                }
+                 if (!listingCategorySelect.value) {
+                    document.getElementById('category-error').textContent = 'Please select a category.';
+                    isValid = false;
+                }
+                if (!listingLocationInput.value.trim()) {
+                    document.getElementById('location-error').textContent = 'Please enter your location.';
+                    isValid = false;
+                }
+                if (listingImageInput.files[0] && listingImageInput.files[0].size > 5 * 1024 * 1024) { // 5MB limit
+                    document.getElementById('image-error').textContent = 'Image file is too large (max 5MB).';
+                    isValid = false;
+                }
+                return isValid;
+            }
+            
+            postListingBtn.addEventListener('click', async () => {
+                const user = auth.currentUser;
+                if (!user) {
+                    alert('You must be logged in to post an item.');
+                    return;
+                }
+                if (!validateListingForm()) return;
+
+                postListingBtn.disabled = true;
+                postListingBtn.textContent = 'Posting...';
+
+                let imageUrl = null;
+                try {
+                    const imageFile = listingImageInput.files[0];
+                    if (imageFile) {
+                        const formData = new FormData();
+                        formData.append('file', imageFile);
+                        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+                        const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+                            method: 'POST',
+                            body: formData,
+                        });
+
+                        if (!response.ok) {
+                            throw new Error('Image upload failed.');
+                        }
+                        const data = await response.json();
+                        imageUrl = data.secure_url;
+                    }
+
+                    await addDoc(collection(db, 'listings'), {
+                        title: listingTitleInput.value.trim(),
+                        description: listingDescriptionInput.value.trim(),
+                        price: parseFloat(listingPriceInput.value),
+                        category: listingCategorySelect.value,
+                        location: listingLocationInput.value.trim(),
+                        imageUrl: imageUrl,
+                        posterUid: user.uid,
+                        posterEmail: user.email,
+                        timestamp: serverTimestamp()
+                    });
+                    
+                    alert('Your item has been listed!');
+                    listingTitleInput.value = '';
+                    listingDescriptionInput.value = '';
+                    listingPriceInput.value = '';
+                    listingCategorySelect.value = '';
+                    listingLocationInput.value = '';
+                    listingImageInput.value = '';
+                    returnToMainView();
+
+                } catch (error) {
+                    console.error("Error posting listing:", error);
+                    document.getElementById('image-error').textContent = "Could not post item. " + error.message;
+                } finally {
+                    postListingBtn.disabled = false;
+                    postListingBtn.textContent = 'Post Item';
+                }
+            });
+
+            function renderListing(listingDoc) {
+                const data = listingDoc.data();
+                const listingCard = document.createElement('div');
+                listingCard.className = 'listing-card';
+                
+                const imageStyle = data.imageUrl ? `background-image: url('${data.imageUrl}')` : '';
+                const imageContent = data.imageUrl ? '' : 'No Image';
+
+                listingCard.innerHTML = `
+                    <div class="listing-image" style="${imageStyle}">${imageContent}</div>
+                    <div class="listing-details">
+                        <div class="listing-price">$${data.price ? data.price.toFixed(2) : '0.00'}</div>
+                        <h3 class="listing-title">${data.title}</h3>
+                        <div class="listing-location">${data.location}</div>
+                        <div class="listing-meta">
+                            <span>${data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : 'Just now'}</span>
+                            <span>${data.category}</span>
+                        </div>
+                    </div>
+                `;
+                return listingCard;
+            }
+            
+            let unsubscribe;
+
+            function fetchAndRenderListings() {
+                if (unsubscribe) {
+                    unsubscribe();
+                }
+
+                let q = collection(db, 'listings');
+                const constraints = [];
+
+                const category = categoryFilter.value;
+                if (category !== 'all') {
+                    constraints.push(where('category', '==', category));
+                }
+
+                const sortBy = sortFilter.value;
+                if (sortBy === 'price-low') {
+                    constraints.push(orderBy('price', 'asc'));
+                } else if (sortBy === 'price-high') {
+                    constraints.push(orderBy('price', 'desc'));
+                } else {
+                    constraints.push(orderBy('timestamp', 'desc'));
+                }
+                
+                const finalQuery = query(q, ...constraints);
+
+                unsubscribe = onSnapshot(finalQuery, snapshot => {
+                    listingsContainer.innerHTML = '';
+                    const searchTerm = searchInput.value.toLowerCase();
+                    
+                    const filteredDocs = snapshot.docs.filter(doc => {
+                        return doc.data().title.toLowerCase().includes(searchTerm);
+                    });
+
+                    itemCountSpan.textContent = `${filteredDocs.length} items found`;
+
+                    if (filteredDocs.length === 0) {
+                        listingsContainer.innerHTML = `<div class="no-listings-message"><h3>No items found.</h3><p>Try adjusting your search or filters.</p></div>`;
+                    } else {
+                        filteredDocs.forEach(doc => {
+                            listingsContainer.appendChild(renderListing(doc));
+                        });
+                    }
+                }, error => {
+                    console.error("Error fetching listings:", error);
+                    itemCountSpan.textContent = `Error loading items.`;
+                    listingsContainer.innerHTML = `<div class="no-listings-message"><h3>Could not load items.</h3><p>Please check your connection or try again later.</p></div>`;
+                });
+            }
+
             loginRegisterBtn.addEventListener('click', function() {
                 isLoginMode = true;
                 updateAuthModeUI();
@@ -1002,7 +977,10 @@
 
             updateAuthModeUI();
             fetchAndRenderListings();
-        });
+        }
+
+        // --- Start the application ---
+        main();
     </script>
 </body>
 </html>
