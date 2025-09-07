@@ -404,24 +404,20 @@
             background-color: #d32f2f;
         }
 
-        /* =================================== */
-        /* === STYLES FOR PROMINENT SEARCH === */
-        /* =================================== */
+        /* Styles for prominent search */
         .search-group {
-            flex-grow: 1; /* Allows the search bar group to take up available space */
+            flex-grow: 1; 
         }
-
         #search-input {
-            padding: 12px 15px; /* Makes the search bar taller */
-            font-size: 1rem;   /* Makes the text inside bigger */
+            padding: 12px 15px;
+            font-size: 1rem;
             border: 2px solid #ddd;
             transition: border-color 0.3s, box-shadow 0.3s;
         }
-
         #search-input:focus {
-            border-color: #4CAF50; /* Highlights with your site's main green color */
-            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2); /* Adds a subtle glow */
-            outline: none; /* Removes the default browser outline */
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+            outline: none;
         }
     </style>
 </head>
@@ -476,16 +472,12 @@
 
         <section id="listing-form" class="firebase-form-section" style="display: none;">
             <h2>List a New Item (Under $50)</h2>
-
             <input type="text" id="listing-title" placeholder="Item Title (e.g., Vintage Coffee Table)" required>
             <p id="title-error" class="form-field-error"></p>
-
             <textarea id="listing-description" placeholder="Description of your item..." required></textarea>
             <p id="description-error" class="form-field-error"></p>
-
             <input type="number" id="listing-price" placeholder="Price (e.g., 15.00)" min="0" max="49.99" step="0.01" required>
             <p id="price-error" class="form-field-error"></p>
-
             <select id="listing-category" required>
                 <option value="">Select Category</option>
                 <option value="furniture">Furniture</option>
@@ -496,14 +488,11 @@
                 <option value="other">Other</option>
             </select>
             <p id="category-error" class="form-field-error"></p>
-
             <input type="text" id="listing-location" placeholder="Your Location (e.g., Brooklyn, NY)" required>
             <p id="location-error" class="form-field-error"></p>
-            
             <label for="listing-image" style="font-weight: 500; margin-top: 10px; display: block;">Upload Image (Optional)</label>
             <input type="file" id="listing-image" accept="image/*" style="max-width: 350px; margin: 5px auto;">
             <p id="image-error" class="form-field-error"></p>
-
             <div class="form-buttons">
                 <button class="btn" id="postListingBtn">Post Item</button>
                 <button class="btn btn-secondary" id="cancelListingFormBtn">Cancel</button>
@@ -607,35 +596,41 @@
 
 
     <script type="module">
-        // =======================================================================
-        // ================== NEW SECURE SCRIPT IS BELOW =========================
-        // =======================================================================
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-analytics.js";
 
-        // This is the main function that runs our entire application
         async function main() {
-            // --- Step 1: Securely fetch configuration from our Netlify function ---
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
 
-            // --- Step 2: Use the fetched configuration ---
             const firebaseConfig = config.firebaseConfig;
             const CLOUDINARY_CLOUD_NAME = config.cloudinary.cloudName;
             const CLOUDINARY_UPLOAD_PRESET = config.cloudinary.uploadPreset;
             const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 
-            // --- Step 3: Initialize Firebase ---
             const app = initializeApp(firebaseConfig);
             const auth = getAuth(app);
             const db = getFirestore(app);
             const analytics = getAnalytics(app);
 
-            // --- All of your original DOM selections and logic are below ---
-            // --- They are now safely inside this function ---
+            // --- THIS SCRIPT IS NOW FOR THE HOMEPAGE ONLY ---
+            const searchInput = document.getElementById('search-input');
+            
+            // --- THIS IS THE NEW PART FOR THE HOMEPAGE ---
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const searchTerm = searchInput.value.trim();
+                    if (searchTerm) {
+                        // Redirect to the search page with the query
+                        window.location.href = `/search.html?q=${encodeURIComponent(searchTerm)}`;
+                    }
+                }
+            });
+            // --- END OF NEW PART ---
 
+            // The rest of your original JS code for the homepage remains
             const authFormsSection = document.getElementById('auth-forms');
             const emailInput = document.getElementById('email');
             const passwordInput = document.getElementById('password');
@@ -668,7 +663,6 @@
 
             const categoryFilter = document.getElementById('category-filter');
             const sortFilter = document.getElementById('sort-filter');
-            const searchInput = document.getElementById('search-input');
             
             const mainContentSections = [
                 document.querySelector('.hero'),
@@ -930,25 +924,22 @@
 
                 unsubscribe = onSnapshot(finalQuery, snapshot => {
                     listingsContainer.innerHTML = '';
-                    const searchTerm = searchInput.value.toLowerCase();
-                    
-                    const filteredDocs = snapshot.docs.filter(doc => {
-                        return doc.data().title.toLowerCase().includes(searchTerm);
-                    });
+                    // Homepage search bar does not filter, it only redirects.
+                    // So we remove the text filtering part here.
+                    const docs = snapshot.docs;
 
-                    itemCountSpan.textContent = `${filteredDocs.length} items found`;
+                    itemCountSpan.textContent = `${docs.length} items found`;
 
-                    if (filteredDocs.length === 0) {
+                    if (docs.length === 0) {
                         listingsContainer.innerHTML = `<div class="no-listings-message"><h3>No items found.</h3><p>Try adjusting your search or filters.</p></div>`;
                     } else {
-                        filteredDocs.forEach(doc => {
+                        docs.forEach(doc => {
                             listingsContainer.appendChild(renderListing(doc));
                         });
                     }
                 }, error => {
                     console.error("Error fetching listings:", error);
                     itemCountSpan.textContent = `Error loading items.`;
-                    listingsContainer.innerHTML = `<div class="no-listings-message"><h3>Could not load items.</h3><p>Please check your connection or try again later.</p></div>`;
                 });
             }
 
@@ -983,13 +974,11 @@
 
             categoryFilter.addEventListener('change', fetchAndRenderListings);
             sortFilter.addEventListener('change', fetchAndRenderListings);
-            searchInput.addEventListener('input', fetchAndRenderListings);
+            // We do NOT need the searchInput listener here anymore, as it only redirects.
 
             updateAuthModeUI();
             fetchAndRenderListings();
         }
-
-        // --- Start the application ---
         main();
     </script>
 </body>
