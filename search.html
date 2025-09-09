@@ -447,6 +447,12 @@
         <section id="auth-forms" class="firebase-form-section" style="display: none;">
             <h2>Join Cheaplet</h2>
             <p>Please log in or register to continue.</p>
+            
+            <div id="register-name-fields" style="display: none;">
+                <input type="text" id="firstName" placeholder="First Name" required>
+                <input type="text" id="lastName" placeholder="Last Name" required>
+            </div>
+
             <input type="email" id="email" placeholder="Email" required>
             <input type="password" id="password" placeholder="Password (min. 6 characters)" required>
             <p id="password-feedback"></p>
@@ -566,7 +572,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-analytics.js";
 
@@ -583,25 +589,20 @@
             const db = getFirestore(app);
             const analytics = getAnalytics(app);
 
-            // --- START: FULL SCRIPT LOGIC FOR SEARCH PAGE ---
+            // --- ALL SCRIPT LOGIC FOR SEARCH PAGE ---
             
             const searchInput = document.getElementById('search-input');
-            const listingsContainer = document.getElementById('listings-container');
-            const itemCountSpan = document.getElementById('itemCount');
-            const categoryFilter = document.getElementById('category-filter');
-            const sortFilter = document.getElementById('sort-filter');
-            const logoLink = document.getElementById('logo-link');
-
             logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
-            
             function getQueryFromURL() {
                 const params = new URLSearchParams(window.location.search);
                 return params.get('q') || '';
             }
-
             searchInput.value = getQueryFromURL();
-
+            
             const authFormsSection = document.getElementById('auth-forms');
+            const registerNameFields = document.getElementById('register-name-fields');
+            const firstNameInput = document.getElementById('firstName');
+            const lastNameInput = document.getElementById('lastName');
             const emailInput = document.getElementById('email');
             const passwordInput = document.getElementById('password');
             const passwordFeedback = document.getElementById('password-feedback');
@@ -612,87 +613,64 @@
             const cancelAuthFormBtn = document.getElementById('cancelAuthFormBtn');
             
             const listingFormSection = document.getElementById('listing-form');
-            const listingTitleInput = document.getElementById('listing-title');
-            const listingDescriptionInput = document.getElementById('listing-description');
-            const listingPriceInput = document.getElementById('listing-price');
-            const listingCategorySelect = document.getElementById('listing-category');
-            const listingLocationInput = document.getElementById('listing-location');
-            const listingImageInput = document.getElementById('listing-image');
-            const postListingBtn = document.getElementById('postListingBtn');
-            
-            const loginRegisterBtn = document.getElementById('loginRegisterBtn');
             const listAnItemBtn = document.getElementById('listAnItemBtn');
+            const loginRegisterBtn = document.getElementById('loginRegisterBtn');
             const logoutBtn = document.getElementById('logoutBtn');
             const userEmailDisplay = document.getElementById('userEmailDisplay');
-            
-            const mainContentSections = [
-                document.querySelector('.filters'),
-                document.querySelector('.listings')
-            ];
-
+            const listingsContainer = document.getElementById('listings-container');
+            const itemCountSpan = document.getElementById('itemCount');
+            const categoryFilter = document.getElementById('category-filter');
+            const sortFilter = document.getElementById('sort-filter');
+            const logoLink = document.getElementById('logo-link');
+            const mainContentSections = [ document.querySelector('.filters'), document.querySelector('.listings') ];
             let isLoginMode = true;
 
             function setMainContentVisibility(showMain) {
-                mainContentSections.forEach(section => {
-                    if (section) section.style.display = showMain ? '' : 'none';
-                });
+                mainContentSections.forEach(section => { if (section) section.style.display = showMain ? '' : 'none'; });
             }
-
             function returnToMainView() {
                 setMainContentVisibility(true);
                 authFormsSection.style.display = 'none';
                 listingFormSection.style.display = 'none';
             }
-
             function toggleAuthFormVisibility(show) {
                 authFormsSection.style.display = show ? 'block' : 'none';
                 listingFormSection.style.display = 'none';
                 setMainContentVisibility(!show);
                 if (show) authFormsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-
             function toggleListingFormVisibility(show) {
                 listingFormSection.style.display = show ? 'block' : 'none';
                 authFormsSection.style.display = 'none';
                 setMainContentVisibility(!show);
                 if (show) listingFormSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-
             function updateAuthModeUI() {
                 if (isLoginMode) {
-                    loginBtn.style.display = 'inline-block';
-                    registerBtn.style.display = 'none';
-                    toggleAuthModeLink.textContent = 'New user? Register here.';
-                    authFormsSection.querySelector('h2').textContent = 'Log In to Cheaplet';
-                    passwordFeedback.style.display = 'none';
+                    loginBtn.style.display = 'inline-block'; registerBtn.style.display = 'none';
+                    registerNameFields.style.display = 'none'; toggleAuthModeLink.textContent = 'New user? Register here.';
+                    authFormsSection.querySelector('h2').textContent = 'Log In to Cheaplet'; passwordFeedback.style.display = 'none';
                 } else {
-                    loginBtn.style.display = 'none';
-                    registerBtn.style.display = 'inline-block';
-                    toggleAuthModeLink.textContent = 'Already have an account? Log in.';
-                    authFormsSection.querySelector('h2').textContent = 'Register for Cheaplet';
-                    passwordFeedback.style.display = 'block';
+                    loginBtn.style.display = 'none'; registerBtn.style.display = 'inline-block';
+                    registerNameFields.style.display = 'block'; toggleAuthModeLink.textContent = 'Already have an account? Log in.';
+                    authFormsSection.querySelector('h2').textContent = 'Register for Cheaplet'; passwordFeedback.style.display = 'block';
                 }
                 authError.textContent = '';
             }
 
             onAuthStateChanged(auth, user => {
                 if (user) {
-                    userEmailDisplay.textContent = `Welcome, ${user.email}!`;
-                    userEmailDisplay.style.display = 'block';
-                    loginRegisterBtn.style.display = 'none';
-                    logoutBtn.style.display = 'inline-block';
-                    listAnItemBtn.style.display = 'inline-block';
+                    const welcomeMessage = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
+                    userEmailDisplay.textContent = welcomeMessage;
+                    userEmailDisplay.style.display = 'block'; loginRegisterBtn.style.display = 'none';
+                    logoutBtn.style.display = 'inline-block'; listAnItemBtn.style.display = 'inline-block';
                     if (authFormsSection.style.display === 'block' || listingFormSection.style.display === 'block') {
                         returnToMainView();
                     }
                 } else {
-                    userEmailDisplay.style.display = 'none';
-                    loginRegisterBtn.style.display = 'inline-block';
-                    logoutBtn.style.display = 'none';
-                    listAnItemBtn.style.display = 'none';
-                    if(listingFormSection.style.display === 'block'){
-                        returnToMainView();
-                    }
+                    userEmailDisplay.style.display = 'none'; loginRegisterBtn.style.display = 'inline-block';
+                    logoutBtn.style.display = 'none'; listAnItemBtn.style.display = 'none';
+                    if(listingFormSection.style.display === 'block'){ returnToMainView(); }
                 }
             });
 
@@ -700,10 +678,8 @@
                 const data = listingDoc.data();
                 const listingCard = document.createElement('div');
                 listingCard.className = 'listing-card';
-                
                 const imageStyle = data.imageUrl ? `background-image: url('${data.imageUrl}')` : '';
                 const imageContent = data.imageUrl ? '' : 'No Image';
-
                 listingCard.innerHTML = `
                     <div class="listing-image" style="${imageStyle}">${imageContent}</div>
                     <div class="listing-details">
@@ -714,8 +690,7 @@
                             <span>${data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : ''}</span>
                             <span>${data.category}</span>
                         </div>
-                    </div>
-                `;
+                    </div>`;
                 return listingCard;
             }
             
@@ -731,17 +706,11 @@
                 else if (sortBy === 'price-high') constraints.push(orderBy('price', 'desc'));
                 else constraints.push(orderBy('timestamp', 'desc'));
                 const finalQuery = query(q, ...constraints);
-
                 unsubscribe = onSnapshot(finalQuery, snapshot => {
                     listingsContainer.innerHTML = '';
                     const searchTerm = searchInput.value.toLowerCase();
-                    const filteredDocs = snapshot.docs.filter(doc => {
-                        const title = doc.data().title || '';
-                        return title.toLowerCase().includes(searchTerm);
-                    });
-
+                    const filteredDocs = snapshot.docs.filter(doc => (doc.data().title || '').toLowerCase().includes(searchTerm));
                     itemCountSpan.textContent = `${filteredDocs.length} items found`;
-
                     if (filteredDocs.length === 0) {
                         const safeSearchTerm = searchTerm.replace(/</g, "&lt;").replace(/>/g, "&gt;");
                         listingsContainer.innerHTML = `<div class="no-listings-message"><h3>No items found for "${safeSearchTerm}".</h3><p>Try a different search or adjust filters.</p></div>`;
@@ -754,7 +723,6 @@
                 });
             }
             
-            // Add all form event listeners
             loginRegisterBtn.addEventListener('click', () => { isLoginMode = true; updateAuthModeUI(); toggleAuthFormVisibility(true); });
             listAnItemBtn.addEventListener('click', () => {
                 if (auth.currentUser) toggleListingFormVisibility(true);
@@ -764,23 +732,24 @@
             cancelListingFormBtn.addEventListener('click', returnToMainView);
             toggleAuthModeLink.addEventListener('click', (e) => { e.preventDefault(); isLoginMode = !isLoginMode; updateAuthModeUI(); });
             loginBtn.addEventListener('click', () => signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(err => authError.textContent = err.message));
-            registerBtn.addEventListener('click', () => {
+            registerBtn.addEventListener('click', async () => {
+                const firstName = firstNameInput.value.trim();
+                const lastName = lastNameInput.value.trim();
+                if (!firstName || !lastName) { authError.textContent = "Please enter your first and last name."; return; }
                 if (passwordInput.value.length < 6) { authError.textContent = "Password too short."; return; }
-                createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(err => authError.textContent = err.message);
+                try {
+                    const userCredential = await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+                    await updateProfile(userCredential.user, { displayName: `${firstName} ${lastName}` });
+                } catch(err) { authError.textContent = err.message; }
             });
             logoutBtn.addEventListener('click', () => signOut(auth));
-
-
             searchInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
-                    const searchTerm = searchInput.value.trim();
-                    window.location.href = `/search.html?q=${encodeURIComponent(searchTerm)}`;
+                    window.location.href = `/search.html?q=${encodeURIComponent(searchInput.value.trim())}`;
                 }
             });
-
             categoryFilter.addEventListener('change', fetchAndRenderListings);
             sortFilter.addEventListener('change', fetchAndRenderListings);
-            
             updateAuthModeUI();
             fetchAndRenderListings();
         }
