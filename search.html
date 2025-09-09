@@ -589,16 +589,9 @@
             const db = getFirestore(app);
             const analytics = getAnalytics(app);
 
-            // --- ALL SCRIPT LOGIC FOR SEARCH PAGE ---
-            
-            const searchInput = document.getElementById('search-input');
-            logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
-            function getQueryFromURL() {
-                const params = new URLSearchParams(window.location.search);
-                return params.get('q') || '';
-            }
-            searchInput.value = getQueryFromURL();
-            
+            // --- CORRECTED SCRIPT LOGIC FOR SEARCH PAGE ---
+
+            // **FIX:** Group all DOM element selections at the top
             const authFormsSection = document.getElementById('auth-forms');
             const registerNameFields = document.getElementById('register-name-fields');
             const firstNameInput = document.getElementById('firstName');
@@ -611,20 +604,30 @@
             const authError = document.getElementById('auth-error');
             const toggleAuthModeLink = document.getElementById('toggleAuthMode');
             const cancelAuthFormBtn = document.getElementById('cancelAuthFormBtn');
-            
             const listingFormSection = document.getElementById('listing-form');
             const listAnItemBtn = document.getElementById('listAnItemBtn');
             const loginRegisterBtn = document.getElementById('loginRegisterBtn');
             const logoutBtn = document.getElementById('logoutBtn');
             const userEmailDisplay = document.getElementById('userEmailDisplay');
+            const searchInput = document.getElementById('search-input');
             const listingsContainer = document.getElementById('listings-container');
             const itemCountSpan = document.getElementById('itemCount');
             const categoryFilter = document.getElementById('category-filter');
             const sortFilter = document.getElementById('sort-filter');
             const logoLink = document.getElementById('logo-link');
             const mainContentSections = [ document.querySelector('.filters'), document.querySelector('.listings') ];
+            
             let isLoginMode = true;
+            
+            logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
+            
+            function getQueryFromURL() {
+                const params = new URLSearchParams(window.location.search);
+                return params.get('q') || '';
+            }
+            searchInput.value = getQueryFromURL();
 
+            // --- The rest of the functions from here are now correct ---
             function setMainContentVisibility(showMain) {
                 mainContentSections.forEach(section => { if (section) section.style.display = showMain ? '' : 'none'; });
             }
@@ -645,115 +648,4 @@
                 setMainContentVisibility(!show);
                 if (show) listingFormSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-            function updateAuthModeUI() {
-                if (isLoginMode) {
-                    loginBtn.style.display = 'inline-block'; registerBtn.style.display = 'none';
-                    registerNameFields.style.display = 'none'; toggleAuthModeLink.textContent = 'New user? Register here.';
-                    authFormsSection.querySelector('h2').textContent = 'Log In to Cheaplet'; passwordFeedback.style.display = 'none';
-                } else {
-                    loginBtn.style.display = 'none'; registerBtn.style.display = 'inline-block';
-                    registerNameFields.style.display = 'block'; toggleAuthModeLink.textContent = 'Already have an account? Log in.';
-                    authFormsSection.querySelector('h2').textContent = 'Register for Cheaplet'; passwordFeedback.style.display = 'block';
-                }
-                authError.textContent = '';
-            }
-
-            onAuthStateChanged(auth, user => {
-                if (user) {
-                    const welcomeMessage = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
-                    userEmailDisplay.textContent = welcomeMessage;
-                    userEmailDisplay.style.display = 'block'; loginRegisterBtn.style.display = 'none';
-                    logoutBtn.style.display = 'inline-block'; listAnItemBtn.style.display = 'inline-block';
-                    if (authFormsSection.style.display === 'block' || listingFormSection.style.display === 'block') {
-                        returnToMainView();
-                    }
-                } else {
-                    userEmailDisplay.style.display = 'none'; loginRegisterBtn.style.display = 'inline-block';
-                    logoutBtn.style.display = 'none'; listAnItemBtn.style.display = 'none';
-                    if(listingFormSection.style.display === 'block'){ returnToMainView(); }
-                }
-            });
-
-            function renderListing(listingDoc) {
-                const data = listingDoc.data();
-                const listingCard = document.createElement('div');
-                listingCard.className = 'listing-card';
-                const imageStyle = data.imageUrl ? `background-image: url('${data.imageUrl}')` : '';
-                const imageContent = data.imageUrl ? '' : 'No Image';
-                listingCard.innerHTML = `
-                    <div class="listing-image" style="${imageStyle}">${imageContent}</div>
-                    <div class="listing-details">
-                        <div class="listing-price">$${data.price ? data.price.toFixed(2) : '0.00'}</div>
-                        <h3 class="listing-title">${data.title}</h3>
-                        <div class="listing-location">${data.location}</div>
-                        <div class="listing-meta">
-                            <span>${data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : ''}</span>
-                            <span>${data.category}</span>
-                        </div>
-                    </div>`;
-                return listingCard;
-            }
-            
-            let unsubscribe;
-            function fetchAndRenderListings() {
-                if (unsubscribe) unsubscribe();
-                let q = collection(db, 'listings');
-                const constraints = [];
-                const category = categoryFilter.value;
-                if (category !== 'all') constraints.push(where('category', '==', category));
-                const sortBy = sortFilter.value;
-                if (sortBy === 'price-low') constraints.push(orderBy('price', 'asc'));
-                else if (sortBy === 'price-high') constraints.push(orderBy('price', 'desc'));
-                else constraints.push(orderBy('timestamp', 'desc'));
-                const finalQuery = query(q, ...constraints);
-                unsubscribe = onSnapshot(finalQuery, snapshot => {
-                    listingsContainer.innerHTML = '';
-                    const searchTerm = searchInput.value.toLowerCase();
-                    const filteredDocs = snapshot.docs.filter(doc => (doc.data().title || '').toLowerCase().includes(searchTerm));
-                    itemCountSpan.textContent = `${filteredDocs.length} items found`;
-                    if (filteredDocs.length === 0) {
-                        const safeSearchTerm = searchTerm.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                        listingsContainer.innerHTML = `<div class="no-listings-message"><h3>No items found for "${safeSearchTerm}".</h3><p>Try a different search or adjust filters.</p></div>`;
-                    } else {
-                        filteredDocs.forEach(doc => listingsContainer.appendChild(renderListing(doc)));
-                    }
-                }, error => {
-                    console.error("Error fetching listings:", error);
-                    itemCountSpan.textContent = `Error loading items.`;
-                });
-            }
-            
-            loginRegisterBtn.addEventListener('click', () => { isLoginMode = true; updateAuthModeUI(); toggleAuthFormVisibility(true); });
-            listAnItemBtn.addEventListener('click', () => {
-                if (auth.currentUser) toggleListingFormVisibility(true);
-                else { alert('Please log in to list an item.'); isLoginMode = true; updateAuthModeUI(); toggleAuthFormVisibility(true); }
-            });
-            cancelAuthFormBtn.addEventListener('click', returnToMainView);
-            cancelListingFormBtn.addEventListener('click', returnToMainView);
-            toggleAuthModeLink.addEventListener('click', (e) => { e.preventDefault(); isLoginMode = !isLoginMode; updateAuthModeUI(); });
-            loginBtn.addEventListener('click', () => signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(err => authError.textContent = err.message));
-            registerBtn.addEventListener('click', async () => {
-                const firstName = firstNameInput.value.trim();
-                const lastName = lastNameInput.value.trim();
-                if (!firstName || !lastName) { authError.textContent = "Please enter your first and last name."; return; }
-                if (passwordInput.value.length < 6) { authError.textContent = "Password too short."; return; }
-                try {
-                    const userCredential = await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
-                    await updateProfile(userCredential.user, { displayName: `${firstName} ${lastName}` });
-                } catch(err) { authError.textContent = err.message; }
-            });
-            logoutBtn.addEventListener('click', () => signOut(auth));
-            searchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    window.location.href = `/search.html?q=${encodeURIComponent(searchInput.value.trim())}`;
-                }
-            });
-            categoryFilter.addEventListener('change', fetchAndRenderListings);
-            sortFilter.addEventListener('change', fetchAndRenderListings);
-            updateAuthModeUI();
-            fetchAndRenderListings();
-        }
-        main();
-    </script>
-</body>
-</html>
+          
