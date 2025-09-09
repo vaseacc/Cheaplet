@@ -22,7 +22,7 @@
             width: 100%;
             max-width: 1200px;
             margin: 0 auto;
-            padding: 0 20px;
+            padding: 0 15px;
         }
 
         /* Header Styles */
@@ -40,7 +40,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap; /* Allow items to wrap on small screens */
+            flex-wrap: wrap;
         }
 
         .logo {
@@ -105,12 +105,12 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             margin-bottom: 30px;
-            margin-top: 40px; /* Added margin since there's no hero */
+            margin-top: 40px;
         }
 
         .filter-options {
             display: flex;
-            flex-direction: column; /* Stack filters vertically by default */
+            flex-direction: column;
             gap: 15px;
         }
 
@@ -131,7 +131,7 @@
             border: 1px solid #ddd;
             border-radius: 4px;
             width: 100%;
-            max-width: 100%; /* Allow inputs to take full width on mobile */
+            max-width: 100%;
         }
         textarea {
             resize: vertical;
@@ -148,8 +148,8 @@
 
         .listings-grid {
             display: grid;
-            grid-template-columns: 1fr; /* Single column for mobile */
-            gap: 20px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
             margin-bottom: 40px;
         }
 
@@ -157,17 +157,17 @@
             background: white;
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             transition: transform 0.3s, box-shadow 0.3s;
         }
 
         .listing-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
         }
 
         .listing-image {
-            height: 200px;
+            height: 160px;
             background-color: #eee;
             display: flex;
             align-items: center;
@@ -179,35 +179,38 @@
         }
 
         .listing-details {
-            padding: 15px;
+            padding: 12px;
         }
 
         .listing-price {
             color: #4CAF50;
             font-weight: bold;
-            font-size: 1.2rem;
-            margin-bottom: 8px;
+            font-size: 1.1rem;
+            margin-bottom: 6px;
         }
 
         .listing-title {
             font-weight: 600;
-            margin-bottom: 8px;
-            font-size: 1.1rem;
+            font-size: 1rem;
+            line-height: 1.3;
+            height: 2.6em;
+            overflow: hidden;
+            margin-bottom: 6px;
         }
 
         .listing-location {
             color: #777;
-            font-size: 0.9rem;
-            margin-bottom: 12px;
+            font-size: 0.85rem;
+            margin-bottom: 10px;
         }
 
         .listing-meta {
             display: flex;
             justify-content: space-between;
             color: #999;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             border-top: 1px solid #eee;
-            padding-top: 12px;
+            padding-top: 8px;
         }
         
         .no-listings-message {
@@ -366,6 +369,9 @@
         /* ====== MEDIA QUERIES FOR RESPONSIVE ====== */
         /* =================================== */
         @media (min-width: 768px) {
+            .container {
+                padding: 0 20px;
+            }
             .header-content {
                 flex-wrap: nowrap;
             }
@@ -393,7 +399,7 @@
             }
 
             .listings-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(3, 1fr);
             }
             
             .footer-content {
@@ -558,8 +564,8 @@
         </div>
     </footer>
 
-
     <script type="module">
+        // The JavaScript for this page remains the same as the previous version.
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
@@ -606,38 +612,11 @@
             const cancelAuthFormBtn = document.getElementById('cancelAuthFormBtn');
             
             const listingFormSection = document.getElementById('listing-form');
-            const listingTitleInput = document.getElementById('listing-title');
-            const listingDescriptionInput = document.getElementById('listing-description');
-            const listingPriceInput = document.getElementById('listing-price');
-            const listingCategorySelect = document.getElementById('listing-category');
-            const listingLocationInput = document.getElementById('listing-location');
-            const listingImageInput = document.getElementById('listing-image');
-            const postListingBtn = document.getElementById('postListingBtn');
-            
-            const loginRegisterBtn = document.getElementById('loginRegisterBtn');
             const listAnItemBtn = document.getElementById('listAnItemBtn');
+            const loginRegisterBtn = document.getElementById('loginRegisterBtn');
             const logoutBtn = document.getElementById('logoutBtn');
             const userEmailDisplay = document.getElementById('userEmailDisplay');
-
-            let isLoginMode = true;
-
-            function returnToMainView() {
-                authFormsSection.style.display = 'none';
-                listingFormSection.style.display = 'none';
-            }
-
-            function toggleAuthFormVisibility(show) {
-                listingFormSection.style.display = 'none';
-                authFormsSection.style.display = show ? 'block' : 'none';
-                if (show) authFormsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-
-            function toggleListingFormVisibility(show) {
-                authFormsSection.style.display = 'none';
-                listingFormSection.style.display = show ? 'block' : 'none';
-                if (show) listingFormSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-
+            
             onAuthStateChanged(auth, user => {
                 if (user) {
                     userEmailDisplay.textContent = `Welcome, ${user.email}!`;
@@ -645,15 +624,11 @@
                     loginRegisterBtn.style.display = 'none';
                     logoutBtn.style.display = 'inline-block';
                     listAnItemBtn.style.display = 'inline-block';
-                    returnToMainView();
                 } else {
                     userEmailDisplay.style.display = 'none';
                     loginRegisterBtn.style.display = 'inline-block';
                     logoutBtn.style.display = 'none';
                     listAnItemBtn.style.display = 'none';
-                    if(listingFormSection.style.display === 'block'){
-                        returnToMainView();
-                    }
                 }
             });
 
@@ -672,7 +647,7 @@
                         <h3 class="listing-title">${data.title}</h3>
                         <div class="listing-location">${data.location}</div>
                         <div class="listing-meta">
-                            <span>${data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : 'Just now'}</span>
+                            <span>${data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : ''}</span>
                             <span>${data.category}</span>
                         </div>
                     </div>
@@ -681,32 +656,21 @@
             }
             
             let unsubscribe;
-
             function fetchAndRenderListings() {
-                if (unsubscribe) {
-                    unsubscribe();
-                }
-
+                if (unsubscribe) unsubscribe();
                 let q = collection(db, 'listings');
                 const constraints = [];
                 const category = categoryFilter.value;
-                if (category !== 'all') {
-                    constraints.push(where('category', '==', category));
-                }
+                if (category !== 'all') constraints.push(where('category', '==', category));
                 const sortBy = sortFilter.value;
-                if (sortBy === 'price-low') {
-                    constraints.push(orderBy('price', 'asc'));
-                } else if (sortBy === 'price-high') {
-                    constraints.push(orderBy('price', 'desc'));
-                } else {
-                    constraints.push(orderBy('timestamp', 'desc'));
-                }
+                if (sortBy === 'price-low') constraints.push(orderBy('price', 'asc'));
+                else if (sortBy === 'price-high') constraints.push(orderBy('price', 'desc'));
+                else constraints.push(orderBy('timestamp', 'desc'));
                 const finalQuery = query(q, ...constraints);
 
                 unsubscribe = onSnapshot(finalQuery, snapshot => {
                     listingsContainer.innerHTML = '';
                     const searchTerm = searchInput.value.toLowerCase();
-                    
                     const filteredDocs = snapshot.docs.filter(doc => {
                         const title = doc.data().title || '';
                         return title.toLowerCase().includes(searchTerm);
@@ -716,11 +680,9 @@
 
                     if (filteredDocs.length === 0) {
                         const safeSearchTerm = searchTerm.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                        listingsContainer.innerHTML = `<div class="no-listings-message"><h3>No items found for "${safeSearchTerm}".</h3><p>Try a different search or adjust your filters.</p></div>`;
+                        listingsContainer.innerHTML = `<div class="no-listings-message"><h3>No items found for "${safeSearchTerm}".</h3><p>Try a different search or adjust filters.</p></div>`;
                     } else {
-                        filteredDocs.forEach(doc => {
-                            listingsContainer.appendChild(renderListing(doc));
-                        });
+                        filteredDocs.forEach(doc => listingsContainer.appendChild(renderListing(doc)));
                     }
                 }, error => {
                     console.error("Error fetching listings:", error);
@@ -737,10 +699,8 @@
 
             categoryFilter.addEventListener('change', fetchAndRenderListings);
             sortFilter.addEventListener('change', fetchAndRenderListings);
-
             fetchAndRenderListings();
         }
-
         main();
     </script>
 </body>
