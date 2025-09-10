@@ -5,112 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Listing Details - Cheaplet</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
         .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
         header { background-color: #4CAF50; color: white; padding: 15px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
-        .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        .logo { font-size: 24px; font-weight: bold; display: flex; align-items: center; cursor: pointer; color: white; text-decoration: none; }
+        .header-content { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 24px; font-weight: bold; cursor: pointer; text-decoration: none; color: white; }
         .logo span { color: #FFD700; }
         nav ul { display: flex; list-style: none; }
         nav ul li { margin-left: 20px; }
         nav ul li a { color: white; text-decoration: none; font-weight: 500; }
         .btn { background-color: #FFD700; color: #333; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; }
         .btn:hover { background-color: #FFC400; }
-        footer { background-color: #2E7D32; color: white; padding: 40px 0 20px; margin-top: 40px;}
-        .footer-content { display: grid; grid-template-columns: 1fr; gap: 30px; margin-bottom: 30px; text-align: center; }
-        .footer-column h3 { margin-bottom: 15px; }
-        .footer-column ul { list-style: none; padding: 0;}
-        .footer-column ul li { margin-bottom: 10px; }
-        .footer-column ul li a { color: #ddd; text-decoration: none; }
-        .copyright { text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem; color: #ccc; }
-        .header-auth-buttons { display: flex; gap: 10px; align-items: center; width: 100%; justify-content: center; margin-top: 10px; }
-        #userEmailDisplay { color: white; font-weight: 500; order: -1; width: 100%; text-align: center; margin-bottom: 10px; }
         #logoutBtn { background-color: #f44336; color: white; }
+        .header-auth-buttons { display: flex; gap: 10px; align-items: center; }
+        #userEmailDisplay { font-weight: 500; }
 
-        /* Styles for Listing Detail Page */
+        /* Listing Detail Styles */
+        .listing-detail-section { padding: 40px 0; }
+        #loading-message { text-align: center; font-size: 1.2rem; color: #777; }
         .listing-detail-container {
-            padding: 30px 0;
-        }
-        .listing-detail-grid {
-            display: flex;
-            flex-direction: column; /* Stack on mobile */
+            display: grid;
+            grid-template-columns: 1fr;
             gap: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            visibility: hidden; /* Hide until loaded */
         }
-        .listing-image-wrapper {
+        .listing-detail-image {
+            width: 100%;
+            height: 300px;
             background-color: #eee;
             border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #777;
-            width: 100%;
-            min-height: 300px;
             background-size: cover;
             background-position: center;
         }
-        .listing-info {
-            background-color: white;
-            padding: 25px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        #listing-title {
-            font-size: 1.8rem;
-            margin-bottom: 10px;
-        }
-        #listing-price {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #4CAF50;
-            margin-bottom: 20px;
-        }
-        .info-item {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-        }
-        .info-item strong {
-            color: #555;
-        }
-        #listing-description {
-            margin-top: 20px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
-            line-height: 1.7;
-        }
-        #seller-info {
-             margin-top: 20px;
-             padding: 15px;
-             background-color: #f8f9fa;
-             border-radius: 8px;
-        }
-        .loading-message, .error-message {
-            text-align: center;
-            font-size: 1.2rem;
-            color: #777;
-            padding: 50px 0;
-        }
+        .listing-detail-info h1 { font-size: 2rem; margin-bottom: 10px; }
+        .listing-detail-info .price { font-size: 1.8rem; font-weight: bold; color: #4CAF50; margin-bottom: 20px; }
+        .listing-detail-info .meta-item { display: flex; align-items: center; margin-bottom: 15px; color: #555; }
+        .listing-detail-info .meta-item strong { margin-right: 8px; color: #333; }
+        .listing-detail-info .description { margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee; }
 
+        footer { background-color: #2E7D32; color: white; padding: 40px 0 20px; margin-top: 40px; }
+        .footer-content { display: grid; grid-template-columns: 1fr; gap: 30px; text-align: center; }
+        .copyright { text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem; }
+        
         @media (min-width: 768px) {
-            .header-content { flex-wrap: nowrap; }
-            nav { display: block; }
-            .header-auth-buttons { width: auto; margin-top: 0; }
-            #userEmailDisplay { width: auto; text-align: right; margin-bottom: 0; margin-right: 10px; order: 0; }
+            .listing-detail-container { grid-template-columns: 1fr 1fr; padding: 30px; }
+            .listing-detail-image { height: 450px; }
             .footer-content { grid-template-columns: repeat(3, 1fr); text-align: left; }
-            .listing-detail-grid { flex-direction: row; }
-            .listing-image-wrapper { width: 55%; }
-            .listing-info { width: 45%; }
         }
-        @media (max-width: 767px) {
-            nav { display: none; }
-        }
+        @media (max-width: 767px) { nav { display: none; } }
     </style>
 </head>
 <body>
@@ -126,25 +73,57 @@
             </nav>
             <div class="header-auth-buttons">
                 <span id="userEmailDisplay" style="display: none;"></span>
-                <button class="btn" id="listAnItemBtn">List an Item</button>
-                <button class="btn" id="loginRegisterBtn">Login / Register</button>
+                <a href="/index.html" id="listAnItemBtn" class="btn">List an Item</a>
+                <a href="/index.html" id="loginRegisterBtn" class="btn">Login / Register</a>
                 <button class="btn" id="logoutBtn" style="display: none;">Logout</button>
             </div>
         </div>
     </header>
 
-    <main class="container listing-detail-container">
-        <div id="listing-content">
-            <!-- Listing details will be populated here by JavaScript -->
-        </div>
+    <main class="container">
+        <section class="listing-detail-section">
+            <div id="loading-message">Loading listing...</div>
+            <div class="listing-detail-container" id="listing-detail-container">
+                <div class="listing-detail-image" id="listing-image-detail"></div>
+                <div class="listing-detail-info">
+                    <h1 id="listing-title-detail"></h1>
+                    <p class="price" id="listing-price-detail"></p>
+                    <div class="meta-item">
+                        <strong>Location:</strong>
+                        <span id="listing-location-detail"></span>
+                    </div>
+                    <div class="meta-item">
+                        <strong>Posted on:</strong>
+                        <span id="listing-date-detail"></span>
+                    </div>
+                     <div class="meta-item">
+                        <strong>Seller:</strong>
+                        <span id="listing-seller-detail"></span>
+                    </div>
+                    <div class="description">
+                        <h3>Description</h3>
+                        <p id="listing-description-detail"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
     </main>
 
     <footer>
         <div class="container">
-            <div class="footer-content">
-                <div class="footer-column"><h3>Cheaplet</h3><ul><li><a href="#">About Us</a></li><li><a href="#">Careers</a></li></ul></div>
-                <div class="footer-column"><h3>Help</h3><ul><li><a href="#">FAQ</a></li><li><a href="#">Contact Support</a></li></ul></div>
-                <div class="footer-column"><h3>Policies</h3><ul><li><a href="#">Terms of Service</a></li><li><a href="#">Privacy Policy</a></li></ul></div>
+             <div class="footer-content">
+                <div class="footer-column">
+                    <h3>Cheaplet</h3>
+                    <ul><li><a href="#">About Us</a></li></ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Help</h3>
+                    <ul><li><a href="#">FAQ</a></li></ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Policies</h3>
+                    <ul><li><a href="#">Terms of Service</a></li></ul>
+                </div>
             </div>
             <div class="copyright">&copy; 2025 Cheaplet. All rights reserved.</div>
         </div>
@@ -153,27 +132,24 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        // MODIFIED: Added getDoc and doc
+        import { getFirestore, getDoc, doc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
             const firebaseConfig = config.firebaseConfig;
-            
+
             const app = initializeApp(firebaseConfig);
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            const listingContent = document.getElementById('listing-content');
-            const userEmailDisplay = document.getElementById('userEmailDisplay');
+            // --- AUTH UI LOGIC ---
             const loginRegisterBtn = document.getElementById('loginRegisterBtn');
             const listAnItemBtn = document.getElementById('listAnItemBtn');
             const logoutBtn = document.getElementById('logoutBtn');
+            const userEmailDisplay = document.getElementById('userEmailDisplay');
             
-            loginRegisterBtn.addEventListener('click', () => window.location.href = '/index.html');
-            listAnItemBtn.addEventListener('click', () => window.location.href = '/index.html');
-            logoutBtn.addEventListener('click', () => signOut(auth));
-
             onAuthStateChanged(auth, user => {
                 if (user) {
                     userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
@@ -186,401 +162,53 @@
                     logoutBtn.style.display = 'none';
                 }
             });
+            logoutBtn.addEventListener('click', () => signOut(auth));
 
-            function getListingIdFromUrl() {
+            // --- FETCH & DISPLAY LISTING LOGIC ---
+            function getIdFromURL() {
                 const params = new URLSearchParams(window.location.search);
                 return params.get('id');
             }
 
             async function fetchAndDisplayListing() {
-                const listingId = getListingIdFromUrl();
-                listingContent.innerHTML = `<p class="loading-message">Loading listing...</p>`;
-
+                const listingId = getIdFromURL();
+                const loadingMessage = document.getElementById('loading-message');
+                const detailContainer = document.getElementById('listing-detail-container');
+                
                 if (!listingId) {
-                    listingContent.innerHTML = `<p class="error-message">Error: No listing ID provided.</p>`;
+                    loadingMessage.textContent = 'Listing not found. No ID provided.';
                     return;
                 }
 
                 try {
-                    const docRef = doc(db, "listings", listingId);
+                    const docRef = doc(db, 'listings', listingId);
                     const docSnap = await getDoc(docRef);
 
                     if (docSnap.exists()) {
                         const data = docSnap.data();
-                        const postDate = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : 'N/A';
-                        const imageHtml = data.imageUrl ? `<div class="listing-image-wrapper" style="background-image: url('${data.imageUrl}')"></div>` : `<div class="listing-image-wrapper">No Image Available</div>`;
 
-                        listingContent.innerHTML = `
-                            <div class="listing-detail-grid">
-                                ${imageHtml}
-                                <div class="listing-info">
-                                    <h1 id="listing-title">${data.title}</h1>
-                                    <p id="listing-price">$${data.price.toFixed(2)}</p>
-                                    
-                                    <div class="info-item">
-                                        <strong>Location:</strong>
-                                        <span>${data.location}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <strong>Category:</strong>
-                                        <span>${data.category}</span>
-                                    </div>
-                                    <div class="info-item">
-                                        <strong>Posted on:</strong>
-                                        <span>${postDate}</span>
-                                    </div>
+                        // Populate the elements
+                        document.title = `${data.title} - Cheaplet`;
+                        document.getElementById('listing-image-detail').style.backgroundImage = `url('${data.imageUrl || ''}')`;
+                        document.getElementById('listing-title-detail').textContent = data.title;
+                        document.getElementById('listing-price-detail').textContent = `$${data.price ? data.price.toFixed(2) : '0.00'}`;
+                        document.getElementById('listing-location-detail').textContent = data.location;
+                        document.getElementById('listing-seller-detail').textContent = data.posterEmail;
+                        document.getElementById('listing-date-detail').textContent = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : 'N/A';
+                        document.getElementById('listing-description-detail').textContent = data.description;
 
-                                    <div id="seller-info">
-                                        <strong>Seller Information:</strong>
-                                        <p>Email: ${data.posterEmail}</p>
-                                    </div>
-
-                                    <div id="listing-description">
-                                        ${data.description.replace(/\n/g, '<br>')}
-                                    </div>
-                                </div>
-                            </div>
-                        `;
+                        loadingMessage.style.display = 'none';
+                        detailContainer.style.visibility = 'visible';
                     } else {
-                        listingContent.innerHTML = `<p class="error-message">Sorry, this listing could not be found.</p>`;
+                        loadingMessage.textContent = 'Sorry, this listing could not be found.';
                     }
                 } catch (error) {
                     console.error("Error fetching listing:", error);
-                    listingContent.innerHTML = `<p class="error-message">An error occurred while loading the listing. Please try again later.</p>`;
+                    loadingMessage.textContent = 'Error loading listing. Please try again later.';
                 }
             }
-
+            
             fetchAndDisplayListing();
-        }
-        main();
-    </script>
-</body>
-</html>```
-
----
-
-### Step 2: Update `index.html` to Make Listings Clickable
-
-**Instructions:**
-1.  Go to your `index.html` file on GitHub and click the **pencil icon**.
-2.  **Select all** the current text and **delete it**.
-3.  **Copy and paste the entire code block below**. The only real change is inside the `<script>` tag, in the `renderListing` function.
-4.  **Commit the changes**.
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cheaplet - Great Finds, Unbeatable Prices</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
-        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
-        header { background-color: #4CAF50; color: white; padding: 15px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
-        .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        .logo { font-size: 24px; font-weight: bold; display: flex; align-items: center; cursor: pointer; color: white; text-decoration: none;}
-        .logo span { color: #FFD700; }
-        nav ul { display: flex; list-style: none; }
-        nav ul li { margin-left: 20px; }
-        nav ul li a { color: white; text-decoration: none; font-weight: 500; }
-        .btn { background-color: #FFD700; color: #333; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; }
-        .btn:hover { background-color: #FFC400; }
-        .btn-secondary { background-color: #ccc; color: #333; }
-        .hero { background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%234CAF50"/></svg>'); background-size: cover; color: white; text-align: center; padding: 60px 20px; margin-bottom: 30px; }
-        .hero h1 { font-size: 2rem; margin-bottom: 20px; }
-        .hero p { font-size: 1.1rem; max-width: 700px; margin: 0 auto 30px; }
-        .filters { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 30px; }
-        .filter-options { display: flex; flex-direction: column; gap: 15px; }
-        .filter-group { display: flex; align-items: center; width: 100%; }
-        .filter-group label { margin-right: 8px; font-weight: 500; white-space: nowrap; }
-        select, input[type="text"], input[type="email"], input[type="password"], input[type="number"], textarea { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; width: 100%; max-width: 100%; }
-        textarea { resize: vertical; min-height: 80px; }
-        .listings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .listings-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 40px; }
-        .listing-card-link { display: block; text-decoration: none; color: inherit; } /* NEW STYLE FOR CLICKABLE CARD */
-        .listing-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); transition: transform 0.3s, box-shadow 0.3s; height: 100%;}
-        .listing-card:hover { transform: translateY(-5px); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
-        .listing-image { height: 160px; background-color: #eee; display: flex; align-items: center; justify-content: center; color: #777; font-size: 14px; background-size: cover; background-position: center; }
-        .listing-details { padding: 12px; }
-        .listing-price { color: #4CAF50; font-weight: bold; font-size: 1.1rem; margin-bottom: 6px; }
-        .listing-title { font-weight: 600; font-size: 1rem; line-height: 1.3; height: 2.6em; overflow: hidden; margin-bottom: 6px; }
-        .listing-location { color: #777; font-size: 0.85rem; margin-bottom: 10px; }
-        .listing-meta { display: flex; justify-content: space-between; color: #999; font-size: 0.8rem; border-top: 1px solid #eee; padding-top: 8px; }
-        .no-listings-message { grid-column: 1 / -1; text-align: center; padding: 40px; color: #777; }
-        .form-field-error { color: red; font-size: 0.85rem; text-align: left; margin: -5px auto 10px; max-width: 350px; }
-        #password-feedback { font-size: 0.85rem; margin-top: 5px; height: 15px; }
-        .how-it-works { background-color: white; padding: 40px 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 40px; }
-        .section-title { text-align: center; margin-bottom: 30px; font-size: 1.5rem; color: #333; }
-        .steps { display: grid; grid-template-columns: 1fr; gap: 20px; }
-        .step { text-align: center; padding: 20px; }
-        .step-icon { background-color: #E8F5E9; width: 70px; height: 70px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 1.8rem; color: #4CAF50; }
-        footer { background-color: #2E7D32; color: white; padding: 40px 0 20px; }
-        .footer-content { display: grid; grid-template-columns: 1fr; gap: 30px; margin-bottom: 30px; text-align: center; }
-        .footer-column h3 { margin-bottom: 15px; }
-        .footer-column ul { list-style: none; padding: 0;}
-        .footer-column ul li { margin-bottom: 10px; }
-        .footer-column ul li a { color: #ddd; text-decoration: none; }
-        .copyright { text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem; color: #ccc; }
-        .firebase-form-section { background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin: 30px auto; max-width: 500px; text-align: center; }
-        .firebase-form-section h2 { margin-bottom: 25px; color: #333; }
-        .firebase-form-section input, .firebase-form-section textarea, .firebase-form-section select { display: block; margin: 10px auto; width: 100%; max-width: 350px; }
-        .firebase-form-section .btn { margin-top: 15px; width: auto; min-width: 120px; }
-        .form-buttons { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
-        .firebase-form-section #auth-error { margin-top: 15px; font-weight: 500; color: red; }
-        .header-auth-buttons { display: flex; gap: 10px; align-items: center; width: 100%; justify-content: center; margin-top: 10px; }
-        #userEmailDisplay { color: white; font-weight: 500; order: -1; width: 100%; text-align: center; margin-bottom: 10px; }
-        #logoutBtn { background-color: #f44336; color: white; }
-        .search-group { flex-grow: 1; }
-        #search-input { padding: 12px 15px; font-size: 1rem; border: 2px solid #ddd; transition: border-color 0.3s, box-shadow 0.3s; }
-        #search-input:focus { border-color: #4CAF50; box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2); outline: none; }
-        @media (min-width: 768px) {
-            .hero h1 { font-size: 2.5rem; }
-            .container { padding: 0 20px; }
-            .header-content { flex-wrap: nowrap; }
-            nav { display: block; }
-            .header-auth-buttons { width: auto; margin-top: 0; }
-            #userEmailDisplay { width: auto; text-align: right; margin-bottom: 0; margin-right: 10px; order: 0; }
-            .filter-options { flex-direction: row; align-items: center; }
-            .listings-grid { grid-template-columns: repeat(3, 1fr); }
-            .steps { grid-template-columns: repeat(3, 1fr); }
-            .footer-content { grid-template-columns: repeat(3, 1fr); text-align: left; }
-        }
-        @media (min-width: 1024px) { .listings-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); } }
-        @media (max-width: 767px) { nav { display: none; } }
-    </style>
-</head>
-<body>
-    <header>
-        <div class="container header-content">
-            <a href="/index.html" class="logo">Cheap<span>let</span></a>
-            <nav>
-                <ul><li><a href="#">Home</a></li><li><a href="#">Browse</a></li><li><a href="#">How It Works</a></li><li><a href="#">About</a></li></ul>
-            </nav>
-            <div class="header-auth-buttons">
-                <span id="userEmailDisplay" style="display: none;"></span>
-                <button class="btn" id="listAnItemBtn">List an Item</button>
-                <button class="btn" id="loginRegisterBtn">Login / Register</button>
-                <button class="btn" id="logoutBtn" style="display: none;">Logout</button>
-            </div>
-        </div>
-    </header>
-    <section class="hero">
-        <div class="container">
-            <h1>Great Finds, Unbeatable Prices.</h1>
-            <p>Cheaplet is the online marketplace for smart savings. Discover secondhand, clearance, and giveaway items in your area.</p>
-            <button class="btn" id="startBrowsingBtn">Start Browsing</button>
-        </div>
-    </section>
-    <main class="container">
-        <section id="auth-forms" class="firebase-form-section" style="display: none;">
-            <h2>Join Cheaplet</h2>
-            <p>Please log in or register to continue.</p>
-            <div id="register-name-fields" style="display: none;">
-                <input type="text" id="firstName" placeholder="First Name" required>
-                <input type="text" id="lastName" placeholder="Last Name" required>
-            </div>
-            <input type="email" id="email" placeholder="Email" required>
-            <input type="password" id="password" placeholder="Password (min. 6 characters)" required>
-            <p id="password-feedback"></p>
-            <div class="form-buttons">
-                <button class="btn" id="loginBtn">Login</button>
-                <button class="btn" id="registerBtn">Register</button>
-                <button class="btn btn-secondary" id="cancelAuthFormBtn">Cancel</button>
-            </div>
-            <p id="auth-error"></p>
-            <p style="margin-top: 15px;"><a href="#" id="toggleAuthMode">New user? Register here.</a></p>
-        </section>
-        <section id="listing-form" class="firebase-form-section" style="display: none;">
-            <h2>List a New Item</h2>
-            <input type="text" id="listing-title" placeholder="Item Title" required><p id="title-error" class="form-field-error"></p>
-            <textarea id="listing-description" placeholder="Description..." required></textarea><p id="description-error" class="form-field-error"></p>
-            <input type="number" id="listing-price" placeholder="Price (e.g., 15.00)" min="0" step="0.01" required><p id="price-error" class="form-field-error"></p>
-            <select id="listing-category" required><option value="">Select Category</option><option value="furniture">Furniture</option><option value="electronics">Electronics</option><option value="clothing">Clothing</option><option value="books">Books & Media</option><option value="toys">Toys & Games</option><option value="other">Other</option></select><p id="category-error" class="form-field-error"></p>
-            <input type="text" id="listing-location" placeholder="Your Location" required><p id="location-error" class="form-field-error"></p>
-            <label for="listing-image" style="font-weight: 500; margin-top: 10px; display: block;">Upload Image (Optional)</label>
-            <input type="file" id="listing-image" accept="image/*" style="max-width: 350px; margin: 5px auto;"><p id="image-error" class="form-field-error"></p>
-            <div class="form-buttons"><button class="btn" id="postListingBtn">Post Item</button><button class="btn btn-secondary" id="cancelListingFormBtn">Cancel</button></div>
-        </section>
-        <section class="filters">
-            <div class="filter-options">
-                <div class="filter-group"><label for="category">Category:</label><select id="category-filter"><option value="all">All Categories</option><option value="furniture">Furniture</option><option value="electronics">Electronics</option><option value="clothing">Clothing</option><option value="books">Books & Media</option><option value="toys">Toys & Games</option><option value="other">Other</option></select></div>
-                <div class="filter-group"><label for="sort">Sort by:</label><select id="sort-filter"><option value="newest">Newest First</option><option value="price-low">Price: Low to High</option><option value="price-high">Price: High to Low</option></select></div>
-                <div class="filter-group search-group"><input type="text" placeholder="Search listings..." id="search-input"></div>
-            </div>
-        </section>
-        <section class="listings">
-            <div class="listings-header"><h2>Recent Listings</h2><span id="itemCount">Loading...</span></div>
-            <div class="listings-grid" id="listings-container"></div>
-        </section>
-        <section class="how-it-works">
-            <h2 class="section-title">How Cheaplet Works</h2>
-            <div class="steps">
-                <div class="step"><div class="step-icon">1</div><h3>List Your Item</h3><p>Snap a photo, set a great price, and post your listing in seconds.</p></div>
-                <div class="step"><div class="step-icon">2</div><h3>Connect Locally</h3><p>Buyers in your area will message you through the app to arrange pickup.</p></div>
-                <div class="step"><div class="step-icon">3</div><h3>Complete the Sale</h3><p>Meet up, exchange the item for cash or digital payment, and both parties leave a review.</p></div>
-            </div>
-        </section>
-    </main>
-    <footer>
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-column"><h3>Cheaplet</h3><ul><li><a href="#">About Us</a></li><li><a href="#">Careers</a></li></ul></div>
-                <div class="footer-column"><h3>Help</h3><ul><li><a href="#">FAQ</a></li><li><a href="#">Contact Support</a></li></ul></div>
-                <div class="footer-column"><h3>Policies</h3><ul><li><a href="#">Terms of Service</a></li><li><a href="#">Privacy Policy</a></li></ul></div>
-            </div>
-            <div class="copyright">&copy; 2025 Cheaplet. All rights reserved.</div>
-        </div>
-    </footer>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
-
-        async function main() {
-            const response = await fetch('/.netlify/functions/config');
-            const config = await response.json();
-            const firebaseConfig = config.firebaseConfig;
-            const CLOUDINARY_CLOUD_NAME = config.cloudinary.cloudName;
-            const CLOUDINARY_UPLOAD_PRESET = config.cloudinary.uploadPreset;
-            const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-
-            const app = initializeApp(firebaseConfig);
-            const auth = getAuth(app);
-            const db = getFirestore(app);
-
-            const searchInput = document.getElementById('search-input');
-            searchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    const searchTerm = searchInput.value.trim();
-                    if (searchTerm) {
-                        window.location.href = `/search.html?q=${encodeURIComponent(searchTerm)}`;
-                    }
-                }
-            });
-
-            // --- The rest of the JS logic... ---
-            const authFormsSection = document.getElementById('auth-forms');
-            const registerNameFields = document.getElementById('register-name-fields');
-            const firstNameInput = document.getElementById('firstName');
-            const lastNameInput = document.getElementById('lastName');
-            const emailInput = document.getElementById('email');
-            const passwordInput = document.getElementById('password');
-            const loginBtn = document.getElementById('loginBtn');
-            const registerBtn = document.getElementById('registerBtn');
-            const authError = document.getElementById('auth-error');
-            const toggleAuthModeLink = document.getElementById('toggleAuthMode');
-            const cancelAuthFormBtn = document.getElementById('cancelAuthFormBtn');
-            const listingFormSection = document.getElementById('listing-form');
-            const listingTitleInput = document.getElementById('listing-title');
-            const listingDescriptionInput = document.getElementById('listing-description');
-            const listingPriceInput = document.getElementById('listing-price');
-            const listingCategorySelect = document.getElementById('listing-category');
-            const listingLocationInput = document.getElementById('listing-location');
-            const listingImageInput = document.getElementById('listing-image');
-            const postListingBtn = document.getElementById('postListingBtn');
-            const listingsContainer = document.getElementById('listings-container');
-            const itemCountSpan = document.getElementById('itemCount');
-            const logoLink = document.getElementById('logo-link');
-            const loginRegisterBtn = document.getElementById('loginRegisterBtn');
-            const listAnItemBtn = document.getElementById('listAnItemBtn');
-            const logoutBtn = document.getElementById('logoutBtn');
-            const userEmailDisplay = document.getElementById('userEmailDisplay');
-            const categoryFilter = document.getElementById('category-filter');
-            const sortFilter = document.getElementById('sort-filter');
-            const mainContentSections = [document.querySelector('.hero'), document.querySelector('.filters'), document.querySelector('.listings'), document.querySelector('.how-it-works')];
-            let isLoginMode = true;
-
-            function returnToMainView() {
-                mainContentSections.forEach(s => s.style.display = 'block');
-                authFormsSection.style.display = 'none';
-                listingFormSection.style.display = 'none';
-            }
-            // ... all other functions like toggleAuthFormVisibility, updateAuthModeUI, etc. are included...
-
-            onAuthStateChanged(auth, user => {
-                if (user) {
-                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
-                    userEmailDisplay.style.display = 'block';
-                    loginRegisterBtn.style.display = 'none';
-                    logoutBtn.style.display = 'inline-block';
-                    listAnItemBtn.style.display = 'inline-block';
-                    returnToMainView();
-                } else {
-                    userEmailDisplay.style.display = 'none';
-                    loginRegisterBtn.style.display = 'inline-block';
-                    logoutBtn.style.display = 'none';
-                    listAnItemBtn.style.display = 'none';
-                }
-            });
-
-            // MODIFIED renderListing FUNCTION
-            function renderListing(listingDoc) {
-                const data = listingDoc.data();
-                // Create an anchor tag instead of a div
-                const cardLink = document.createElement('a');
-                cardLink.className = 'listing-card-link';
-                cardLink.href = `/listing.html?id=${listingDoc.id}`;
-
-                const imageStyle = data.imageUrl ? `background-image: url('${data.imageUrl}')` : '';
-                const imageContent = data.imageUrl ? '' : 'No Image';
-
-                cardLink.innerHTML = `
-                    <div class="listing-card">
-                        <div class="listing-image" style="${imageStyle}">${imageContent}</div>
-                        <div class="listing-details">
-                            <div class="listing-price">$${data.price ? data.price.toFixed(2) : '0.00'}</div>
-                            <h3 class="listing-title">${data.title}</h3>
-                            <div class="listing-location">${data.location}</div>
-                            <div class="listing-meta">
-                                <span>${data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : ''}</span>
-                                <span>${data.category}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                return cardLink;
-            }
-            
-            let unsubscribe;
-            function fetchAndRenderListings() {
-                if (unsubscribe) unsubscribe();
-                let q = collection(db, 'listings');
-                const constraints = [];
-                const category = categoryFilter.value;
-                if (category !== 'all') constraints.push(where('category', '==', category));
-                const sortBy = sortFilter.value;
-                if (sortBy === 'price-low') constraints.push(orderBy('price', 'asc'));
-                else if (sortBy === 'price-high') constraints.push(orderBy('price', 'desc'));
-                else constraints.push(orderBy('timestamp', 'desc'));
-                const finalQuery = query(q, ...constraints);
-                unsubscribe = onSnapshot(finalQuery, snapshot => {
-                    listingsContainer.innerHTML = '';
-                    const docs = snapshot.docs;
-                    itemCountSpan.textContent = `${docs.length} items found`;
-                    if (docs.length === 0) {
-                        listingsContainer.innerHTML = `<div class="no-listings-message"><h3>No items found.</h3><p>Try adjusting filters or be the first to list!</p></div>`;
-                    } else {
-                        docs.forEach(doc => listingsContainer.appendChild(renderListing(doc)));
-                    }
-                }, error => {
-                    console.error("Error fetching listings:", error);
-                    itemCountSpan.textContent = `Error loading items.`;
-                });
-            }
-            
-            // Re-adding all other functions and listeners for completeness
-            document.getElementById('startBrowsingBtn').addEventListener('click', () => { document.querySelector('.filters').scrollIntoView({ behavior: 'smooth' }); });
-            logoLink.addEventListener('click', returnToMainView);
-            // ... full event listeners and functions from previous final version ...
-            // This is a simplified representation to show the key change in renderListing.
-            // The full JS from the previous step should be here, with only renderListing changed.
-
-            categoryFilter.addEventListener('change', fetchAndRenderListings);
-            sortFilter.addEventListener('change', fetchAndRenderListings);
-            fetchAndRenderListings();
         }
         main();
     </script>
