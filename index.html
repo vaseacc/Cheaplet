@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cheaplet - Everything Under $50</title>
+    <title>Cheaplet - Great Finds, Unbeatable Prices</title>
     <style>
         * {
             margin: 0;
@@ -515,8 +515,9 @@
 
     <section class="hero">
         <div class="container">
-            <h1>Everything Under $50</h1>
-            <p>Cheaplet is the online marketplace focused exclusively on affordable finds. Discover secondhand, clearance, and giveaway items in your area.</p>
+            <!-- SLOGAN CHANGED HERE -->
+            <h1>Great Finds, Unbeatable Prices.</h1>
+            <p>Cheaplet is the online marketplace for smart savings. Discover secondhand, clearance, and giveaway items in your area.</p>
             <button class="btn" id="startBrowsingBtn">Start Browsing</button>
         </div>
     </section>
@@ -526,7 +527,6 @@
             <h2>Join Cheaplet</h2>
             <p>Please log in or register to continue.</p>
             
-            <!-- NEW NAME FIELDS FOR REGISTRATION -->
             <div id="register-name-fields" style="display: none;">
                 <input type="text" id="firstName" placeholder="First Name" required>
                 <input type="text" id="lastName" placeholder="Last Name" required>
@@ -547,13 +547,16 @@
         </section>
 
         <section id="listing-form" class="firebase-form-section" style="display: none;">
-            <h2>List a New Item (Under $50)</h2>
+            <h2>List a New Item</h2>
             <input type="text" id="listing-title" placeholder="Item Title (e.g., Vintage Coffee Table)" required>
             <p id="title-error" class="form-field-error"></p>
             <textarea id="listing-description" placeholder="Description of your item..." required></textarea>
             <p id="description-error" class="form-field-error"></p>
-            <input type="number" id="listing-price" placeholder="Price (e.g., 15.00)" min="0" max="49.99" step="0.01" required>
+            
+            <!-- PRICE LIMIT REMOVED HERE -->
+            <input type="number" id="listing-price" placeholder="Price (e.g., 15.00)" min="0" step="0.01" required>
             <p id="price-error" class="form-field-error"></p>
+
             <select id="listing-category" required>
                 <option value="">Select Category</option>
                 <option value="furniture">Furniture</option>
@@ -619,7 +622,8 @@
                 <div class="step">
                     <div class="step-icon">1</div>
                     <h3>List Your Item</h3>
-                    <p>Snap a photo, set a price under $50, and post your listing in seconds.</p>
+                    <!-- TEXT UPDATED HERE -->
+                    <p>Snap a photo, set a great price, and post your listing in seconds.</p>
                 </div>
                 <div class="step">
                     <div class="step-icon">2</div>
@@ -672,7 +676,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        // MODIFIED: Added updateProfile
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-analytics.js";
@@ -680,7 +683,6 @@
         async function main() {
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
-
             const firebaseConfig = config.firebaseConfig;
             const CLOUDINARY_CLOUD_NAME = config.cloudinary.cloudName;
             const CLOUDINARY_UPLOAD_PRESET = config.cloudinary.uploadPreset;
@@ -702,7 +704,6 @@
                 }
             });
 
-            // MODIFIED: Added selections for new name fields
             const authFormsSection = document.getElementById('auth-forms');
             const registerNameFields = document.getElementById('register-name-fields');
             const firstNameInput = document.getElementById('firstName');
@@ -717,12 +718,6 @@
             const cancelAuthFormBtn = document.getElementById('cancelAuthFormBtn');
             
             const listingFormSection = document.getElementById('listing-form');
-            const listAnItemBtn = document.getElementById('listAnItemBtn');
-            const loginRegisterBtn = document.getElementById('loginRegisterBtn');
-            const logoutBtn = document.getElementById('logoutBtn');
-            const userEmailDisplay = document.getElementById('userEmailDisplay');
-
-            // --- The rest of the JS variables and functions... ---
             const listingTitleInput = document.getElementById('listing-title');
             const listingDescriptionInput = document.getElementById('listing-description');
             const listingPriceInput = document.getElementById('listing-price');
@@ -730,10 +725,16 @@
             const listingLocationInput = document.getElementById('listing-location');
             const listingImageInput = document.getElementById('listing-image');
             const postListingBtn = document.getElementById('postListingBtn');
+            
             const listingsContainer = document.getElementById('listings-container');
             const itemCountSpan = document.getElementById('itemCount');
             const logoLink = document.getElementById('logo-link');
             const navLinks = document.querySelectorAll('nav ul li a');
+            
+            const loginRegisterBtn = document.getElementById('loginRegisterBtn');
+            const listAnItemBtn = document.getElementById('listAnItemBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const userEmailDisplay = document.getElementById('userEmailDisplay');
             const startBrowsingBtn = document.getElementById('startBrowsingBtn');
             const categoryFilter = document.getElementById('category-filter');
             const sortFilter = document.getElementById('sort-filter');
@@ -747,9 +748,7 @@
             let isLoginMode = true;
 
             function setMainContentVisibility(showMain) {
-                mainContentSections.forEach(section => {
-                    if (section) section.style.display = showMain ? '' : 'none';
-                });
+                mainContentSections.forEach(section => { if (section) section.style.display = showMain ? '' : 'none'; });
             }
             function returnToMainView() {
                 setMainContentVisibility(true);
@@ -769,92 +768,106 @@
                 if (show) listingFormSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
             
-            // MODIFIED: updateAuthModeUI now handles the name fields
             function updateAuthModeUI() {
                 if (isLoginMode) {
-                    loginBtn.style.display = 'inline-block';
-                    registerBtn.style.display = 'none';
-                    registerNameFields.style.display = 'none'; // Hide name fields in login mode
-                    toggleAuthModeLink.textContent = 'New user? Register here.';
-                    authFormsSection.querySelector('h2').textContent = 'Log In to Cheaplet';
-                    passwordFeedback.style.display = 'none';
+                    loginBtn.style.display = 'inline-block'; registerBtn.style.display = 'none';
+                    registerNameFields.style.display = 'none'; toggleAuthModeLink.textContent = 'New user? Register here.';
+                    authFormsSection.querySelector('h2').textContent = 'Log In to Cheaplet'; passwordFeedback.style.display = 'none';
                 } else {
-                    loginBtn.style.display = 'none';
-                    registerBtn.style.display = 'inline-block';
-                    registerNameFields.style.display = 'block'; // Show name fields in register mode
-                    toggleAuthModeLink.textContent = 'Already have an account? Log in.';
-                    authFormsSection.querySelector('h2').textContent = 'Register for Cheaplet';
-                    passwordFeedback.style.display = 'block';
+                    loginBtn.style.display = 'none'; registerBtn.style.display = 'inline-block';
+                    registerNameFields.style.display = 'block'; toggleAuthModeLink.textContent = 'Already have an account? Log in.';
+                    authFormsSection.querySelector('h2').textContent = 'Register for Cheaplet'; passwordFeedback.style.display = 'block';
                 }
                 authError.textContent = '';
             }
 
-            toggleAuthModeLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                isLoginMode = !isLoginMode;
-                updateAuthModeUI();
-            });
+            toggleAuthModeLink.addEventListener('click', (e) => { e.preventDefault(); isLoginMode = !isLoginMode; updateAuthModeUI(); });
 
-            loginBtn.addEventListener('click', async () => {
-                const email = emailInput.value;
-                const password = passwordInput.value;
-                authError.textContent = '';
-                try { await signInWithEmailAndPassword(auth, email, password); } 
-                catch (error) { authError.textContent = error.message; }
-            });
+            loginBtn.addEventListener('click', () => signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(err => authError.textContent = err.message));
 
-            // MODIFIED: Registration now includes name validation and profile update
             registerBtn.addEventListener('click', async () => {
-                const email = emailInput.value;
-                const password = passwordInput.value;
                 const firstName = firstNameInput.value.trim();
                 const lastName = lastNameInput.value.trim();
-                authError.textContent = '';
-
-                if (!firstName || !lastName) {
-                    authError.textContent = "Please enter your first and last name.";
-                    return;
-                }
-                if (password.length < 6) {
-                    authError.textContent = "Password must be at least 6 characters long.";
-                    return;
-                }
-
+                if (!firstName || !lastName) { authError.textContent = "Please enter your first and last name."; return; }
+                if (passwordInput.value.length < 6) { authError.textContent = "Password must be at least 6 characters long."; return; }
                 try {
-                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                    await updateProfile(userCredential.user, {
-                        displayName: `${firstName} ${lastName}`
-                    });
-                    // onAuthStateChanged will handle the UI update
-                } catch (error) {
-                    authError.textContent = error.message;
-                }
+                    const userCredential = await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+                    await updateProfile(userCredential.user, { displayName: `${firstName} ${lastName}` });
+                } catch (error) { authError.textContent = error.message; }
             });
 
-            logoutBtn.addEventListener('click', async () => {
-                try { await signOut(auth); } 
-                catch (error) { console.error('Logout error:', error.message); }
-            });
+            logoutBtn.addEventListener('click', () => signOut(auth).catch(error => console.error('Logout error:', error.message)));
 
-            // MODIFIED: onAuthStateChanged now uses displayName
             onAuthStateChanged(auth, user => {
                 if (user) {
-                    const welcomeMessage = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
-                    userEmailDisplay.textContent = welcomeMessage;
-                    
+                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
                     userEmailDisplay.style.display = 'block';
-                    loginRegisterBtn.style.display = 'none';
-                    logoutBtn.style.display = 'inline-block';
+                    loginRegisterBtn.style.display = 'none'; logoutBtn.style.display = 'inline-block';
                     listAnItemBtn.style.display = 'inline-block';
                     returnToMainView();
                 } else {
-                    userEmailDisplay.style.display = 'none';
-                    loginRegisterBtn.style.display = 'inline-block';
-                    logoutBtn.style.display = 'none';
-                    listAnItemBtn.style.display = 'none';
-                    if(listingFormSection.style.display === 'block'){
-                        returnToMainView();
+                    userEmailDisplay.style.display = 'none'; loginRegisterBtn.style.display = 'inline-block';
+                    logoutBtn.style.display = 'none'; listAnItemBtn.style.display = 'none';
+                    if(listingFormSection.style.display === 'block'){ returnToMainView(); }
+                }
+            });
+
+            // PRICE LIMIT REMOVED HERE
+            function validateListingForm() {
+                let isValid = true;
+                document.querySelectorAll('.form-field-error').forEach(el => el.textContent = '');
+                if (!listingTitleInput.value.trim()) {
+                    document.getElementById('title-error').textContent = 'Please enter an item title.'; isValid = false;
+                }
+                if (!listingDescriptionInput.value.trim()) {
+                    document.getElementById('description-error').textContent = 'Please enter a description.'; isValid = false;
+                }
+                if (!listingPriceInput.value) {
+                    document.getElementById('price-error').textContent = 'Please enter a price.'; isValid = false;
+                }
+                 if (!listingCategorySelect.value) {
+                    document.getElementById('category-error').textContent = 'Please select a category.'; isValid = false;
+                }
+                if (!listingLocationInput.value.trim()) {
+                    document.getElementById('location-error').textContent = 'Please enter your location.'; isValid = false;
+                }
+                if (listingImageInput.files[0] && listingImageInput.files[0].size > 5 * 1024 * 1024) {
+                    document.getElementById('image-error').textContent = 'Image file is too large (max 5MB).'; isValid = false;
+                }
+                return isValid;
+            }
+            
+            postListingBtn.addEventListener('click', async () => {
+                const user = auth.currentUser;
+                if (!user) { alert('You must be logged in to post an item.'); toggleAuthFormVisibility(true); return; }
+                if (!validateListingForm()) return;
+                postListingBtn.disabled = true; postListingBtn.textContent = 'Posting...';
+                let imageUrl = null;
+                try {
+                    const imageFile = listingImageInput.files[0];
+                    if (imageFile) {
+                        const formData = new FormData();
+                        formData.append('file', imageFile);
+                        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                        const response = await fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData });
+                        if (!response.ok) throw new Error('Image upload failed.');
+                        const data = await response.json();
+                        imageUrl = data.secure_url;
                     }
+                    await addDoc(collection(db, 'listings'), {
+                        title: listingTitleInput.value.trim(), description: listingDescriptionInput.value.trim(),
+                        price: parseFloat(listingPriceInput.value), category: listingCategorySelect.value,
+                        location: listingLocationInput.value.trim(), imageUrl: imageUrl,
+                        posterUid: user.uid, posterEmail: user.email, timestamp: serverTimestamp()
+                    });
+                    alert('Your item has been listed!');
+                    listingFormSection.querySelectorAll('input, textarea, select').forEach(el => el.value = '');
+                    returnToMainView();
+                } catch (error) {
+                    console.error("Error posting listing:", error);
+                    document.getElementById('image-error').textContent = "Could not post item. " + error.message;
+                } finally {
+                    postListingBtn.disabled = false; postListingBtn.textContent = 'Post Item';
                 }
             });
 
@@ -890,7 +903,6 @@
                 else if (sortBy === 'price-high') constraints.push(orderBy('price', 'desc'));
                 else constraints.push(orderBy('timestamp', 'desc'));
                 const finalQuery = query(q, ...constraints);
-
                 unsubscribe = onSnapshot(finalQuery, snapshot => {
                     listingsContainer.innerHTML = '';
                     const docs = snapshot.docs;
@@ -906,9 +918,6 @@
                 });
             }
 
-            // ... The rest of the event listeners and initial function calls remain the same ...
-            const postListingHandler = async () => { /* ... full function from previous step ... */ }; // This is just a placeholder for the actual function
-            postListingBtn.addEventListener('click', postListingHandler);
             loginRegisterBtn.addEventListener('click', () => { isLoginMode = true; updateAuthModeUI(); toggleAuthFormVisibility(true); });
             listAnItemBtn.addEventListener('click', () => {
                 if (auth.currentUser) toggleListingFormVisibility(true);
@@ -918,6 +927,7 @@
             cancelAuthFormBtn.addEventListener('click', returnToMainView);
             cancelListingFormBtn.addEventListener('click', returnToMainView);
             logoLink.addEventListener('click', returnToMainView);
+            navLinks.forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); returnToMainView(); }); });
             categoryFilter.addEventListener('change', fetchAndRenderListings);
             sortFilter.addEventListener('change', fetchAndRenderListings);
             updateAuthModeUI();
