@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- The title will be set dynamically later -->
     <title>Listing Details - Cheaplet</title>
     <style>
         * {
@@ -116,7 +115,7 @@
             background-color: #d32f2f;
         }
 
-        /* --- NEW STYLES FOR SINGLE LISTING PAGE --- */
+        /* --- STYLES FOR SINGLE LISTING PAGE --- */
         #listing-detail-container {
             background-color: white;
             margin: 30px auto;
@@ -124,7 +123,7 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             display: flex;
-            flex-direction: column; /* Mobile first layout */
+            flex-direction: column;
             gap: 20px;
         }
 
@@ -176,11 +175,10 @@
 
         .listing-info .description {
             margin-top: 20px;
-            white-space: pre-wrap; /* Preserves line breaks from the description */
+            white-space: pre-wrap;
             line-height: 1.7;
         }
         
-        /* Loading State */
         #loader {
             text-align: center;
             padding: 50px;
@@ -216,17 +214,8 @@
             .header-auth-buttons { width: auto; margin-top: 0; }
             #userEmailDisplay { width: auto; text-align: right; margin-bottom: 0; margin-right: 10px; order: 0; }
             .footer-content { grid-template-columns: repeat(3, 1fr); text-align: left; }
-
-            /* Two-column layout for listing on desktop */
-            #listing-detail-container {
-                flex-direction: row;
-                padding: 30px;
-            }
-            .listing-image-full {
-                width: 50%;
-                height: auto; /* Let height adjust to maintain aspect ratio */
-                max-height: 500px;
-            }
+            #listing-detail-container { flex-direction: row; padding: 30px; }
+            .listing-image-full { width: 50%; height: auto; max-height: 500px; }
         }
         
         @media (max-width: 767px) {
@@ -257,35 +246,25 @@
     </header>
 
     <main class="container">
-        <!-- Loader message -->
         <div id="loader">Loading listing...</div>
     
-        <!-- Container for the listing details, hidden by default -->
         <section id="listing-detail-container" style="display: none;">
-            
-            <!-- Column 1: Image -->
             <div class="listing-image-full" id="listing-image">
                 <span>No Image</span>
             </div>
-
-            <!-- Column 2: Info -->
             <div class="listing-info">
-                <h1 id="listing-title">Item Title Placeholder</h1>
-                <p class="price" id="listing-price">$0.00</p>
-                
+                <h1 id="listing-title"></h1>
+                <p class="price" id="listing-price"></p>
                 <div class="seller-info">
-                    <p><strong>Seller:</strong> <span id="listing-seller">Seller Name</span></p>
-                    <p><strong>Location:</strong> <span id="listing-location">City, State</span></p>
+                    <p><strong>Seller:</strong> <span id="listing-seller"></span></p>
+                    <p><strong>Location:</strong> <span id="listing-location"></span></p>
                 </div>
-                
                 <hr>
-                
                 <div class="description">
                     <h3>Description</h3>
-                    <p id="listing-description">Full item description will go here.</p>
+                    <p id="listing-description"></p>
                 </div>
             </div>
-
         </section>
     </main>
 
@@ -327,7 +306,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        // MODIFIED: Added getFirestore and doc/getDoc for fetching the specific item
         import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
@@ -366,10 +344,62 @@
                 }
             });
 
-            // --- Logic for fetching and displaying the single listing ---
-            
-            // This part will be filled in the next steps. For now, it just prepares the page.
-            
+            // --- JAVASCRIPT LOGIC TO FETCH AND DISPLAY THE LISTING ---
+            const loader = document.getElementById('loader');
+            const listingDetailContainer = document.getElementById('listing-detail-container');
+
+            async function fetchListing() {
+                // 1. Get the listing ID from the URL
+                const params = new URLSearchParams(window.location.search);
+                const listingId = params.get('id');
+
+                if (!listingId) {
+                    loader.textContent = 'Error: No listing ID provided.';
+                    return;
+                }
+
+                try {
+                    // 2. Create a reference to the specific document in Firestore
+                    const docRef = doc(db, 'listings', listingId);
+                    
+                    // 3. Fetch the document data
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        
+                        // 4. Populate the HTML elements with the data
+                        document.title = `${data.title} - Cheaplet`;
+                        
+                        const listingImageEl = document.getElementById('listing-image');
+                        if (data.imageUrl) {
+                            listingImageEl.style.backgroundImage = `url('${data.imageUrl}')`;
+                            listingImageEl.innerHTML = '';
+                        } else {
+                            listingImageEl.innerHTML = '<span>No Image</span>';
+                        }
+                        
+                        document.getElementById('listing-title').textContent = data.title;
+                        document.getElementById('listing-price').textContent = `$${data.price.toFixed(2)}`;
+                        document.getElementById('listing-seller').textContent = data.posterEmail; // You can change this if you store the seller's name
+                        document.getElementById('listing-location').textContent = data.location;
+                        document.getElementById('listing-description').textContent = data.description;
+                        
+                        // 5. Hide the loader and show the content
+                        loader.style.display = 'none';
+                        listingDetailContainer.style.display = 'flex';
+
+                    } else {
+                        // Document does not exist
+                        loader.textContent = 'Sorry, this listing could not be found.';
+                    }
+                } catch (error) {
+                    console.error("Error fetching listing:", error);
+                    loader.textContent = 'An error occurred while loading the listing.';
+                }
+            }
+
+            fetchListing(); // Call the function to start the process
         }
 
         main();
