@@ -90,7 +90,6 @@
             background-color: #FFC400;
         }
         
-        /* Header buttons */
         .header-auth-buttons {
             display: flex;
             gap: 10px;
@@ -127,7 +126,11 @@
             gap: 20px;
         }
 
-        .listing-image-full {
+        /* NEW: Image Gallery Styles */
+        .image-gallery {
+            width: 100%;
+        }
+        .main-image {
             width: 100%;
             height: 300px;
             background-color: #eee;
@@ -138,7 +141,26 @@
             align-items: center;
             justify-content: center;
             color: #777;
+            margin-bottom: 10px;
         }
+        .thumbnail-container {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .thumbnail-image {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 2px solid #ddd;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        .thumbnail-image:hover, .thumbnail-image.active {
+            border-color: #4CAF50;
+        }
+
 
         .listing-info {
             flex-grow: 1;
@@ -214,8 +236,10 @@
             .header-auth-buttons { width: auto; margin-top: 0; }
             #userEmailDisplay { width: auto; text-align: right; margin-bottom: 0; margin-right: 10px; order: 0; }
             .footer-content { grid-template-columns: repeat(3, 1fr); text-align: left; }
+
             #listing-detail-container { flex-direction: row; padding: 30px; }
-            .listing-image-full { width: 50%; height: auto; max-height: 500px; }
+            .image-gallery { width: 50%; max-width: 500px; }
+            .main-image { height: 400px; }
         }
         
         @media (max-width: 767px) {
@@ -249,9 +273,17 @@
         <div id="loader">Loading listing...</div>
     
         <section id="listing-detail-container" style="display: none;">
-            <div class="listing-image-full" id="listing-image">
-                <span>No Image</span>
+            
+            <!-- NEW Image Gallery Structure -->
+            <div class="image-gallery">
+                <div class="main-image" id="main-image">
+                    <span>No Image</span>
+                </div>
+                <div class="thumbnail-container" id="thumbnail-container">
+                    <!-- Thumbnails will be added here by JavaScript -->
+                </div>
             </div>
+
             <div class="listing-info">
                 <h1 id="listing-title"></h1>
                 <p class="price" id="listing-price"></p>
@@ -265,6 +297,7 @@
                     <p id="listing-description"></p>
                 </div>
             </div>
+
         </section>
     </main>
 
@@ -317,7 +350,6 @@
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            // --- Basic Auth UI for Header ---
             const userEmailDisplay = document.getElementById('userEmailDisplay');
             const loginRegisterBtn = document.getElementById('loginRegisterBtn');
             const logoutBtn = document.getElementById('logoutBtn');
@@ -347,50 +379,68 @@
             // --- JAVASCRIPT LOGIC TO FETCH AND DISPLAY THE LISTING ---
             const loader = document.getElementById('loader');
             const listingDetailContainer = document.getElementById('listing-detail-container');
+            const mainImageEl = document.getElementById('main-image');
+            const thumbnailContainer = document.getElementById('thumbnail-container');
 
             async function fetchListing() {
-                // 1. Get the listing ID from the URL
                 const params = new URLSearchParams(window.location.search);
                 const listingId = params.get('id');
-
                 if (!listingId) {
                     loader.textContent = 'Error: No listing ID provided.';
                     return;
                 }
 
                 try {
-                    // 2. Create a reference to the specific document in Firestore
                     const docRef = doc(db, 'listings', listingId);
-                    
-                    // 3. Fetch the document data
                     const docSnap = await getDoc(docRef);
 
                     if (docSnap.exists()) {
                         const data = docSnap.data();
                         
-                        // 4. Populate the HTML elements with the data
-                        document.title = `${data.title} - Cheaplet`;
-                        
-                        const listingImageEl = document.getElementById('listing-image');
-                        if (data.imageUrl) {
-                            listingImageEl.style.backgroundImage = `url('${data.imageUrl}')`;
-                            listingImageEl.innerHTML = '';
-                        } else {
-                            listingImageEl.innerHTML = '<span>No Image</span>';
+                        // BUG FIX: Smartly get the list of image URLs
+                        let imageUrls = [];
+                        if (data.imageUrls && data.imageUrls.length > 0) {
+                            imageUrls = data.imageUrls; // Use new array
+                        } else if (data.imageUrl) {
+                            imageUrls = [data.imageUrl]; // Use old string, but put it in an array
                         }
-                        
+
+                        // Populate Text Info
+                        document.title = `${data.title} - Cheaplet`;
                         document.getElementById('listing-title').textContent = data.title;
                         document.getElementById('listing-price').textContent = `$${data.price.toFixed(2)}`;
-                        document.getElementById('listing-seller').textContent = data.posterEmail; // You can change this if you store the seller's name
+                        document.getElementById('listing-seller').textContent = data.posterEmail;
                         document.getElementById('listing-location').textContent = data.location;
                         document.getElementById('listing-description').textContent = data.description;
+
+                        // Populate Image Gallery
+                        if (imageUrls.length > 0) {
+                            mainImageEl.style.backgroundImage = `url('${imageUrls[0]}')`;
+                            mainImageEl.innerHTML = '';
+                            
+                            thumbnailContainer.innerHTML = ''; // Clear old thumbnails
+                            imageUrls.forEach((url, index) => {
+                                const thumb = document.createElement('img');
+                                thumb.src = url;
+                                thumb.classList.add('thumbnail-image');
+                                if (index === 0) {
+                                    thumb.classList.add('active'); // Set first one as active
+                                }
+                                thumb.onclick = (event) => {
+                                    mainImageEl.style.backgroundImage = `url('${url}')`;
+                                    // Update active state
+                                    document.querySelectorAll('.thumbnail-image').forEach(t => t.classList.remove('active'));
+                                    event.target.classList.add('active');
+                                };
+                                thumbnailContainer.appendChild(thumb);
+                            });
+                        } else {
+                            mainImageEl.innerHTML = '<span>No Image</span>';
+                        }
                         
-                        // 5. Hide the loader and show the content
                         loader.style.display = 'none';
                         listingDetailContainer.style.display = 'flex';
-
                     } else {
-                        // Document does not exist
                         loader.textContent = 'Sorry, this listing could not be found.';
                     }
                 } catch (error) {
@@ -399,7 +449,7 @@
                 }
             }
 
-            fetchListing(); // Call the function to start the process
+            fetchListing();
         }
 
         main();
