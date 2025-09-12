@@ -236,7 +236,6 @@
             .header-auth-buttons { width: auto; margin-top: 0; }
             #userEmailDisplay { width: auto; text-align: right; margin-bottom: 0; margin-right: 10px; order: 0; }
             .footer-content { grid-template-columns: repeat(3, 1fr); text-align: left; }
-
             #listing-detail-container { flex-direction: row; padding: 30px; }
             .image-gallery { width: 50%; max-width: 500px; }
             .main-image { height: 400px; }
@@ -257,6 +256,7 @@
                 <ul>
                     <li><a href="/index.html">Home</a></li>
                     <li><a href="/search.html">Browse</a></li>
+                    <li><a href="/my-listings.html">My Listings</a></li>
                     <li><a href="#">About</a></li>
                 </ul>
             </nav>
@@ -274,7 +274,6 @@
     
         <section id="listing-detail-container" style="display: none;">
             
-            <!-- NEW Image Gallery Structure -->
             <div class="image-gallery">
                 <div class="main-image" id="main-image">
                     <span>No Image</span>
@@ -376,7 +375,6 @@
                 }
             });
 
-            // --- JAVASCRIPT LOGIC TO FETCH AND DISPLAY THE LISTING ---
             const loader = document.getElementById('loader');
             const listingDetailContainer = document.getElementById('listing-detail-container');
             const mainImageEl = document.getElementById('main-image');
@@ -400,12 +398,11 @@
                         // BUG FIX: Smartly get the list of image URLs
                         let imageUrls = [];
                         if (data.imageUrls && data.imageUrls.length > 0) {
-                            imageUrls = data.imageUrls; // Use new array
+                            imageUrls = data.imageUrls;
                         } else if (data.imageUrl) {
-                            imageUrls = [data.imageUrl]; // Use old string, but put it in an array
+                            imageUrls = [data.imageUrl];
                         }
 
-                        // Populate Text Info
                         document.title = `${data.title} - Cheaplet`;
                         document.getElementById('listing-title').textContent = data.title;
                         document.getElementById('listing-price').textContent = `$${data.price.toFixed(2)}`;
@@ -413,22 +410,20 @@
                         document.getElementById('listing-location').textContent = data.location;
                         document.getElementById('listing-description').textContent = data.description;
 
-                        // Populate Image Gallery
                         if (imageUrls.length > 0) {
                             mainImageEl.style.backgroundImage = `url('${imageUrls[0]}')`;
                             mainImageEl.innerHTML = '';
+                            thumbnailContainer.innerHTML = '';
                             
-                            thumbnailContainer.innerHTML = ''; // Clear old thumbnails
                             imageUrls.forEach((url, index) => {
                                 const thumb = document.createElement('img');
                                 thumb.src = url;
                                 thumb.classList.add('thumbnail-image');
                                 if (index === 0) {
-                                    thumb.classList.add('active'); // Set first one as active
+                                    thumb.classList.add('active');
                                 }
                                 thumb.onclick = (event) => {
                                     mainImageEl.style.backgroundImage = `url('${url}')`;
-                                    // Update active state
                                     document.querySelectorAll('.thumbnail-image').forEach(t => t.classList.remove('active'));
                                     event.target.classList.add('active');
                                 };
