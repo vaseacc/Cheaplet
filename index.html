@@ -523,10 +523,12 @@
             <div class="logo" id="logo-link">
                 Cheap<span>let</span>
             </div>
+            <!-- NAVIGATION UPDATED HERE -->
             <nav>
                 <ul>
-                    <li><a href="#">Home</a></li>
+                    <li><a href="/index.html">Home</a></li>
                     <li><a href="/search.html">Browse</a></li>
+                    <li><a href="/my-listings.html">My Listings</a></li>
                     <li><a href="#">How It Works</a></li>
                     <li><a href="#">About</a></li>
                 </ul>
@@ -721,7 +723,8 @@
             const auth = getAuth(app);
             const db = getFirestore(app);
             const analytics = getAnalytics(app);
-
+            
+            // --- ALL DOM SELECTIONS ---
             const authFormsSection = document.getElementById('auth-forms');
             const registerNameFields = document.getElementById('register-name-fields');
             const firstNameInput = document.getElementById('firstName');
@@ -762,6 +765,7 @@
             let selectedFiles = [];
             const maxFiles = 5;
 
+            // --- UI and Form Functions ---
             function setMainContentVisibility(show) { mainContentSections.forEach(section => { if (section) section.style.display = show ? '' : 'none'; }); }
             function returnToMainView() { setMainContentVisibility(true); authFormsSection.style.display = 'none'; listingFormSection.style.display = 'none'; }
             function toggleAuthFormVisibility(show) { setMainContentVisibility(!show); listingFormSection.style.display = 'none'; authFormsSection.style.display = show ? 'block' : 'none'; }
@@ -779,6 +783,7 @@
                 authError.textContent = '';
             }
             
+            // --- Image Uploader Functions ---
             function renderPreviews() {
                 imagePreviewContainer.innerHTML = '';
                 selectedFiles.forEach((file, index) => {
@@ -801,12 +806,10 @@
                 });
                 addPhotoLabel.style.display = selectedFiles.length < maxFiles ? 'flex' : 'none';
             }
-
             function removeImage(index) {
                 selectedFiles.splice(index, 1);
                 renderPreviews();
             }
-
             listingImageInput.addEventListener('change', (e) => {
                 const newFile = e.target.files[0];
                 if (newFile && selectedFiles.length < maxFiles) {
@@ -840,6 +843,7 @@
                 return isValid;
             }
 
+            // --- Firebase Logic ---
             onAuthStateChanged(auth, user => {
                 if (user) {
                     userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
@@ -883,10 +887,8 @@
                         timestamp: serverTimestamp()
                     });
                     alert('Your item has been listed!');
-                    listingTitleInput.value = '';
-                    listingDescriptionInput.value = '';
-                    listingPriceInput.value = '';
-                    listingCategorySelect.value = '';
+                    listingTitleInput.value = ''; listingDescriptionInput.value = '';
+                    listingPriceInput.value = ''; listingCategorySelect.value = '';
                     listingLocationInput.value = '';
                     selectedFiles = [];
                     renderPreviews();
@@ -949,6 +951,7 @@
                 });
             }
 
+            // --- Event Listeners ---
             loginRegisterBtn.addEventListener('click', () => { isLoginMode = true; updateAuthModeUI(); toggleAuthFormVisibility(true); });
             listAnItemBtn.addEventListener('click', () => {
                 if (auth.currentUser) toggleListingFormVisibility(true);
@@ -958,7 +961,7 @@
             cancelAuthFormBtn.addEventListener('click', returnToMainView);
             cancelListingFormBtn.addEventListener('click', returnToMainView);
             logoLink.addEventListener('click', returnToMainView);
-            navLinks.forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); returnToMainView(); }); });
+            navLinks.forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); window.location.href = link.href; }); });
             categoryFilter.addEventListener('change', fetchAndRenderListings);
             sortFilter.addEventListener('change', fetchAndRenderListings);
             searchInput.addEventListener('keydown', (e) => {
@@ -983,6 +986,7 @@
             });
             logoutBtn.addEventListener('click', () => signOut(auth));
 
+            // --- Initialization ---
             updateAuthModeUI();
             fetchAndRenderListings();
         }
