@@ -661,7 +661,6 @@
             const db = getFirestore(app);
             const analytics = getAnalytics(app);
 
-            // --- COMPLETE SCRIPT WITH MULTI-IMAGE UPLOAD ---
             const authFormsSection = document.getElementById('auth-forms');
             const registerNameFields = document.getElementById('register-name-fields');
             const firstNameInput = document.getElementById('firstName');
@@ -781,14 +780,19 @@
                 }
             });
             
+            // BUG FIX: This function now correctly handles both old and new data structures
             function renderListing(listingDoc) {
                 const data = listingDoc.data();
                 const listingLink = document.createElement('a');
                 listingLink.className = 'listing-card';
                 listingLink.href = `/listing.html?id=${listingDoc.id}`;
-                const firstImage = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls[0] : null;
+
+                // Check for new 'imageUrls' array first, then fall back to old 'imageUrl' string
+                const firstImage = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls[0] : data.imageUrl;
+                
                 const imageStyle = firstImage ? `background-image: url('${firstImage}')` : '';
                 const imageContent = firstImage ? '' : 'No Image';
+
                 listingLink.innerHTML = `
                     <div class="listing-image" style="${imageStyle}">${imageContent}</div>
                     <div class="listing-details">
@@ -860,7 +864,6 @@
                 });
             }
 
-            // All event listeners
             loginRegisterBtn.addEventListener('click', () => { isLoginMode = true; updateAuthModeUI(); toggleAuthFormVisibility(true); });
             listAnItemBtn.addEventListener('click', () => {
                 if (auth.currentUser) toggleListingFormVisibility(true);
@@ -895,7 +898,6 @@
             });
             logoutBtn.addEventListener('click', () => signOut(auth));
 
-            // Initialization
             updateAuthModeUI();
             fetchAndRenderListings();
         }
