@@ -152,8 +152,7 @@
             gap: 15px;
             margin-bottom: 40px;
         }
-        
-        /* STYLE UPDATE: Make card behave like a block link */
+
         .listing-card {
             background: white;
             border-radius: 8px;
@@ -397,7 +396,7 @@
             <nav>
                 <ul>
                     <li><a href="/index.html">Home</a></li>
-                    <li><a href="/index.html#listings-container">Browse</a></li>
+                    <li><a href="/search.html">Browse</a></li>
                     <li><a href="#">About</a></li>
                 </ul>
             </nav>
@@ -552,6 +551,8 @@
             const db = getFirestore(app);
             const analytics = getAnalytics(app);
 
+            // --- COMPLETE SCRIPT LOGIC FOR SEARCH PAGE ---
+
             const authFormsSection = document.getElementById('auth-forms');
             const registerNameFields = document.getElementById('register-name-fields');
             const firstNameInput = document.getElementById('firstName');
@@ -565,6 +566,13 @@
             const toggleAuthModeLink = document.getElementById('toggleAuthMode');
             const cancelAuthFormBtn = document.getElementById('cancelAuthFormBtn');
             const listingFormSection = document.getElementById('listing-form');
+            const listingTitleInput = document.getElementById('listing-title');
+            const listingDescriptionInput = document.getElementById('listing-description');
+            const listingPriceInput = document.getElementById('listing-price');
+            const listingCategorySelect = document.getElementById('listing-category');
+            const listingLocationInput = document.getElementById('listing-location');
+            const listingImageInput = document.getElementById('listing-image');
+            const postListingBtn = document.getElementById('postListingBtn');
             const loginRegisterBtn = document.getElementById('loginRegisterBtn');
             const listAnItemBtn = document.getElementById('listAnItemBtn');
             const logoutBtn = document.getElementById('logoutBtn');
@@ -586,22 +594,138 @@
             }
             searchInput.value = getQueryFromURL();
 
+            function setMainContentVisibility(show) {
+                mainContentSections.forEach(section => { if (section) section.style.display = show ? '' : 'none'; });
+            }
             function returnToMainView() {
-                mainContentSections.forEach(s => s.style.display = 'block');
+                setMainContentVisibility(true);
                 authFormsSection.style.display = 'none';
                 listingFormSection.style.display = 'none';
             }
-            
-            // JAVASCRIPT UPDATE: renderListing now creates an <a> tag
+            function toggleAuthFormVisibility(show) {
+                setMainContentVisibility(!show);
+                listingFormSection.style.display = 'none';
+                authFormsSection.style.display = show ? 'block' : 'none';
+                if (show) authFormsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            function toggleListingFormVisibility(show) {
+                setMainContentVisibility(!show);
+                authFormsSection.style.display = 'none';
+                listingFormSection.style.display = show ? 'block' : 'none';
+                if (show) listingFormSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            function updateAuthModeUI() {
+                if (isLoginMode) {
+                    loginBtn.style.display = 'inline-block'; registerBtn.style.display = 'none';
+                    registerNameFields.style.display = 'none'; toggleAuthModeLink.textContent = 'New user? Register here.';
+                    authFormsSection.querySelector('h2').textContent = 'Log In to Cheaplet'; passwordFeedback.style.display = 'none';
+                } else {
+                    loginBtn.style.display = 'none'; registerBtn.style.display = 'inline-block';
+                    registerNameFields.style.display = 'block'; toggleAuthModeLink.textContent = 'Already have an account? Log in.';
+                    authFormsSection.querySelector('h2').textContent = 'Register for Cheaplet'; passwordFeedback.style.display = 'block';
+                }
+                authError.textContent = '';
+            }
+            function validateListingForm() {
+                let isValid = true;
+                document.querySelectorAll('.form-field-error').forEach(el => el.textContent = '');
+                if (!listingTitleInput.value.trim()) {
+                    document.getElementById('title-error').textContent = 'Please enter an item title.'; isValid = false;
+                }
+                if (!listingDescriptionInput.value.trim()) {
+                    document.getElementById('description-error').textContent = 'Please enter a description.'; isValid = false;
+                }
+                if (!listingPriceInput.value) {
+                    document.getElementById('price-error').textContent = 'Please enter a price.'; isValid = false;
+                }
+                 if (!listingCategorySelect.value) {
+                    document.getElementById('category-error').textContent = 'Please select a category.'; isValid = false;
+                }
+                if (!listingLocationInput.value.trim()) {
+                    document.getElementById('location-error').textContent = 'Please enter your location.'; isValid = false;
+                }
+                if (listingImageInput.files[0] && listingImageInput.files[0].size > 5 * 1024 * 1024) {
+                    document.getElementById('image-error').textContent = 'Image file is too large (max 5MB).'; isValid = false;
+                }
+                return isValid;
+            }
+
+            onAuthStateChanged(auth, user => {
+                if (user) {
+                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
+                    userEmailDisplay.style.display = 'block'; loginRegisterBtn.style.display = 'none';
+                    logoutBtn.style.display = 'inline-block'; listAnItemBtn.style.display = 'inline-block';
+                    if (authFormsSection.style.display === 'block' || listingFormSection.style.display === 'block') {
+                        returnToMainView();
+                    }
+                } else {
+                    userEmailDisplay.style.display = 'none'; loginRegisterBtn.style.display = 'inline-block';
+                    logoutBtn.style.display = 'none'; listAnItemBtn.style.display = 'none';
+                    if(listingFormSection.style.display === 'block'){ returnToMainView(); }
+                }
+            });
+
+            loginRegisterBtn.addEventListener('click', () => { isLoginMode = true; updateAuthModeUI(); toggleAuthFormVisibility(true); });
+            listAnItemBtn.addEventListener('click', () => {
+                if (auth.currentUser) toggleListingFormVisibility(true);
+                else { alert('Please log in to list an item.'); isLoginMode = true; updateAuthModeUI(); toggleAuthFormVisibility(true); }
+            });
+            cancelAuthFormBtn.addEventListener('click', returnToMainView);
+            cancelListingFormBtn.addEventListener('click', returnToMainView);
+            toggleAuthModeLink.addEventListener('click', (e) => { e.preventDefault(); isLoginMode = !isLoginMode; updateAuthModeUI(); });
+            loginBtn.addEventListener('click', () => signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(err => authError.textContent = err.message));
+            registerBtn.addEventListener('click', async () => {
+                const firstName = firstNameInput.value.trim();
+                const lastName = lastNameInput.value.trim();
+                if (!firstName || !lastName) { authError.textContent = "Please enter your first and last name."; return; }
+                if (passwordInput.value.length < 6) { authError.textContent = "Password too short."; return; }
+                try {
+                    const userCredential = await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+                    await updateProfile(userCredential.user, { displayName: `${firstName} ${lastName}` });
+                } catch(err) { authError.textContent = err.message; }
+            });
+            logoutBtn.addEventListener('click', () => signOut(auth));
+             postListingBtn.addEventListener('click', async () => {
+                const user = auth.currentUser;
+                if (!user) { alert('You must be logged in to post an item.'); toggleAuthFormVisibility(true); return; }
+                if (!validateListingForm()) return;
+                postListingBtn.disabled = true; postListingBtn.textContent = 'Posting...';
+                let imageUrl = null;
+                try {
+                    const imageFile = listingImageInput.files[0];
+                    if (imageFile) {
+                        const formData = new FormData();
+                        formData.append('file', imageFile);
+                        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                        const response = await fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData });
+                        if (!response.ok) throw new Error('Image upload failed.');
+                        const data = await response.json();
+                        imageUrl = data.secure_url;
+                    }
+                    await addDoc(collection(db, 'listings'), {
+                        title: listingTitleInput.value.trim(), description: listingDescriptionInput.value.trim(),
+                        price: parseFloat(listingPriceInput.value), category: listingCategorySelect.value,
+                        location: listingLocationInput.value.trim(), imageUrl: imageUrl,
+                        posterUid: user.uid, posterEmail: user.email, timestamp: serverTimestamp()
+                    });
+                    alert('Your item has been listed!');
+                    listingFormSection.querySelectorAll('input, textarea, select').forEach(el => el.value = '');
+                    returnToMainView();
+                } catch (error) {
+                    console.error("Error posting listing:", error);
+                    document.getElementById('image-error').textContent = "Could not post item. " + error.message;
+                } finally {
+                    postListingBtn.disabled = false; postListingBtn.textContent = 'Post Item';
+                }
+            });
+
             function renderListing(listingDoc) {
                 const data = listingDoc.data();
                 const listingLink = document.createElement('a');
                 listingLink.className = 'listing-card';
                 listingLink.href = `/listing.html?id=${listingDoc.id}`;
-
                 const imageStyle = data.imageUrl ? `background-image: url('${data.imageUrl}')` : '';
                 const imageContent = data.imageUrl ? '' : 'No Image';
-
                 listingLink.innerHTML = `
                     <div class="listing-image" style="${imageStyle}">${imageContent}</div>
                     <div class="listing-details">
@@ -628,7 +752,6 @@
                 else if (sortBy === 'price-high') constraints.push(orderBy('price', 'desc'));
                 else constraints.push(orderBy('timestamp', 'desc'));
                 const finalQuery = query(q, ...constraints);
-
                 unsubscribe = onSnapshot(finalQuery, snapshot => {
                     listingsContainer.innerHTML = '';
                     const searchTerm = searchInput.value.toLowerCase();
@@ -646,10 +769,6 @@
                 });
             }
             
-            // NOTE: The rest of the form logic is intentionally omitted for brevity,
-            // as it is not needed for the search page to function for visitors.
-            // A full implementation would include it as in index.html.
-
             searchInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     window.location.href = `/search.html?q=${encodeURIComponent(searchInput.value.trim())}`;
@@ -657,18 +776,7 @@
             });
             categoryFilter.addEventListener('change', fetchAndRenderListings);
             sortFilter.addEventListener('change', fetchAndRenderListings);
-            
-            // Simplified auth display logic for this page
-            onAuthStateChanged(auth, user => {
-                if (user) {
-                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
-                    userEmailDisplay.style.display = 'block';
-                    loginRegisterBtn.style.display = 'none';
-                    logoutBtn.style.display = 'inline-block';
-                    listAnItemBtn.style.display = 'inline-block';
-                }
-            });
-            
+            updateAuthModeUI();
             fetchAndRenderListings();
         }
         main();
