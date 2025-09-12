@@ -388,25 +388,21 @@
              color: red;
         }
         
-        /* --- NEW STYLES for Custom Image Uploader --- */
         #image-uploader {
             margin: 10px auto;
             max-width: 350px;
         }
-        
         .image-preview-grid {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
             margin-top: 10px;
         }
-        
         .image-preview-wrapper {
             position: relative;
             width: 80px;
             height: 80px;
         }
-
         .image-preview {
             width: 100%;
             height: 100%;
@@ -414,7 +410,6 @@
             object-fit: cover;
             border: 1px solid #ddd;
         }
-        
         .remove-image-btn {
             position: absolute;
             top: -5px;
@@ -432,7 +427,6 @@
             font-weight: bold;
             line-height: 1;
         }
-        
         #add-photo-label {
             width: 80px;
             height: 80px;
@@ -446,12 +440,10 @@
             color: #777;
             transition: background-color 0.3s, border-color 0.3s;
         }
-        
         #add-photo-label:hover {
             background-color: #f8f9fa;
             border-color: #4CAF50;
         }
-
         #add-photo-label span {
             font-size: 24px;
         }
@@ -459,12 +451,9 @@
             font-size: 10px;
             margin-top: 5px;
         }
-
-        /* Hide the actual file input */
         #listing-image-input {
             display: none;
         }
-
 
         /* Header buttons */
         .header-auth-buttons {
@@ -600,7 +589,6 @@
             <input type="text" id="listing-location" placeholder="Your Location (e.g., Brooklyn, NY)" required>
             <p id="location-error" class="form-field-error"></p>
             
-            <!-- NEW Custom Image Uploader HTML -->
             <div id="image-uploader">
                 <label style="font-weight: 500; display: block;">Upload Images (1-5 Required)</label>
                 <div class="image-preview-grid">
@@ -734,17 +722,68 @@
             const db = getFirestore(app);
             const analytics = getAnalytics(app);
 
-            // --- JAVASCRIPT LOGIC WITH CUSTOM IMAGE UPLOADER ---
+            // --- COMPLETE SCRIPT WITH ALL FEATURES AND BUG FIXES ---
+
+            // DOM Selections
+            const authFormsSection = document.getElementById('auth-forms');
+            const registerNameFields = document.getElementById('register-name-fields');
+            const firstNameInput = document.getElementById('firstName');
+            const lastNameInput = document.getElementById('lastName');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const passwordFeedback = document.getElementById('password-feedback');
+            const loginBtn = document.getElementById('loginBtn');
+            const registerBtn = document.getElementById('registerBtn');
+            const authError = document.getElementById('auth-error');
+            const toggleAuthModeLink = document.getElementById('toggleAuthMode');
+            const cancelAuthFormBtn = document.getElementById('cancelAuthFormBtn');
+            const listingFormSection = document.getElementById('listing-form');
+            const listingTitleInput = document.getElementById('listing-title');
+            const listingDescriptionInput = document.getElementById('listing-description');
+            const listingPriceInput = document.getElementById('listing-price');
+            const listingCategorySelect = document.getElementById('listing-category');
+            const listingLocationInput = document.getElementById('listing-location');
             const listingImageInput = document.getElementById('listing-image-input');
             const imagePreviewContainer = document.getElementById('image-preview-container');
             const addPhotoLabel = document.getElementById('add-photo-label');
             const postListingBtn = document.getElementById('postListingBtn');
-            const listingFormSection = document.getElementById('listing-form');
+            const listingsContainer = document.getElementById('listings-container');
+            const itemCountSpan = document.getElementById('itemCount');
+            const logoLink = document.getElementById('logo-link');
+            const navLinks = document.querySelectorAll('nav ul li a');
+            const loginRegisterBtn = document.getElementById('loginRegisterBtn');
+            const listAnItemBtn = document.getElementById('listAnItemBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const userEmailDisplay = document.getElementById('userEmailDisplay');
+            const startBrowsingBtn = document.getElementById('startBrowsingBtn');
+            const categoryFilter = document.getElementById('category-filter');
+            const sortFilter = document.getElementById('sort-filter');
+            const searchInput = document.getElementById('search-input');
+            const mainContentSections = [ document.querySelector('.hero'), document.querySelector('.filters'), document.querySelector('.listings'), document.querySelector('.how-it-works') ];
             
-            let selectedFiles = []; // Array to manage selected files
+            let isLoginMode = true;
+            let selectedFiles = [];
             const maxFiles = 5;
 
-            // NEW: Function to render the previews based on the selectedFiles array
+            // --- UI and Form Functions ---
+            function setMainContentVisibility(show) { mainContentSections.forEach(section => { if (section) section.style.display = show ? '' : 'none'; }); }
+            function returnToMainView() { setMainContentVisibility(true); authFormsSection.style.display = 'none'; listingFormSection.style.display = 'none'; }
+            function toggleAuthFormVisibility(show) { setMainContentVisibility(!show); listingFormSection.style.display = 'none'; authFormsSection.style.display = show ? 'block' : 'none'; }
+            function toggleListingFormVisibility(show) { setMainContentVisibility(!show); authFormsSection.style.display = 'none'; listingFormSection.style.display = show ? 'block' : 'none'; }
+            function updateAuthModeUI() {
+                if (isLoginMode) {
+                    loginBtn.style.display = 'inline-block'; registerBtn.style.display = 'none';
+                    registerNameFields.style.display = 'none'; toggleAuthModeLink.textContent = 'New user? Register here.';
+                    authFormsSection.querySelector('h2').textContent = 'Log In to Cheaplet'; passwordFeedback.style.display = 'none';
+                } else {
+                    loginBtn.style.display = 'none'; registerBtn.style.display = 'inline-block';
+                    registerNameFields.style.display = 'block'; toggleAuthModeLink.textContent = 'Already have an account? Log in.';
+                    authFormsSection.querySelector('h2').textContent = 'Register for Cheaplet'; passwordFeedback.style.display = 'block';
+                }
+                authError.textContent = '';
+            }
+            
+            // --- Image Uploader Functions ---
             function renderPreviews() {
                 imagePreviewContainer.innerHTML = '';
                 selectedFiles.forEach((file, index) => {
@@ -752,41 +791,33 @@
                     reader.onload = (e) => {
                         const wrapper = document.createElement('div');
                         wrapper.classList.add('image-preview-wrapper');
-                        
                         const img = document.createElement('img');
                         img.src = e.target.result;
                         img.classList.add('image-preview');
-                        
                         const removeBtn = document.createElement('button');
                         removeBtn.classList.add('remove-image-btn');
                         removeBtn.textContent = 'X';
                         removeBtn.onclick = () => removeImage(index);
-                        
                         wrapper.appendChild(img);
                         wrapper.appendChild(removeBtn);
                         imagePreviewContainer.appendChild(wrapper);
                     };
                     reader.readAsDataURL(file);
                 });
-                
-                // Show or hide the "Add Photo" button
                 addPhotoLabel.style.display = selectedFiles.length < maxFiles ? 'flex' : 'none';
             }
 
-            // NEW: Function to remove an image from the array and re-render
             function removeImage(index) {
                 selectedFiles.splice(index, 1);
                 renderPreviews();
             }
 
-            // NEW: Event listener for the hidden file input
             listingImageInput.addEventListener('change', (e) => {
                 const newFile = e.target.files[0];
                 if (newFile && selectedFiles.length < maxFiles) {
                     selectedFiles.push(newFile);
                     renderPreviews();
                 }
-                // Reset the input so the same file can be selected again if removed
                 e.target.value = '';
             });
 
@@ -794,19 +825,48 @@
                 let isValid = true;
                 document.querySelectorAll('.form-field-error').forEach(el => el.textContent = '');
                 if (selectedFiles.length === 0) {
-                    document.getElementById('image-error').textContent = 'Please upload at least one image.';
-                    isValid = false;
+                    document.getElementById('image-error').textContent = 'Please upload at least one image.'; isValid = false;
                 }
-                // ... rest of validation logic ...
+                if (!listingTitleInput.value.trim()) {
+                    document.getElementById('title-error').textContent = 'Please enter an item title.'; isValid = false;
+                }
+                if (!listingDescriptionInput.value.trim()) {
+                    document.getElementById('description-error').textContent = 'Please enter a description.'; isValid = false;
+                }
+                if (!listingPriceInput.value) {
+                    document.getElementById('price-error').textContent = 'Please enter a price.'; isValid = false;
+                }
+                if (!listingCategorySelect.value) {
+                    document.getElementById('category-error').textContent = 'Please select a category.'; isValid = false;
+                }
+                if (!listingLocationInput.value.trim()) {
+                    document.getElementById('location-error').textContent = 'Please enter your location.'; isValid = false;
+                }
                 return isValid;
             }
+
+            // --- Firebase Logic ---
+            onAuthStateChanged(auth, user => {
+                if (user) {
+                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
+                    userEmailDisplay.style.display = 'block';
+                    loginRegisterBtn.style.display = 'none'; logoutBtn.style.display = 'inline-block';
+                    listAnItemBtn.style.display = 'inline-block';
+                    if (authFormsSection.style.display === 'block' || listingFormSection.style.display === 'block') {
+                        returnToMainView();
+                    }
+                } else {
+                    userEmailDisplay.style.display = 'none'; loginRegisterBtn.style.display = 'inline-block';
+                    logoutBtn.style.display = 'none'; listAnItemBtn.style.display = 'none';
+                    if(listingFormSection.style.display === 'block'){ returnToMainView(); }
+                }
+            });
 
             postListingBtn.addEventListener('click', async () => {
                 const user = auth.currentUser;
                 if (!user) { alert('You must be logged in to post an item.'); toggleAuthFormVisibility(true); return; }
                 if (!validateListingForm()) return;
-                postListingBtn.disabled = true;
-                postListingBtn.textContent = 'Uploading...';
+                postListingBtn.disabled = true; postListingBtn.textContent = 'Uploading...';
                 try {
                     const uploadPromises = selectedFiles.map(file => {
                         const formData = new FormData();
@@ -816,18 +876,22 @@
                     });
                     const uploadResults = await Promise.all(uploadPromises);
                     const imageUrls = uploadResults.map(result => result.secure_url);
-                    
                     postListingBtn.textContent = 'Posting...';
                     await addDoc(collection(db, 'listings'), {
-                        // ... listing data ...
+                        title: listingTitleInput.value.trim(),
+                        description: listingDescriptionInput.value.trim(),
+                        price: parseFloat(listingPriceInput.value),
+                        category: listingCategorySelect.value,
+                        location: listingLocationInput.value.trim(),
                         imageUrls: imageUrls,
-                        // ... rest of data ...
+                        posterUid: user.uid,
+                        posterEmail: user.email,
+                        timestamp: serverTimestamp()
                     });
-                    
                     alert('Your item has been listed!');
-                    listingFormSection.querySelectorAll('input, textarea, select').forEach(el => el.value = '');
-                    selectedFiles = []; // Clear the files array
-                    renderPreviews(); // Update the UI
+                    listingFormSection.querySelectorAll('input[type=text], input[type=number], textarea, select').forEach(el => el.value = '');
+                    selectedFiles = [];
+                    renderPreviews();
                     returnToMainView();
                 } catch (error) {
                     console.error("Error posting listing:", error);
@@ -839,11 +903,92 @@
             });
             
             function renderListing(listingDoc) {
-                // ... same as previous step ...
+                const data = listingDoc.data();
+                const listingLink = document.createElement('a');
+                listingLink.className = 'listing-card';
+                listingLink.href = `/listing.html?id=${listingDoc.id}`;
+                const firstImage = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls[0] : data.imageUrl;
+                const imageStyle = firstImage ? `background-image: url('${firstImage}')` : '';
+                const imageContent = firstImage ? '' : 'No Image';
+                listingLink.innerHTML = `
+                    <div class="listing-image" style="${imageStyle}">${imageContent}</div>
+                    <div class="listing-details">
+                        <div class="listing-price">$${data.price ? data.price.toFixed(2) : '0.00'}</div>
+                        <h3 class="listing-title">${data.title}</h3>
+                        <div class="listing-location">${data.location}</div>
+                        <div class="listing-meta">
+                            <span>${data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : ''}</span>
+                            <span>${data.category}</span>
+                        </div>
+                    </div>`;
+                return listingLink;
+            }
+            
+            let unsubscribe;
+            function fetchAndRenderListings() {
+                if (unsubscribe) unsubscribe();
+                let q = collection(db, 'listings');
+                const constraints = [];
+                const category = categoryFilter.value;
+                if (category !== 'all') constraints.push(where('category', '==', category));
+                const sortBy = sortFilter.value;
+                if (sortBy === 'price-low') constraints.push(orderBy('price', 'asc'));
+                else if (sortBy === 'price-high') constraints.push(orderBy('price', 'desc'));
+                else constraints.push(orderBy('timestamp', 'desc'));
+                const finalQuery = query(q, ...constraints);
+                unsubscribe = onSnapshot(finalQuery, snapshot => {
+                    listingsContainer.innerHTML = '';
+                    const docs = snapshot.docs;
+                    itemCountSpan.textContent = `${docs.length} items found`;
+                    if (docs.length === 0) {
+                        listingsContainer.innerHTML = `<div class="no-listings-message"><h3>No items found.</h3><p>Try adjusting filters or be the first to list!</p></div>`;
+                    } else {
+                        docs.forEach(doc => listingsContainer.appendChild(renderListing(doc)));
+                    }
+                }, error => {
+                    console.error("Error fetching listings:", error);
+                    itemCountSpan.textContent = `Error loading items.`;
+                });
             }
 
-            // --- All other functions and event listeners ---
-            // (omitted for brevity, they are the same as the previous step)
+            // --- Event Listeners ---
+            loginRegisterBtn.addEventListener('click', () => { isLoginMode = true; updateAuthModeUI(); toggleAuthFormVisibility(true); });
+            listAnItemBtn.addEventListener('click', () => {
+                if (auth.currentUser) toggleListingFormVisibility(true);
+                else { alert('Please log in to list an item.'); isLoginMode = true; updateAuthModeUI(); toggleAuthFormVisibility(true); }
+            });
+            startBrowsingBtn.addEventListener('click', () => { document.querySelector('.filters').scrollIntoView({ behavior: 'smooth' }); });
+            cancelAuthFormBtn.addEventListener('click', returnToMainView);
+            cancelListingFormBtn.addEventListener('click', returnToMainView);
+            logoLink.addEventListener('click', returnToMainView);
+            navLinks.forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); returnToMainView(); }); });
+            categoryFilter.addEventListener('change', fetchAndRenderListings);
+            sortFilter.addEventListener('change', fetchAndRenderListings);
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const searchTerm = searchInput.value.trim();
+                    if (searchTerm) {
+                        window.location.href = `/search.html?q=${encodeURIComponent(searchTerm)}`;
+                    }
+                }
+            });
+            toggleAuthModeLink.addEventListener('click', (e) => { e.preventDefault(); isLoginMode = !isLoginMode; updateAuthModeUI(); });
+            loginBtn.addEventListener('click', () => signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(err => authError.textContent = err.message));
+            registerBtn.addEventListener('click', async () => {
+                const firstName = firstNameInput.value.trim();
+                const lastName = lastNameInput.value.trim();
+                if (!firstName || !lastName) { authError.textContent = "Please enter your first and last name."; return; }
+                if (passwordInput.value.length < 6) { authError.textContent = "Password must be at least 6 characters long."; return; }
+                try {
+                    const userCredential = await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+                    await updateProfile(userCredential.user, { displayName: `${firstName} ${lastName}` });
+                } catch (error) { authError.textContent = error.message; }
+            });
+            logoutBtn.addEventListener('click', () => signOut(auth));
+
+            // --- Initialization ---
+            updateAuthModeUI();
+            fetchAndRenderListings();
         }
         main();
     </script>
