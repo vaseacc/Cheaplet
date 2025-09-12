@@ -388,7 +388,6 @@
              color: red;
         }
         
-        /* NEW STYLES for Image Preview */
         #image-preview-container {
             display: flex;
             flex-wrap: wrap;
@@ -404,7 +403,6 @@
             object-fit: cover;
             border: 1px solid #ddd;
         }
-
 
         /* Header buttons */
         .header-auth-buttons {
@@ -539,14 +537,9 @@
             <p id="category-error" class="form-field-error"></p>
             <input type="text" id="listing-location" placeholder="Your Location (e.g., Brooklyn, NY)" required>
             <p id="location-error" class="form-field-error"></p>
-            
-            <!-- HTML UPDATED: Label changed, input now accepts multiple files -->
             <label for="listing-image" style="font-weight: 500; margin-top: 10px; display: block;">Upload Images (Required)</label>
             <input type="file" id="listing-image" accept="image/*" multiple required>
-            
-            <!-- NEW: Container for image previews -->
             <div id="image-preview-container"></div>
-            
             <p id="image-error" class="form-field-error"></p>
             <div class="form-buttons">
                 <button class="btn" id="postListingBtn">Post Item</button>
@@ -668,16 +661,8 @@
             const db = getFirestore(app);
             const analytics = getAnalytics(app);
 
-            // --- JAVASCRIPT LOGIC WITH MULTI-IMAGE UPLOAD ---
+            // --- COMPLETE SCRIPT WITH MULTI-IMAGE UPLOAD ---
             const authFormsSection = document.getElementById('auth-forms');
-            const listingFormSection = document.getElementById('listing-form');
-            const listingImageInput = document.getElementById('listing-image');
-            const imagePreviewContainer = document.getElementById('image-preview-container'); // New selector
-            const postListingBtn = document.getElementById('postListingBtn');
-            const listingsContainer = document.getElementById('listings-container');
-            
-            // --- The rest of your selectors and variables...
-            // (omitted for brevity, they are the same as before)
             const registerNameFields = document.getElementById('register-name-fields');
             const firstNameInput = document.getElementById('firstName');
             const lastNameInput = document.getElementById('lastName');
@@ -689,24 +674,32 @@
             const authError = document.getElementById('auth-error');
             const toggleAuthModeLink = document.getElementById('toggleAuthMode');
             const cancelAuthFormBtn = document.getElementById('cancelAuthFormBtn');
+            const listingFormSection = document.getElementById('listing-form');
             const listingTitleInput = document.getElementById('listing-title');
             const listingDescriptionInput = document.getElementById('listing-description');
             const listingPriceInput = document.getElementById('listing-price');
             const listingCategorySelect = document.getElementById('listing-category');
             const listingLocationInput = document.getElementById('listing-location');
+            const listingImageInput = document.getElementById('listing-image');
+            const imagePreviewContainer = document.getElementById('image-preview-container');
+            const postListingBtn = document.getElementById('postListingBtn');
+            const listingsContainer = document.getElementById('listings-container');
             const itemCountSpan = document.getElementById('itemCount');
             const logoLink = document.getElementById('logo-link');
+            const navLinks = document.querySelectorAll('nav ul li a');
             const loginRegisterBtn = document.getElementById('loginRegisterBtn');
             const listAnItemBtn = document.getElementById('listAnItemBtn');
             const logoutBtn = document.getElementById('logoutBtn');
             const userEmailDisplay = document.getElementById('userEmailDisplay');
+            const startBrowsingBtn = document.getElementById('startBrowsingBtn');
+            const categoryFilter = document.getElementById('category-filter');
+            const sortFilter = document.getElementById('sort-filter');
+            const searchInput = document.getElementById('search-input');
             const mainContentSections = [ document.querySelector('.hero'), document.querySelector('.filters'), document.querySelector('.listings'), document.querySelector('.how-it-works') ];
             let isLoginMode = true;
 
-
-            // NEW: Function to handle file selection and display previews
             function handleImagePreviews() {
-                imagePreviewContainer.innerHTML = ''; // Clear existing previews
+                imagePreviewContainer.innerHTML = '';
                 const files = listingImageInput.files;
                 for (const file of files) {
                     const reader = new FileReader();
@@ -719,20 +712,15 @@
                     reader.readAsDataURL(file);
                 }
             }
-            
-            // Attach the preview handler to the file input
             listingImageInput.addEventListener('change', handleImagePreviews);
 
-            // UPDATED: Validation now requires at least one image
             function validateListingForm() {
                 let isValid = true;
                 document.querySelectorAll('.form-field-error').forEach(el => el.textContent = '');
-                
                 if (listingImageInput.files.length === 0) {
                     document.getElementById('image-error').textContent = 'Please upload at least one image.';
                     isValid = false;
                 }
-                // ... rest of the validation logic ...
                 if (!listingTitleInput.value.trim()) {
                     document.getElementById('title-error').textContent = 'Please enter an item title.'; isValid = false;
                 }
@@ -742,7 +730,7 @@
                 if (!listingPriceInput.value) {
                     document.getElementById('price-error').textContent = 'Please enter a price.'; isValid = false;
                 }
-                 if (!listingCategorySelect.value) {
+                if (!listingCategorySelect.value) {
                     document.getElementById('category-error').textContent = 'Please select a category.'; isValid = false;
                 }
                 if (!listingLocationInput.value.trim()) {
@@ -750,16 +738,13 @@
                 }
                 return isValid;
             }
-            
-            // UPDATED: Post listing logic to handle multiple uploads
+
             postListingBtn.addEventListener('click', async () => {
                 const user = auth.currentUser;
                 if (!user) { alert('You must be logged in to post an item.'); toggleAuthFormVisibility(true); return; }
                 if (!validateListingForm()) return;
-
                 postListingBtn.disabled = true;
                 postListingBtn.textContent = 'Uploading...';
-                
                 try {
                     const imageFiles = Array.from(listingImageInput.files);
                     const uploadPromises = imageFiles.map(file => {
@@ -769,29 +754,24 @@
                         return fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData })
                             .then(response => response.json());
                     });
-
                     const uploadResults = await Promise.all(uploadPromises);
                     const imageUrls = uploadResults.map(result => result.secure_url);
-
                     postListingBtn.textContent = 'Posting...';
-                    
                     await addDoc(collection(db, 'listings'), {
                         title: listingTitleInput.value.trim(),
                         description: listingDescriptionInput.value.trim(),
                         price: parseFloat(listingPriceInput.value),
                         category: listingCategorySelect.value,
                         location: listingLocationInput.value.trim(),
-                        imageUrls: imageUrls, // Store an array of URLs
+                        imageUrls: imageUrls,
                         posterUid: user.uid,
                         posterEmail: user.email,
                         timestamp: serverTimestamp()
                     });
-                    
                     alert('Your item has been listed!');
                     listingFormSection.querySelectorAll('input, textarea, select').forEach(el => el.value = '');
                     imagePreviewContainer.innerHTML = '';
                     returnToMainView();
-
                 } catch (error) {
                     console.error("Error posting listing:", error);
                     document.getElementById('image-error').textContent = "Could not post item. Please try again.";
@@ -801,17 +781,14 @@
                 }
             });
             
-            // UPDATED: renderListing now uses the first image from the imageUrls array
             function renderListing(listingDoc) {
                 const data = listingDoc.data();
                 const listingLink = document.createElement('a');
                 listingLink.className = 'listing-card';
                 listingLink.href = `/listing.html?id=${listingDoc.id}`;
-
                 const firstImage = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls[0] : null;
                 const imageStyle = firstImage ? `background-image: url('${firstImage}')` : '';
                 const imageContent = firstImage ? '' : 'No Image';
-
                 listingLink.innerHTML = `
                     <div class="listing-image" style="${imageStyle}">${imageContent}</div>
                     <div class="listing-details">
@@ -826,19 +803,103 @@
                 return listingLink;
             }
 
-            // --- The rest of your functions (auth, visibility, fetching) remain the same ---
-            // (omitted for brevity, they are the same as the previous step)
             function setMainContentVisibility(show) { mainContentSections.forEach(section => { if (section) section.style.display = show ? '' : 'none'; }); }
             function returnToMainView() { setMainContentVisibility(true); authFormsSection.style.display = 'none'; listingFormSection.style.display = 'none'; }
             function toggleAuthFormVisibility(show) { setMainContentVisibility(!show); listingFormSection.style.display = 'none'; authFormsSection.style.display = show ? 'block' : 'none'; }
             function toggleListingFormVisibility(show) { setMainContentVisibility(!show); authFormsSection.style.display = 'none'; listingFormSection.style.display = show ? 'block' : 'none'; }
-            function updateAuthModeUI() { /* ... */ }
-            onAuthStateChanged(auth, user => { /* ... */ });
-            // All event listeners and initial calls
-            // (also omitted for brevity as they are unchanged)
+            function updateAuthModeUI() {
+                if (isLoginMode) {
+                    loginBtn.style.display = 'inline-block'; registerBtn.style.display = 'none';
+                    registerNameFields.style.display = 'none'; toggleAuthModeLink.textContent = 'New user? Register here.';
+                    authFormsSection.querySelector('h2').textContent = 'Log In to Cheaplet'; passwordFeedback.style.display = 'none';
+                } else {
+                    loginBtn.style.display = 'none'; registerBtn.style.display = 'inline-block';
+                    registerNameFields.style.display = 'block'; toggleAuthModeLink.textContent = 'Already have an account? Log in.';
+                    authFormsSection.querySelector('h2').textContent = 'Register for Cheaplet'; passwordFeedback.style.display = 'block';
+                }
+                authError.textContent = '';
+            }
+            onAuthStateChanged(auth, user => {
+                if (user) {
+                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
+                    userEmailDisplay.style.display = 'block';
+                    loginRegisterBtn.style.display = 'none'; logoutBtn.style.display = 'inline-block';
+                    listAnItemBtn.style.display = 'inline-block';
+                    returnToMainView();
+                } else {
+                    userEmailDisplay.style.display = 'none'; loginRegisterBtn.style.display = 'inline-block';
+                    logoutBtn.style.display = 'none'; listAnItemBtn.style.display = 'none';
+                    if(listingFormSection.style.display === 'block'){ returnToMainView(); }
+                }
+            });
+            
+            let unsubscribe;
+            function fetchAndRenderListings() {
+                if (unsubscribe) unsubscribe();
+                let q = collection(db, 'listings');
+                const constraints = [];
+                const category = categoryFilter.value;
+                if (category !== 'all') constraints.push(where('category', '==', category));
+                const sortBy = sortFilter.value;
+                if (sortBy === 'price-low') constraints.push(orderBy('price', 'asc'));
+                else if (sortBy === 'price-high') constraints.push(orderBy('price', 'desc'));
+                else constraints.push(orderBy('timestamp', 'desc'));
+                const finalQuery = query(q, ...constraints);
+                unsubscribe = onSnapshot(finalQuery, snapshot => {
+                    listingsContainer.innerHTML = '';
+                    const docs = snapshot.docs;
+                    itemCountSpan.textContent = `${docs.length} items found`;
+                    if (docs.length === 0) {
+                        listingsContainer.innerHTML = `<div class="no-listings-message"><h3>No items found.</h3><p>Try adjusting filters or be the first to list!</p></div>`;
+                    } else {
+                        docs.forEach(doc => listingsContainer.appendChild(renderListing(doc)));
+                    }
+                }, error => {
+                    console.error("Error fetching listings:", error);
+                    itemCountSpan.textContent = `Error loading items.`;
+                });
+            }
 
+            // All event listeners
+            loginRegisterBtn.addEventListener('click', () => { isLoginMode = true; updateAuthModeUI(); toggleAuthFormVisibility(true); });
+            listAnItemBtn.addEventListener('click', () => {
+                if (auth.currentUser) toggleListingFormVisibility(true);
+                else { alert('Please log in to list an item.'); isLoginMode = true; updateAuthModeUI(); toggleAuthFormVisibility(true); }
+            });
+            startBrowsingBtn.addEventListener('click', () => { document.querySelector('.filters').scrollIntoView({ behavior: 'smooth' }); });
+            cancelAuthFormBtn.addEventListener('click', returnToMainView);
+            cancelListingFormBtn.addEventListener('click', returnToMainView);
+            logoLink.addEventListener('click', returnToMainView);
+            navLinks.forEach(link => { link.addEventListener('click', (e) => { e.preventDefault(); returnToMainView(); }); });
+            categoryFilter.addEventListener('change', fetchAndRenderListings);
+            sortFilter.addEventListener('change', fetchAndRenderListings);
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const searchTerm = searchInput.value.trim();
+                    if (searchTerm) {
+                        window.location.href = `/search.html?q=${encodeURIComponent(searchTerm)}`;
+                    }
+                }
+            });
+            toggleAuthModeLink.addEventListener('click', (e) => { e.preventDefault(); isLoginMode = !isLoginMode; updateAuthModeUI(); });
+            loginBtn.addEventListener('click', () => signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(err => authError.textContent = err.message));
+            registerBtn.addEventListener('click', async () => {
+                const firstName = firstNameInput.value.trim();
+                const lastName = lastNameInput.value.trim();
+                if (!firstName || !lastName) { authError.textContent = "Please enter your first and last name."; return; }
+                if (passwordInput.value.length < 6) { authError.textContent = "Password must be at least 6 characters long."; return; }
+                try {
+                    const userCredential = await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+                    await updateProfile(userCredential.user, { displayName: `${firstName} ${lastName}` });
+                } catch (error) { authError.textContent = error.message; }
+            });
+            logoutBtn.addEventListener('click', () => signOut(auth));
+
+            // Initialization
+            updateAuthModeUI();
+            fetchAndRenderListings();
         }
-        main(); // This needs to be recreated in the final version
+        main();
     </script>
 </body>
 </html>
