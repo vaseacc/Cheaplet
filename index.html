@@ -722,9 +722,6 @@
             const db = getFirestore(app);
             const analytics = getAnalytics(app);
 
-            // --- COMPLETE SCRIPT WITH ALL FEATURES AND BUG FIXES ---
-
-            // DOM Selections
             const authFormsSection = document.getElementById('auth-forms');
             const registerNameFields = document.getElementById('register-name-fields');
             const firstNameInput = document.getElementById('firstName');
@@ -765,7 +762,6 @@
             let selectedFiles = [];
             const maxFiles = 5;
 
-            // --- UI and Form Functions ---
             function setMainContentVisibility(show) { mainContentSections.forEach(section => { if (section) section.style.display = show ? '' : 'none'; }); }
             function returnToMainView() { setMainContentVisibility(true); authFormsSection.style.display = 'none'; listingFormSection.style.display = 'none'; }
             function toggleAuthFormVisibility(show) { setMainContentVisibility(!show); listingFormSection.style.display = 'none'; authFormsSection.style.display = show ? 'block' : 'none'; }
@@ -783,7 +779,6 @@
                 authError.textContent = '';
             }
             
-            // --- Image Uploader Functions ---
             function renderPreviews() {
                 imagePreviewContainer.innerHTML = '';
                 selectedFiles.forEach((file, index) => {
@@ -845,7 +840,6 @@
                 return isValid;
             }
 
-            // --- Firebase Logic ---
             onAuthStateChanged(auth, user => {
                 if (user) {
                     userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
@@ -889,7 +883,11 @@
                         timestamp: serverTimestamp()
                     });
                     alert('Your item has been listed!');
-                    listingFormSection.querySelectorAll('input[type=text], input[type=number], textarea, select').forEach(el => el.value = '');
+                    listingTitleInput.value = '';
+                    listingDescriptionInput.value = '';
+                    listingPriceInput.value = '';
+                    listingCategorySelect.value = '';
+                    listingLocationInput.value = '';
                     selectedFiles = [];
                     renderPreviews();
                     returnToMainView();
@@ -951,7 +949,6 @@
                 });
             }
 
-            // --- Event Listeners ---
             loginRegisterBtn.addEventListener('click', () => { isLoginMode = true; updateAuthModeUI(); toggleAuthFormVisibility(true); });
             listAnItemBtn.addEventListener('click', () => {
                 if (auth.currentUser) toggleListingFormVisibility(true);
@@ -986,7 +983,6 @@
             });
             logoutBtn.addEventListener('click', () => signOut(auth));
 
-            // --- Initialization ---
             updateAuthModeUI();
             fetchAndRenderListings();
         }
