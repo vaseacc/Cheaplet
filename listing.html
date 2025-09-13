@@ -90,7 +90,6 @@
             background-color: #FFC400;
         }
         
-        /* NEW: Style for the message button */
         .btn-message {
             background-color: #4CAF50;
             color: white;
@@ -303,8 +302,8 @@
                     <p><strong>Seller:</strong> <span id="listing-seller"></span></p>
                     <p><strong>Location:</strong> <span id="listing-location"></span></p>
 
-                    <!-- NEW: Message Seller Button -->
-                    <a id="message-seller-link" class="btn btn-message" style="display: none;">Message Seller</a>
+                    <!-- Message Seller Button is now a real button -->
+                    <button id="message-seller-btn" class="btn btn-message" style="display: none;">Message Seller</button>
                 </div>
                 <hr>
                 <div class="description">
@@ -354,7 +353,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        // SCRIPT UPDATE: Imported functions for creating chats
+        import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -395,7 +395,7 @@
             const listingDetailContainer = document.getElementById('listing-detail-container');
             const mainImageEl = document.getElementById('main-image');
             const thumbnailContainer = document.getElementById('thumbnail-container');
-            const messageSellerLink = document.getElementById('message-seller-link'); // New selector
+            const messageSellerBtn = document.getElementById('message-seller-btn');
 
             async function fetchListing() {
                 const params = new URLSearchParams(window.location.search);
@@ -412,20 +412,15 @@
                     if (docSnap.exists()) {
                         const data = docSnap.data();
                         
-                        let imageUrls = [];
-                        if (data.imageUrls && data.imageUrls.length > 0) {
-                            imageUrls = data.imageUrls;
-                        } else if (data.imageUrl) {
-                            imageUrls = [data.imageUrl];
-                        }
-
+                        // Populate page with listing data...
                         document.title = `${data.title} - Cheaplet`;
                         document.getElementById('listing-title').textContent = data.title;
                         document.getElementById('listing-price').textContent = `$${data.price.toFixed(2)}`;
                         document.getElementById('listing-seller').textContent = data.posterEmail;
                         document.getElementById('listing-location').textContent = data.location;
                         document.getElementById('listing-description').textContent = data.description;
-
+                        
+                        let imageUrls = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls : (data.imageUrl ? [data.imageUrl] : []);
                         if (imageUrls.length > 0) {
                             mainImageEl.style.backgroundImage = `url('${imageUrls[0]}')`;
                             mainImageEl.innerHTML = '';
@@ -434,13 +429,11 @@
                                 const thumb = document.createElement('img');
                                 thumb.src = url;
                                 thumb.classList.add('thumbnail-image');
-                                if (index === 0) {
-                                    thumb.classList.add('active');
-                                }
-                                thumb.onclick = (event) => {
+                                if (index === 0) thumb.classList.add('active');
+                                thumb.onclick = (e) => {
                                     mainImageEl.style.backgroundImage = `url('${url}')`;
                                     document.querySelectorAll('.thumbnail-image').forEach(t => t.classList.remove('active'));
-                                    event.target.classList.add('active');
+                                    e.target.classList.add('active');
                                 };
                                 thumbnailContainer.appendChild(thumb);
                             });
@@ -448,14 +441,35 @@
                             mainImageEl.innerHTML = '<span>No Image</span>';
                         }
                         
-                        // SCRIPT UPDATE: Logic to create and show the message button
+                        // SCRIPT UPDATE: Message button logic
                         const currentUser = auth.currentUser;
-                        // Only show the button if a user is logged in AND they are not the seller
                         if (currentUser && currentUser.uid !== data.posterUid) {
-                            const subject = `Inquiry about: ${data.title}`;
-                            const body = `Hi, I'm interested in your listing "${data.title}" on Cheaplet. Is it still available?`;
-                            messageSellerLink.href = `mailto:${data.posterEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-                            messageSellerLink.style.display = 'inline-block';
+                            messageSellerBtn.style.display = 'inline-block';
+                            messageSellerBtn.onclick = async () => {
+                                // Create a unique, consistent chat ID
+                                const uids = [currentUser.uid, data.posterUid].sort();
+                                const chatId = uids.join('_');
+
+                                const chatRef = doc(db, 'chats', chatId);
+                                
+                                try {
+                                    // Check if chat already exists. getDoc is fine here.
+                                    const chatSnap = await getDoc(chatRef);
+                                    if (!chatSnap.exists()) {
+                                        // If it doesn't exist, create it.
+                                        await setDoc(chatRef, {
+                                            participants: uids,
+                                            lastUpdate: serverTimestamp(),
+                                            lastMessage: "" // Starts with no messages
+                                        });
+                                    }
+                                    // Redirect to the chat page
+                                    window.location.href = `/chat.html?id=${chatId}`;
+                                } catch (error) {
+                                    console.error("Error creating or finding chat:", error);
+                                    alert("Could not start a conversation. Please try again.");
+                                }
+                            };
                         }
 
                         loader.style.display = 'none';
