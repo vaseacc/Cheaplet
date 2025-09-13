@@ -120,7 +120,6 @@
             border-radius: 8px;
             overflow: hidden;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            /* We will not use links here, but divs for more control */
         }
         
         .listing-image {
@@ -133,7 +132,7 @@
             font-size: 14px;
             background-size: cover;
             background-position: center;
-            cursor: pointer; /* Make image clickable to view */
+            cursor: pointer;
         }
 
         .listing-details {
@@ -156,7 +155,6 @@
             margin-bottom: 6px;
         }
 
-        /* NEW: Management Buttons */
         .manage-buttons {
             border-top: 1px solid #eee;
             padding: 10px;
@@ -179,7 +177,6 @@
             background-color: #d32f2f;
         }
 
-        /* Message Styles */
         .info-message {
             text-align: center;
             padding: 50px;
@@ -187,7 +184,6 @@
             color: #777;
         }
 
-        /* Footer Styles are the same */
         footer {
             background-color: #2E7D32;
             color: white;
@@ -207,7 +203,6 @@
         .footer-column ul li a:hover { color: white; }
         .copyright { text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem; color: #ccc; }
 
-        /* Header buttons */
         .header-auth-buttons {
             display: flex;
             gap: 10px;
@@ -232,7 +227,6 @@
             background-color: #d32f2f;
         }
 
-        /* Media Queries */
         @media (min-width: 768px) {
             .container { padding: 0 20px; }
             .header-content { flex-wrap: nowrap; }
@@ -278,7 +272,6 @@
             <h1>Manage My Listings</h1>
         </div>
 
-        <!-- This container will show messages like "Loading..." or "You must be logged in." -->
         <div id="info-container">
             <p class="info-message">Loading your listings...</p>
         </div>
@@ -328,7 +321,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        // SCRIPT UPDATE: Imported doc and deleteDoc
+        import { getFirestore, collection, query, where, onSnapshot, orderBy, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -339,7 +333,6 @@
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            // DOM Selections
             const userEmailDisplay = document.getElementById('userEmailDisplay');
             const loginRegisterBtn = document.getElementById('loginRegisterBtn');
             const logoutBtn = document.getElementById('logoutBtn');
@@ -353,26 +346,23 @@
             listAnItemBtn.addEventListener('click', () => { window.location.href = '/index.html'; });
             logoutBtn.addEventListener('click', () => signOut(auth));
 
-            let unsubscribe; // To stop listening for changes when the user logs out
+            let unsubscribe;
 
             onAuthStateChanged(auth, user => {
                 if (user) {
-                    // User is logged in
                     userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
                     userEmailDisplay.style.display = 'block';
                     loginRegisterBtn.style.display = 'none';
                     logoutBtn.style.display = 'inline-block';
                     listAnItemBtn.style.display = 'inline-block';
                     
-                    fetchMyListings(user.uid); // Fetch listings for the logged-in user
+                    fetchMyListings(user.uid);
                 } else {
-                    // User is logged out
                     userEmailDisplay.style.display = 'none';
                     loginRegisterBtn.style.display = 'inline-block';
                     logoutBtn.style.display = 'none';
                     listAnItemBtn.style.display = 'none';
-
-                    if (unsubscribe) unsubscribe(); // Stop listening to the old query
+                    if (unsubscribe) unsubscribe();
                     myListingsContainer.innerHTML = '';
                     infoContainer.innerHTML = `<p class="info-message">You must be logged in to view your listings.</p>`;
                 }
@@ -380,17 +370,16 @@
 
             function fetchMyListings(userId) {
                 const listingsRef = collection(db, "listings");
-                // Create a query against the collection to find docs where posterUid matches the current user's ID
                 const q = query(listingsRef, where("posterUid", "==", userId), orderBy("timestamp", "desc"));
                 
                 infoContainer.innerHTML = `<p class="info-message">Loading your listings...</p>`;
 
                 unsubscribe = onSnapshot(q, (querySnapshot) => {
-                    myListingsContainer.innerHTML = ''; // Clear previous listings
+                    myListingsContainer.innerHTML = '';
                     if (querySnapshot.empty) {
                         infoContainer.innerHTML = `<p class="info-message">You haven't posted any listings yet!</p>`;
                     } else {
-                        infoContainer.innerHTML = ''; // Clear the "Loading" message
+                        infoContainer.innerHTML = '';
                     }
 
                     querySnapshot.forEach((doc) => {
@@ -401,7 +390,7 @@
                     infoContainer.innerHTML = `<p class="info-message">Error loading your listings. Please try again.</p>`;
                 });
             }
-
+            
             function renderMyListing(listingDoc) {
                 const data = listingDoc.data();
                 const card = document.createElement('div');
@@ -418,10 +407,31 @@
                         <h3 class="listing-title">${data.title}</h3>
                     </div>
                     <div class="manage-buttons">
-                        <button class="btn btn-secondary">Edit</button>
-                        <button class="btn btn-delete">Delete</button>
+                        <button class="btn btn-secondary edit-btn">Edit</button>
+                        <button class="btn btn-delete delete-btn">Delete</button>
                     </div>
                 `;
+
+                // SCRIPT UPDATE: Add event listener for the new delete button
+                const deleteButton = card.querySelector('.delete-btn');
+                deleteButton.addEventListener('click', async () => {
+                    if (confirm("Are you sure you want to permanently delete this listing?")) {
+                        deleteButton.textContent = "Deleting...";
+                        deleteButton.disabled = true;
+                        try {
+                            const docRef = doc(db, 'listings', listingDoc.id);
+                            await deleteDoc(docRef);
+                            // The onSnapshot listener will automatically remove the card from the UI.
+                            // We don't need to add an alert here as the card disappearing is feedback enough.
+                        } catch (error) {
+                            console.error("Error deleting listing:", error);
+                            alert("Failed to delete listing. Please try again.");
+                            deleteButton.textContent = "Delete";
+                            deleteButton.disabled = false;
+                        }
+                    }
+                });
+
                 return card;
             }
         }
