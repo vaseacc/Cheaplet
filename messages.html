@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Messages - Cheaplet</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        /* Header Styles */
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .logo span {
+            color: #FFD700;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+
+        nav ul li {
+            margin-left: 20px;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s;
+        }
+
+        nav ul li a:hover {
+            opacity: 0.8;
+        }
+
+        .btn {
+            background-color: #FFD700;
+            color: #333;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #FFC400;
+        }
+        
+        /* --- NEW STYLES FOR INBOX --- */
+        .page-header {
+            padding: 40px 0 20px;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 30px;
+        }
+        .page-header h1 {
+            font-size: 2rem;
+        }
+
+        #inbox-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .conversation-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .conversation-item:last-child {
+            border-bottom: none;
+        }
+
+        .conversation-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #4CAF50;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-right: 15px;
+        }
+
+        .conversation-details {
+            flex-grow: 1;
+        }
+
+        .participant-name {
+            font-weight: 600;
+        }
+
+        .last-message {
+            color: #777;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .info-message {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2rem;
+            color: #777;
+        }
+        
+        /* Header buttons */
+        .header-auth-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            width: 100%;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        #userEmailDisplay {
+            color: white;
+            font-weight: 500;
+            order: -1;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        #logoutBtn {
+            background-color: #f44336;
+            color: white;
+        }
+        #logoutBtn:hover {
+            background-color: #d32f2f;
+        }
+
+        /* Media Queries */
+        @media (min-width: 768px) {
+            .container { padding: 0 20px; }
+            .header-content { flex-wrap: nowrap; }
+            nav { display: block; }
+            .header-auth-buttons { width: auto; margin-top: 0; }
+            #userEmailDisplay { width: auto; text-align: right; margin-bottom: 0; margin-right: 10px; order: 0; }
+        }
+        @media (max-width: 767px) {
+            nav { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container header-content">
+            <div class="logo" id="logo-link">
+                Cheap<span>let</span>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="/index.html">Home</a></li>
+                    <li><a href="/search.html">Browse</a></li>
+                    <li><a href="/my-listings.html">My Listings</a></li>
+                    <li><a href="/messages.html">Messages</a></li>
+                    <li><a href="#">About</a></li>
+                </ul>
+            </nav>
+            <div class="header-auth-buttons">
+                <span id="userEmailDisplay" style="display: none;"></span>
+                <button class="btn" id="listAnItemBtn">List an Item</button>
+                <button class="btn" id="loginRegisterBtn">Login / Register</button>
+                <button class="btn" id="logoutBtn" style="display: none;">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="page-header">
+            <h1>My Messages</h1>
+        </div>
+
+        <div id="info-container">
+            <p class="info-message">Loading conversations...</p>
+        </div>
+    
+        <div id="inbox-container">
+            <!-- Conversations will be dynamically inserted here -->
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getFirestore, collection, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+
+        async function main() {
+            const response = await fetch('/.netlify/functions/config');
+            const config = await response.json();
+            const firebaseConfig = config.firebaseConfig;
+
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+
+            const userEmailDisplay = document.getElementById('userEmailDisplay');
+            const loginRegisterBtn = document.getElementById('loginRegisterBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const listAnItemBtn = document.getElementById('listAnItemBtn');
+            const logoLink = document.getElementById('logo-link');
+            const infoContainer = document.getElementById('info-container');
+            const inboxContainer = document.getElementById('inbox-container');
+
+            logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
+            loginRegisterBtn.addEventListener('click', () => { window.location.href = '/index.html'; });
+            listAnItemBtn.addEventListener('click', () => { window.location.href = '/index.html'; });
+            logoutBtn.addEventListener('click', () => signOut(auth));
+
+            let unsubscribe;
+
+            onAuthStateChanged(auth, user => {
+                if (user) {
+                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
+                    userEmailDisplay.style.display = 'block';
+                    loginRegisterBtn.style.display = 'none';
+                    logoutBtn.style.display = 'inline-block';
+                    listAnItemBtn.style.display = 'inline-block';
+                    
+                    fetchConversations(user);
+                } else {
+                    userEmailDisplay.style.display = 'none';
+                    loginRegisterBtn.style.display = 'inline-block';
+                    logoutBtn.style.display = 'none';
+                    listAnItemBtn.style.display = 'none';
+                    if (unsubscribe) unsubscribe();
+                    inboxContainer.innerHTML = '';
+                    infoContainer.innerHTML = `<p class="info-message">You must be logged in to view your messages.</p>`;
+                }
+            });
+
+            function fetchConversations(currentUser) {
+                const chatsRef = collection(db, "chats");
+                // Create a query to find all chat documents where the user's ID is in the "participants" array
+                const q = query(chatsRef, where("participants", "array-contains", currentUser.uid), orderBy("lastUpdate", "desc"));
+                
+                infoContainer.innerHTML = `<p class="info-message">Loading conversations...</p>`;
+
+                unsubscribe = onSnapshot(q, (querySnapshot) => {
+                    inboxContainer.innerHTML = '';
+                    if (querySnapshot.empty) {
+                        infoContainer.innerHTML = `<p class="info-message">You have no messages yet.</p>`;
+                    } else {
+                        infoContainer.innerHTML = '';
+                    }
+
+                    querySnapshot.forEach((doc) => {
+                        inboxContainer.appendChild(renderConversation(doc, currentUser));
+                    });
+                }, (error) => {
+                    console.error("Error fetching conversations:", error);
+                    infoContainer.innerHTML = `<p class="info-message">Error loading conversations. Please try again.</p>`;
+                });
+            }
+
+            function renderConversation(doc, currentUser) {
+                const chatData = doc.data();
+                const chatId = doc.id;
+                
+                // Find the other participant's ID
+                const otherParticipantId = chatData.participants.find(p => p !== currentUser.uid);
+                
+                // In a real app, you would fetch the other user's profile to get their name.
+                // For now, we'll just use the first part of their email as a placeholder name.
+                const otherParticipantEmail = chatId.replace(currentUser.uid, '').replace('_', '');
+                const displayName = otherParticipantEmail.split('@')[0];
+
+                const conversationLink = document.createElement('a');
+                conversationLink.href = `/chat.html?id=${chatId}`;
+                conversationLink.className = 'conversation-item';
+                
+                conversationLink.innerHTML = `
+                    <div class="avatar">${displayName.charAt(0).toUpperCase()}</div>
+                    <div class="conversation-details">
+                        <p class="participant-name">${displayName}</p>
+                        <p class="last-message">${chatData.lastMessage || 'No messages yet'}</p>
+                    </div>
+                `;
+                return conversationLink;
+            }
+        }
+        main();
+    </script>
+</body>
+</html>
