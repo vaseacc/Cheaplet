@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat - Cheaplet</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        /* Header Styles */
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .logo span {
+            color: #FFD700;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+
+        nav ul li {
+            margin-left: 20px;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s;
+        }
+
+        nav ul li a:hover {
+            opacity: 0.8;
+        }
+
+        .btn {
+            background-color: #FFD700;
+            color: #333;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #FFC400;
+        }
+        
+        .header-auth-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            width: 100%;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        #userEmailDisplay {
+            color: white;
+            font-weight: 500;
+            order: -1;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        #logoutBtn {
+            background-color: #f44336;
+            color: white;
+        }
+        #logoutBtn:hover {
+            background-color: #d32f2f;
+        }
+
+        /* --- NEW STYLES FOR CHAT INTERFACE --- */
+        .chat-container {
+            max-width: 800px;
+            margin: 30px auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 150px); /* Adjust height based on header/footer */
+        }
+
+        .chat-header {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            font-weight: 600;
+        }
+
+        #messages-list {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column-reverse; /* Shows latest messages at the bottom */
+        }
+
+        .message-bubble {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            margin-bottom: 10px;
+            word-wrap: break-word;
+        }
+
+        .message-bubble.sent {
+            background-color: #4CAF50;
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-bubble.received {
+            background-color: #f1f0f0;
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px;
+        }
+        
+        .message-timestamp {
+            font-size: 0.75rem;
+            color: #999;
+            margin-top: 5px;
+            text-align: right;
+        }
+        .message-bubble.received .message-timestamp {
+            color: #777;
+        }
+
+
+        .message-form {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        #message-input {
+            flex-grow: 1;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            padding: 10px 15px;
+            margin-right: 10px;
+        }
+        
+        #send-btn {
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            padding: 0;
+        }
+
+        .info-message {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2rem;
+            color: #777;
+        }
+
+        /* ====== MEDIA QUERIES ====== */
+        @media (min-width: 768px) {
+            .container { padding: 0 20px; }
+            .header-content { flex-wrap: nowrap; }
+            nav { display: block; }
+            .header-auth-buttons { width: auto; margin-top: 0; }
+            #userEmailDisplay { width: auto; text-align: right; margin-bottom: 0; margin-right: 10px; order: 0; }
+        }
+        
+        @media (max-width: 767px) {
+            nav { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container header-content">
+            <div class="logo" id="logo-link">
+                Cheap<span>let</span>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="/index.html">Home</a></li>
+                    <li><a href="/search.html">Browse</a></li>
+                    <li><a href="/my-listings.html">My Listings</a></li>
+                    <li><a href="#">About</a></li>
+                </ul>
+            </nav>
+            <div class="header-auth-buttons">
+                <span id="userEmailDisplay" style="display: none;"></span>
+                <button class="btn" id="logoutBtn" style="display: none;">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div id="info-container">
+            <p class="info-message">Loading chat...</p>
+        </div>
+
+        <div class="chat-container" id="chat-container" style="display: none;">
+            <div class="chat-header" id="chat-header">
+                Chat with User
+            </div>
+            <div id="messages-list">
+                <!-- Messages will be injected here -->
+            </div>
+            <form id="message-form" class="message-form">
+                <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
+                <button type="submit" id="send-btn" class="btn">&#10148;</button>
+            </form>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+
+        async function main() {
+            const response = await fetch('/.netlify/functions/config');
+            const config = await response.json();
+            const firebaseConfig = config.firebaseConfig;
+
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+
+            const userEmailDisplay = document.getElementById('userEmailDisplay');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const logoLink = document.getElementById('logo-link');
+            const infoContainer = document.getElementById('info-container');
+            const chatContainer = document.getElementById('chat-container');
+            const messagesList = document.getElementById('messages-list');
+            const messageForm = document.getElementById('message-form');
+            const messageInput = document.getElementById('message-input');
+            
+            logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
+            logoutBtn.addEventListener('click', () => signOut(auth));
+
+            let unsubscribe;
+
+            onAuthStateChanged(auth, user => {
+                if (user) {
+                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
+                    userEmailDisplay.style.display = 'block';
+                    logoutBtn.style.display = 'inline-block';
+                    
+                    const params = new URLSearchParams(window.location.search);
+                    const chatId = params.get('id');
+                    if (chatId) {
+                        initializeChat(chatId, user);
+                    } else {
+                        infoContainer.innerHTML = `<p class="info-message">Error: No chat ID provided.</p>`;
+                    }
+                } else {
+                    infoContainer.innerHTML = `<p class="info-message">You must be logged in to view your messages.</p>`;
+                    if (unsubscribe) unsubscribe();
+                }
+            });
+
+            async function initializeChat(chatId, currentUser) {
+                const chatRef = doc(db, 'chats', chatId);
+                const chatSnap = await getDoc(chatRef);
+
+                if (!chatSnap.exists() || !chatSnap.data().participants.includes(currentUser.uid)) {
+                    infoContainer.innerHTML = `<p class="info-message">Error: You do not have permission to view this chat.</p>`;
+                    return;
+                }
+                
+                infoContainer.style.display = 'none';
+                chatContainer.style.display = 'flex';
+
+                const messagesRef = collection(db, 'chats', chatId, 'messages');
+                const q = query(messagesRef, orderBy("timestamp", "desc"));
+
+                unsubscribe = onSnapshot(q, (snapshot) => {
+                    messagesList.innerHTML = '';
+                    snapshot.forEach(doc => {
+                        renderMessage(doc.data(), currentUser.uid);
+                    });
+                });
+
+                messageForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const messageText = messageInput.value.trim();
+                    if (messageText === "") return;
+
+                    messageInput.value = '';
+
+                    await addDoc(messagesRef, {
+                        text: messageText,
+                        senderId: currentUser.uid,
+                        timestamp: serverTimestamp()
+                    });
+                    
+                    // Update the parent chat document with the last message info
+                    await updateDoc(chatRef, {
+                        lastMessage: messageText,
+                        lastUpdate: serverTimestamp()
+                    });
+                });
+            }
+
+            function renderMessage(data, currentUserId) {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message-bubble');
+
+                if (data.senderId === currentUserId) {
+                    messageDiv.classList.add('sent');
+                } else {
+                    messageDiv.classList.add('received');
+                }
+
+                const textP = document.createElement('p');
+                textP.textContent = data.text;
+                
+                messageDiv.appendChild(textP);
+                messagesList.prepend(messageDiv); // Use prepend to keep order with flex-direction: column-reverse
+            }
+        }
+        main();
+    </script>
+</body>
+</html>
