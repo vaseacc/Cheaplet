@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Listing - Cheaplet</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        /* Header Styles */
+        header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .logo span {
+            color: #FFD700;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+
+        nav ul li {
+            margin-left: 20px;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s;
+        }
+
+        nav ul li a:hover {
+            opacity: 0.8;
+        }
+
+        .btn {
+            background-color: #FFD700;
+            color: #333;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #FFC400;
+        }
+
+        .btn-secondary {
+            background-color: #ccc;
+            color: #333;
+        }
+        .btn-secondary:hover {
+            background-color: #bbb;
+        }
+        
+        /* Firebase forms */
+        .firebase-form-section {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin: 30px auto;
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .firebase-form-section h2 {
+            margin-bottom: 25px;
+            color: #333;
+        }
+
+        .firebase-form-section input,
+        .firebase-form-section textarea,
+        .firebase-form-section select {
+            display: block;
+            margin: 10px auto;
+            width: 100%;
+            max-width: 350px;
+        }
+
+        .firebase-form-section .btn {
+            margin-top: 15px;
+            width: auto;
+            min-width: 120px;
+        }
+
+        .form-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .form-field-error {
+            color: red;
+            font-size: 0.85rem;
+            text-align: left;
+            margin: -5px auto 10px;
+            max-width: 350px;
+        }
+        
+        /* Image Uploader Styles */
+        #image-uploader {
+            margin: 10px auto;
+            max-width: 350px;
+        }
+        .image-preview-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .image-preview-wrapper {
+            position: relative;
+            width: 80px;
+            height: 80px;
+        }
+        .image-preview {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 1px solid #ddd;
+        }
+        .remove-image-btn {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 20px;
+            height: 20px;
+            background-color: rgba(0,0,0,0.6);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            line-height: 1;
+        }
+        #add-photo-label {
+            width: 80px;
+            height: 80px;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #777;
+            transition: background-color 0.3s, border-color 0.3s;
+        }
+        #add-photo-label:hover {
+            background-color: #f8f9fa;
+            border-color: #4CAF50;
+        }
+        #add-photo-label span { font-size: 24px; }
+        #add-photo-label p { font-size: 10px; margin-top: 5px; }
+        #listing-image-input { display: none; }
+
+        /* Header buttons */
+        .header-auth-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            width: 100%;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        #userEmailDisplay {
+            color: white;
+            font-weight: 500;
+            order: -1;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        #logoutBtn {
+            background-color: #f44336;
+            color: white;
+        }
+        #logoutBtn:hover {
+            background-color: #d32f2f;
+        }
+
+        /* Message Styles */
+        .info-message {
+            text-align: center;
+            padding: 50px;
+            font-size: 1.2rem;
+            color: #777;
+        }
+
+        /* ====== MEDIA QUERIES ====== */
+        @media (min-width: 768px) {
+            .container { padding: 0 20px; }
+            .header-content { flex-wrap: nowrap; }
+            nav { display: block; }
+            .header-auth-buttons { width: auto; margin-top: 0; }
+            #userEmailDisplay { width: auto; text-align: right; margin-bottom: 0; margin-right: 10px; order: 0; }
+        }
+        @media (max-width: 767px) {
+            nav { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container header-content">
+            <div class="logo" id="logo-link">
+                Cheap<span>let</span>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="/index.html">Home</a></li>
+                    <li><a href="/search.html">Browse</a></li>
+                    <li><a href="/my-listings.html">My Listings</a></li>
+                    <li><a href="#">About</a></li>
+                </ul>
+            </nav>
+            <div class="header-auth-buttons">
+                <span id="userEmailDisplay" style="display: none;"></span>
+                <button class="btn" id="logoutBtn" style="display: none;">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div id="info-container">
+            <p class="info-message">Loading listing for editing...</p>
+        </div>
+
+        <section id="edit-form-container" class="firebase-form-section" style="display: none;">
+            <h2>Edit Your Listing</h2>
+            <input type="text" id="listing-title" placeholder="Item Title" required>
+            <p id="title-error" class="form-field-error"></p>
+            <textarea id="listing-description" placeholder="Description of your item..." required></textarea>
+            <p id="description-error" class="form-field-error"></p>
+            <input type="number" id="listing-price" placeholder="Price (e.g., 15.00)" min="0" step="0.01" required>
+            <p id="price-error" class="form-field-error"></p>
+            <select id="listing-category" required>
+                <option value="">Select Category</option>
+                <option value="furniture">Furniture</option>
+                <option value="electronics">Electronics</option>
+                <option value="clothing">Clothing</option>
+                <option value="books">Books & Media</option>
+                <option value="toys">Toys & Games</option>
+                <option value="other">Other</option>
+            </select>
+            <p id="category-error" class="form-field-error"></p>
+            <input type="text" id="listing-location" placeholder="Your Location" required>
+            <p id="location-error" class="form-field-error"></p>
+            
+            <div id="image-uploader">
+                <label style="font-weight: 500; display: block;">Edit Images (1-5 Required)</label>
+                <div class="image-preview-grid">
+                    <div id="image-preview-container"></div>
+                    <label for="listing-image-input" id="add-photo-label">
+                        <span>+</span>
+                        <p>Add Photo</p>
+                    </label>
+                </div>
+                <input type="file" id="listing-image-input" accept="image/*" style="display:none;">
+            </div>
+            <p id="image-error" class="form-field-error"></p>
+            
+            <div class="form-buttons">
+                <button class="btn" id="updateListingBtn">Save Changes</button>
+                <button class="btn btn-secondary" id="cancelEditBtn">Cancel</button>
+            </div>
+        </section>
+    </main>
+
+    <script type="module">
+        // Imports will include updateDoc for saving changes
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+
+        async function main() {
+            const response = await fetch('/.netlify/functions/config');
+            const config = await response.json();
+            const firebaseConfig = config.firebaseConfig;
+
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+
+            // This script will be filled in the next steps to fetch,
+            // pre-fill, and update the listing. For now, it just
+            // handles basic auth display.
+            
+            const userEmailDisplay = document.getElementById('userEmailDisplay');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const logoLink = document.getElementById('logo-link');
+
+            logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
+            logoutBtn.addEventListener('click', () => signOut(auth));
+
+            onAuthStateChanged(auth, user => {
+                if (user) {
+                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
+                    userEmailDisplay.style.display = 'block';
+                    logoutBtn.style.display = 'inline-block';
+                } else {
+                    // If user is not logged in, they can't edit. Redirect them.
+                    window.location.href = '/index.html';
+                }
+            });
+        }
+        main();
+    </script>
+</body>
+</html>
