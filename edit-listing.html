@@ -319,7 +319,6 @@
     </main>
 
     <script type="module">
-        // Imports will include updateDoc for saving changes
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
@@ -328,29 +327,186 @@
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
             const firebaseConfig = config.firebaseConfig;
+            const CLOUDINARY_CLOUD_NAME = config.cloudinary.cloudName;
+            const CLOUDINARY_UPLOAD_PRESET = config.cloudinary.uploadPreset;
+            const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
 
             const app = initializeApp(firebaseConfig);
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            // This script will be filled in the next steps to fetch,
-            // pre-fill, and update the listing. For now, it just
-            // handles basic auth display.
-            
+            // DOM Selections
             const userEmailDisplay = document.getElementById('userEmailDisplay');
             const logoutBtn = document.getElementById('logoutBtn');
             const logoLink = document.getElementById('logo-link');
+            const infoContainer = document.getElementById('info-container');
+            const editFormContainer = document.getElementById('edit-form-container');
+            const listingTitleInput = document.getElementById('listing-title');
+            const listingDescriptionInput = document.getElementById('listing-description');
+            const listingPriceInput = document.getElementById('listing-price');
+            const listingCategorySelect = document.getElementById('listing-category');
+            const listingLocationInput = document.getElementById('listing-location');
+            const listingImageInput = document.getElementById('listing-image-input');
+            const imagePreviewContainer = document.getElementById('image-preview-container');
+            const addPhotoLabel = document.getElementById('add-photo-label');
+            const updateListingBtn = document.getElementById('updateListingBtn');
+            const cancelEditBtn = document.getElementById('cancelEditBtn');
+
+            let existingImageUrls = []; // To store URLs that are already uploaded
+            let newImageFiles = []; // To store new files the user selects
+            const maxFiles = 5;
 
             logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
             logoutBtn.addEventListener('click', () => signOut(auth));
+            cancelEditBtn.addEventListener('click', () => { window.location.href = '/my-listings.html'; });
+
+            function renderPreviews() {
+                imagePreviewContainer.innerHTML = '';
+                const allImages = [...existingImageUrls, ...newImageFiles];
+                
+                allImages.forEach((image, index) => {
+                    const wrapper = document.createElement('div');
+                    wrapper.classList.add('image-preview-wrapper');
+                    const img = document.createElement('img');
+                    img.classList.add('image-preview');
+
+                    if (typeof image === 'string') { // It's an existing URL
+                        img.src = image;
+                    } else { // It's a new File object
+                        img.src = URL.createObjectURL(image);
+                    }
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.classList.add('remove-image-btn');
+                    removeBtn.textContent = 'X';
+                    removeBtn.onclick = () => removeImage(index);
+                    
+                    wrapper.appendChild(img);
+                    wrapper.appendChild(removeBtn);
+                    imagePreviewContainer.appendChild(wrapper);
+                });
+                
+                addPhotoLabel.style.display = allImages.length < maxFiles ? 'flex' : 'none';
+            }
+
+            function removeImage(index) {
+                const allImages = [...existingImageUrls, ...newImageFiles];
+                const itemToRemove = allImages[index];
+                
+                if (typeof itemToRemove === 'string') {
+                    existingImageUrls = existingImageUrls.filter(url => url !== itemToRemove);
+                } else {
+                    newImageFiles = newImageFiles.filter(file => file.name !== itemToRemove.name);
+                }
+                renderPreviews();
+            }
+
+            listingImageInput.addEventListener('change', (e) => {
+                const newFile = e.target.files[0];
+                const totalImages = existingImageUrls.length + newImageFiles.length;
+                if (newFile && totalImages < maxFiles) {
+                    newImageFiles.push(newFile);
+                    renderPreviews();
+                }
+                e.target.value = '';
+            });
+
+            async function fetchAndPopulateListing(listingId, userId) {
+                try {
+                    const docRef = doc(db, 'listings', listingId);
+                    const docSnap = await getDoc(docRef);
+
+                    if (docSnap.exists()) {
+                        const data = docSnap.data();
+                        
+                        // Security check: ensure the current user owns this listing
+                        if (data.posterUid !== userId) {
+                            infoContainer.innerHTML = `<p class="info-message">Error: You do not have permission to edit this listing.</p>`;
+                            return;
+                        }
+
+                        // Populate form fields
+                        listingTitleInput.value = data.title;
+                        listingDescriptionInput.value = data.description;
+                        listingPriceInput.value = data.price;
+                        listingCategorySelect.value = data.category;
+                        listingLocationInput.value = data.location;
+                        
+                        // Populate image previews
+                        existingImageUrls = data.imageUrls || (data.imageUrl ? [data.imageUrl] : []);
+                        renderPreviews();
+
+                        infoContainer.style.display = 'none';
+                        editFormContainer.style.display = 'block';
+                    } else {
+                        infoContainer.innerHTML = `<p class="info-message">Sorry, this listing could not be found.</p>`;
+                    }
+                } catch (error) {
+                    console.error("Error fetching listing for edit:", error);
+                    infoContainer.innerHTML = `<p class="info-message">An error occurred while loading the listing.</p>`;
+                }
+            }
+            
+            updateListingBtn.addEventListener('click', async () => {
+                const params = new URLSearchParams(window.location.search);
+                const listingId = params.get('id');
+                if (!listingId) return;
+
+                updateListingBtn.disabled = true;
+                updateListingBtn.textContent = "Saving...";
+
+                try {
+                    // 1. Upload any new files
+                    const uploadPromises = newImageFiles.map(file => {
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                        return fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData }).then(res => res.json());
+                    });
+
+                    const uploadedResults = await Promise.all(uploadPromises);
+                    const newImageUrls = uploadedResults.map(result => result.secure_url);
+
+                    // 2. Combine old and new image URLs
+                    const finalImageUrls = [...existingImageUrls, ...newImageUrls];
+
+                    // 3. Update the document in Firestore
+                    const docRef = doc(db, 'listings', listingId);
+                    await updateDoc(docRef, {
+                        title: listingTitleInput.value,
+                        description: listingDescriptionInput.value,
+                        price: parseFloat(listingPriceInput.value),
+                        category: listingCategorySelect.value,
+                        location: listingLocationInput.value,
+                        imageUrls: finalImageUrls
+                    });
+
+                    alert("Listing updated successfully!");
+                    window.location.href = '/my-listings.html';
+
+                } catch (error) {
+                    console.error("Error updating listing:", error);
+                    alert("Failed to update listing. Please try again.");
+                } finally {
+                    updateListingBtn.disabled = false;
+                    updateListingBtn.textContent = "Save Changes";
+                }
+            });
 
             onAuthStateChanged(auth, user => {
                 if (user) {
                     userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
                     userEmailDisplay.style.display = 'block';
                     logoutBtn.style.display = 'inline-block';
+                    
+                    const params = new URLSearchParams(window.location.search);
+                    const listingId = params.get('id');
+                    if (listingId) {
+                        fetchAndPopulateListing(listingId, user.uid);
+                    } else {
+                        infoContainer.innerHTML = `<p class="info-message">No listing specified to edit.</p>`;
+                    }
                 } else {
-                    // If user is not logged in, they can't edit. Redirect them.
                     window.location.href = '/index.html';
                 }
             });
