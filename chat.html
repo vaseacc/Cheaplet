@@ -90,31 +90,7 @@
             background-color: #FFC400;
         }
         
-        .header-auth-buttons {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            width: 100%;
-            justify-content: center;
-            margin-top: 10px;
-        }
-        #userEmailDisplay {
-            color: white;
-            font-weight: 500;
-            order: -1;
-            width: 100%;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-        #logoutBtn {
-            background-color: #f44336;
-            color: white;
-        }
-        #logoutBtn:hover {
-            background-color: #d32f2f;
-        }
-
-        /* --- NEW STYLES FOR CHAT INTERFACE --- */
+        /* --- STYLES FOR CHAT INTERFACE --- */
         .chat-container {
             max-width: 800px;
             margin: 30px auto;
@@ -123,7 +99,7 @@
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             display: flex;
             flex-direction: column;
-            height: calc(100vh - 150px); /* Adjust height based on header/footer */
+            height: calc(100vh - 150px);
         }
 
         .chat-header {
@@ -201,6 +177,31 @@
             color: #777;
         }
 
+        /* Header buttons */
+        .header-auth-buttons {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            width: 100%;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        #userEmailDisplay {
+            color: white;
+            font-weight: 500;
+            order: -1;
+            width: 100%;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        #logoutBtn {
+            background-color: #f44336;
+            color: white;
+        }
+        #logoutBtn:hover {
+            background-color: #d32f2f;
+        }
+
         /* ====== MEDIA QUERIES ====== */
         @media (min-width: 768px) {
             .container { padding: 0 20px; }
@@ -226,6 +227,7 @@
                     <li><a href="/index.html">Home</a></li>
                     <li><a href="/search.html">Browse</a></li>
                     <li><a href="/my-listings.html">My Listings</a></li>
+                    <li><a href="/messages.html">Messages</a></li>
                     <li><a href="#">About</a></li>
                 </ul>
             </nav>
@@ -243,7 +245,7 @@
 
         <div class="chat-container" id="chat-container" style="display: none;">
             <div class="chat-header" id="chat-header">
-                Chat with User
+                Chat
             </div>
             <div id="messages-list">
                 <!-- Messages will be injected here -->
@@ -277,6 +279,7 @@
             const messagesList = document.getElementById('messages-list');
             const messageForm = document.getElementById('message-form');
             const messageInput = document.getElementById('message-input');
+            const chatHeader = document.getElementById('chat-header');
             
             logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
             logoutBtn.addEventListener('click', () => signOut(auth));
@@ -313,6 +316,13 @@
                 
                 infoContainer.style.display = 'none';
                 chatContainer.style.display = 'flex';
+                
+                // Set the chat header title
+                const chatData = chatSnap.data();
+                const otherParticipantId = chatData.participants.find(p => p !== currentUser.uid);
+                // In a real app, you would fetch user profiles. We'll derive a name from the chatId.
+                const otherUserIdentifier = chatId.replace(currentUser.uid, '').replace('_', '');
+                chatHeader.textContent = `Chat with ${otherUserIdentifier.substring(0, 10)}...`;
 
                 const messagesRef = collection(db, 'chats', chatId, 'messages');
                 const q = query(messagesRef, orderBy("timestamp", "desc"));
@@ -328,7 +338,6 @@
                     e.preventDefault();
                     const messageText = messageInput.value.trim();
                     if (messageText === "") return;
-
                     messageInput.value = '';
 
                     await addDoc(messagesRef, {
@@ -337,7 +346,6 @@
                         timestamp: serverTimestamp()
                     });
                     
-                    // Update the parent chat document with the last message info
                     await updateDoc(chatRef, {
                         lastMessage: messageText,
                         lastUpdate: serverTimestamp()
@@ -359,7 +367,8 @@
                 textP.textContent = data.text;
                 
                 messageDiv.appendChild(textP);
-                messagesList.prepend(messageDiv); // Use prepend to keep order with flex-direction: column-reverse
+                // BUG FIX: Use prepend() instead of appendChild()
+                messagesList.prepend(messageDiv);
             }
         }
         main();
