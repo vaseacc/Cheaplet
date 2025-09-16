@@ -113,7 +113,7 @@
             padding: 20px;
             overflow-y: auto;
             display: flex;
-            flex-direction: column-reverse; /* Shows latest messages at the bottom */
+            flex-direction: column; /* Standard top-to-bottom flow */
         }
 
         .message-bubble {
@@ -317,21 +317,22 @@
                 infoContainer.style.display = 'none';
                 chatContainer.style.display = 'flex';
                 
-                // Set the chat header title
                 const chatData = chatSnap.data();
                 const otherParticipantId = chatData.participants.find(p => p !== currentUser.uid);
-                // In a real app, you would fetch user profiles. We'll derive a name from the chatId.
                 const otherUserIdentifier = chatId.replace(currentUser.uid, '').replace('_', '');
                 chatHeader.textContent = `Chat with ${otherUserIdentifier.substring(0, 10)}...`;
 
                 const messagesRef = collection(db, 'chats', chatId, 'messages');
-                const q = query(messagesRef, orderBy("timestamp", "desc"));
+                // BUG FIX: Order by timestamp ASCENDING (oldest first)
+                const q = query(messagesRef, orderBy("timestamp", "asc"));
 
                 unsubscribe = onSnapshot(q, (snapshot) => {
                     messagesList.innerHTML = '';
                     snapshot.forEach(doc => {
                         renderMessage(doc.data(), currentUser.uid);
                     });
+                    // BUG FIX: Automatically scroll to the bottom
+                    messagesList.scrollTop = messagesList.scrollHeight;
                 });
 
                 messageForm.addEventListener('submit', async (e) => {
@@ -367,8 +368,8 @@
                 textP.textContent = data.text;
                 
                 messageDiv.appendChild(textP);
-                // BUG FIX: Use prepend() instead of appendChild()
-                messagesList.prepend(messageDiv);
+                // BUG FIX: Use appendChild() to add to the end of the normal-flow list
+                messagesList.appendChild(messageDiv);
             }
         }
         main();
