@@ -535,7 +535,6 @@
                     <li><a href="/search.html">Browse</a></li>
                     <li><a href="/my-listings.html">My Listings</a></li>
                     <li><a href="/messages.html">Messages</a></li>
-                    <li><a href="#">How It Works</a></li>
                     <li><a href="#">About</a></li>
                 </ul>
             </nav>
@@ -730,7 +729,6 @@
             const db = getFirestore(app);
             const analytics = getAnalytics(app);
 
-            // --- DOM Selections ---
             const authFormsSection = document.getElementById('auth-forms');
             const registerNameFields = document.getElementById('register-name-fields');
             const firstNameInput = document.getElementById('firstName');
@@ -771,11 +769,27 @@
             let selectedFiles = [];
             const maxFiles = 5;
 
-            // --- UI and Form Functions ---
+            // --- BUG FIX: Corrected UI Functions ---
             function setMainContentVisibility(show) { mainContentSections.forEach(section => { if (section) section.style.display = show ? '' : 'none'; }); }
-            function returnToMainView() { setMainContentVisibility(true); authFormsSection.style.display = 'none'; listingFormSection.style.display = 'none'; }
-            function toggleAuthFormVisibility(show) { setMainContentVisibility(!show); listingFormSection.style.display = 'none'; authFormsSection.style.display = show ? 'block' : 'none'; }
-            function toggleListingFormVisibility(show) { setMainContentVisibility(!show); authFormsSection.style.display = 'none'; listingFormSection.style.display = show ? 'block' : 'none'; }
+            
+            function returnToMainView() {
+                setMainContentVisibility(true);
+                authFormsSection.style.display = 'none';
+                listingFormSection.style.display = 'none';
+            }
+
+            function toggleAuthFormVisibility(show) {
+                setMainContentVisibility(!show);
+                listingFormSection.style.display = 'none';
+                authFormsSection.style.display = show ? 'block' : 'none';
+            }
+
+            function toggleListingFormVisibility(show) {
+                setMainContentVisibility(!show);
+                authFormsSection.style.display = 'none';
+                listingFormSection.style.display = show ? 'block' : 'none';
+            }
+
             function updateAuthModeUI() {
                 if (isLoginMode) {
                     loginBtn.style.display = 'inline-block'; registerBtn.style.display = 'none';
@@ -812,12 +826,10 @@
                 });
                 addPhotoLabel.style.display = selectedFiles.length < maxFiles ? 'flex' : 'none';
             }
-
             function removeImage(index) {
                 selectedFiles.splice(index, 1);
                 renderPreviews();
             }
-
             listingImageInput.addEventListener('change', (e) => {
                 const newFile = e.target.files[0];
                 if (newFile && selectedFiles.length < maxFiles) {
@@ -860,9 +872,7 @@
                         loginRegisterBtn.style.display = 'none';
                         logoutBtn.style.display = 'inline-block';
                         listAnItemBtn.style.display = 'inline-block';
-                        if (authFormsSection.style.display === 'block' || listingFormSection.style.display === 'block') {
-                            returnToMainView();
-                        }
+                        returnToMainView();
                     } else {
                         userEmailDisplay.innerHTML = `Please verify your email: ${user.email} <br> <a href="#" id="resend-verification">Resend Email</a>`;
                         userEmailDisplay.style.display = 'block';
@@ -888,9 +898,7 @@
                     loginRegisterBtn.style.display = 'inline-block';
                     logoutBtn.style.display = 'none';
                     listAnItemBtn.style.display = 'none';
-                    if(listingFormSection.style.display === 'block'){
-                         returnToMainView();
-                    }
+                    returnToMainView();
                 }
             });
 
@@ -1026,7 +1034,8 @@
                     await updateProfile(userCredential.user, { displayName: `${firstName} ${lastName}` });
                     await sendEmailVerification(userCredential.user);
                     alert("Registration successful! A verification email has been sent. Please check your inbox and verify your email before logging in.");
-                    await signOut(auth); // Sign out to force them to log in after verifying
+                    await signOut(auth);
+                    returnToMainView();
                 } catch (error) { authError.textContent = error.message; }
             });
             logoutBtn.addEventListener('click', () => signOut(auth));
