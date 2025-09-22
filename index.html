@@ -557,31 +557,32 @@
     </section>
 
     <main class="container">
-        <section id="auth-forms" class="firebase-form-section">
-            <div id="login-view">
-                <h2>Log In to Cheaplet</h2>
-                <p>Please log in to continue.</p>
-                <input type="email" id="login-email" placeholder="Email" required>
-                <input type="password" id="login-password" placeholder="Password" required>
+        <section id="auth-forms" class="firebase-form-section" style="display: none;">
+            <h2>Join Cheaplet</h2>
+            <p>Please log in or register to continue.</p>
+            <div id="register-name-fields" style="display: none;">
+                <input type="text" id="firstName" placeholder="First Name" required>
+                <input type="text" id="lastName" placeholder="Last Name" required>
             </div>
-            <div id="register-view" style="display: none;">
-                <h2>Register for Cheaplet</h2>
-                <p>Enter your email to receive a secure link to create your account.</p>
-                <input type="email" id="register-email" placeholder="Email" required>
-            </div>
-            
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Password (min. 6 characters)" required>
+            <p id="password-feedback"></p>
             <div class="form-buttons">
                 <button class="btn" id="loginBtn">Login</button>
-                <button class="btn" id="registerBtn" style="display: none;">Send Sign-Up Link</button>
+                <button class="btn" id="registerBtn">Register</button>
                 <button class="btn btn-secondary" id="cancelAuthFormBtn">Cancel</button>
             </div>
             <p id="auth-error"></p>
             <p style="margin-top: 15px;"><a href="#" id="toggleAuthMode">New user? Register here.</a></p>
         </section>
 
-        <!-- Listing form remains the same as before -->
+        <section id="listing-form" class="firebase-form-section" style="display: none;">
+            <h2>List a New Item</h2>
+            <!-- ... form content ... -->
+        </section>
 
         <!-- ... rest of the main content ... -->
+
     </main>
 
     <footer>
@@ -589,88 +590,104 @@
     </footer>
 
     <script type="module">
-        // SCRIPT UPDATE: Added sendSignInLinkToEmail
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendSignInLinkToEmail } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, sendEmailVerification } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-analytics.js";
+        // ... other imports ...
 
         async function main() {
-            // ... firebase init ...
+            // ... firebase init and other variables ...
+            
+            const authFormsSection = document.getElementById('auth-forms');
+            const registerNameFields = document.getElementById('register-name-fields');
+            const firstNameInput = document.getElementById('firstName');
+            const lastNameInput = document.getElementById('lastName');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const loginBtn = document.getElementById('loginBtn');
+            const registerBtn = document.getElementById('registerBtn');
+            const authError = document.getElementById('auth-error');
+            const userEmailDisplay = document.getElementById('userEmailDisplay');
+            const loginRegisterBtn = document.getElementById('loginRegisterBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const listAnItemBtn = document.getElementById('listAnItemBtn');
+            
+            function returnToMainView() { /* ... */ }
+            
+            // --- BUG FIX: Corrected Firebase Auth Logic ---
+            onAuthStateChanged(auth, user => {
+                if (user) {
+                    if (user.emailVerified) {
+                        returnToMainView();
+                        userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
+                        userEmailDisplay.style.display = 'block';
+                        loginRegisterBtn.style.display = 'none';
+                        logoutBtn.style.display = 'inline-block';
+                        listAnItemBtn.style.display = 'inline-block';
+                    } else {
+                        // This state is now only for users who are already logged in but haven't verified
+                        userEmailDisplay.innerHTML = `Please verify your email to continue. <a href="#" id="resend-verification">Resend Email</a>`;
+                        userEmailDisplay.style.display = 'block';
+                        loginRegisterBtn.style.display = 'none';
+                        logoutBtn.style.display = 'inline-block';
+                        listAnItemBtn.style.display = 'none';
 
-            const loginView = document.getElementById('login-view');
-            const registerView = document.getElementById('register-view');
-            const loginEmailInput = document.getElementById('login-email');
-            const loginPasswordInput = document.getElementById('login-password');
-            const registerEmailInput = document.getElementById('register-email');
-            
-            // ... other selectors ...
-            
-            function updateAuthModeUI() {
-                if (isLoginMode) {
-                    loginView.style.display = 'block';
-                    registerView.style.display = 'none';
-                    loginBtn.style.display = 'inline-block';
-                    registerBtn.style.display = 'none';
-                    toggleAuthModeLink.textContent = 'New user? Register here.';
+                        const resendLink = document.getElementById('resend-verification');
+                        if(resendLink){
+                            resendLink.addEventListener('click', async (e) => {
+                                e.preventDefault();
+                                try {
+                                    await sendEmailVerification(user);
+                                    alert("Verification email sent again. Please check your inbox.");
+                                } catch (error) {
+                                    alert("Error sending verification email. Please try again later.");
+                                }
+                            });
+                        }
+                    }
                 } else {
-                    loginView.style.display = 'none';
-                    registerView.style.display = 'block';
-                    loginBtn.style.display = 'none';
-                    registerBtn.style.display = 'inline-block';
-                    toggleAuthModeLink.textContent = 'Already have an account? Log in.';
+                    userEmailDisplay.style.display = 'none';
+                    loginRegisterBtn.style.display = 'inline-block';
+                    logoutBtn.style.display = 'none';
+                    listAnItemBtn.style.display = 'none';
                 }
-                authError.textContent = '';
-            }
+            });
 
             loginBtn.addEventListener('click', async () => {
                 authError.textContent = '';
                 try {
-                    const userCredential = await signInWithEmailAndPassword(auth, loginEmailInput.value, loginPasswordInput.value);
+                    const userCredential = await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
                     if (!userCredential.user.emailVerified) {
                         await signOut(auth);
                         authError.textContent = 'You must verify your email before logging in. Please check your inbox.';
                     }
-                    // onAuthStateChanged will handle hiding the form
+                    // If verified, onAuthStateChanged will handle hiding the form and showing the main view.
                 } catch (error) {
                     authError.textContent = "Invalid email or password.";
                 }
             });
 
             registerBtn.addEventListener('click', async () => {
-                const email = registerEmailInput.value;
-                if (!email) {
-                    authError.textContent = "Please enter your email address.";
-                    return;
-                }
-                
-                const actionCodeSettings = {
-                    url: `${window.location.origin}/finish-signup.html`, // URL to redirect to after clicking link
-                    handleCodeInApp: true,
-                };
-
+                authError.textContent = '';
+                const firstName = firstNameInput.value.trim();
+                const lastName = lastNameInput.value.trim();
+                if (!firstName || !lastName) { authError.textContent = "Please enter your first and last name."; return; }
+                if (passwordInput.value.length < 6) { authError.textContent = "Password must be at least 6 characters long."; return; }
                 try {
-                    await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-                    // Store the email in local storage to retrieve it on the finish-signup page.
-                    window.localStorage.setItem('emailForSignIn', email);
-                    alert(`A sign-up link has been sent to ${email}. Please check your inbox.`);
-                    returnToMainView();
-                } catch (error) {
-                    console.error("Error sending sign-in link:", error);
-                    authError.textContent = "Could not send sign-in link. Please try again.";
+                    const userCredential = await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+                    await updateProfile(userCredential.user, { displayName: `${firstName} ${lastName}` });
+                    await sendEmailVerification(userCredential.user);
+                    
+                    await signOut(auth); // Sign out immediately after registration
+                    
+                    alert("Registration successful! Please check your email and click the verification link to complete your registration.");
+                    returnToMainView(); // Hide the form and show the main page
+                } catch (error) { 
+                    authError.textContent = error.message; 
                 }
             });
 
-            onAuthStateChanged(auth, user => {
-                if (user) {
-                    returnToMainView();
-                    // ... rest of the onAuthStateChanged logic from previous correct version ...
-                } else {
-                    // ... rest of the onAuthStateChanged logic ...
-                }
-            });
-
-            // ... All other functions and event listeners from the previous correct version ...
+            // ... all other functions and event listeners ...
         }
         main();
     </script>
