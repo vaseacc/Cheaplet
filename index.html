@@ -798,49 +798,23 @@
                 return isValid;
             }
 
-            // --- === CORRECTED FIREBASE AUTH LOGIC === ---
+            // --- Firebase Auth State Change Handler ---
             onAuthStateChanged(auth, user => {
-                if (user) {
-                    if (user.emailVerified) {
-                        // User is logged in AND verified, show the main content.
-                        returnToMainView();
-                        userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
-                        userEmailDisplay.style.display = 'block';
-                        loginRegisterBtn.style.display = 'none';
-                        logoutBtn.style.display = 'inline-block';
-                        listAnItemBtn.style.display = 'inline-block';
-                    } else {
-                        // User is logged in BUT NOT verified. Keep them on the page they are on,
-                        // but show the verification message in the header.
-                        userEmailDisplay.innerHTML = `Please verify your email: ${user.email} <br> <a href="#" id="resend-verification">Resend Email</a>`;
-                        userEmailDisplay.style.display = 'block';
-                        loginRegisterBtn.style.display = 'none';
-                        logoutBtn.style.display = 'inline-block';
-                        listAnItemBtn.style.display = 'none'; // Can't list items until verified
-                        
-                        const resendLink = document.getElementById('resend-verification');
-                        if(resendLink){
-                            resendLink.addEventListener('click', async (e) => {
-                                e.preventDefault();
-                                try {
-                                    await sendEmailVerification(user);
-                                    alert("Verification email sent again. Please check your inbox and spam folder.");
-                                } catch (error) {
-                                    alert("Error sending verification email. Please try again later.");
-                                }
-                            });
-                        }
-                    }
+                if (user && user.emailVerified) {
+                    // This block only runs for a fully logged-in, verified user.
+                    returnToMainView();
+                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
+                    userEmailDisplay.style.display = 'block';
+                    loginRegisterBtn.style.display = 'none';
+                    logoutBtn.style.display = 'inline-block';
+                    listAnItemBtn.style.display = 'inline-block';
                 } else {
-                    // User is logged out.
+                    // This block runs if the user is logged out, or if they are in a temporary
+                    // unverified state (which we now prevent them from staying in).
                     userEmailDisplay.style.display = 'none';
                     loginRegisterBtn.style.display = 'inline-block';
                     logoutBtn.style.display = 'none';
                     listAnItemBtn.style.display = 'none';
-                    // If the user was just logged out, ensure they see the main page, not a leftover form.
-                    if (authFormsSection.style.display !== 'block') {
-                        returnToMainView();
-                    }
                 }
             });
 
@@ -941,8 +915,6 @@
             listAnItemBtn.addEventListener('click', () => {
                 if (auth.currentUser && auth.currentUser.emailVerified) {
                     toggleListingFormVisibility(true);
-                } else if (auth.currentUser && !auth.currentUser.emailVerified) {
-                    alert("Please verify your email before listing an item.");
                 } else {
                     alert('Please log in to list an item.');
                     isLoginMode = true;
@@ -967,23 +939,22 @@
             });
             toggleAuthModeLink.addEventListener('click', (e) => { e.preventDefault(); isLoginMode = !isLoginMode; updateAuthModeUI(); });
 
-            // === CORRECTED LOGIN BUTTON LOGIC ===
+            // --- CORRECTED LOGIN BUTTON LOGIC ---
             loginBtn.addEventListener('click', async () => {
                 authError.textContent = '';
                 try {
                     const userCredential = await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
                     if (!userCredential.user.emailVerified) {
-                        // Set the error message and sign the user out. The form will stay visible.
                         authError.textContent = 'Please verify your email to log in. Check your inbox and spam folder.';
-                        await signOut(auth);
+                        await signOut(auth); // Sign out the unverified user so they stay on the login page.
                     }
-                    // If verified, onAuthStateChanged will handle the successful login UI update automatically.
+                    // If verified, onAuthStateChanged will handle the successful login UI change.
                 } catch (err) {
                     authError.textContent = err.message; // Handles wrong password, user not found, etc.
                 }
             });
             
-            // === CORRECTED REGISTER BUTTON LOGIC ===
+            // --- CORRECTED REGISTER BUTTON LOGIC ---
             registerBtn.addEventListener('click', async () => {
                 const firstName = firstNameInput.value.trim();
                 const lastName = lastNameInput.value.trim();
@@ -993,9 +964,12 @@
                     const userCredential = await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
                     await updateProfile(userCredential.user, { displayName: `${firstName} ${lastName}` });
                     await sendEmailVerification(userCredential.user);
-                    // Hide the form and show the main view, where the "please verify" message will be visible.
-                    returnToMainView(); 
-                    alert("Registration successful! A verification email has been sent. Please check your inbox and spam folder to continue.");
+                    
+                    // CRITICAL STEP: Sign the new user out immediately.
+                    await signOut(auth);
+
+                    alert("Registration successful! A verification email has been sent. Please check your inbox and spam folder, then log in.");
+                    returnToMainView();
                 } catch (error) { authError.textContent = error.message; }
             });
             
