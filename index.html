@@ -739,27 +739,11 @@
             let selectedFiles = [];
             const maxFiles = 5;
 
-            // --- BUG FIX: Corrected UI Functions ---
+            // --- UI Functions ---
             function setMainContentVisibility(show) { mainContentSections.forEach(section => { if (section) section.style.display = show ? '' : 'none'; }); }
-            
-            function returnToMainView() {
-                setMainContentVisibility(true);
-                authFormsSection.style.display = 'none';
-                listingFormSection.style.display = 'none';
-            }
-
-            function toggleAuthFormVisibility(show) {
-                setMainContentVisibility(!show);
-                listingFormSection.style.display = 'none';
-                authFormsSection.style.display = show ? 'block' : 'none';
-            }
-
-            function toggleListingFormVisibility(show) {
-                setMainContentVisibility(!show);
-                authFormsSection.style.display = 'none';
-                listingFormSection.style.display = show ? 'block' : 'none';
-            }
-
+            function returnToMainView() { setMainContentVisibility(true); authFormsSection.style.display = 'none'; listingFormSection.style.display = 'none'; }
+            function toggleAuthFormVisibility(show) { setMainContentVisibility(!show); listingFormSection.style.display = 'none'; authFormsSection.style.display = show ? 'block' : 'none'; }
+            function toggleListingFormVisibility(show) { setMainContentVisibility(!show); authFormsSection.style.display = 'none'; listingFormSection.style.display = show ? 'block' : 'none'; }
             function updateAuthModeUI() {
                 if (isLoginMode) {
                     loginBtn.style.display = 'inline-block'; registerBtn.style.display = 'none';
@@ -796,51 +780,28 @@
                 });
                 addPhotoLabel.style.display = selectedFiles.length < maxFiles ? 'flex' : 'none';
             }
-
-            function removeImage(index) {
-                selectedFiles.splice(index, 1);
-                renderPreviews();
-            }
-
+            function removeImage(index) { selectedFiles.splice(index, 1); renderPreviews(); }
             listingImageInput.addEventListener('change', (e) => {
                 const newFile = e.target.files[0];
-                if (newFile && selectedFiles.length < maxFiles) {
-                    selectedFiles.push(newFile);
-                    renderPreviews();
-                }
+                if (newFile && selectedFiles.length < maxFiles) { selectedFiles.push(newFile); renderPreviews(); }
                 e.target.value = '';
             });
-
             function validateListingForm() {
                 let isValid = true;
                 document.querySelectorAll('.form-field-error').forEach(el => el.textContent = '');
-                if (selectedFiles.length === 0) {
-                    document.getElementById('image-error').textContent = 'Please upload at least one image.'; isValid = false;
-                }
-                if (!listingTitleInput.value.trim()) {
-                    document.getElementById('title-error').textContent = 'Please enter an item title.'; isValid = false;
-                }
-                if (!listingDescriptionInput.value.trim()) {
-                    document.getElementById('description-error').textContent = 'Please enter a description.'; isValid = false;
-                }
-                if (!listingPriceInput.value) {
-                    document.getElementById('price-error').textContent = 'Please enter a price.'; isValid = false;
-                }
-                if (!listingCategorySelect.value) {
-                    document.getElementById('category-error').textContent = 'Please select a category.'; isValid = false;
-                }
-                if (!listingLocationInput.value.trim()) {
-                    document.getElementById('location-error').textContent = 'Please enter your location.'; isValid = false;
-                }
+                if (selectedFiles.length === 0) { document.getElementById('image-error').textContent = 'Please upload at least one image.'; isValid = false; }
+                if (!listingTitleInput.value.trim()) { document.getElementById('title-error').textContent = 'Please enter an item title.'; isValid = false; }
+                if (!listingDescriptionInput.value.trim()) { document.getElementById('description-error').textContent = 'Please enter a description.'; isValid = false; }
+                if (!listingPriceInput.value) { document.getElementById('price-error').textContent = 'Please enter a price.'; isValid = false; }
+                if (!listingCategorySelect.value) { document.getElementById('category-error').textContent = 'Please select a category.'; isValid = false; }
+                if (!listingLocationInput.value.trim()) { document.getElementById('location-error').textContent = 'Please enter your location.'; isValid = false; }
                 return isValid;
             }
 
             // --- Firebase Logic ---
             onAuthStateChanged(auth, user => {
-                // BUG FIX: Call returnToMainView() FIRST if the user is logged in
                 if (user) {
-                    returnToMainView(); // Immediately hide any open forms
-
+                    returnToMainView();
                     if (user.emailVerified) {
                         userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
                         userEmailDisplay.style.display = 'block';
@@ -872,7 +833,7 @@
                     loginRegisterBtn.style.display = 'inline-block';
                     logoutBtn.style.display = 'none';
                     listAnItemBtn.style.display = 'none';
-                    returnToMainView(); // Also hide forms on logout
+                    returnToMainView();
                 }
             });
 
@@ -997,7 +958,23 @@
                 }
             });
             toggleAuthModeLink.addEventListener('click', (e) => { e.preventDefault(); isLoginMode = !isLoginMode; updateAuthModeUI(); });
-            loginBtn.addEventListener('click', () => signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value).catch(err => authError.textContent = err.message));
+
+            // === CORRECTED LOGIN LOGIC ===
+            loginBtn.addEventListener('click', async () => {
+                authError.textContent = '';
+                try {
+                    const userCredential = await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+                    if (!userCredential.user.emailVerified) {
+                        authError.textContent = 'Please verify your email before logging in. Check your inbox.';
+                        await signOut(auth); // Sign out the unverified user
+                    }
+                    // If verified, onAuthStateChanged will handle the successful login UI update.
+                } catch (err) {
+                    authError.textContent = err.message; // Handles wrong password, user not found, etc.
+                }
+            });
+
+            // === CORRECTED REGISTRATION LOGIC ===
             registerBtn.addEventListener('click', async () => {
                 const firstName = firstNameInput.value.trim();
                 const lastName = lastNameInput.value.trim();
@@ -1007,11 +984,12 @@
                     const userCredential = await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
                     await updateProfile(userCredential.user, { displayName: `${firstName} ${lastName}` });
                     await sendEmailVerification(userCredential.user);
-                    alert("Registration successful! A verification email has been sent. Please check your inbox and verify your email before logging in.");
-                    await signOut(auth);
-                    returnToMainView();
+                    alert("Registration successful! A verification email has been sent. Please check your inbox to continue.");
+                    // The user remains logged in, and onAuthStateChanged will now see the new, unverified user
+                    // and display the "Please verify your email" message.
                 } catch (error) { authError.textContent = error.message; }
             });
+            
             logoutBtn.addEventListener('click', () => signOut(auth));
 
             // --- Initialization ---
