@@ -102,6 +102,14 @@
         .btn-message:hover {
             background-color: #45a049;
         }
+        
+        .btn-secondary {
+            background-color: #ccc;
+            color: #333;
+        }
+        .btn-secondary:hover {
+            background-color: #bbb;
+        }
 
         .header-auth-buttons {
             display: flex;
@@ -220,6 +228,22 @@
             color: #777;
         }
 
+        /* Firebase forms (copied from index.html) */
+        .firebase-form-section {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin: 30px auto;
+            max-width: 500px;
+            text-align: center;
+        }
+        .form-buttons { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
+        .form-field-error { color: red; font-size: 0.85rem; }
+        .firebase-form-section #auth-error { margin-top: 15px; font-weight: 500; color: red; }
+        #password-feedback { font-size: 0.85rem; margin-top: 5px; height: 15px; }
+
+
         /* Footer */
         footer {
             background-color: #2E7D32;
@@ -270,7 +294,6 @@
                     <li><a href="/search.html">Browse</a></li>
                     <li><a href="/my-listings.html">My Listings</a></li>
                     <li><a href="/messages.html">Messages</a></li>
-                    <li><a href="#">About</a></li>
                 </ul>
             </nav>
             <div class="header-auth-buttons">
@@ -286,23 +309,18 @@
         <div id="loader">Loading listing...</div>
     
         <section id="listing-detail-container" style="display: none;">
-            
             <div class="image-gallery">
                 <div class="main-image" id="main-image">
                     <span>No Image</span>
                 </div>
-                <div class="thumbnail-container" id="thumbnail-container">
-                    <!-- Thumbnails will be added here by JavaScript -->
-                </div>
+                <div class="thumbnail-container" id="thumbnail-container"></div>
             </div>
-
             <div class="listing-info">
                 <h1 id="listing-title"></h1>
                 <p class="price" id="listing-price"></p>
                 <div class="seller-info">
                     <p><strong>Seller:</strong> <span id="listing-seller"></span></p>
                     <p><strong>Location:</strong> <span id="listing-location"></span></p>
-
                     <button id="message-seller-btn" class="btn btn-message">Message Seller</button>
                 </div>
                 <hr>
@@ -311,7 +329,26 @@
                     <p id="listing-description"></p>
                 </div>
             </div>
+        </section>
 
+        <!-- NEW: Auth forms copied from index.html -->
+        <section id="auth-forms" class="firebase-form-section" style="display: none;">
+            <h2>Log In or Register</h2>
+            <p>You must be logged in to send a message.</p>
+            <div id="register-name-fields" style="display: none;">
+                <input type="text" id="firstName" placeholder="First Name" required>
+                <input type="text" id="lastName" placeholder="Last Name" required>
+            </div>
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Password (min. 6 characters)" required>
+            <p id="password-feedback"></p>
+            <div class="form-buttons">
+                <button class="btn" id="loginBtn">Login</button>
+                <button class="btn" id="registerBtn">Register</button>
+                <button class="btn btn-secondary" id="cancelAuthFormBtn">Cancel</button>
+            </div>
+            <p id="auth-error"></p>
+            <p style="margin-top: 15px;"><a href="#" id="toggleAuthMode">New user? Register here.</a></p>
         </section>
     </main>
 
@@ -321,7 +358,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, updateProfile } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
@@ -333,18 +370,61 @@
             const auth = getAuth(app);
             const db = getFirestore(app);
 
+            // Selections for header and main listing
             const userEmailDisplay = document.getElementById('userEmailDisplay');
             const loginRegisterBtn = document.getElementById('loginRegisterBtn');
             const logoutBtn = document.getElementById('logoutBtn');
             const listAnItemBtn = document.getElementById('listAnItemBtn');
             const logoLink = document.getElementById('logo-link');
+            const loader = document.getElementById('loader');
+            const listingDetailContainer = document.getElementById('listing-detail-container');
+            const mainImageEl = document.getElementById('main-image');
+            const thumbnailContainer = document.getElementById('thumbnail-container');
+            const messageSellerBtn = document.getElementById('message-seller-btn');
+            
+            // Selections for the auth forms (now on this page)
+            const authFormsSection = document.getElementById('auth-forms');
+            const registerNameFields = document.getElementById('register-name-fields');
+            const firstNameInput = document.getElementById('firstName');
+            const lastNameInput = document.getElementById('lastName');
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const loginBtn = document.getElementById('loginBtn');
+            const registerBtn = document.getElementById('registerBtn');
+            const authError = document.getElementById('auth-error');
+            const toggleAuthModeLink = document.getElementById('toggleAuthMode');
+            const cancelAuthFormBtn = document.getElementById('cancelAuthFormBtn');
+            
+            let isLoginMode = true;
 
+            // --- UI Functions for Auth Form ---
+            function showAuthForm() {
+                listingDetailContainer.style.display = 'none';
+                authFormsSection.style.display = 'block';
+            }
+            function hideAuthForm() {
+                listingDetailContainer.style.display = 'flex';
+                authFormsSection.style.display = 'none';
+            }
+            function updateAuthModeUI() { /* ... Same as index.html ... */ }
+
+            // --- Main Page Logic ---
             logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
-            loginRegisterBtn.addEventListener('click', () => { window.location.href = `/index.html?auth=true`; });
-            listAnItemBtn.addEventListener('click', () => { window.location.href = `/index.html`; });
             logoutBtn.addEventListener('click', () => signOut(auth));
+            
+            // Note: loginRegisterBtn in header is now handled by onAuthStateChanged
+            // cancelAuthFormBtn simply hides the form
+            cancelAuthFormBtn.addEventListener('click', hideAuthForm);
+
 
             onAuthStateChanged(auth, user => {
+                // If the user's state changes (e.g., they just logged in), reload the page
+                // to get the correct state and hide the form.
+                if (auth.currentUser && authFormsSection.style.display === 'block') {
+                    window.location.reload();
+                    return;
+                }
+
                 if (user && user.emailVerified) {
                     userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
                     userEmailDisplay.style.display = 'block';
@@ -358,12 +438,6 @@
                     listAnItemBtn.style.display = 'none';
                 }
             });
-
-            const loader = document.getElementById('loader');
-            const listingDetailContainer = document.getElementById('listing-detail-container');
-            const mainImageEl = document.getElementById('main-image');
-            const thumbnailContainer = document.getElementById('thumbnail-container');
-            const messageSellerBtn = document.getElementById('message-seller-btn');
 
             async function fetchListing() {
                 const params = new URLSearchParams(window.location.search);
@@ -408,31 +482,22 @@
                             mainImageEl.innerHTML = '<span>No Image</span>';
                         }
                         
-                        // SCRIPT UPDATE: Smart "Message Seller" button logic
-                        messageSellerBtn.style.display = 'inline-block'; // Always show the button
+                        messageSellerBtn.style.display = 'inline-block';
                         messageSellerBtn.onclick = async () => {
                             const currentUser = auth.currentUser;
-
-                            // Case 1: User is not logged in
                             if (!currentUser) {
-                                alert("Please log in or register to message the seller.");
-                                window.location.href = '/index.html?auth=true';
+                                showAuthForm(); // Show the login form instead of alerting
                                 return;
                             }
-                            
-                            // Case 2: User is logged in but not verified
                             if (!currentUser.emailVerified) {
                                 alert("Please verify your email to message sellers.");
                                 return;
                             }
-
-                            // Case 3: User is trying to message themselves
                             if (currentUser.uid === data.posterUid) {
                                 alert("You cannot send a message to yourself.");
                                 return;
                             }
 
-                            // Case 4: User is logged in, verified, and not the seller (Proceed to chat)
                             const uids = [currentUser.uid, data.posterUid].sort();
                             const chatId = uids.join('_');
                             const chatRef = doc(db, 'chats', chatId);
@@ -463,8 +528,39 @@
                     loader.textContent = 'An error occurred while loading the listing.';
                 }
             }
+            
+            // --- Copied Auth Logic ---
+            loginBtn.addEventListener('click', async () => {
+                authError.textContent = '';
+                try {
+                    const userCredential = await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+                    if (!userCredential.user.emailVerified) {
+                        await signOut(auth);
+                        authError.textContent = 'You must verify your email before logging in.';
+                    }
+                    // onAuthStateChanged will handle the reload
+                } catch (error) { authError.textContent = "Invalid email or password."; }
+            });
 
+            registerBtn.addEventListener('click', async () => {
+                authError.textContent = '';
+                const firstName = firstNameInput.value.trim();
+                const lastName = lastNameInput.value.trim();
+                if (!firstName || !lastName) { authError.textContent = "Please enter your first and last name."; return; }
+                if (passwordInput.value.length < 6) { authError.textContent = "Password must be at least 6 characters long."; return; }
+                try {
+                    const userCredential = await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+                    await updateProfile(userCredential.user, { displayName: `${firstName} ${lastName}` });
+                    await sendEmailVerification(userCredential.user);
+                    await signOut(auth);
+                    alert("Registration successful! A verification email has been sent. Please check your inbox and click the link, then log in.");
+                    hideAuthForm();
+                } catch (error) { authError.textContent = error.message; }
+            });
+            toggleAuthModeLink.addEventListener('click', (e) => { e.preventDefault(); isLoginMode = !isLoginMode; updateAuthModeUI(); });
+            
             fetchListing();
+            updateAuthModeUI(); // Set initial state of the form
         }
 
         main();
