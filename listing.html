@@ -238,6 +238,13 @@
             max-width: 500px;
             text-align: center;
         }
+        .firebase-form-section input,
+        .firebase-form-section select {
+            display: block;
+            margin: 10px auto;
+            width: 100%;
+            max-width: 350px;
+        }
         .form-buttons { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
         .form-field-error { color: red; font-size: 0.85rem; }
         .firebase-form-section #auth-error { margin-top: 15px; font-weight: 500; color: red; }
@@ -249,6 +256,7 @@
             background-color: #2E7D32;
             color: white;
             padding: 40px 0 20px;
+            margin-top: 30px;
         }
         .footer-content {
             display: grid;
@@ -331,7 +339,7 @@
             </div>
         </section>
 
-        <!-- NEW: Auth forms copied from index.html -->
+        <!-- Auth forms copied from index.html -->
         <section id="auth-forms" class="firebase-form-section" style="display: none;">
             <h2>Log In or Register</h2>
             <p>You must be logged in to send a message.</p>
@@ -359,7 +367,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, updateProfile } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -382,7 +390,7 @@
             const thumbnailContainer = document.getElementById('thumbnail-container');
             const messageSellerBtn = document.getElementById('message-seller-btn');
             
-            // Selections for the auth forms (now on this page)
+            // Selections for the auth forms
             const authFormsSection = document.getElementById('auth-forms');
             const registerNameFields = document.getElementById('register-name-fields');
             const firstNameInput = document.getElementById('firstName');
@@ -406,21 +414,37 @@
                 listingDetailContainer.style.display = 'flex';
                 authFormsSection.style.display = 'none';
             }
-            function updateAuthModeUI() { /* ... Same as index.html ... */ }
+            // --- FIXED: updateAuthModeUI function was missing ---
+            function updateAuthModeUI() {
+                if (isLoginMode) {
+                    loginBtn.style.display = 'inline-block';
+                    registerBtn.style.display = 'none';
+                    registerNameFields.style.display = 'none';
+                    toggleAuthModeLink.textContent = 'New user? Register here.';
+                    authFormsSection.querySelector('h2').textContent = 'Log In to Cheaplet';
+                } else {
+                    loginBtn.style.display = 'none';
+                    registerBtn.style.display = 'inline-block';
+                    registerNameFields.style.display = 'block';
+                    toggleAuthModeLink.textContent = 'Already have an account? Log in.';
+                    authFormsSection.querySelector('h2').textContent = 'Register for Cheaplet';
+                }
+                authError.textContent = '';
+            }
 
             // --- Main Page Logic ---
             logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
             logoutBtn.addEventListener('click', () => signOut(auth));
+            // --- FIXED: "List an Item" button now works ---
+            listAnItemBtn.addEventListener('click', () => { window.location.href = '/index.html'; });
             
-            // Note: loginRegisterBtn in header is now handled by onAuthStateChanged
-            // cancelAuthFormBtn simply hides the form
+            loginRegisterBtn.addEventListener('click', showAuthForm);
             cancelAuthFormBtn.addEventListener('click', hideAuthForm);
 
 
             onAuthStateChanged(auth, user => {
-                // If the user's state changes (e.g., they just logged in), reload the page
-                // to get the correct state and hide the form.
-                if (auth.currentUser && authFormsSection.style.display === 'block') {
+                // After a user logs in successfully on this page, reload to clear the form and update the UI
+                if (user && authFormsSection.style.display === 'block') {
                     window.location.reload();
                     return;
                 }
@@ -432,10 +456,11 @@
                     logoutBtn.style.display = 'inline-block';
                     listAnItemBtn.style.display = 'inline-block';
                 } else {
+                    // This handles both logged out state and unverified users
                     userEmailDisplay.style.display = 'none';
                     loginRegisterBtn.style.display = 'inline-block';
                     logoutBtn.style.display = 'none';
-                    listAnItemBtn.style.display = 'none';
+                    listAnItemBtn.style.display = 'inline-block'; // Let them go home to list
                 }
             });
 
@@ -457,10 +482,19 @@
                         document.title = `${data.title} - Cheaplet`;
                         document.getElementById('listing-title').textContent = data.title;
                         document.getElementById('listing-price').textContent = `$${data.price.toFixed(2)}`;
-                        document.getElementById('listing-seller').textContent = data.posterEmail;
+                        document.getElementById('listing-seller').textContent = data.posterEmail; // Display email by default
                         document.getElementById('listing-location').textContent = data.location;
                         document.getElementById('listing-description').textContent = data.description;
                         
+                        // Try to get seller's display name
+                        const usersRef = collection(db, "users");
+                        const q = query(usersRef, where("uid", "==", data.posterUid));
+                        const querySnapshot = await getDocs(q);
+                        querySnapshot.forEach((doc) => {
+                            document.getElementById('listing-seller').textContent = doc.data().displayName || data.posterEmail;
+                        });
+
+
                         let imageUrls = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls : (data.imageUrl ? [data.imageUrl] : []);
                         if (imageUrls.length > 0) {
                             mainImageEl.style.backgroundImage = `url('${imageUrls[0]}')`;
@@ -485,12 +519,8 @@
                         messageSellerBtn.style.display = 'inline-block';
                         messageSellerBtn.onclick = async () => {
                             const currentUser = auth.currentUser;
-                            if (!currentUser) {
-                                showAuthForm(); // Show the login form instead of alerting
-                                return;
-                            }
-                            if (!currentUser.emailVerified) {
-                                alert("Please verify your email to message sellers.");
+                            if (!currentUser || !currentUser.emailVerified) {
+                                showAuthForm(); // Show login form if not logged in or not verified
                                 return;
                             }
                             if (currentUser.uid === data.posterUid) {
@@ -507,11 +537,15 @@
                                 if (!chatSnap.exists()) {
                                     await setDoc(chatRef, {
                                         participants: uids,
+                                        participantInfo: {
+                                            [currentUser.uid]: currentUser.displayName,
+                                            [data.posterUid]: document.getElementById('listing-seller').textContent
+                                        },
                                         lastUpdate: serverTimestamp(),
                                         lastMessage: ""
                                     });
                                 }
-                                window.location.href = `/chat.html?id=${chatId}`;
+                                window.location.href = `/messages.html?chatId=${chatId}`;
                             } catch (error) {
                                 console.error("Error creating or finding chat:", error);
                                 alert("Could not start a conversation. Please try again.");
@@ -529,7 +563,7 @@
                 }
             }
             
-            // --- Copied Auth Logic ---
+            // --- Copied and Corrected Auth Logic ---
             loginBtn.addEventListener('click', async () => {
                 authError.textContent = '';
                 try {
@@ -539,7 +573,9 @@
                         authError.textContent = 'You must verify your email before logging in.';
                     }
                     // onAuthStateChanged will handle the reload
-                } catch (error) { authError.textContent = "Invalid email or password."; }
+                } catch (error) { 
+                    authError.textContent = error.message; // --- FIXED: More specific error ---
+                }
             });
 
             registerBtn.addEventListener('click', async () => {
@@ -552,11 +588,21 @@
                     const userCredential = await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
                     await updateProfile(userCredential.user, { displayName: `${firstName} ${lastName}` });
                     await sendEmailVerification(userCredential.user);
+                    
+                    // Also save user info to a 'users' collection for later reference
+                    const userDocRef = doc(db, "users", userCredential.user.uid);
+                    await setDoc(userDocRef, {
+                        uid: userCredential.user.uid,
+                        displayName: `${firstName} ${lastName}`,
+                        email: userCredential.user.email
+                    });
+
                     await signOut(auth);
-                    alert("Registration successful! A verification email has been sent. Please check your inbox and click the link, then log in.");
+                    alert("Registration successful! A verification email has been sent. Please check your inbox, then log in.");
                     hideAuthForm();
                 } catch (error) { authError.textContent = error.message; }
             });
+
             toggleAuthModeLink.addEventListener('click', (e) => { e.preventDefault(); isLoginMode = !isLoginMode; updateAuthModeUI(); });
             
             fetchListing();
