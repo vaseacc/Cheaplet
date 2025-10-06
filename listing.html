@@ -414,7 +414,6 @@
                 listingDetailContainer.style.display = 'flex';
                 authFormsSection.style.display = 'none';
             }
-            // --- FIXED: updateAuthModeUI function was missing ---
             function updateAuthModeUI() {
                 if (isLoginMode) {
                     loginBtn.style.display = 'inline-block';
@@ -434,17 +433,17 @@
 
             // --- Main Page Logic ---
             logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
-            logoutBtn.addEventListener('click', () => signOut(auth));
-            // --- FIXED: "List an Item" button now works ---
             listAnItemBtn.addEventListener('click', () => { window.location.href = '/index.html'; });
+            logoutBtn.addEventListener('click', () => signOut(auth));
             
             loginRegisterBtn.addEventListener('click', showAuthForm);
             cancelAuthFormBtn.addEventListener('click', hideAuthForm);
 
 
             onAuthStateChanged(auth, user => {
-                // After a user logs in successfully on this page, reload to clear the form and update the UI
-                if (user && authFormsSection.style.display === 'block') {
+                // --- FIXED: Only reload if the user is VERIFIED ---
+                // After a verified user logs in on this page, reload to clear the form and update the UI.
+                if (user && user.emailVerified && authFormsSection.style.display === 'block') {
                     window.location.reload();
                     return;
                 }
@@ -456,11 +455,10 @@
                     logoutBtn.style.display = 'inline-block';
                     listAnItemBtn.style.display = 'inline-block';
                 } else {
-                    // This handles both logged out state and unverified users
                     userEmailDisplay.style.display = 'none';
                     loginRegisterBtn.style.display = 'inline-block';
                     logoutBtn.style.display = 'none';
-                    listAnItemBtn.style.display = 'inline-block'; // Let them go home to list
+                    listAnItemBtn.style.display = 'inline-block';
                 }
             });
 
@@ -486,14 +484,16 @@
                         document.getElementById('listing-location').textContent = data.location;
                         document.getElementById('listing-description').textContent = data.description;
                         
-                        // Try to get seller's display name
-                        const usersRef = collection(db, "users");
-                        const q = query(usersRef, where("uid", "==", data.posterUid));
-                        const querySnapshot = await getDocs(q);
-                        querySnapshot.forEach((doc) => {
-                            document.getElementById('listing-seller').textContent = doc.data().displayName || data.posterEmail;
-                        });
-
+                        // Try to get seller's display name from the 'users' collection
+                        try {
+                            const userDocRef = doc(db, "users", data.posterUid);
+                            const userDocSnap = await getDoc(userDocRef);
+                            if (userDocSnap.exists()) {
+                                document.getElementById('listing-seller').textContent = userDocSnap.data().displayName || data.posterEmail;
+                            }
+                        } catch (e) {
+                            console.log("Could not fetch user display name, falling back to email.");
+                        }
 
                         let imageUrls = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls : (data.imageUrl ? [data.imageUrl] : []);
                         if (imageUrls.length > 0) {
@@ -569,12 +569,12 @@
                 try {
                     const userCredential = await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
                     if (!userCredential.user.emailVerified) {
+                        authError.textContent = 'Please verify your email to log in. Check your inbox and spam folder.';
                         await signOut(auth);
-                        authError.textContent = 'You must verify your email before logging in.';
                     }
-                    // onAuthStateChanged will handle the reload
+                    // If verified, onAuthStateChanged will handle the reload.
                 } catch (error) { 
-                    authError.textContent = error.message; // --- FIXED: More specific error ---
+                    authError.textContent = error.message;
                 }
             });
 
@@ -586,14 +586,14 @@
                 if (passwordInput.value.length < 6) { authError.textContent = "Password must be at least 6 characters long."; return; }
                 try {
                     const userCredential = await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
-                    await updateProfile(userCredential.user, { displayName: `${firstName} ${lastName}` });
+                    const displayName = `${firstName} ${lastName}`;
+                    await updateProfile(userCredential.user, { displayName: displayName });
                     await sendEmailVerification(userCredential.user);
                     
-                    // Also save user info to a 'users' collection for later reference
                     const userDocRef = doc(db, "users", userCredential.user.uid);
                     await setDoc(userDocRef, {
                         uid: userCredential.user.uid,
-                        displayName: `${firstName} ${lastName}`,
+                        displayName: displayName,
                         email: userCredential.user.email
                     });
 
