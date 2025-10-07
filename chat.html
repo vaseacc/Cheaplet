@@ -113,7 +113,7 @@
             padding: 20px;
             overflow-y: auto;
             display: flex;
-            flex-direction: column; /* Standard top-to-bottom flow */
+            flex-direction: column;
         }
 
         .message-bubble {
@@ -140,14 +140,13 @@
         
         .message-timestamp {
             font-size: 0.75rem;
-            color: #999;
+            color: #b3e6b5;
             margin-top: 5px;
             text-align: right;
         }
         .message-bubble.received .message-timestamp {
             color: #777;
         }
-
 
         .message-form {
             display: flex;
@@ -168,6 +167,10 @@
             width: 40px;
             height: 40px;
             padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
         }
 
         .info-message {
@@ -228,7 +231,6 @@
                     <li><a href="/search.html">Browse</a></li>
                     <li><a href="/my-listings.html">My Listings</a></li>
                     <li><a href="/messages.html">Messages</a></li>
-                    <li><a href="#">About</a></li>
                 </ul>
             </nav>
             <div class="header-auth-buttons">
@@ -287,7 +289,7 @@
             let unsubscribe;
 
             onAuthStateChanged(auth, user => {
-                if (user) {
+                if (user && user.emailVerified) {
                     userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
                     userEmailDisplay.style.display = 'block';
                     logoutBtn.style.display = 'inline-block';
@@ -297,61 +299,93 @@
                     if (chatId) {
                         initializeChat(chatId, user);
                     } else {
-                        infoContainer.innerHTML = `<p class="info-message">Error: No chat ID provided.</p>`;
+                        infoContainer.innerHTML = `<p class="info-message"><a href="/messages.html">Go to your messages</a> to select a conversation.</p>`;
                     }
                 } else {
-                    infoContainer.innerHTML = `<p class="info-message">You must be logged in to view your messages.</p>`;
+                    infoContainer.innerHTML = `<p class="info-message">You must be logged in to view your messages. <a href="/index.html">Go home to log in.</a></p>`;
+                    chatContainer.style.display = 'none';
                     if (unsubscribe) unsubscribe();
                 }
             });
 
             async function initializeChat(chatId, currentUser) {
-                const chatRef = doc(db, 'chats', chatId);
-                const chatSnap = await getDoc(chatRef);
+                try {
+                    const chatRef = doc(db, 'chats', chatId);
+                    const chatSnap = await getDoc(chatRef);
 
-                if (!chatSnap.exists() || !chatSnap.data().participants.includes(currentUser.uid)) {
-                    infoContainer.innerHTML = `<p class="info-message">Error: You do not have permission to view this chat.</p>`;
-                    return;
-                }
-                
-                infoContainer.style.display = 'none';
-                chatContainer.style.display = 'flex';
-                
-                const chatData = chatSnap.data();
-                const otherParticipantId = chatData.participants.find(p => p !== currentUser.uid);
-                const otherUserIdentifier = chatId.replace(currentUser.uid, '').replace('_', '');
-                chatHeader.textContent = `Chat with ${otherUserIdentifier.substring(0, 10)}...`;
-
-                const messagesRef = collection(db, 'chats', chatId, 'messages');
-                // BUG FIX: Order by timestamp ASCENDING (oldest first)
-                const q = query(messagesRef, orderBy("timestamp", "asc"));
-
-                unsubscribe = onSnapshot(q, (snapshot) => {
-                    messagesList.innerHTML = '';
-                    snapshot.forEach(doc => {
-                        renderMessage(doc.data(), currentUser.uid);
-                    });
-                    // BUG FIX: Automatically scroll to the bottom
-                    messagesList.scrollTop = messagesList.scrollHeight;
-                });
-
-                messageForm.addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const messageText = messageInput.value.trim();
-                    if (messageText === "") return;
-                    messageInput.value = '';
-
-                    await addDoc(messagesRef, {
-                        text: messageText,
-                        senderId: currentUser.uid,
-                        timestamp: serverTimestamp()
-                    });
+                    if (!chatSnap.exists() || !chatSnap.data().participants.includes(currentUser.uid)) {
+                        infoContainer.innerHTML = `<p class="info-message">Error: You do not have permission to view this chat.</p>`;
+                        return;
+                    }
                     
-                    await updateDoc(chatRef, {
-                        lastMessage: messageText,
-                        lastUpdate: serverTimestamp()
+                    infoContainer.style.display = 'none';
+                    chatContainer.style.display = 'flex';
+                    
+                    // --- IMPROVEMENT: Set a more useful chat header ---
+                    const chatData = chatSnap.data();
+                    const otherParticipantId = chatData.participants.find(p => p !== currentUser.uid);
+                    const otherUserInfo = chatData.participantInfo ? chatData.participantInfo[otherParticipantId] : 'User';
+                    chatHeader.textContent = `Chat with ${otherUserInfo}`;
+
+                    const messagesRef = collection(db, 'chats', chatId, 'messages');
+                    const q = query(messagesRef, orderBy("timestamp", "asc"));
+
+                    unsubscribe = onSnapshot(q, (snapshot) => {
+                        messagesList.innerHTML = '';
+                        snapshot.forEach(doc => {
+                            renderMessage(doc.data(), currentUser.uid);
+                        });
+                        // --- FIXED: Automatically scroll to the bottom of the messages list ---
+                        messagesList.scrollTop = messagesList.scrollHeight;
+                    }, (error) => {
+                        console.error("Error in snapshot listener:", error);
+                        infoContainer.innerHTML = `<p class="info-message">Error loading messages. Please refresh the page.</p>`;
+                        infoContainer.style.display = 'block';
+                        chatContainer.style.display = 'none';
                     });
-                });
+
+                    messageForm.onsubmit = async (e) => {
+                        e.preventDefault();
+                        const messageText = messageInput.value.trim();
+                        if (messageText === "") return;
+                        
+                        const messagePayload = {
+                            text: messageText,
+                            senderId: currentUser.uid,
+                            timestamp: serverTimestamp()
+                        };
+                        
+                        // Temporarily disable form to prevent double-sends
+                        messageInput.disabled = true;
+                        
+                        try {
+                            await addDoc(messagesRef, messagePayload);
+                            await updateDoc(chatRef, {
+                                lastMessage: messageText,
+                                lastUpdate: serverTimestamp()
+                            });
+                        } catch (error) {
+                            console.error("Error sending message: ", error);
+                            alert("Could not send message. Please try again.");
+                        } finally {
+                             // Re-enable form and clear input
+                            messageInput.disabled = false;
+                            messageInput.value = '';
+                            messageInput.focus();
+                        }
+                    };
+
+                } catch (error) {
+                    console.error("Error initializing chat:", error);
+                    infoContainer.innerHTML = `<p class="info-message">An unexpected error occurred. Could not load chat.</p>`;
+                }
+            }
+
+            // --- IMPROVEMENT: Formats timestamp for display ---
+            function formatTimestamp(timestamp) {
+                if (!timestamp) return '';
+                const date = timestamp.toDate();
+                return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
             }
 
             function renderMessage(data, currentUserId) {
@@ -367,8 +401,14 @@
                 const textP = document.createElement('p');
                 textP.textContent = data.text;
                 
+                // --- FIXED: Add timestamp to the message bubble ---
+                const timeSpan = document.createElement('span');
+                timeSpan.classList.add('message-timestamp');
+                timeSpan.textContent = formatTimestamp(data.timestamp);
+
                 messageDiv.appendChild(textP);
-                // BUG FIX: Use appendChild() to add to the end of the normal-flow list
+                messageDiv.appendChild(timeSpan);
+
                 messagesList.appendChild(messageDiv);
             }
         }
