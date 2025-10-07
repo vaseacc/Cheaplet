@@ -228,7 +228,7 @@
             color: #777;
         }
 
-        /* Firebase forms (copied from index.html) */
+        /* Firebase forms */
         .firebase-form-section {
             background-color: white;
             padding: 30px;
@@ -339,7 +339,7 @@
             </div>
         </section>
 
-        <!-- Auth forms copied from index.html -->
+        <!-- Auth forms -->
         <section id="auth-forms" class="firebase-form-section" style="display: none;">
             <h2>Log In or Register</h2>
             <p>You must be logged in to send a message.</p>
@@ -367,7 +367,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, updateProfile } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -441,8 +441,6 @@
 
 
             onAuthStateChanged(auth, user => {
-                // --- FIXED: Only reload if the user is VERIFIED ---
-                // After a verified user logs in on this page, reload to clear the form and update the UI.
                 if (user && user.emailVerified && authFormsSection.style.display === 'block') {
                     window.location.reload();
                     return;
@@ -480,20 +478,26 @@
                         document.title = `${data.title} - Cheaplet`;
                         document.getElementById('listing-title').textContent = data.title;
                         document.getElementById('listing-price').textContent = `$${data.price.toFixed(2)}`;
-                        document.getElementById('listing-seller').textContent = data.posterEmail; // Display email by default
                         document.getElementById('listing-location').textContent = data.location;
                         document.getElementById('listing-description').textContent = data.description;
                         
-                        // Try to get seller's display name from the 'users' collection
+                        // --- PRIVACY FIX: NEVER SHOW EMAIL ---
+                        // 1. Set a generic default name.
+                        const sellerSpan = document.getElementById('listing-seller');
+                        sellerSpan.textContent = 'A Cheaplet User'; 
+
+                        // 2. Try to get the seller's real display name from the 'users' collection.
                         try {
                             const userDocRef = doc(db, "users", data.posterUid);
                             const userDocSnap = await getDoc(userDocRef);
-                            if (userDocSnap.exists()) {
-                                document.getElementById('listing-seller').textContent = userDocSnap.data().displayName || data.posterEmail;
+                            // 3. Only update it if the document and the displayName field exist.
+                            if (userDocSnap.exists() && userDocSnap.data().displayName) {
+                                sellerSpan.textContent = userDocSnap.data().displayName;
                             }
                         } catch (e) {
-                            console.log("Could not fetch user display name, falling back to email.");
+                            console.error("Could not fetch user display name. Defaulting to generic name.", e);
                         }
+
 
                         let imageUrls = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls : (data.imageUrl ? [data.imageUrl] : []);
                         if (imageUrls.length > 0) {
@@ -520,7 +524,7 @@
                         messageSellerBtn.onclick = async () => {
                             const currentUser = auth.currentUser;
                             if (!currentUser || !currentUser.emailVerified) {
-                                showAuthForm(); // Show login form if not logged in or not verified
+                                showAuthForm();
                                 return;
                             }
                             if (currentUser.uid === data.posterUid) {
@@ -539,7 +543,7 @@
                                         participants: uids,
                                         participantInfo: {
                                             [currentUser.uid]: currentUser.displayName,
-                                            [data.posterUid]: document.getElementById('listing-seller').textContent
+                                            [data.posterUid]: sellerSpan.textContent // Use the name from the DOM
                                         },
                                         lastUpdate: serverTimestamp(),
                                         lastMessage: ""
@@ -563,7 +567,7 @@
                 }
             }
             
-            // --- Copied and Corrected Auth Logic ---
+            // --- Auth Logic for the form ---
             loginBtn.addEventListener('click', async () => {
                 authError.textContent = '';
                 try {
@@ -606,7 +610,7 @@
             toggleAuthModeLink.addEventListener('click', (e) => { e.preventDefault(); isLoginMode = !isLoginMode; updateAuthModeUI(); });
             
             fetchListing();
-            updateAuthModeUI(); // Set initial state of the form
+            updateAuthModeUI();
         }
 
         main();
