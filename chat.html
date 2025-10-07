@@ -290,7 +290,7 @@
 
             onAuthStateChanged(auth, user => {
                 if (user && user.emailVerified) {
-                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
+                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome!`;
                     userEmailDisplay.style.display = 'block';
                     logoutBtn.style.display = 'inline-block';
                     
@@ -321,7 +321,6 @@
                     infoContainer.style.display = 'none';
                     chatContainer.style.display = 'flex';
                     
-                    // --- IMPROVEMENT: Set a more useful chat header ---
                     const chatData = chatSnap.data();
                     const otherParticipantId = chatData.participants.find(p => p !== currentUser.uid);
                     const otherUserInfo = chatData.participantInfo ? chatData.participantInfo[otherParticipantId] : 'User';
@@ -335,7 +334,6 @@
                         snapshot.forEach(doc => {
                             renderMessage(doc.data(), currentUser.uid);
                         });
-                        // --- FIXED: Automatically scroll to the bottom of the messages list ---
                         messagesList.scrollTop = messagesList.scrollHeight;
                     }, (error) => {
                         console.error("Error in snapshot listener:", error);
@@ -355,7 +353,6 @@
                             timestamp: serverTimestamp()
                         };
                         
-                        // Temporarily disable form to prevent double-sends
                         messageInput.disabled = true;
                         
                         try {
@@ -368,7 +365,6 @@
                             console.error("Error sending message: ", error);
                             alert("Could not send message. Please try again.");
                         } finally {
-                             // Re-enable form and clear input
                             messageInput.disabled = false;
                             messageInput.value = '';
                             messageInput.focus();
@@ -381,7 +377,6 @@
                 }
             }
 
-            // --- IMPROVEMENT: Formats timestamp for display ---
             function formatTimestamp(timestamp) {
                 if (!timestamp) return '';
                 const date = timestamp.toDate();
@@ -401,7 +396,6 @@
                 const textP = document.createElement('p');
                 textP.textContent = data.text;
                 
-                // --- FIXED: Add timestamp to the message bubble ---
                 const timeSpan = document.createElement('span');
                 timeSpan.classList.add('message-timestamp');
                 timeSpan.textContent = formatTimestamp(data.timestamp);
