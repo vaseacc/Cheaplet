@@ -366,10 +366,11 @@
 
             // --- AUTH STATE OBSERVER ---
             onAuthStateChanged(auth, async (user) => {
-                currentUser = user; // Set the global current user
+                currentUser = user;
 
                 if (user && user.emailVerified) {
-                    userEmailDisplay.textContent = user.displayName || 'Welcome!';
+                    // --- THIS IS THE FIX ---
+                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome!`;
                     userEmailDisplay.style.display = 'block';
                     loginRegisterBtn.style.display = 'none';
                     logoutBtn.style.display = 'inline-block';
@@ -386,7 +387,6 @@
                     listAnItemBtn.style.display = 'inline-block';
                 }
                 
-                // Fetch listing details AFTER we know the user's status
                 await fetchAndDisplayListing();
             });
 
@@ -403,7 +403,6 @@
                     
                     const data = listingSnap.data();
 
-                    // 1. RENDER LISTING HTML
                     listingDetailContainer.innerHTML = `
                         <div class="image-gallery">
                             <div class="main-image" id="main-image"></div><div class="thumbnail-container" id="thumbnail-container"></div>
@@ -422,7 +421,6 @@
                     
                     document.title = `${data.title} - Cheaplet`;
 
-                    // 2. POPULATE DYNAMIC PARTS (SELLER NAME, IMAGES)
                     const sellerSpan = document.getElementById('listing-seller');
                     try {
                         const userDocRef = doc(db, "users", data.posterUid);
@@ -450,7 +448,6 @@
                         });
                     } else { mainImageEl.textContent = 'No Image'; }
 
-                    // 3. ADD EVENT LISTENERS
                     document.getElementById('message-seller-btn').onclick = () => {
                         if (!currentUser || !currentUser.emailVerified) {
                             showAuthForm(); return;
@@ -466,7 +463,6 @@
                         const userDocRef = doc(db, "users", currentUser.uid);
                         const userDocSnap = await getDoc(userDocRef);
                         const isAdmin = userDocSnap.exists() && userDocSnap.data().role === 'admin';
-
                         if (isOwner || isAdmin) {
                             const deleteBtn = document.getElementById('delete-listing-btn');
                             deleteBtn.style.display = 'block';
@@ -479,8 +475,7 @@
                             };
                         }
                     }
-
-                    // 4. SHOW THE CONTENT
+                    
                     loader.style.display = 'none';
                     listingDetailContainer.style.display = 'flex';
 
@@ -541,7 +536,6 @@
                             authError.textContent = 'Please verify your email before logging in.';
                             await signOut(auth);
                         }
-                        // onAuthStateChanged will handle the reload
                     } catch (error) { authError.textContent = error.message; }
                 });
 
