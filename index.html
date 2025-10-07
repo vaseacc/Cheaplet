@@ -622,7 +622,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, sendEmailVerification } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, where, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-analytics.js";
 
         async function main() {
@@ -696,7 +696,7 @@
                 authError.textContent = '';
             }
             
-            // --- Image Uploader and Form Validation Functions (remain the same) ---
+            // --- Image Uploader and Form Validation Functions ---
             function renderPreviews() {
                 imagePreviewContainer.innerHTML = '';
                 selectedFiles.forEach((file, index) => {
@@ -740,15 +740,13 @@
             // --- Firebase Auth State Change Handler ---
             onAuthStateChanged(auth, user => {
                 if (user && user.emailVerified) {
-                    // This block only runs for a fully logged-in, verified user.
                     returnToMainView();
-                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
+                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome!`;
                     userEmailDisplay.style.display = 'block';
                     loginRegisterBtn.style.display = 'none';
                     logoutBtn.style.display = 'inline-block';
                     listAnItemBtn.style.display = 'inline-block';
                 } else {
-                    // This block runs if the user is logged out.
                     userEmailDisplay.style.display = 'none';
                     loginRegisterBtn.style.display = 'inline-block';
                     logoutBtn.style.display = 'none';
@@ -756,7 +754,7 @@
                 }
             });
 
-            // --- Listing Logic (remains the same) ---
+            // --- Listing Logic ---
             postListingBtn.addEventListener('click', async () => {
                 const user = auth.currentUser;
                 if (!user) { alert('You must be logged in to post an item.'); toggleAuthFormVisibility(true); return; }
@@ -877,22 +875,21 @@
             });
             toggleAuthModeLink.addEventListener('click', (e) => { e.preventDefault(); isLoginMode = !isLoginMode; updateAuthModeUI(); });
 
-            // --- CORRECTED LOGIN BUTTON LOGIC ---
+            // --- Login Button Logic ---
             loginBtn.addEventListener('click', async () => {
                 authError.textContent = '';
                 try {
                     const userCredential = await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
                     if (!userCredential.user.emailVerified) {
                         authError.textContent = 'Please verify your email to log in. Check your inbox and spam folder.';
-                        await signOut(auth); // Sign out the unverified user so they stay on the login page.
+                        await signOut(auth);
                     }
-                    // If verified, onAuthStateChanged will handle the successful login UI change.
                 } catch (err) {
-                    authError.textContent = err.message; // Handles wrong password, user not found, etc.
+                    authError.textContent = err.message;
                 }
             });
             
-            // --- CORRECTED REGISTER BUTTON LOGIC ---
+            // --- FIXED: Register Button Logic ---
             registerBtn.addEventListener('click', async () => {
                 const firstName = firstNameInput.value.trim();
                 const lastName = lastNameInput.value.trim();
@@ -900,12 +897,19 @@
                 if (passwordInput.value.length < 6) { authError.textContent = "Password must be at least 6 characters long."; return; }
                 try {
                     const userCredential = await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
-                    await updateProfile(userCredential.user, { displayName: `${firstName} ${lastName}` });
+                    const displayName = `${firstName} ${lastName}`;
+                    await updateProfile(userCredential.user, { displayName: displayName });
                     await sendEmailVerification(userCredential.user);
                     
-                    // CRITICAL STEP: Sign the new user out immediately.
+                    // --- THIS IS THE FIX: Create the user document in Firestore ---
+                    const userDocRef = doc(db, "users", userCredential.user.uid);
+                    await setDoc(userDocRef, {
+                        uid: userCredential.user.uid,
+                        displayName: displayName,
+                        email: userCredential.user.email // Store email for reference, but don't display it
+                    });
+                    
                     await signOut(auth);
-
                     alert("Registration successful! A verification email has been sent. Please check your inbox and spam folder, then log in.");
                     returnToMainView();
                 } catch (error) { authError.textContent = error.message; }
