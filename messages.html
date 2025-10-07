@@ -90,7 +90,7 @@
             background-color: #FFC400;
         }
         
-        /* --- NEW STYLES FOR INBOX --- */
+        /* --- STYLES FOR INBOX --- */
         .page-header {
             padding: 40px 0 20px;
             border-bottom: 1px solid #ddd;
@@ -140,10 +140,12 @@
             font-weight: bold;
             font-size: 1.2rem;
             margin-right: 15px;
+            flex-shrink: 0;
         }
 
         .conversation-details {
             flex-grow: 1;
+            overflow: hidden; /* Prevents overflow issues */
         }
 
         .participant-name {
@@ -215,7 +217,6 @@
                     <li><a href="/search.html">Browse</a></li>
                     <li><a href="/my-listings.html">My Listings</a></li>
                     <li><a href="/messages.html">Messages</a></li>
-                    <li><a href="#">About</a></li>
                 </ul>
             </nav>
             <div class="header-auth-buttons">
@@ -271,8 +272,8 @@
             let unsubscribe;
 
             onAuthStateChanged(auth, user => {
-                if (user) {
-                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
+                if (user && user.emailVerified) {
+                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome!`;
                     userEmailDisplay.style.display = 'block';
                     loginRegisterBtn.style.display = 'none';
                     logoutBtn.style.display = 'inline-block';
@@ -286,25 +287,25 @@
                     listAnItemBtn.style.display = 'none';
                     if (unsubscribe) unsubscribe();
                     inboxContainer.innerHTML = '';
-                    infoContainer.innerHTML = `<p class="info-message">You must be logged in to view your messages.</p>`;
+                    infoContainer.innerHTML = `<p class="info-message">You must be logged in to view your messages. <a href="/index.html">Go home to log in.</a></p>`;
                 }
             });
 
             function fetchConversations(currentUser) {
                 const chatsRef = collection(db, "chats");
-                // Create a query to find all chat documents where the user's ID is in the "participants" array
                 const q = query(chatsRef, where("participants", "array-contains", currentUser.uid), orderBy("lastUpdate", "desc"));
                 
                 infoContainer.innerHTML = `<p class="info-message">Loading conversations...</p>`;
 
                 unsubscribe = onSnapshot(q, (querySnapshot) => {
-                    inboxContainer.innerHTML = '';
                     if (querySnapshot.empty) {
                         infoContainer.innerHTML = `<p class="info-message">You have no messages yet.</p>`;
+                        inboxContainer.innerHTML = ''; // Clear any old results
                     } else {
-                        infoContainer.innerHTML = '';
+                        infoContainer.innerHTML = ''; // Hide the loading message
                     }
-
+                    
+                    inboxContainer.innerHTML = ''; // Clear the container before re-rendering
                     querySnapshot.forEach((doc) => {
                         inboxContainer.appendChild(renderConversation(doc, currentUser));
                     });
@@ -314,17 +315,17 @@
                 });
             }
 
+            // --- CORRECTED FUNCTION ---
             function renderConversation(doc, currentUser) {
                 const chatData = doc.data();
                 const chatId = doc.id;
                 
-                // Find the other participant's ID
                 const otherParticipantId = chatData.participants.find(p => p !== currentUser.uid);
                 
-                // In a real app, you would fetch the other user's profile to get their name.
-                // For now, we'll just use the first part of their email as a placeholder name.
-                const otherParticipantEmail = chatId.replace(currentUser.uid, '').replace('_', '');
-                const displayName = otherParticipantEmail.split('@')[0];
+                // --- THIS IS THE FIX ---
+                // Get the other user's name from the participantInfo object.
+                // Fallback to "User" if the info doesn't exist for some reason.
+                const displayName = chatData.participantInfo ? chatData.participantInfo[otherParticipantId] || 'User' : 'User';
 
                 const conversationLink = document.createElement('a');
                 conversationLink.href = `/chat.html?id=${chatId}`;
@@ -334,7 +335,7 @@
                     <div class="avatar">${displayName.charAt(0).toUpperCase()}</div>
                     <div class="conversation-details">
                         <p class="participant-name">${displayName}</p>
-                        <p class="last-message">${chatData.lastMessage || 'No messages yet'}</p>
+                        <p class="last-message">${chatData.lastMessage || 'Click to start conversation'}</p>
                     </div>
                 `;
                 return conversationLink;
