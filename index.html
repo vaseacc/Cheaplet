@@ -493,9 +493,9 @@
             <nav>
                 <ul>
                     <li><a href="/index.html">Home</a></li>
-                    <li><a href="/search.html">Browse</a></li>
                     <li><a href="/my-listings.html">My Listings</a></li>
                     <li><a href="/messages.html">Messages</a></li>
+                    <li><a href="/profile.html">My Profile</a></li>
                 </ul>
             </nav>
             <div class="header-auth-buttons">
@@ -889,7 +889,7 @@
                 }
             });
             
-            // --- FIXED: Register Button Logic ---
+            // --- Register Button Logic ---
             registerBtn.addEventListener('click', async () => {
                 const firstName = firstNameInput.value.trim();
                 const lastName = lastNameInput.value.trim();
@@ -901,12 +901,11 @@
                     await updateProfile(userCredential.user, { displayName: displayName });
                     await sendEmailVerification(userCredential.user);
                     
-                    // --- THIS IS THE FIX: Create the user document in Firestore ---
                     const userDocRef = doc(db, "users", userCredential.user.uid);
                     await setDoc(userDocRef, {
                         uid: userCredential.user.uid,
                         displayName: displayName,
-                        email: userCredential.user.email // Store email for reference, but don't display it
+                        email: userCredential.user.email
                     });
                     
                     await signOut(auth);
