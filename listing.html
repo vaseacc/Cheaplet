@@ -37,9 +37,7 @@
         .listing-info h1 { font-size: 1.8rem; margin-bottom: 10px; font-weight: 600; }
         .listing-info .price { font-size: 2rem; font-weight: bold; color: #4CAF50; margin-bottom: 20px; }
         .listing-info .seller-info { background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #eee; }
-        .listing-info .seller-info p { margin-bottom: 5px; }
         
-        /* --- Styles for Seller Info Block --- */
         .seller-details { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
         #seller-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: #e0e0e0; background-size: cover; background-position: center; flex-shrink: 0; }
         #seller-profile-link { color: #4CAF50; text-decoration: none; font-weight: 600; font-size: 1.1rem;}
@@ -97,7 +95,6 @@
         import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, deleteDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
-            // --- INITIALIZATION ---
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
             const firebaseConfig = config.firebaseConfig;
@@ -105,7 +102,6 @@
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            // --- DOM SELECTORS ---
             const userEmailDisplay = document.getElementById('userEmailDisplay');
             const loginRegisterBtn = document.getElementById('loginRegisterBtn');
             const logoutBtn = document.getElementById('logoutBtn');
@@ -118,7 +114,38 @@
             let currentUser = null;
             let isLoginMode = true;
 
-            // --- AUTH STATE OBSERVER ---
+            function showAuthForm() {
+                listingDetailContainer.style.display = 'none';
+                authFormsSection.style.display = 'block';
+            }
+            function hideAuthForm() {
+                listingDetailContainer.style.display = 'flex';
+                authFormsSection.style.display = 'none';
+            }
+            function updateAuthModeUI() {
+                const registerNameFields = document.getElementById('register-name-fields');
+                const formLoginBtn = document.getElementById('loginBtn-form');
+                const formRegisterBtn = document.getElementById('registerBtn-form');
+                const formToggleLink = document.getElementById('toggleAuthModeLink');
+                const formTitle = authFormsSection.querySelector('h2');
+                const authError = document.getElementById('auth-error-form');
+
+                if (isLoginMode) {
+                    formLoginBtn.style.display = 'inline-block';
+                    formRegisterBtn.style.display = 'none';
+                    registerNameFields.style.display = 'none';
+                    formToggleLink.textContent = 'New user? Register here.';
+                    formTitle.textContent = 'Log In';
+                } else {
+                    formLoginBtn.style.display = 'none';
+                    formRegisterBtn.style.display = 'inline-block';
+                    registerNameFields.style.display = 'block';
+                    formToggleLink.textContent = 'Already have an account? Log in.';
+                    formTitle.textContent = 'Register';
+                }
+                if(authError) authError.textContent = '';
+            }
+
             onAuthStateChanged(auth, async (user) => {
                 currentUser = user; 
 
@@ -143,7 +170,6 @@
                 await fetchAndDisplayListing();
             });
 
-            // --- RENDER FUNCTIONS ---
             async function fetchAndDisplayListing() {
                 try {
                     const params = new URLSearchParams(window.location.search);
@@ -177,7 +203,6 @@
                     
                     document.title = `${data.title} - Cheaplet`;
 
-                    // --- THIS IS THE UPDATED PART ---
                     const sellerProfileLink = document.getElementById('seller-profile-link');
                     const sellerAvatar = document.getElementById('seller-avatar');
                     try {
@@ -188,7 +213,6 @@
                             if (userData.displayName) {
                                 sellerProfileLink.textContent = userData.displayName;
                             }
-                            // Check for and display the photoURL
                             if (userData.photoURL) {
                                 sellerAvatar.style.backgroundImage = `url('${userData.photoURL}')`;
                                 sellerAvatar.style.display = 'block';
@@ -252,11 +276,80 @@
             }
 
             async function handleCreateChat(posterUid, posterName) {
-                // ... (This function is unchanged and correct)
+                const uids = [currentUser.uid, posterUid].sort();
+                const chatId = uids.join('_');
+                const chatRef = doc(db, 'chats', chatId);
+                try {
+                    const chatSnap = await getDoc(chatRef);
+                    if (!chatSnap.exists()) {
+                        await setDoc(chatRef, {
+                            participants: uids,
+                            participantInfo: { [currentUser.uid]: currentUser.displayName, [posterUid]: posterName },
+                            lastUpdate: serverTimestamp(), lastMessage: ""
+                        });
+                    }
+                    window.location.href = `/messages.html?chatId=${chatId}`;
+                } catch (error) { console.error("Error creating chat:", error); alert("Could not start conversation."); }
             }
 
             function setupAuthForm() {
-                // ... (This function is unchanged and correct)
+                authFormsSection.innerHTML = `
+                    <h2>Log In</h2>
+                    <p>You must be logged in to send a message.</p>
+                    <div id="register-name-fields" style="display: none;">
+                        <input type="text" id="firstName-form" placeholder="First Name" required>
+                        <input type="text" id="lastName-form" placeholder="Last Name" required>
+                    </div>
+                    <input type="email" id="email-form" placeholder="Email" required>
+                    <input type="password" id="password-form" placeholder="Password (min. 6 characters)" required>
+                    <div class="form-buttons">
+                        <button class="btn" id="loginBtn-form">Login</button>
+                        <button class="btn" id="registerBtn-form" style="display: none;">Register</button>
+                        <button class="btn btn-secondary" id="cancelAuthFormBtn">Cancel</button>
+                    </div>
+                    <p id="auth-error-form"></p>
+                    <p style="margin-top: 15px;"><a href="#" id="toggleAuthModeLink">New user? Register here.</a></p>`;
+
+                document.getElementById('cancelAuthFormBtn').addEventListener('click', hideAuthForm);
+                document.getElementById('toggleAuthModeLink').addEventListener('click', (e) => {
+                    e.preventDefault(); isLoginMode = !isLoginMode; updateAuthModeUI();
+                });
+
+                document.getElementById('loginBtn-form').addEventListener('click', async () => {
+                    const email = document.getElementById('email-form').value;
+                    const password = document.getElementById('password-form').value;
+                    const authError = document.getElementById('auth-error-form');
+                    authError.textContent = '';
+                    try {
+                        const cred = await signInWithEmailAndPassword(auth, email, password);
+                        if (!cred.user.emailVerified) {
+                            authError.textContent = 'Please verify your email before logging in.';
+                            await signOut(auth);
+                        }
+                    } catch (error) { authError.textContent = error.message; }
+                });
+
+                document.getElementById('registerBtn-form').addEventListener('click', async () => {
+                    const email = document.getElementById('email-form').value;
+                    const password = document.getElementById('password-form').value;
+                    const firstName = document.getElementById('firstName-form').value;
+                    const lastName = document.getElementById('lastName-form').value;
+                    const authError = document.getElementById('auth-error-form');
+                    authError.textContent = '';
+                    if (!firstName || !lastName) { authError.textContent = "Name is required."; return; }
+                    try {
+                        const cred = await createUserWithEmailAndPassword(auth, email, password);
+                        const displayName = `${firstName} ${lastName}`;
+                        await updateProfile(cred.user, { displayName });
+                        await sendEmailVerification(cred.user);
+                        const userDocRef = doc(db, "users", cred.user.uid);
+                        await setDoc(userDocRef, { uid: cred.user.uid, displayName, email });
+                        await signOut(auth);
+                        alert("Registration successful! Please check your email (and spam folder) to verify your account, then log in.");
+                        isLoginMode = true;
+                        updateAuthModeUI();
+                    } catch (error) { authError.textContent = error.message; }
+                });
             }
 
             // --- GLOBAL EVENT LISTENERS & INITIALIZATION ---
