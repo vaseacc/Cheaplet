@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile - Cheaplet</title>
+    <style>
+        /* --- Basic, Header, and Listing Card Styles (Copied from index.html for consistency) --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
+        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+        header { background-color: #4CAF50; color: white; padding: 15px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .logo { font-size: 24px; font-weight: bold; display: flex; align-items: center; cursor: pointer; }
+        .logo span { color: #FFD700; }
+        nav ul { display: flex; list-style: none; }
+        nav ul li { margin-left: 20px; }
+        nav ul li a { color: white; text-decoration: none; font-weight: 500; }
+        .btn { background-color: #FFD700; color: #333; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; }
+        .header-auth-buttons { display: flex; gap: 10px; align-items: center; }
+        #userEmailDisplay { color: white; font-weight: 500; }
+        #logoutBtn { background-color: #f44336; color: white; }
+
+        .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; margin-bottom: 40px; }
+        .listing-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-decoration: none; color: inherit; }
+        .listing-image { height: 180px; background-color: #eee; background-size: cover; background-position: center; }
+        .listing-details { padding: 15px; }
+        .listing-price { color: #4CAF50; font-weight: bold; font-size: 1.2rem; margin-bottom: 8px; }
+        .listing-title { font-weight: 600; line-height: 1.3; height: 2.6em; overflow: hidden; margin-bottom: 8px; }
+        .listing-location { color: #777; font-size: 0.9rem; }
+        .no-listings-message { text-align: center; padding: 40px; color: #777; }
+        .info-message { text-align: center; padding: 50px; font-size: 1.2rem; color: #777; }
+
+        /* --- New Styles for this page --- */
+        .profile-header { padding: 40px 0; text-align: center; border-bottom: 1px solid #ddd; margin-bottom: 30px; }
+        .profile-header h1 { font-size: 2.5rem; margin-bottom: 10px; }
+        .listings-section-header { margin-bottom: 20px; font-size: 1.5rem; font-weight: 600; }
+        
+        @media (max-width: 767px) { nav { display: none; } }
+        @media (min-width: 768px) {
+             .header-content { flex-wrap: nowrap; }
+            #userEmailDisplay { width: auto; text-align: right; margin-bottom: 0; margin-right: 10px; order: 0; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container header-content">
+            <div class="logo" id="logo-link">
+                Cheap<span>let</span>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="/index.html">Home</a></li>
+                    <li><a href="/my-listings.html">My Listings</a></li>
+                    <li><a href="/messages.html">Messages</a></li>
+                    <li><a href="/profile.html">My Profile</a></li>
+                </ul>
+            </nav>
+            <div class="header-auth-buttons">
+                <span id="userEmailDisplay" style="display: none;"></span>
+                <button class="btn" id="loginRegisterBtn">Login / Register</button>
+                <button class="btn" id="logoutBtn" style="display: none;">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div id="loader">
+            <p class="info-message">Loading profile...</p>
+        </div>
+
+        <div id="profile-content" style="display: none;">
+            <div class="profile-header">
+                <h1 id="user-display-name"></h1>
+            </div>
+
+            <h2 class="listings-section-header">Listings from this user</h2>
+            <div class="listings-grid" id="user-listings-grid">
+                <!-- User's listings will be inserted here -->
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+
+        async function main() {
+            // --- INITIALIZATION ---
+            const response = await fetch('/.netlify/functions/config');
+            const config = await response.json();
+            const firebaseConfig = config.firebaseConfig;
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+
+            // --- DOM SELECTORS ---
+            const userEmailDisplay = document.getElementById('userEmailDisplay');
+            const loginRegisterBtn = document.getElementById('loginRegisterBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const logoLink = document.getElementById('logo-link');
+            const loader = document.getElementById('loader');
+            const profileContent = document.getElementById('profile-content');
+            const userDisplayName = document.getElementById('user-display-name');
+            const userListingsGrid = document.getElementById('user-listings-grid');
+            
+            // --- HEADER LOGIC ---
+            logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
+            loginRegisterBtn.addEventListener('click', () => { window.location.href = '/index.html'; });
+            logoutBtn.addEventListener('click', () => signOut(auth));
+
+            onAuthStateChanged(auth, (user) => {
+                if (user && user.emailVerified) {
+                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome!`;
+                    userEmailDisplay.style.display = 'block';
+                    loginRegisterBtn.style.display = 'none';
+                    logoutBtn.style.display = 'inline-block';
+                } else {
+                    userEmailDisplay.style.display = 'none';
+                    loginRegisterBtn.style.display = 'inline-block';
+                    logoutBtn.style.display = 'none';
+                }
+            });
+
+            // --- MAIN PAGE LOGIC ---
+            async function loadUserProfile() {
+                const params = new URLSearchParams(window.location.search);
+                const userId = params.get('id');
+
+                if (!userId) {
+                    loader.innerHTML = `<p class="info-message">No user profile specified.</p>`;
+                    return;
+                }
+
+                try {
+                    // 1. Fetch user's name
+                    const userDocRef = doc(db, "users", userId);
+                    const userDocSnap = await getDoc(userDocRef);
+
+                    if (!userDocSnap.exists()) {
+                        loader.innerHTML = `<p class="info-message">This user does not exist.</p>`;
+                        return;
+                    }
+                    
+                    const userData = userDocSnap.data();
+                    userDisplayName.textContent = userData.displayName || "Cheaplet User";
+                    document.title = `${userData.displayName}'s Profile - Cheaplet`;
+
+                    // 2. Fetch user's listings
+                    const listingsRef = collection(db, "listings");
+                    const q = query(listingsRef, where("posterUid", "==", userId), orderBy("timestamp", "desc"));
+
+                    onSnapshot(q, (querySnapshot) => {
+                        userListingsGrid.innerHTML = '';
+                        if (querySnapshot.empty) {
+                            userListingsGrid.innerHTML = `<p class="no-listings-message">This user has no active listings.</p>`;
+                        } else {
+                            querySnapshot.forEach((doc) => {
+                                userListingsGrid.appendChild(renderListingCard(doc.data(), doc.id));
+                            });
+                        }
+                        
+                        // Show the content now that everything is ready
+                        loader.style.display = 'none';
+                        profileContent.style.display = 'block';
+                    });
+
+                } catch (error) {
+                    console.error("Error loading user profile:", error);
+                    loader.innerHTML = `<p class="info-message">Could not load this profile. Please try again.</p>`;
+                }
+            }
+            
+            function renderListingCard(data, docId) {
+                const card = document.createElement('a');
+                card.className = 'listing-card';
+                card.href = `/listing.html?id=${docId}`;
+                const firstImage = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls[0] : '';
+                
+                card.innerHTML = `
+                    <div class="listing-image" style="background-image: url('${firstImage}')"></div>
+                    <div class="listing-details">
+                        <div class="listing-price">$${data.price.toFixed(2)}</div>
+                        <h3 class="listing-title">${data.title}</h3>
+                        <p class="listing-location">${data.location}</p>
+                    </div>
+                `;
+                return card;
+            }
+
+            loadUserProfile();
+        }
+
+        main();
+    </script>
+</body>
+</html>
