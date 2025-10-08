@@ -224,6 +224,15 @@
         .listing-info .seller-info strong {
             color: #555;
         }
+        
+        #seller-profile-link {
+            color: #4CAF50;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        #seller-profile-link:hover {
+            text-decoration: underline;
+        }
 
         .listing-info .description {
             margin-top: 20px;
@@ -284,9 +293,9 @@
             <nav>
                 <ul>
                     <li><a href="/index.html">Home</a></li>
-                    <li><a href="/search.html">Browse</a></li>
                     <li><a href="/my-listings.html">My Listings</a></li>
                     <li><a href="/messages.html">Messages</a></li>
+                    <li><a href="/profile.html">My Profile</a></li>
                 </ul>
             </nav>
             <div class="header-auth-buttons">
@@ -310,7 +319,6 @@
         import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, deleteDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
-            // --- INITIALIZATION ---
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
             const firebaseConfig = config.firebaseConfig;
@@ -318,7 +326,6 @@
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            // --- DOM ELEMENT SELECTORS ---
             const userEmailDisplay = document.getElementById('userEmailDisplay');
             const loginRegisterBtn = document.getElementById('loginRegisterBtn');
             const logoutBtn = document.getElementById('logoutBtn');
@@ -331,7 +338,6 @@
             let currentUser = null;
             let isLoginMode = true;
 
-            // --- UI FUNCTIONS ---
             function showAuthForm() {
                 listingDetailContainer.style.display = 'none';
                 authFormsSection.style.display = 'block';
@@ -364,12 +370,10 @@
                 if(authError) authError.textContent = '';
             }
 
-            // --- AUTH STATE OBSERVER ---
             onAuthStateChanged(auth, async (user) => {
-                currentUser = user;
+                currentUser = user; 
 
                 if (user && user.emailVerified) {
-                    // --- THIS IS THE FIX ---
                     userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome!`;
                     userEmailDisplay.style.display = 'block';
                     loginRegisterBtn.style.display = 'none';
@@ -390,7 +394,6 @@
                 await fetchAndDisplayListing();
             });
 
-            // --- RENDER FUNCTIONS ---
             async function fetchAndDisplayListing() {
                 try {
                     const params = new URLSearchParams(window.location.search);
@@ -411,7 +414,7 @@
                             <h1>${data.title}</h1>
                             <p class="price">$${data.price.toFixed(2)}</p>
                             <div class="seller-info">
-                                <p><strong>Seller:</strong> <span id="listing-seller">A Cheaplet User</span></p>
+                                <p><strong>Seller:</strong> <a href="/user.html?id=${data.posterUid}" id="seller-profile-link">A Cheaplet User</a></p>
                                 <p><strong>Location:</strong> <span>${data.location}</span></p>
                                 <button id="message-seller-btn" class="btn btn-message">Message Seller</button>
                                 <button id="delete-listing-btn" class="btn btn-delete" style="display: none;">Admin Delete</button>
@@ -421,12 +424,12 @@
                     
                     document.title = `${data.title} - Cheaplet`;
 
-                    const sellerSpan = document.getElementById('listing-seller');
+                    const sellerProfileLink = document.getElementById('seller-profile-link');
                     try {
                         const userDocRef = doc(db, "users", data.posterUid);
                         const userDocSnap = await getDoc(userDocRef);
                         if (userDocSnap.exists() && userDocSnap.data().displayName) {
-                            sellerSpan.textContent = userDocSnap.data().displayName;
+                            sellerProfileLink.textContent = userDocSnap.data().displayName;
                         }
                     } catch (e) { console.error("Could not fetch seller name.", e); }
 
@@ -455,7 +458,7 @@
                         if (currentUser.uid === data.posterUid) {
                             alert("You cannot message yourself."); return;
                         }
-                        handleCreateChat(data.posterUid, sellerSpan.textContent);
+                        handleCreateChat(data.posterUid, sellerProfileLink.textContent);
                     };
 
                     if (currentUser) {
