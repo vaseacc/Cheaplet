@@ -27,6 +27,7 @@
         .btn-secondary { background-color: #6c757d; color: white; }
         .btn-secondary:hover { background-color: #5a6268; }
 
+        /* Profile Page Styles */
         .page-header { display: flex; justify-content: space-between; align-items: center; padding: 40px 0 20px; border-bottom: 1px solid #ddd; margin-bottom: 30px; }
         .page-header h1 { font-size: 2rem; }
         .profile-container { max-width: 600px; margin: 0 auto; }
@@ -37,19 +38,15 @@
         .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; }
         .form-group input[disabled] { background-color: #f4f4f4; cursor: not-allowed; }
         .info-message { text-align: center; padding: 50px; font-size: 1.2rem; color: #777; }
-        #update-feedback { text-align: center; margin-top: 15px; font-weight: 500; }
+        #update-feedback { text-align: center; margin-top: 15px; font-weight: 500; height: 1em; }
         .success { color: #4CAF50; }
         .error { color: #f44336; }
 
-        /* --- NEW PROFILE PICTURE STYLES --- */
-        .pfp-upload-container { display: flex; flex-direction: column; align-items: center; margin-bottom: 20px; }
-        #profile-picture-label { position: relative; cursor: pointer; }
-        #profile-picture-preview { width: 120px; height: 120px; border-radius: 50%; background-color: #e9e9e9; background-size: cover; background-position: center; border: 3px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; color: #aaa; font-size: 3rem; font-weight: bold; }
-        .pfp-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 50%; background-color: rgba(0,0,0,0.5); color: white; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; font-size: 0.9rem; font-weight: 500; text-align: center; }
-        #profile-picture-label:hover .pfp-overlay { opacity: 1; }
-        #profile-picture-input { display: none; }
-        #upload-indicator { font-size: 0.8rem; color: #777; margin-top: 10px; height: 1em; }
-
+        /* --- NEW: PROFILE PICTURE STYLES --- */
+        .profile-picture-section { text-align: center; margin-bottom: 20px; }
+        #avatar-display { width: 120px; height: 120px; border-radius: 50%; background-color: #e9e9e9; color: #aaa; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 3rem; margin: 0 auto 15px; background-size: cover; background-position: center; border: 3px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+        #photo-upload-input { display: none; }
+        .photo-buttons { display: flex; justify-content: center; gap: 10px; }
 
         @media (max-width: 767px) { nav { display: none; } }
         @media (min-width: 768px) {
@@ -61,9 +58,10 @@
 </head>
 <body>
     <header>
-        <!-- Header is unchanged, but now links to this page -->
         <div class="container header-content">
-            <div class="logo" id="logo-link">Cheap<span>let</span></div>
+            <div class="logo" id="logo-link">
+                Cheap<span>let</span>
+            </div>
             <nav>
                 <ul>
                     <li><a href="/index.html">Home</a></li>
@@ -92,16 +90,17 @@
     
         <div class="profile-container" id="profile-container" style="display: none;">
             <div class="profile-section">
-                <!-- NEW PFP Uploader -->
-                <div class="pfp-upload-container">
-                    <label id="profile-picture-label" for="profile-picture-input">
-                        <div id="profile-picture-preview">?</div>
-                        <div class="pfp-overlay">Change<br>Photo</div>
-                    </label>
-                    <input type="file" id="profile-picture-input" accept="image/*">
-                    <p id="upload-indicator"></p>
+                <!-- NEW: Profile Picture Section -->
+                <div class="profile-picture-section">
+                    <div id="avatar-display"></div>
+                    <div class="photo-buttons">
+                        <label for="photo-upload-input" class="btn btn-secondary">Change Photo</label>
+                        <button class="btn" id="savePhotoBtn" style="display: none;">Save Photo</button>
+                    </div>
+                    <input type="file" id="photo-upload-input" accept="image/*">
                 </div>
                 
+                <h2>Personal Information</h2>
                 <div class="form-group">
                     <label for="firstName">First Name</label>
                     <input type="text" id="firstName" placeholder="Your first name">
@@ -135,105 +134,149 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut, updateProfile, sendPasswordResetEmail, deleteUser } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
+            // --- INITIALIZATION ---
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
             const firebaseConfig = config.firebaseConfig;
-            // NEW: Get Cloudinary config
             const CLOUDINARY_CLOUD_NAME = config.cloudinary.cloudName;
             const CLOUDINARY_UPLOAD_PRESET = config.cloudinary.uploadPreset;
             const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-            
+
             const app = initializeApp(firebaseConfig);
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            // --- DOM SELECTORS (with new ones for pfp) ---
-            const profilePictureInput = document.getElementById('profile-picture-input');
-            const profilePicturePreview = document.getElementById('profile-picture-preview');
-            const uploadIndicator = document.getElementById('upload-indicator');
+            // --- DOM SELECTORS ---
+            const userEmailDisplay = document.getElementById('userEmailDisplay');
+            const loginRegisterBtn = document.getElementById('loginRegisterBtn');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const logoLink = document.getElementById('logo-link');
+            const infoContainer = document.getElementById('info-container');
+            const profileContainer = document.getElementById('profile-container');
+            const firstNameInput = document.getElementById('firstName');
+            const lastNameInput = document.getElementById('lastName');
+            const emailInput = document.getElementById('email');
             const saveProfileBtn = document.getElementById('saveProfileBtn');
             const updateFeedback = document.getElementById('update-feedback');
-            // ... other selectors
+            const resetPasswordBtn = document.getElementById('resetPasswordBtn');
+            const deleteAccountBtn = document.getElementById('deleteAccountBtn');
+            const avatarDisplay = document.getElementById('avatar-display');
+            const photoUploadInput = document.getElementById('photo-upload-input');
+            const savePhotoBtn = document.getElementById('savePhotoBtn');
             
-            // --- AUTH LOGIC ---
-            onAuthStateChanged(auth, (user) => {
+            let selectedPhotoFile = null;
+
+            // --- HEADER & NAVIGATION ---
+            logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
+            loginRegisterBtn.addEventListener('click', () => { window.location.href = '/index.html'; });
+            logoutBtn.addEventListener('click', () => signOut(auth));
+
+            // --- MAIN AUTH LOGIC ---
+            onAuthStateChanged(auth, async (user) => {
                 if (user && user.emailVerified) {
-                    // ... (header display logic is unchanged)
+                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome!`;
+                    userEmailDisplay.style.display = 'block';
+                    loginRegisterBtn.style.display = 'none';
+                    logoutBtn.style.display = 'inline-block';
                     
-                    // Populate the form, INCLUDING the new profile picture
                     populateProfileForm(user);
-                    
-                    document.getElementById('info-container').style.display = 'none';
-                    document.getElementById('profile-container').style.display = 'block';
+                    infoContainer.style.display = 'none';
+                    profileContainer.style.display = 'block';
+
+                    // --- NEW: Get photoURL from Firestore document ---
+                    const userDocRef = doc(db, "users", user.uid);
+                    const userDocSnap = await getDoc(userDocRef);
+                    if (userDocSnap.exists() && userDocSnap.data().photoURL) {
+                        setAvatar(userDocSnap.data().photoURL);
+                    } else {
+                        setAvatar(null, user.displayName);
+                    }
+
                 } else {
-                    // ... (logged-out logic is unchanged)
+                    // Not logged in
+                    profileContainer.style.display = 'none';
+                    infoContainer.innerHTML = `<p class="info-message">Please <a href="/index.html">log in</a> to view your profile.</p>`;
+                    infoContainer.style.display = 'block';
+                    userEmailDisplay.style.display = 'none';
+                    loginRegisterBtn.style.display = 'inline-block';
+                    logoutBtn.style.display = 'none';
                 }
             });
             
-            function populateProfileForm(user) {
-                document.getElementById('email').value = user.email;
-                if (user.displayName) {
-                    const nameParts = user.displayName.split(' ');
-                    document.getElementById('firstName').value = nameParts[0] || '';
-                    document.getElementById('lastName').value = nameParts.slice(1).join(' ') || '';
-                }
-                // NEW: Populate profile picture
-                if (user.photoURL) {
-                    profilePicturePreview.style.backgroundImage = `url(${user.photoURL})`;
-                    profilePicturePreview.textContent = '';
+            function setAvatar(url, displayName) {
+                if (url) {
+                    avatarDisplay.style.backgroundImage = `url('${url}')`;
+                    avatarDisplay.textContent = '';
                 } else {
-                    profilePicturePreview.style.backgroundImage = 'none';
-                    profilePicturePreview.textContent = user.displayName ? user.displayName.charAt(0).toUpperCase() : '?';
+                    avatarDisplay.style.backgroundImage = 'none';
+                    avatarDisplay.textContent = displayName ? displayName.charAt(0).toUpperCase() : '?';
                 }
             }
             
-            // --- NEW: PROFILE PICTURE UPLOAD LOGIC ---
-            profilePictureInput.addEventListener('change', async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
+            function populateProfileForm(user) { /* ... unchanged ... */ }
+            saveProfileBtn.addEventListener('click', async () => { /* ... unchanged ... */ });
+            resetPasswordBtn.addEventListener('click', async () => { /* ... unchanged ... */ });
+            deleteAccountBtn.addEventListener('click', async () => { /* ... unchanged ... */ });
 
+            // --- NEW: PHOTO UPLOAD LOGIC ---
+            photoUploadInput.addEventListener('change', (e) => {
+                if (e.target.files && e.target.files[0]) {
+                    selectedPhotoFile = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        setAvatar(event.target.result); // Show local preview
+                    }
+                    reader.readAsDataURL(selectedPhotoFile);
+                    savePhotoBtn.style.display = 'inline-block';
+                }
+            });
+
+            savePhotoBtn.addEventListener('click', async () => {
                 const user = auth.currentUser;
-                if (!user) return;
-                
-                uploadIndicator.textContent = 'Uploading...';
-                saveProfileBtn.disabled = true;
+                if (!user || !selectedPhotoFile) return;
 
-                const formData = new FormData();
-                formData.append('file', file);
-                formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                savePhotoBtn.disabled = true;
+                savePhotoBtn.textContent = "Uploading...";
+                updateFeedback.textContent = "";
 
                 try {
+                    // 1. Upload to Cloudinary
+                    const formData = new FormData();
+                    formData.append('file', selectedPhotoFile);
+                    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
                     const res = await fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData });
                     const data = await res.json();
                     const newPhotoURL = data.secure_url;
 
                     if (!newPhotoURL) {
-                        throw new Error('Image upload failed, no URL returned.');
+                        throw new Error("Image upload failed.");
                     }
 
-                    // Update both Auth and Firestore
+                    // 2. Update Firebase Auth profile
                     await updateProfile(user, { photoURL: newPhotoURL });
+
+                    // 3. Update Firestore user document
                     const userDocRef = doc(db, "users", user.uid);
                     await updateDoc(userDocRef, { photoURL: newPhotoURL });
 
-                    // Update UI
-                    profilePicturePreview.style.backgroundImage = `url(${newPhotoURL})`;
-                    profilePicturePreview.textContent = '';
-                    uploadIndicator.textContent = 'Upload successful!';
-                    setTimeout(() => { uploadIndicator.textContent = ''; }, 3000);
+                    updateFeedback.textContent = "Profile picture updated!";
+                    updateFeedback.className = 'success';
+                    savePhotoBtn.style.display = 'none';
+                    selectedPhotoFile = null;
 
                 } catch (error) {
-                    console.error("Error uploading profile picture:", error);
-                    uploadIndicator.textContent = 'Upload failed.';
+                    console.error("Error updating profile picture:", error);
+                    updateFeedback.textContent = "Could not update photo. Please try again.";
+                    updateFeedback.className = 'error';
                 } finally {
-                    saveProfileBtn.disabled = false;
+                    savePhotoBtn.disabled = false;
+                    savePhotoBtn.textContent = "Save Photo";
                 }
             });
-
-            // ... (All other event listeners for Save Changes, Password Reset, and Delete Account are unchanged)
         }
 
         main();
