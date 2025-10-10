@@ -452,7 +452,6 @@
             </select>
             <p id="category-error" class="form-field-error"></p>
 
-            <!-- NEW: Condition Dropdown -->
             <select id="listing-condition" required>
                 <option value="">Select Condition</option>
                 <option value="New">New</option>
@@ -560,7 +559,6 @@
             const db = getFirestore(app);
             const analytics = getAnalytics(app);
 
-            // DOM Elements
             const authFormsSection = document.getElementById('auth-forms');
             const registerNameFields = document.getElementById('register-name-fields');
             const firstNameInput = document.getElementById('firstName');
@@ -578,7 +576,7 @@
             const listingDescriptionInput = document.getElementById('listing-description');
             const listingPriceInput = document.getElementById('listing-price');
             const listingCategorySelect = document.getElementById('listing-category');
-            const listingConditionSelect = document.getElementById('listing-condition'); // NEW
+            const listingConditionSelect = document.getElementById('listing-condition');
             const listingLocationInput = document.getElementById('listing-location');
             const listingImageInput = document.getElementById('listing-image-input');
             const imagePreviewContainer = document.getElementById('image-preview-container');
@@ -607,13 +605,19 @@
             function toggleListingFormVisibility(show) { setMainContentVisibility(!show); authFormsSection.style.display = 'none'; listingFormSection.style.display = show ? 'block' : 'none'; }
             function updateAuthModeUI() {
                 if (isLoginMode) {
-                    loginBtn.style.display = 'inline-block'; registerBtn.style.display = 'none';
-                    registerNameFields.style.display = 'none'; toggleAuthModeLink.textContent = 'New user? Register here.';
-                    authFormsSection.querySelector('h2').textContent = 'Log In to Cheaplet'; passwordFeedback.style.display = 'none';
+                    loginBtn.style.display = 'inline-block';
+                    registerBtn.style.display = 'none';
+                    registerNameFields.style.display = 'none';
+                    toggleAuthModeLink.textContent = 'New user? Register here.';
+                    authFormsSection.querySelector('h2').textContent = 'Log In to Cheaplet';
+                    passwordFeedback.style.display = 'none';
                 } else {
-                    loginBtn.style.display = 'none'; registerBtn.style.display = 'inline-block';
-                    registerNameFields.style.display = 'block'; toggleAuthModeLink.textContent = 'Already have an account? Log in.';
-                    authFormsSection.querySelector('h2').textContent = 'Register for Cheaplet'; passwordFeedback.style.display = 'block';
+                    loginBtn.style.display = 'none';
+                    registerBtn.style.display = 'inline-block';
+                    registerNameFields.style.display = 'block';
+                    toggleAuthModeLink.textContent = 'Already have an account? Log in.';
+                    authFormsSection.querySelector('h2').textContent = 'Register for Cheaplet';
+                    passwordFeedback.style.display = 'block';
                 }
                 authError.textContent = '';
             }
@@ -640,12 +644,10 @@
                 });
                 addPhotoLabel.style.display = selectedFiles.length < maxFiles ? 'flex' : 'none';
             }
-
             function removeImage(index) {
                 selectedFiles.splice(index, 1);
                 renderPreviews();
             }
-
             function validateListingForm() {
                 let isValid = true;
                 document.querySelectorAll('.form-field-error').forEach(el => el.textContent = '');
@@ -654,7 +656,7 @@
                 if (!listingDescriptionInput.value.trim()) { document.getElementById('description-error').textContent = 'Please enter a description.'; isValid = false; }
                 if (!listingPriceInput.value) { document.getElementById('price-error').textContent = 'Please enter a price.'; isValid = false; }
                 if (!listingCategorySelect.value) { document.getElementById('category-error').textContent = 'Please select a category.'; isValid = false; }
-                if (!listingConditionSelect.value) { document.getElementById('condition-error').textContent = 'Please select a condition.'; isValid = false; } // NEW VALIDATION
+                if (!listingConditionSelect.value) { document.getElementById('condition-error').textContent = 'Please select a condition.'; isValid = false; }
                 if (!listingLocationInput.value.trim()) { document.getElementById('location-error').textContent = 'Please enter your location.'; isValid = false; }
                 return isValid;
             }
@@ -691,15 +693,10 @@
                     const imageUrls = uploadResults.map(result => result.secure_url);
                     postListingBtn.textContent = 'Posting...';
                     await addDoc(collection(db, 'listings'), {
-                        title: listingTitleInput.value.trim(),
-                        description: listingDescriptionInput.value.trim(),
-                        price: parseFloat(listingPriceInput.value),
-                        category: listingCategorySelect.value,
-                        condition: listingConditionSelect.value, // NEW DATA
-                        location: listingLocationInput.value.trim(),
-                        imageUrls: imageUrls,
-                        posterUid: user.uid,
-                        posterDisplayName: user.displayName,
+                        title: listingTitleInput.value.trim(), description: listingDescriptionInput.value.trim(),
+                        price: parseFloat(listingPriceInput.value), category: listingCategorySelect.value,
+                        condition: listingConditionSelect.value, location: listingLocationInput.value.trim(),
+                        imageUrls: imageUrls, posterUid: user.uid, posterDisplayName: user.displayName,
                         timestamp: serverTimestamp()
                     });
                     alert('Your item has been listed!');
@@ -725,7 +722,7 @@
                 const imageStyle = firstImage ? `background-image: url('${firstImage}')` : '';
                 const imageContent = firstImage ? '' : 'No Image';
                 const sellerName = data.posterDisplayName || "Anonymous";
-                const itemCondition = data.condition || "Used"; // UPDATED: This now reads from the database
+                const itemCondition = data.condition || "Used";
                 const isNew = itemCondition.toLowerCase() === 'new';
                 listingLink.innerHTML = `
                     <div class="listing-image" style="${imageStyle}">
@@ -792,6 +789,16 @@
                     fetchAndRenderListings();
                     document.querySelector('.filters').scrollIntoView({ behavior: 'smooth' });
                 });
+            });
+
+            // CORRECTED: This event listener is now present and correct
+            listingImageInput.addEventListener('change', (e) => {
+                const newFile = e.target.files[0];
+                if (newFile && selectedFiles.length < maxFiles) {
+                    selectedFiles.push(newFile);
+                    renderPreviews();
+                }
+                e.target.value = ''; // Reset the input so the user can select the same file again
             });
 
             loginBtn.addEventListener('click', async () => {
