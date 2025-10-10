@@ -181,8 +181,6 @@
             const maxFiles = 5;
 
             function returnToMainView() {
-                // This function will now only be used to CANCEL the listing form
-                // It will reload the page to show the listing detail again.
                 window.location.reload(); 
             }
 
@@ -222,7 +220,6 @@
                     const params = new URLSearchParams(window.location.search);
                     const listingId = params.get('id');
 
-                    // --- THIS IS THE FIX ---
                     if (!listingId) {
                         loader.style.display = 'none';
                         listingDetailContainer.style.display = 'block';
@@ -233,7 +230,7 @@
                                 <p>Please <a href="/index.html" style="color: #4CAF50; font-weight: bold;">return to the homepage</a> to browse and select an item to view.</p>
                             </div>
                         `;
-                        return; // Stop the function here
+                        return;
                     }
 
                     const listingRef = doc(db, 'listings', listingId);
@@ -256,7 +253,7 @@
                                 </div>
                                 <p><strong>Location:</strong> <span>${data.location}</span></p>
                                 <button id="message-seller-btn" class="btn btn-message">Message Seller</button>
-                                <button id="delete-listing-btn" class="btn btn-delete" style="display: none;">Admin Delete</button>
+                                <button id="delete-listing-btn" class="btn btn-delete" style="display: none;">Delete Listing</button>
                             </div>
                             <hr><div class="description"><h3>Description</h3><p>${data.description}</p></div>
                         </div>`;
@@ -308,15 +305,25 @@
 
                     if (currentUser) {
                         const isOwner = currentUser.uid === data.posterUid;
-                        // You can add admin check here if needed
-                        if (isOwner) {
+                        
+                        const userDocRef = doc(db, "users", currentUser.uid);
+                        const userDocSnap = await getDoc(userDocRef);
+                        
+                        const isAdmin = userDocSnap.exists() && userDocSnap.data().role === 'admin';
+
+                        if (isOwner || isAdmin) {
                             const deleteBtn = document.getElementById('delete-listing-btn');
                             deleteBtn.style.display = 'block';
-                            deleteBtn.textContent = 'Delete My Listing'; // More specific
+                            deleteBtn.textContent = isAdmin ? 'Delete Listing (Admin)' : 'Delete My Listing';
+                            
                             deleteBtn.onclick = async () => {
-                                if (confirm("Are you sure you want to permanently delete this listing?")) {
+                                const confirmMessage = isAdmin 
+                                    ? "ADMIN ACTION: Are you sure you want to permanently delete this user's listing?"
+                                    : "Are you sure you want to permanently delete your listing?";
+                                
+                                if (confirm(confirmMessage)) {
                                     await deleteDoc(listingRef);
-                                    alert("Listing deleted.");
+                                    alert("Listing deleted successfully.");
                                     window.location.href = '/index.html';
                                 }
                             };
@@ -332,6 +339,23 @@
                 }
             }
 
+            async function handleCreateChat(posterUid, posterName) {
+                const uids = [currentUser.uid, posterUid].sort();
+                const chatId = uids.join('_');
+                const chatRef = doc(db, 'chats', chatId);
+                try {
+                    const chatSnap = await getDoc(chatRef);
+                    if (!chatSnap.exists()) {
+                        await setDoc(chatRef, {
+                            participants: uids,
+                            participantInfo: { [currentUser.uid]: currentUser.displayName, [posterUid]: posterName },
+                            lastUpdate: serverTimestamp(), lastMessage: ""
+                        });
+                    }
+                    window.location.href = `/messages.html?chatId=${chatId}`;
+                } catch (error) { console.error("Error creating chat:", error); alert("Could not start conversation."); }
+            }
+            
             function renderPreviews() {
                 imagePreviewContainer.innerHTML = '';
                 selectedFiles.forEach((file, index) => {
@@ -367,7 +391,6 @@
                 return isValid;
             }
 
-            // --- Event Listeners & Initialization ---
             logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
             logoutBtn.addEventListener('click', () => signOut(auth));
             loginRegisterBtn.addEventListener('click', showAuthForm);
