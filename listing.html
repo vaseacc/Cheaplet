@@ -205,20 +205,38 @@
 
                     const sellerProfileLink = document.getElementById('seller-profile-link');
                     const sellerAvatar = document.getElementById('seller-avatar');
+                    
+                    // --- NEW: Default Avatar Logic ---
+                    // This is a self-contained SVG for a generic user icon. It's used when a user has no profile picture.
+                    const defaultAvatarSVG = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cccccc'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>`;
+
                     try {
                         const userDocRef = doc(db, "users", data.posterUid);
                         const userDocSnap = await getDoc(userDocRef);
+                        
+                        let avatarUrl = defaultAvatarSVG; // Start with the default avatar
+
                         if (userDocSnap.exists()) {
                             const userData = userDocSnap.data();
                             if (userData.displayName) {
                                 sellerProfileLink.textContent = userData.displayName;
                             }
+                            // If a real photoURL exists, it will overwrite the default.
                             if (userData.photoURL) {
-                                sellerAvatar.style.backgroundImage = `url('${userData.photoURL}')`;
-                                sellerAvatar.style.display = 'block';
+                                avatarUrl = userData.photoURL;
                             }
                         }
-                    } catch (e) { console.error("Could not fetch seller info.", e); }
+                        
+                        // This code now runs for every user, ensuring an avatar (real or default) is always shown.
+                        sellerAvatar.style.backgroundImage = `url('${avatarUrl}')`;
+                        sellerAvatar.style.display = 'block';
+
+                    } catch (e) { 
+                        console.error("Could not fetch seller info. Using default.", e); 
+                        // If fetching fails, still show the default avatar
+                        sellerAvatar.style.backgroundImage = `url('${defaultAvatarSVG}')`;
+                        sellerAvatar.style.display = 'block';
+                    }
 
                     const mainImageEl = document.getElementById('main-image');
                     const thumbnailContainer = document.getElementById('thumbnail-container');
