@@ -414,7 +414,6 @@
     </section>
 
     <main class="container">
-        <!-- CORRECTED: Forms are now in the HTML, hidden by default -->
         <section id="auth-forms" class="firebase-form-section" style="display: none;">
             <h2>Join Cheaplet</h2>
             <p>Please log in or register to continue.</p>
@@ -536,7 +535,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile, sendEmailVerification } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, where, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, where, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-analytics.js";
 
         async function main() {
@@ -552,7 +551,6 @@
             const db = getFirestore(app);
             const analytics = getAnalytics(app);
 
-            // All these variables will now be found correctly
             const authFormsSection = document.getElementById('auth-forms');
             const registerNameFields = document.getElementById('register-name-fields');
             const firstNameInput = document.getElementById('firstName');
@@ -598,31 +596,170 @@
             function toggleListingFormVisibility(show) { setMainContentVisibility(!show); authFormsSection.style.display = 'none'; listingFormSection.style.display = show ? 'block' : 'none'; }
             function updateAuthModeUI() {
                 if (isLoginMode) {
-                    loginBtn.style.display = 'inline-block'; registerBtn.style.display = 'none';
-                    registerNameFields.style.display = 'none'; toggleAuthModeLink.textContent = 'New user? Register here.';
-                    authFormsSection.querySelector('h2').textContent = 'Log In to Cheaplet'; passwordFeedback.style.display = 'none';
+                    loginBtn.style.display = 'inline-block';
+                    registerBtn.style.display = 'none';
+                    registerNameFields.style.display = 'none';
+                    toggleAuthModeLink.textContent = 'New user? Register here.';
+                    authFormsSection.querySelector('h2').textContent = 'Log In to Cheaplet';
+                    passwordFeedback.style.display = 'none';
                 } else {
-                    loginBtn.style.display = 'none'; registerBtn.style.display = 'inline-block';
-                    registerNameFields.style.display = 'block'; toggleAuthModeLink.textContent = 'Already have an account? Log in.';
-                    authFormsSection.querySelector('h2').textContent = 'Register for Cheaplet'; passwordFeedback.style.display = 'block';
+                    loginBtn.style.display = 'none';
+                    registerBtn.style.display = 'inline-block';
+                    registerNameFields.style.display = 'block';
+                    toggleAuthModeLink.textContent = 'Already have an account? Log in.';
+                    authFormsSection.querySelector('h2').textContent = 'Register for Cheaplet';
+                    passwordFeedback.style.display = 'block';
                 }
                 authError.textContent = '';
             }
             
-            function renderPreviews() { /* This function is complete and unchanged */ }
-            function removeImage(index) { /* This function is complete and unchanged */ }
-            function validateListingForm() { /* This function is complete and unchanged */ }
+            function renderPreviews() {
+                imagePreviewContainer.innerHTML = '';
+                selectedFiles.forEach((file, index) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const wrapper = document.createElement('div');
+                        wrapper.classList.add('image-preview-wrapper');
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.classList.add('image-preview');
+                        const removeBtn = document.createElement('button');
+                        removeBtn.classList.add('remove-image-btn');
+                        removeBtn.textContent = 'X';
+                        removeBtn.onclick = () => removeImage(index);
+                        wrapper.appendChild(img);
+                        wrapper.appendChild(removeBtn);
+                        imagePreviewContainer.appendChild(wrapper);
+                    };
+                    reader.readAsDataURL(file);
+                });
+                addPhotoLabel.style.display = selectedFiles.length < maxFiles ? 'flex' : 'none';
+            }
+            function removeImage(index) {
+                selectedFiles.splice(index, 1);
+                renderPreviews();
+            }
+            function validateListingForm() {
+                let isValid = true;
+                document.querySelectorAll('.form-field-error').forEach(el => el.textContent = '');
+                if (selectedFiles.length === 0) { document.getElementById('image-error').textContent = 'Please upload at least one image.'; isValid = false; }
+                if (!listingTitleInput.value.trim()) { document.getElementById('title-error').textContent = 'Please enter a title.'; isValid = false; }
+                if (!listingDescriptionInput.value.trim()) { document.getElementById('description-error').textContent = 'Please enter a description.'; isValid = false; }
+                if (!listingPriceInput.value) { document.getElementById('price-error').textContent = 'Please enter a price.'; isValid = false; }
+                if (!listingCategorySelect.value) { document.getElementById('category-error').textContent = 'Please select a category.'; isValid = false; }
+                if (!listingLocationInput.value.trim()) { document.getElementById('location-error').textContent = 'Please enter your location.'; isValid = false; }
+                return isValid;
+            }
 
-            onAuthStateChanged(auth, user => { /* This function is complete and unchanged */ });
+            onAuthStateChanged(auth, user => {
+                if (user && user.emailVerified) {
+                    returnToMainView();
+                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome!`;
+                    userEmailDisplay.style.display = 'block';
+                    loginRegisterBtn.style.display = 'none';
+                    logoutBtn.style.display = 'inline-block';
+                    listAnItemBtn.style.display = 'inline-block';
+                } else {
+                    userEmailDisplay.style.display = 'none';
+                    loginRegisterBtn.style.display = 'inline-block';
+                    logoutBtn.style.display = 'none';
+                    listAnItemBtn.style.display = 'none';
+                }
+            });
 
-            postListingBtn.addEventListener('click', async () => { /* This function is complete and unchanged */ });
+            postListingBtn.addEventListener('click', async () => {
+                const user = auth.currentUser;
+                if (!user) { alert('You must be logged in to post an item.'); toggleAuthFormVisibility(true); return; }
+                if (!validateListingForm()) return;
+                postListingBtn.disabled = true; postListingBtn.textContent = 'Uploading...';
+                try {
+                    const uploadPromises = selectedFiles.map(file => {
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                        return fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData }).then(response => response.json());
+                    });
+                    const uploadResults = await Promise.all(uploadPromises);
+                    const imageUrls = uploadResults.map(result => result.secure_url);
+                    postListingBtn.textContent = 'Posting...';
+                    await addDoc(collection(db, 'listings'), {
+                        title: listingTitleInput.value.trim(), description: listingDescriptionInput.value.trim(),
+                        price: parseFloat(listingPriceInput.value), category: listingCategorySelect.value,
+                        location: listingLocationInput.value.trim(), imageUrls: imageUrls,
+                        posterUid: user.uid, posterDisplayName: user.displayName,
+                        timestamp: serverTimestamp()
+                    });
+                    alert('Your item has been listed!');
+                    listingFormSection.querySelectorAll('input, textarea, select').forEach(el => el.value = '');
+                    selectedFiles = [];
+                    renderPreviews();
+                    returnToMainView();
+                } catch (error) {
+                    console.error("Error posting listing:", error);
+                    document.getElementById('image-error').textContent = "Could not post item. Please try again.";
+                } finally {
+                    postListingBtn.disabled = false;
+                    postListingBtn.textContent = 'Post Item';
+                }
+            });
             
-            function renderListing(listingDoc) { /* This function is complete and unchanged */ }
+            function renderListing(listingDoc) {
+                const data = listingDoc.data();
+                const listingLink = document.createElement('a');
+                listingLink.className = 'listing-card';
+                listingLink.href = `/listing.html?id=${listingDoc.id}`;
+                const firstImage = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls[0] : '';
+                const imageStyle = firstImage ? `background-image: url('${firstImage}')` : '';
+                const imageContent = firstImage ? '' : 'No Image';
+                const sellerName = data.posterDisplayName || "Anonymous";
+                const itemCondition = data.condition || "Used";
+                const isNew = itemCondition.toLowerCase() === 'new';
+                listingLink.innerHTML = `
+                    <div class="listing-image" style="${imageStyle}">
+                        ${imageContent}
+                        <button class="favorite-button" aria-label="Add to favorites"><i class="fas fa-heart"></i></button>
+                    </div>
+                    <div class="listing-details">
+                        <div class="listing-header-card">
+                            <h3 class="listing-title">${data.title}</h3>
+                            <span class="listing-price">$${data.price ? data.price.toFixed(2) : '0.00'}</span>
+                        </div>
+                        <p class="listing-location">${data.location}</p>
+                        <div class="listing-footer">
+                            <div class="seller-info"><span class="seller-name">${sellerName}</span></div>
+                            <span class="condition-tag ${isNew ? 'new' : ''}">${itemCondition}</span>
+                        </div>
+                    </div>`;
+                return listingLink;
+            }
             
             let unsubscribe;
-            function fetchAndRenderListings() { /* This function is complete and unchanged */ }
+            function fetchAndRenderListings() {
+                if (unsubscribe) unsubscribe();
+                let q = collection(db, 'listings');
+                const constraints = [];
+                const category = categoryFilter.value;
+                if (category !== 'all') constraints.push(where('category', '==', category));
+                const sortBy = sortFilter.value;
+                if (sortBy === 'price-low') constraints.push(orderBy('price', 'asc'));
+                else if (sortBy === 'price-high') constraints.push(orderBy('price', 'desc'));
+                else constraints.push(orderBy('timestamp', 'desc'));
+                const finalQuery = query(q, ...constraints);
+                unsubscribe = onSnapshot(finalQuery, snapshot => {
+                    listingsContainer.innerHTML = '';
+                    const docs = snapshot.docs;
+                    itemCountSpan.textContent = `${docs.length} items found`;
+                    if (docs.length === 0) {
+                        listingsContainer.innerHTML = `<div class="no-listings-message"><h3>No items found.</h3><p>Try adjusting filters or be the first to list!</p></div>`;
+                    } else {
+                        docs.forEach(doc => listingsContainer.appendChild(renderListing(doc)));
+                    }
+                }, error => {
+                    console.error("Error fetching listings:", error);
+                    itemCountSpan.textContent = `Error loading items.`;
+                });
+            }
 
-            // All event listeners are now attached correctly
             loginRegisterBtn.addEventListener('click', () => { isLoginMode = true; updateAuthModeUI(); toggleAuthFormVisibility(true); });
             listAnItemBtn.addEventListener('click', () => { if (auth.currentUser) { toggleListingFormVisibility(true); } else { alert('Please log in to list an item.'); isLoginMode = true; updateAuthModeUI(); toggleAuthFormVisibility(true); } });
             startBrowsingBtn.addEventListener('click', () => { document.querySelector('.filters').scrollIntoView({ behavior: 'smooth' }); });
@@ -652,9 +789,7 @@
                         authError.textContent = 'Please verify your email to log in.';
                         await signOut(auth);
                     }
-                } catch (err) {
-                    authError.textContent = err.message;
-                }
+                } catch (err) { authError.textContent = err.message; }
             });
             
             registerBtn.addEventListener('click', async () => {
@@ -669,11 +804,7 @@
                     await sendEmailVerification(userCredential.user);
                     
                     const userDocRef = doc(db, "users", userCredential.user.uid);
-                    await setDoc(userDocRef, {
-                        uid: userCredential.user.uid,
-                        displayName: displayName,
-                        email: userCredential.user.email
-                    });
+                    await setDoc(userDocRef, { uid: userCredential.user.uid, displayName: displayName, email: userCredential.user.email });
                     
                     await signOut(auth);
                     alert("Registration successful! A verification email has been sent. Please check your inbox, then log in.");
