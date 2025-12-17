@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>List an Item - Cheaplet</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
+        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+
+        /* Header (Consistent) */
+        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .header-content { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 24px; font-weight: bold; color: white; text-decoration: none; }
+        .logo span { color: #FFD700; }
+
+        /* Form Container */
+        .form-wrapper { max-width: 600px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        h2 { text-align: center; color: #2E7D32; margin-bottom: 25px; }
+
+        /* Form Elements */
+        input, textarea, select { width: 100%; padding: 12px; margin-bottom: 15px; border: 2px solid #ddd; border-radius: 6px; font-size: 1rem; transition: border-color 0.3s; display: block; }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: #4CAF50; }
+        textarea { resize: vertical; min-height: 100px; }
+        label { font-weight: 600; margin-bottom: 5px; display: block; color: #555; }
+
+        /* Image Uploader */
+        #image-uploader { margin-bottom: 20px; text-align: center; }
+        .image-preview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; justify-content: center; }
+        .image-preview-wrapper { position: relative; width: 100px; height: 100px; }
+        .image-preview { width: 100%; height: 100%; border-radius: 8px; object-fit: cover; border: 1px solid #ddd; }
+        .remove-image-btn { position: absolute; top: -5px; right: -5px; width: 25px; height: 25px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; cursor: pointer; font-weight: bold; }
+        #add-photo-label { width: 100px; height: 100px; border: 2px dashed #ccc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #777; margin: 0 auto; }
+        #add-photo-label:hover { background: #f8f9fa; border-color: #4CAF50; }
+        #listing-image-input { display: none; }
+
+        /* Buttons */
+        .btn-submit { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); color: #333; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1.1rem; }
+        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+        .btn-submit:disabled { background: #ccc; cursor: not-allowed; transform: none; }
+        .btn-cancel { background: #e0e0e0; color: #333; border: none; padding: 10px; border-radius: 6px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; }
+
+        .form-field-error { color: red; font-size: 0.85rem; margin-top: -10px; margin-bottom: 10px; display: none; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container header-content">
+            <a href="/index.html" class="logo">Cheap<span>let</span></a>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="form-wrapper">
+            <h2>List a New Item</h2>
+            <form id="listing-form">
+                <label>Item Title</label>
+                <input type="text" id="listing-title" placeholder="e.g., Vintage Coffee Table" required>
+                
+                <label>Description</label>
+                <textarea id="listing-description" placeholder="Describe your item..." required></textarea>
+                
+                <label>Price ($)</label>
+                <input type="number" id="listing-price" placeholder="0.00" min="0" step="0.01" required>
+                
+                <label>Category</label>
+                <select id="listing-category" required>
+                    <option value="">Select Category</option>
+                    <option value="furniture">Furniture</option>
+                    <option value="electronics">Electronics</option>
+                    <option value="clothing">Clothing</option>
+                    <option value="books">Books & Media</option>
+                    <option value="toys">Toys & Games</option>
+                    <option value="other">Other</option>
+                </select>
+
+                <label>Condition</label>
+                <select id="listing-condition" required>
+                    <option value="">Select Condition</option>
+                    <option value="New">New</option>
+                    <option value="Used">Used</option>
+                </select>
+
+                <label>Location</label>
+                <input type="text" id="listing-location" placeholder="e.g., Brooklyn, NY" required>
+
+                <label>Photos (Max 5)</label>
+                <div id="image-uploader">
+                    <div class="image-preview-grid">
+                        <div id="image-preview-container"></div>
+                        <label for="listing-image-input" id="add-photo-label">
+                            <span style="font-size: 24px;">+</span>
+                            <span style="font-size: 12px;">Add Photo</span>
+                        </label>
+                    </div>
+                    <input type="file" id="listing-image-input" accept="image/*">
+                </div>
+                <p id="image-error" class="form-field-error" style="display: block; text-align: center;"></p>
+
+                <button type="submit" class="btn-submit" id="postListingBtn">Post Item</button>
+                <button type="button" class="btn-cancel" onclick="window.location.href='/index.html'">Cancel</button>
+            </form>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+
+        async function main() {
+            const response = await fetch('/.netlify/functions/config');
+            const config = await response.json();
+            const CLOUDINARY_CLOUD_NAME = config.cloudinary.cloudName;
+            const CLOUDINARY_UPLOAD_PRESET = config.cloudinary.uploadPreset;
+            const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+
+            const app = initializeApp(config.firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+
+            let currentUser = null;
+            let selectedFiles = [];
+            const maxFiles = 5;
+
+            // Auth Check
+            onAuthStateChanged(auth, user => {
+                if (user && user.emailVerified) {
+                    currentUser = user;
+                } else {
+                    alert("Please log in to list an item.");
+                    window.location.href = '/LoginInToCheaplet.html';
+                }
+            });
+
+            // Image Handling
+            const imageInput = document.getElementById('listing-image-input');
+            const previewContainer = document.getElementById('image-preview-container');
+            const addPhotoLabel = document.getElementById('add-photo-label');
+
+            function renderPreviews() {
+                previewContainer.innerHTML = '';
+                selectedFiles.forEach((file, index) => {
+                    const wrapper = document.createElement('div');
+                    wrapper.classList.add('image-preview-wrapper');
+                    
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(file);
+                    img.classList.add('image-preview');
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.classList.add('remove-image-btn');
+                    removeBtn.textContent = 'X';
+                    removeBtn.type = 'button';
+                    removeBtn.onclick = () => {
+                        selectedFiles.splice(index, 1);
+                        renderPreviews();
+                    };
+
+                    wrapper.appendChild(img);
+                    wrapper.appendChild(removeBtn);
+                    previewContainer.appendChild(wrapper);
+                });
+                addPhotoLabel.style.display = selectedFiles.length < maxFiles ? 'flex' : 'none';
+            }
+
+            imageInput.addEventListener('change', (e) => {
+                if (e.target.files[0] && selectedFiles.length < maxFiles) {
+                    selectedFiles.push(e.target.files[0]);
+                    renderPreviews();
+                }
+                e.target.value = '';
+            });
+
+            // Form Submission
+            document.getElementById('listing-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const submitBtn = document.getElementById('postListingBtn');
+                const imageError = document.getElementById('image-error');
+                
+                imageError.textContent = '';
+                
+                if (selectedFiles.length === 0) {
+                    imageError.textContent = 'Please upload at least one image.';
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Uploading...';
+
+                try {
+                    // Upload Images
+                    const uploadPromises = selectedFiles.map(file => {
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                        return fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData }).then(res => res.json());
+                    });
+
+                    const uploadResults = await Promise.all(uploadPromises);
+                    const imageUrls = uploadResults.map(res => res.secure_url);
+
+                    submitBtn.textContent = 'Publishing...';
+
+                    // Save to Firestore
+                    const docRef = await addDoc(collection(db, 'listings'), {
+                        title: document.getElementById('listing-title').value.trim(),
+                        description: document.getElementById('listing-description').value.trim(),
+                        price: parseFloat(document.getElementById('listing-price').value),
+                        category: document.getElementById('listing-category').value,
+                        condition: document.getElementById('listing-condition').value,
+                        location: document.getElementById('listing-location').value.trim(),
+                        imageUrls: imageUrls,
+                        posterUid: currentUser.uid,
+                        posterDisplayName: currentUser.displayName,
+                        timestamp: serverTimestamp()
+                    });
+
+                    alert('Item listed successfully!');
+                    window.location.href = `/listing.html?id=${docRef.id}`;
+
+                } catch (error) {
+                    console.error("Error:", error);
+                    imageError.textContent = 'Error creating listing. Please try again.';
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Post Item';
+                }
+            });
+        }
+        main();
+    </script>
+</body>
+</html>
