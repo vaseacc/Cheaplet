@@ -4,90 +4,211 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Listing Details - Cheaplet</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
-        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
-        header { background-color: #4CAF50; color: white; padding: 15px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
-        .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        .logo { font-size: 24px; font-weight: bold; display: flex; align-items: center; cursor: pointer; }
+        body { background-color: #f0f2f5; color: #050505; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* --- FB-Style Header --- */
+        header { background-color: white; padding: 0 16px; height: 56px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; z-index: 100; flex-shrink: 0; }
+        .header-left { display: flex; align-items: center; gap: 10px; }
+        .logo { font-size: 28px; font-weight: bold; color: #4CAF50; text-decoration: none; letter-spacing: -0.5px; }
         .logo span { color: #FFD700; }
-        nav ul { display: flex; list-style: none; }
-        nav ul li { margin-left: 20px; }
-        nav ul li a { color: white; text-decoration: none; font-weight: 500; }
-        .btn { background-color: #FFD700; color: #333; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background-color 0.3s; }
-        .btn:hover { background-color: #FFC400; }
-        .btn-message { background-color: #4CAF50; color: white; width: 100%; text-align: center; margin-top: 10px; text-decoration: none; display: inline-block; }
-        .btn-message:hover { background-color: #45a049; }
-        .btn-delete { background-color: #f44336; color: white; width: 100%; text-align: center; margin-top: 10px; }
-        .btn-delete:hover { background-color: #d32f2f; }
-        .header-auth-buttons { display: flex; gap: 10px; align-items: center; }
-        #userEmailDisplay { color: white; font-weight: 500; }
-        #logoutBtn { background-color: #f44336; color: white; }
-        #logoutBtn:hover { background-color: #d32f2f; }
-        #listing-detail-container { background-color: white; margin: 30px auto; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 20px; }
-        .image-gallery { width: 100%; }
-        .main-image { width: 100%; height: 300px; background-color: #eee; border-radius: 8px; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; color: #777; margin-bottom: 10px; }
-        .thumbnail-container { display: flex; gap: 10px; flex-wrap: wrap; }
-        .thumbnail-image { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 2px solid #ddd; cursor: pointer; transition: border-color 0.3s; }
-        .thumbnail-image:hover, .thumbnail-image.active { border-color: #4CAF50; }
-        .listing-info { flex-grow: 1; }
-        .listing-info h1 { font-size: 1.8rem; margin-bottom: 10px; font-weight: 600; }
-        .listing-info .price { font-size: 2rem; font-weight: bold; color: #4CAF50; margin-bottom: 20px; }
-        .listing-specs { display: flex; flex-wrap: wrap; gap: 10px 20px; margin-bottom: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; border: 1px solid #eee; }
-        .spec-item { display: flex; flex-direction: column; }
-        .spec-item .label { font-size: 0.85rem; color: #777; text-transform: uppercase; font-weight: 500; }
-        .spec-item .value { font-size: 1rem; font-weight: 600; color: #333; }
-        .listing-info .seller-info { background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 0; margin-top: 20px; border: 1px solid #eee; }
-        .seller-details { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        #seller-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: #e0e0e0; background-size: cover; background-position: center; flex-shrink: 0; }
-        #seller-profile-link { color: #4CAF50; text-decoration: none; font-weight: 600; font-size: 1.1rem;}
-        #seller-profile-link:hover { text-decoration: underline; }
-        .listing-info .description { margin-top: 20px; white-space: pre-wrap; line-height: 1.7; }
-        #loader { text-align: center; padding: 50px; font-size: 1.2rem; color: #777; }
-
-        @media (min-width: 768px) {
-            .header-content { flex-wrap: nowrap; }
-            #userEmailDisplay { width: auto; text-align: right; margin-bottom: 0; margin-right: 10px; order: 0; }
-            #listing-detail-container { flex-direction: row; padding: 30px; }
-            .image-gallery { width: 50%; max-width: 500px; }
-            .main-image { height: 400px; }
+        
+        .header-right { display: flex; align-items: center; gap: 8px; }
+        
+        /* Circular Icon Buttons */
+        .icon-btn {
+            width: 40px; height: 40px; border-radius: 50%; background-color: #e4e6eb; border: none;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; color: #050505; text-decoration: none;
+            transition: background-color 0.2s; font-size: 18px;
         }
-        @media (max-width: 767px) { nav { display: none; } }
+        .icon-btn:hover { background-color: #d8dadf; }
+        
+        /* Profile Dropdown Trigger */
+        .profile-trigger { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; cursor: pointer; border: 1px solid #ddd; }
+        .profile-trigger img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-trigger div { width: 100%; height: 100%; background-color: #ccc; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #666; }
+
+        /* --- Main Content Layout (Split Screen) --- */
+        .main-wrapper { display: flex; flex: 1; height: calc(100vh - 56px); overflow: hidden; }
+        
+        /* Left: Image Stage */
+        .image-stage {
+            flex: 1; background-color: black; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
+        }
+        .main-image-container { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+        .main-image { max-width: 100%; max-height: 100%; object-fit: contain; }
+        
+        /* Navigation Arrows */
+        .nav-arrow {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 48px; height: 48px; border-radius: 50%; background-color: rgba(255,255,255,0.3);
+            border: 1px solid rgba(255,255,255,0.5); color: white; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 20px; transition: background 0.3s;
+        }
+        .nav-arrow:hover { background-color: rgba(255,255,255,0.5); }
+        .nav-prev { left: 20px; }
+        .nav-next { right: 20px; }
+
+        /* Right: Details Panel */
+        .details-panel {
+            width: 400px; background-color: white; border-left: 1px solid #ddd; overflow-y: auto; display: flex; flex-direction: column;
+            padding: 20px; flex-shrink: 0;
+        }
+
+        /* Listing Info Styles */
+        h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; line-height: 1.2; }
+        .price { font-size: 1.2rem; font-weight: 600; margin-bottom: 8px; }
+        .meta-info { font-size: 0.9rem; color: #65676b; margin-bottom: 16px; }
+        
+        /* Action Buttons Row */
+        .action-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
+        .btn-primary {
+            flex: 1; background-color: #e7f3ff; color: #1877f2; border: none; border-radius: 6px; font-weight: 600;
+            padding: 0 12px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+            transition: background 0.2s; text-decoration: none;
+        }
+        .btn-primary:hover { background-color: #dbe7f2; }
+        .btn-icon {
+            width: 48px; height: 36px; background-color: #e4e6eb; border-radius: 6px; border: none;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px;
+        }
+        .btn-icon:hover { background-color: #d8dadf; }
+
+        /* Sections */
+        .section-header { font-weight: 600; font-size: 1.1rem; margin-top: 20px; margin-bottom: 10px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; }
+        .info-label { font-weight: 600; color: #050505; }
+        .info-value { color: #65676b; }
+        
+        .description-text { font-size: 0.9rem; line-height: 1.5; color: #050505; white-space: pre-wrap; }
+
+        /* Seller Map/Info Placeholder */
+        .seller-map { height: 120px; background-color: #f0f2f5; border-radius: 8px; margin-top: 10px; display: flex; align-items: center; justify-content: center; color: #65676b; font-size: 0.8rem; }
+
+        /* Quick Message Box */
+        .quick-message-container { margin-top: 30px; border-top: 1px solid #ddd; padding-top: 15px; }
+        .quick-msg-label { font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; color: #1877f2; }
+        .quick-msg-input {
+            width: 100%; border: 1px solid #ccc; border-radius: 20px; padding: 10px 15px; font-size: 0.95rem; resize: none; margin-bottom: 10px; outline: none; background: #f0f2f5;
+        }
+        .quick-msg-input:focus { border-color: #1877f2; }
+        .btn-send {
+            background-color: #1877f2; color: white; width: 100%; border: none; border-radius: 6px; height: 36px; font-weight: 600; cursor: pointer; transition: background 0.2s;
+        }
+        .btn-send:hover { background-color: #166fe5; }
+
+        /* Admin Delete Button */
+        .admin-controls { margin-top: 20px; border-top: 1px solid #ddd; padding-top: 20px; display: none; }
+        .btn-delete { background-color: #fce8e6; color: #d32f2f; width: 100%; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        
+        /* Thumbnails on Image Stage */
+        .thumbnails-row {
+            height: 60px; display: flex; gap: 10px; padding: 10px; overflow-x: auto; background: rgba(0,0,0,0.5); width: 100%; justify-content: center;
+        }
+        .thumb { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; cursor: pointer; opacity: 0.6; border: 2px solid transparent; }
+        .thumb.active { opacity: 1; border-color: white; }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .main-wrapper { flex-direction: column; overflow-y: auto; height: auto; }
+            .image-stage { height: 300px; }
+            .details-panel { width: 100%; border-left: none; overflow: visible; height: auto; }
+        }
     </style>
 </head>
 <body>
+
     <header>
-        <div class="container header-content">
-            <div class="logo" id="logo-link">
-                Cheap<span>let</span>
-            </div>
-            <nav>
-                <ul>
-                    <li><a href="/index.html">Home</a></li>
-                    <li><a href="/my-listings.html">My Listings</a></li>
-                    <li><a href="/messages.html">Messages</a></li>
-                    <li><a href="/profile.html">My Profile</a></li>
-                </ul>
-            </nav>
-            <div class="header-auth-buttons">
-                <span id="userEmailDisplay" style="display: none;"></span>
-                <button class="btn" id="listAnItemBtn">List an Item</button>
-                <button class="btn" id="loginRegisterBtn">Login / Register</button>
-                <button class="btn" id="logoutBtn" style="display: none;">Logout</button>
-            </div>
+        <div class="header-left">
+            <a href="/index.html" class="logo">Cheap<span>let</span></a>
+        </div>
+        <div class="header-right">
+            <!-- Icons -->
+            <a href="/index.html" class="icon-btn" title="Menu"><i class="fas fa-th"></i></a>
+            <a href="/messages.html" class="icon-btn" title="Messages"><i class="fab fa-facebook-messenger"></i></a>
+            <div class="icon-btn" title="Notifications"><i class="fas fa-bell"></i></div>
+            
+            <!-- Profile Avatar (Click goes to profile) -->
+            <a href="/profile.html" class="profile-trigger" id="header-profile-link">
+                <div id="header-avatar-placeholder">?</div>
+            </a>
         </div>
     </header>
 
-    <main class="container">
-        <div id="loader">Loading listing...</div>
-        <section id="listing-detail-container" style="display: none;"></section>
-    </main>
+    <div class="main-wrapper">
+        <!-- Left: Image Gallery -->
+        <div class="image-stage">
+            <div class="main-image-container">
+                <button class="nav-arrow nav-prev" id="prev-img-btn"><i class="fas fa-chevron-left"></i></button>
+                <img src="" alt="Listing Item" class="main-image" id="main-image">
+                <button class="nav-arrow nav-next" id="next-img-btn"><i class="fas fa-chevron-right"></i></button>
+            </div>
+            <div class="thumbnails-row" id="thumbnail-container">
+                <!-- Thumbnails injected here -->
+            </div>
+        </div>
+
+        <!-- Right: Details -->
+        <div class="details-panel" id="details-container">
+            <h1 id="listing-title">Loading...</h1>
+            <div class="price" id="listing-price"></div>
+            <div class="meta-info" id="listing-meta"></div>
+
+            <div class="action-buttons">
+                <button class="btn-primary" id="btn-message-seller">
+                    <i class="fab fa-facebook-messenger"></i> Message
+                </button>
+                <button class="btn-icon" title="Save"><i class="fas fa-bookmark"></i></button>
+                <button class="btn-icon" title="Share"><i class="fas fa-share"></i></button>
+                <button class="btn-icon" title="More"><i class="fas fa-ellipsis-h"></i></button>
+            </div>
+
+            <div class="section-header">Details</div>
+            <div class="info-row">
+                <span class="info-label">Condition</span>
+                <span class="info-value" id="listing-condition"></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Category</span>
+                <span class="info-value" id="listing-category"></span>
+            </div>
+
+            <div class="section-header">Description</div>
+            <p class="description-text" id="listing-description"></p>
+
+            <div class="section-header">Seller Information</div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <div id="seller-avatar-small" style="width: 40px; height: 40px; border-radius: 50%; background: #ddd; background-size: cover; background-position: center;"></div>
+                <div>
+                    <a href="#" id="seller-name-link" style="text-decoration: none; color: #050505; font-weight: 600;">Loading...</a>
+                    <div style="font-size: 0.8rem; color: #65676b;">Joined 2025</div>
+                </div>
+            </div>
+
+            <div class="section-header">Pickup in <span id="location-text"></span></div>
+            <div class="seller-map">
+                <i class="fas fa-map-marker-alt"></i> &nbsp; Map view placeholder
+            </div>
+
+            <!-- Quick Message Box -->
+            <div class="quick-message-container">
+                <div class="quick-msg-label"><i class="fab fa-facebook-messenger"></i> Send seller a message</div>
+                <textarea class="quick-msg-input" id="quick-msg-text">Hi, is this available?</textarea>
+                <button class="btn-send" id="btn-quick-send">Send</button>
+            </div>
+
+            <!-- Admin Controls -->
+            <div class="admin-controls" id="admin-controls">
+                <button class="btn-delete" id="delete-listing-btn">Delete Listing</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
@@ -98,216 +219,195 @@
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            const userEmailDisplay = document.getElementById('userEmailDisplay');
-            const loginRegisterBtn = document.getElementById('loginRegisterBtn');
-            const logoutBtn = document.getElementById('logoutBtn');
-            const listAnItemBtn = document.getElementById('listAnItemBtn');
-            const logoLink = document.getElementById('logo-link');
-            const loader = document.getElementById('loader');
-            const listingDetailContainer = document.getElementById('listing-detail-container');
+            // Elements
+            const mainImage = document.getElementById('main-image');
+            const thumbnailContainer = document.getElementById('thumbnail-container');
+            const prevBtn = document.getElementById('prev-img-btn');
+            const nextBtn = document.getElementById('next-img-btn');
+            const headerProfileLink = document.getElementById('header-profile-link');
+            const headerAvatarPlaceholder = document.getElementById('header-avatar-placeholder');
             
             let currentUser = null;
-
-            // --- HELPER: Go to Login but remember to come back here ---
-            function goToLoginWithRedirect() {
-                const currentPath = window.location.pathname + window.location.search;
-                window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(currentPath)}`;
-            }
-
-            // --- HEADER NAVIGATION ---
-            logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
-            
-            // Login button (Updated to use redirect helper)
-            loginRegisterBtn.addEventListener('click', goToLoginWithRedirect);
-            
-            // List Item button
-            listAnItemBtn.addEventListener('click', () => { 
-                if (currentUser && currentUser.emailVerified) {
-                    window.location.href = '/listanitem.html'; 
-                } else {
-                    alert('Please log in to list an item.');
-                    // Send them to login, then redirect to listanitem
-                    window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent('/listanitem.html')}`;
-                }
-            });
-            
-            logoutBtn.addEventListener('click', () => signOut(auth));
+            let currentListingData = null;
+            let currentListingId = null;
+            let currentImageIndex = 0;
+            let imageUrls = [];
 
             // --- AUTH STATE ---
             onAuthStateChanged(auth, user => {
                 currentUser = user;
                 if (user && user.emailVerified) {
-                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome!`;
-                    userEmailDisplay.style.display = 'block';
-                    loginRegisterBtn.style.display = 'none';
-                    logoutBtn.style.display = 'inline-block';
-                    listAnItemBtn.style.display = 'inline-block';
+                    // Update Header Avatar
+                    if (user.photoURL) {
+                        headerProfileLink.innerHTML = `<img src="${user.photoURL}" alt="Profile">`;
+                    } else {
+                        headerAvatarPlaceholder.textContent = user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U';
+                    }
                 } else {
-                    userEmailDisplay.style.display = 'none';
-                    loginRegisterBtn.style.display = 'inline-block';
-                    logoutBtn.style.display = 'none';
-                    listAnItemBtn.style.display = 'none';
+                    // Default header state
+                    headerAvatarPlaceholder.textContent = '?';
                 }
+                
+                // Once auth is checked, load data
                 fetchAndDisplayListing();
             });
 
             async function fetchAndDisplayListing() {
-                try {
-                    const params = new URLSearchParams(window.location.search);
-                    const listingId = params.get('id');
+                const params = new URLSearchParams(window.location.search);
+                currentListingId = params.get('id');
 
-                    if (!listingId) {
-                        loader.style.display = 'none';
-                        listingDetailContainer.style.display = 'block';
-                        listingDetailContainer.innerHTML = `
-                            <div style="text-align: center; padding: 40px; width: 100%;">
-                                <h2>No Item Selected</h2>
-                                <p>This page is used to display the details for a specific item.</p>
-                                <p>Please <a href="/index.html" style="color: #4CAF50; font-weight: bold;">return to the homepage</a> to browse.</p>
-                            </div>
-                        `;
+                if (!currentListingId) {
+                    alert("No listing selected.");
+                    window.location.href = '/index.html';
+                    return;
+                }
+
+                try {
+                    const listingRef = doc(db, 'listings', currentListingId);
+                    const listingSnap = await getDoc(listingRef);
+                    
+                    if (!listingSnap.exists()) {
+                        document.getElementById('listing-title').textContent = "Listing not found.";
                         return;
                     }
 
-                    const listingRef = doc(db, 'listings', listingId);
-                    const listingSnap = await getDoc(listingRef);
-                    if (!listingSnap.exists()) { throw new Error('Listing not found.'); }
-                    
                     const data = listingSnap.data();
+                    currentListingData = data;
 
-                    listingDetailContainer.innerHTML = `
-                        <div class="image-gallery">
-                            <div class="main-image" id="main-image"></div>
-                            <div class="thumbnail-container" id="thumbnail-container"></div>
-                        </div>
-                        <div class="listing-info">
-                            <h1>${data.title}</h1>
-                            <p class="price">$${data.price.toFixed(2)}</p>
-
-                            <div class="listing-specs">
-                                <div class="spec-item">
-                                    <span class="label">Category</span>
-                                    <span class="value">${data.category || 'N/A'}</span>
-                                </div>
-                                <div class="spec-item">
-                                    <span class="label">Location</span>
-                                    <span class="value">${data.location || 'N/A'}</span>
-                                </div>
-                                <div class="spec-item">
-                                    <span class="label">Condition</span>
-                                    <span class="value">${data.condition || 'Used'}</span>
-                                </div>
-                            </div>
-
-                            <div class="description">
-                                <h3>Description</h3>
-                                <p>${data.description}</p>
-                            </div>
-                            
-                            <div class="seller-info">
-                                <div class="seller-details">
-                                    <div id="seller-avatar"></div>
-                                    <a href="/user.html?id=${data.posterUid}" id="seller-profile-link">A Cheaplet User</a>
-                                </div>
-                                <button id="message-seller-btn" class="btn btn-message">Message Seller</button>
-                                <button id="delete-listing-btn" class="btn btn-delete" style="display: none;">Delete Listing</button>
-                            </div>
-                        </div>`;
+                    // Populate Info
+                    document.getElementById('listing-title').textContent = data.title;
+                    document.getElementById('listing-price').textContent = `$${data.price.toFixed(2)}`;
                     
-                    document.title = `${data.title} - Cheaplet`;
+                    // Meta Info (Time/Location)
+                    const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : 'Recently';
+                    document.getElementById('listing-meta').textContent = `Listed ${date} in ${data.location}`;
+                    document.getElementById('location-text').textContent = data.location;
 
-                    const sellerProfileLink = document.getElementById('seller-profile-link');
-                    const sellerAvatar = document.getElementById('seller-avatar');
-                    const defaultAvatarSVG = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cccccc'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>`;
+                    document.getElementById('listing-condition').textContent = data.condition || "Used";
+                    document.getElementById('listing-category').textContent = data.category || "General";
+                    document.getElementById('listing-description').textContent = data.description;
+
+                    // Seller Info
+                    document.getElementById('seller-name-link').textContent = data.posterDisplayName || "A User";
+                    document.getElementById('seller-name-link').href = `/user.html?id=${data.posterUid}`;
                     
-                    try {
-                        const userDocRef = doc(db, "users", data.posterUid);
-                        const userDocSnap = await getDoc(userDocRef);
-                        let avatarUrl = defaultAvatarSVG;
-                        if (userDocSnap.exists()) {
-                            const userData = userDocSnap.data();
-                            if (userData.displayName) sellerProfileLink.textContent = userData.displayName;
-                            if (userData.photoURL) avatarUrl = userData.photoURL;
-                        }
-                        sellerAvatar.style.backgroundImage = `url('${avatarUrl}')`;
-                    } catch (e) {
-                        sellerAvatar.style.backgroundImage = `url('${defaultAvatarSVG}')`;
+                    // Fetch Seller Avatar if possible (Optional optimization)
+                    if (data.posterUid) {
+                        try {
+                            const sellerDoc = await getDoc(doc(db, "users", data.posterUid));
+                            if (sellerDoc.exists() && sellerDoc.data().photoURL) {
+                                document.getElementById('seller-avatar-small').style.backgroundImage = `url('${sellerDoc.data().photoURL}')`;
+                            }
+                        } catch(e) {}
                     }
 
-                    const mainImageEl = document.getElementById('main-image');
-                    const thumbnailContainer = document.getElementById('thumbnail-container');
-                    let imageUrls = data.imageUrls || [];
+                    // --- Images ---
+                    imageUrls = data.imageUrls || [];
                     if (imageUrls.length > 0) {
-                        mainImageEl.style.backgroundImage = `url('${imageUrls[0]}')`;
+                        updateMainImage(0);
+                        
+                        // Create Thumbnails
+                        thumbnailContainer.innerHTML = '';
                         imageUrls.forEach((url, index) => {
-                            const thumb = document.createElement('img');
-                            thumb.src = url; thumb.className = 'thumbnail-image';
-                            if (index === 0) thumb.classList.add('active');
-                            thumb.onclick = () => {
-                                mainImageEl.style.backgroundImage = `url('${url}')`;
-                                document.querySelectorAll('.thumbnail-image').forEach(t => t.classList.remove('active'));
-                                thumb.classList.add('active');
-                            };
-                            thumbnailContainer.appendChild(thumb);
+                            const img = document.createElement('img');
+                            img.src = url;
+                            img.className = `thumb ${index === 0 ? 'active' : ''}`;
+                            img.onclick = () => updateMainImage(index);
+                            thumbnailContainer.appendChild(img);
                         });
-                    } else { mainImageEl.textContent = 'No Image'; }
+                    } else {
+                        mainImage.alt = "No Image Available";
+                    }
 
-                    // --- Message Button Logic (Updated) ---
-                    document.getElementById('message-seller-btn').onclick = () => {
-                        if (!currentUser || !currentUser.emailVerified) { 
-                            // Not logged in? Send to login with redirect back here
-                            goToLoginWithRedirect();
-                            return; 
-                        }
-                        if (currentUser.uid === data.posterUid) { alert("You cannot message yourself."); return; }
-                        handleCreateChat(data.posterUid, sellerProfileLink.textContent);
-                    };
-
+                    // --- Admin/Owner Controls ---
                     if (currentUser) {
                         const isOwner = currentUser.uid === data.posterUid;
-                        const userDocRef = doc(db, "users", currentUser.uid);
-                        const userDocSnap = await getDoc(userDocRef);
-                        const isAdmin = userDocSnap.exists() && userDocSnap.data().role === 'admin';
+                        // Check admin status
+                        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+                        const isAdmin = userDoc.exists() && userDoc.data().role === 'admin';
 
                         if (isOwner || isAdmin) {
-                            const deleteBtn = document.getElementById('delete-listing-btn');
-                            deleteBtn.style.display = 'block';
-                            deleteBtn.textContent = isAdmin ? 'Delete Listing (Admin)' : 'Delete My Listing';
-                            deleteBtn.onclick = async () => {
-                                const confirmMessage = isAdmin ? "ADMIN: Delete this user's listing?" : "Delete your listing permanently?";
-                                if (confirm(confirmMessage)) {
-                                    await deleteDoc(listingRef);
-                                    alert("Listing deleted.");
-                                    window.location.href = '/index.html';
-                                }
-                            };
+                            document.getElementById('admin-controls').style.display = 'block';
+                            document.getElementById('delete-listing-btn').onclick = () => deleteListing(currentListingId, isAdmin);
                         }
                     }
-                    
-                    loader.style.display = 'none';
-                    listingDetailContainer.style.display = 'flex';
 
                 } catch (error) {
-                    console.error("Fatal Error fetching listing:", error);
-                    loader.textContent = `Error: ${error.message}`;
+                    console.error("Error loading listing:", error);
                 }
             }
 
-            async function handleCreateChat(posterUid, posterName) {
+            function updateMainImage(index) {
+                currentImageIndex = index;
+                mainImage.src = imageUrls[index];
+                // Update active thumbnail
+                document.querySelectorAll('.thumb').forEach((thumb, i) => {
+                    thumb.classList.toggle('active', i === index);
+                });
+            }
+
+            // Image Navigation Events
+            prevBtn.onclick = () => {
+                if (imageUrls.length === 0) return;
+                let newIndex = currentImageIndex - 1;
+                if (newIndex < 0) newIndex = imageUrls.length - 1;
+                updateMainImage(newIndex);
+            };
+            nextBtn.onclick = () => {
+                if (imageUrls.length === 0) return;
+                let newIndex = currentImageIndex + 1;
+                if (newIndex >= imageUrls.length) newIndex = 0;
+                updateMainImage(newIndex);
+            };
+
+            // --- Messaging Logic ---
+            function initiateMessage() {
+                if (!currentUser || !currentUser.emailVerified) {
+                    const currentPath = window.location.pathname + window.location.search;
+                    window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(currentPath)}`;
+                    return;
+                }
+                if (currentUser.uid === currentListingData.posterUid) {
+                    alert("You cannot message yourself.");
+                    return;
+                }
+                
+                // Create Chat
+                createChat(currentListingData.posterUid, currentListingData.posterDisplayName);
+            }
+
+            async function createChat(posterUid, posterName) {
                 const uids = [currentUser.uid, posterUid].sort();
                 const chatId = uids.join('_');
                 const chatRef = doc(db, 'chats', chatId);
+                
                 try {
                     const chatSnap = await getDoc(chatRef);
                     if (!chatSnap.exists()) {
                         await setDoc(chatRef, {
                             participants: uids,
                             participantInfo: { [currentUser.uid]: currentUser.displayName, [posterUid]: posterName },
-                            lastUpdate: serverTimestamp(), lastMessage: ""
+                            lastUpdate: serverTimestamp(),
+                            lastMessage: "" // Could optionally set this to the quick message text
                         });
                     }
                     window.location.href = `/messages.html?chatId=${chatId}`;
-                } catch (error) { console.error("Error creating chat:", error); alert("Could not start conversation."); }
+                } catch (error) {
+                    console.error("Chat error:", error);
+                    alert("Error starting chat.");
+                }
+            }
+
+            document.getElementById('btn-message-seller').onclick = initiateMessage;
+            document.getElementById('btn-quick-send').onclick = initiateMessage;
+
+            // --- Delete Logic ---
+            async function deleteListing(docId, isAdmin) {
+                if (confirm(isAdmin ? "ADMIN: Delete this listing?" : "Delete your listing?")) {
+                    await deleteDoc(doc(db, 'listings', docId));
+                    alert("Deleted.");
+                    window.location.href = '/index.html';
+                }
             }
         }
 
