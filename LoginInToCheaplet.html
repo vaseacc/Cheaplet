@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Cheaplet</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * {
             margin: 0;
@@ -37,6 +38,13 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: relative; /* For absolute positioning of back button if needed */
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
 
         .logo {
@@ -49,6 +57,26 @@
 
         .logo span {
             color: #FFD700;
+        }
+
+        /* NEW: Back Button Styles */
+        .btn-back {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: background 0.3s;
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
 
         /* Auth Container Styles */
@@ -226,11 +254,17 @@
 <body>
     <header>
         <div class="container header-content">
-            <a href="/index.html" class="logo">Cheap<span>let</span></a>
+            <div class="header-left">
+                <!-- NEW: Smart Back Button -->
+                <button id="smart-back-btn" class="btn-back">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <a href="/index.html" class="logo">Cheap<span>let</span></a>
+            </div>
         </div>
     </header>
 
-    <!-- NEW: Loading Screen -->
+    <!-- Loading Screen -->
     <div id="loading-overlay">
         <div class="spinner"></div>
         <div id="loading-text">Setting up your account...</div>
@@ -291,6 +325,7 @@
             const googleBtn = document.getElementById('google-btn');
             const loadingOverlay = document.getElementById('loading-overlay');
             const loadingText = document.getElementById('loading-text');
+            const smartBackBtn = document.getElementById('smart-back-btn');
             
             const emailInput = document.getElementById('email');
             const passwordInput = document.getElementById('password');
@@ -299,32 +334,35 @@
 
             let isLoginMode = true;
 
+            // --- SMART BACK BUTTON LOGIC ---
+            smartBackBtn.addEventListener('click', () => {
+                // If history length is greater than 1, it means the user came from another page
+                // However, browsers count new tabs as history length 1.
+                if (window.history.length > 1 && document.referrer.includes(window.location.hostname)) {
+                    window.history.back();
+                } else {
+                    // Default fallback if opened directly
+                    window.location.href = '/index.html';
+                }
+            });
+
             // --- CENTRALIZED REDIRECT LOGIC ---
-            // This function handles the "Sync Name & Redirect" logic for BOTH Google and Email logins.
-            // It prevents the race condition by running before we leave the page.
             async function handleLoginSuccess(user) {
                 loadingOverlay.style.display = 'flex';
                 loadingText.textContent = "Verifying account details...";
 
                 try {
-                    // Check Firestore for existing user data
                     const userDocRef = doc(db, "users", user.uid);
                     const userDoc = await getDoc(userDocRef);
 
                     if (userDoc.exists()) {
                         const userData = userDoc.data();
                         
-                        // CRITICAL FIX: If Database has a name, and it's different from current Auth name
-                        // (e.g. Auth has Google name "Hot Dog", DB has "Test Test")
                         if (userData.displayName && userData.displayName !== user.displayName) {
-                            console.log(`Restoring name: ${userData.displayName} (was ${user.displayName})`);
+                            console.log(`Restoring name: ${userData.displayName}`);
                             await updateProfile(user, { displayName: userData.displayName });
-                            
-                            // Important: updateProfile is async. By awaiting it, we ensure the
-                            // redirect doesn't happen until the name is fixed locally.
                         }
                     } else {
-                        // New Google User: Create profile in Firestore
                         await setDoc(userDocRef, {
                             uid: user.uid,
                             displayName: user.displayName,
@@ -334,27 +372,22 @@
                         });
                     }
                     
-                    // Redirect ONLY after everything is done
+                    // Logic to go back to where they came from
+                    // Ideally we could use a query param ?next=/listing.html but simply going back works for simple flows
                     window.location.href = '/index.html';
 
                 } catch (e) {
                     console.error("Error during login sync:", e);
-                    // Even if sync fails, try to redirect
                     window.location.href = '/index.html';
                 }
             }
 
-            // Check if user is ALREADY logged in when page loads
             onAuthStateChanged(auth, (user) => {
                 if (user && user.emailVerified) {
-                    // If they are already logged in, we still want to ensure data consistency
-                    // but we might not need the full heavy sync if they are just refreshing.
-                    // For safety, let's run the handler but it might be fast.
                     handleLoginSuccess(user);
                 }
             });
 
-            // Toggle between Login and Register
             toggleLink.addEventListener('click', (e) => {
                 e.preventDefault();
                 isLoginMode = !isLoginMode;
@@ -380,13 +413,10 @@
                 }
             });
 
-            // --- GOOGLE SIGN IN HANDLER ---
+            // --- GOOGLE SIGN IN ---
             googleBtn.addEventListener('click', async () => {
                 authError.style.display = 'none';
                 try {
-                    // We don't redirect here manually anymore.
-                    // signInWithPopup triggers onAuthStateChanged automatically on success.
-                    // onAuthStateChanged will call handleLoginSuccess.
                     await signInWithPopup(auth, googleProvider);
                 } catch (error) {
                     console.error("Google Auth Error:", error);
@@ -395,7 +425,7 @@
                 }
             });
 
-            // --- EMAIL/PASSWORD FORM SUBMISSION ---
+            // --- EMAIL/PASSWORD SUBMIT ---
             authForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 authError.style.display = 'none';
@@ -407,15 +437,12 @@
 
                 try {
                     if (isLoginMode) {
-                        // --- LOGIN ---
                         const userCredential = await signInWithEmailAndPassword(auth, email, password);
                         if (!userCredential.user.emailVerified) {
                             await auth.signOut();
                             throw new Error('Please verify your email address before logging in. Check your inbox.');
                         }
-                        // Success! onAuthStateChanged will pick this up and call handleLoginSuccess
                     } else {
-                        // --- REGISTER ---
                         if (password.length < 6) { throw new Error('Password must be at least 6 characters long.'); }
                         const firstName = firstNameInput.value.trim();
                         const lastName = lastNameInput.value.trim();
