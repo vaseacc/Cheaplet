@@ -3,463 +3,289 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Listing Details - Cheaplet</title>
+    <title>Login - Cheaplet</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
         .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
-        header { background-color: #4CAF50; color: white; padding: 15px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
-        .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        .logo { font-size: 24px; font-weight: bold; display: flex; align-items: center; cursor: pointer; }
-        .logo span { color: #FFD700; }
-        nav ul { display: flex; list-style: none; }
-        nav ul li { margin-left: 20px; }
-        nav ul li a { color: white; text-decoration: none; font-weight: 500; }
-        .btn { background-color: #FFD700; color: #333; border: none; padding: 10px 20px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: background-color 0.3s; }
-        .btn:hover { background-color: #FFC400; }
-        .btn:disabled { background: #ccc; cursor: not-allowed; opacity: 0.7; }
-        .btn-message { background-color: #4CAF50; color: white; width: 100%; text-align: center; margin-top: 10px; text-decoration: none; display: inline-block; }
-        .btn-message:hover { background-color: #45a049; }
-        .btn-secondary { background-color: #ccc; color: #333; }
-        .btn-secondary:hover { background-color: #bbb; }
-        .btn-delete { background-color: #f44336; color: white; width: 100%; text-align: center; margin-top: 10px; }
-        .btn-delete:hover { background-color: #d32f2f; }
-        .header-auth-buttons { display: flex; gap: 10px; align-items: center; }
-        #userEmailDisplay { color: white; font-weight: 500; }
-        #logoutBtn { background-color: #f44336; color: white; }
-        #logoutBtn:hover { background-color: #d32f2f; }
-        #listing-detail-container { background-color: white; margin: 30px auto; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 20px; }
-        .image-gallery { width: 100%; }
-        .main-image { width: 100%; height: 300px; background-color: #eee; border-radius: 8px; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; color: #777; margin-bottom: 10px; }
-        .thumbnail-container { display: flex; gap: 10px; flex-wrap: wrap; }
-        .thumbnail-image { width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 2px solid #ddd; cursor: pointer; transition: border-color 0.3s; }
-        .thumbnail-image:hover, .thumbnail-image.active { border-color: #4CAF50; }
-        .listing-info { flex-grow: 1; }
-        .listing-info h1 { font-size: 1.8rem; margin-bottom: 10px; font-weight: 600; }
-        .listing-info .price { font-size: 2rem; font-weight: bold; color: #4CAF50; margin-bottom: 20px; }
-        .listing-info .seller-info { background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #eee; }
-        .seller-details { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        #seller-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: #e0e0e0; background-size: cover; background-position: center; flex-shrink: 0; }
-        #seller-profile-link { color: #4CAF50; text-decoration: none; font-weight: 600; font-size: 1.1rem;}
-        #seller-profile-link:hover { text-decoration: underline; }
-        .listing-info .description { margin-top: 20px; white-space: pre-wrap; line-height: 1.7; }
-        #loader { text-align: center; padding: 50px; font-size: 1.2rem; color: #777; }
-        .firebase-form-section { background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin: 30px auto; max-width: 500px; text-align: center; }
-        .firebase-form-section h2 { margin-bottom: 25px; color: #333; }
-        .firebase-form-section input, .firebase-form-section textarea, .firebase-form-section select { display: block; margin: 10px auto; width: 100%; max-width: 350px; padding: 10px 12px; border: 2px solid #ddd; border-radius: 6px; transition: border-color 0.3s; }
-        .firebase-form-section input:focus, .firebase-form-section textarea:focus, .firebase-form-section select:focus { outline: none; border-color: #4CAF50; }
-        .form-buttons { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
-        #auth-error-form { margin-top: 15px; font-weight: 500; color: red; }
-        .form-field-error { color: red; font-size: 0.85rem; text-align: left; margin: -5px auto 10px; max-width: 350px; }
-        #image-uploader { margin: 10px auto; max-width: 350px; }
-        .image-preview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; justify-content: center; }
-        .image-preview-wrapper { position: relative; width: 80px; height: 80px; }
-        .image-preview { width: 100%; height: 100%; border-radius: 8px; object-fit: cover; border: 1px solid #ddd; }
-        .remove-image-btn { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; background-color: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; line-height: 1; }
-        #add-photo-label { width: 80px; height: 80px; border: 2px dashed #ccc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #777; transition: background-color 0.3s, border-color 0.3s; }
-        #add-photo-label:hover { background-color: #f8f9fa; border-color: #4CAF50; }
-        #add-photo-label span { font-size: 24px; }
-        #add-photo-label p { font-size: 10px; margin-top: 5px; }
-        #listing-image-input { display: none; }
 
-        @media (min-width: 768px) {
-            .header-content { flex-wrap: nowrap; }
-            #userEmailDisplay { width: auto; text-align: right; margin-bottom: 0; margin-right: 10px; order: 0; }
-            #listing-detail-container { flex-direction: row; padding: 30px; }
-            .image-gallery { width: 50%; max-width: 500px; }
-            .main-image { height: 400px; }
-        }
-        @media (max-width: 767px) { nav { display: none; } }
+        /* Header Styles */
+        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .header-content { display: flex; justify-content: space-between; align-items: center; }
+        .header-left { display: flex; align-items: center; gap: 15px; }
+        .logo { font-size: 24px; font-weight: bold; cursor: pointer; text-decoration: none; color: white; }
+        .logo span { color: #FFD700; }
+
+        /* Back Button Styles */
+        .btn-back { background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; transition: background 0.3s; }
+        .btn-back:hover { background: rgba(255, 255, 255, 0.3); }
+
+        /* Auth Container Styles */
+        .auth-wrapper { display: flex; justify-content: center; align-items: center; min-height: 80vh; padding: 20px; }
+        .auth-card { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 450px; text-align: center; }
+        .auth-card h2 { color: #2E7D32; margin-bottom: 10px; font-size: 1.8rem; }
+        .auth-card p { color: #666; margin-bottom: 25px; }
+        input[type="text"], input[type="email"], input[type="password"] { width: 100%; padding: 12px 15px; margin-bottom: 15px; border: 2px solid #ddd; border-radius: 6px; font-size: 1rem; transition: border-color 0.3s; }
+        input:focus { outline: none; border-color: #4CAF50; }
+        .btn-submit { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); color: #333; border: none; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; font-size: 1.1rem; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; margin-top: 5px; }
+        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
+
+        /* Google Button Styles */
+        .separator { display: flex; align-items: center; text-align: center; margin: 20px 0; color: #888; font-size: 0.9rem; }
+        .separator::before, .separator::after { content: ''; flex: 1; border-bottom: 1px solid #ddd; }
+        .separator::before { margin-right: 10px; }
+        .separator::after { margin-left: 10px; }
+        .btn-google { background-color: white; color: #555; border: 1px solid #ddd; padding: 10px; width: 100%; border-radius: 6px; font-weight: 600; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; transition: background-color 0.3s, box-shadow 0.3s; }
+        .btn-google:hover { background-color: #f8f9fa; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .btn-google img { width: 20px; height: 20px; }
+        .toggle-link { display: block; margin-top: 20px; color: #4CAF50; text-decoration: none; font-weight: 500; cursor: pointer; }
+        .toggle-link:hover { text-decoration: underline; }
+        .error-message { color: #d32f2f; background-color: #ffebee; padding: 10px; border-radius: 4px; margin-bottom: 20px; display: none; font-size: 0.9rem; text-align: left; }
+        #register-fields { display: none; }
+
+        /* Loading Overlay */
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.9); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 1000; }
+        .spinner { border: 5px solid #f3f3f3; border-top: 5px solid #4CAF50; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 15px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #loading-text { font-size: 1.2rem; color: #333; font-weight: 500; }
     </style>
 </head>
 <body>
     <header>
         <div class="container header-content">
-            <div class="logo" id="logo-link">
-                Cheap<span>let</span>
-            </div>
-            <nav>
-                <ul>
-                    <li><a href="/index.html">Home</a></li>
-                    <li><a href="/my-listings.html">My Listings</a></li>
-                    <li><a href="/messages.html">Messages</a></li>
-                    <li><a href="/profile.html">My Profile</a></li>
-                </ul>
-            </nav>
-            <div class="header-auth-buttons">
-                <span id="userEmailDisplay" style="display: none;"></span>
-                <button class="btn" id="listAnItemBtn">List an Item</button>
-                <button class="btn" id="loginRegisterBtn">Login / Register</button>
-                <button class="btn" id="logoutBtn" style="display: none;">Logout</button>
+            <div class="header-left">
+                <button id="smart-back-btn" class="btn-back"><i class="fas fa-arrow-left"></i> Back</button>
+                <a href="/index.html" class="logo">Cheap<span>let</span></a>
             </div>
         </div>
     </header>
 
-    <main class="container">
-        <div id="loader">Loading listing...</div>
-        <section id="listing-detail-container" style="display: none;"></section>
-        <section id="auth-forms" class="firebase-form-section" style="display: none;"></section>
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div id="loading-text">Checking account status...</div>
+    </div>
 
-        <section id="listing-form" class="firebase-form-section" style="display: none;">
-            <h2>List a New Item</h2>
-            <input type="text" id="listing-title" placeholder="Item Title (e.g., Vintage Coffee Table)" required>
-            <p id="title-error" class="form-field-error"></p>
-            <textarea id="listing-description" placeholder="Description of your item..." required></textarea>
-            <p id="description-error" class="form-field-error"></p>
-            <input type="number" id="listing-price" placeholder="Price (e.g., 15.00)" min="0" step="0.01" required>
-            <p id="price-error" class="form-field-error"></p>
-            <select id="listing-category" required>
-                <option value="">Select Category</option>
-                <option value="furniture">Furniture</option>
-                <option value="electronics">Electronics</option>
-                <option value="clothing">Clothing</option>
-                <option value="books">Books & Media</option>
-                <option value="toys">Toys & Games</option>
-                <option value="other">Other</option>
-            </select>
-            <p id="category-error" class="form-field-error"></p>
-            <input type="text" id="listing-location" placeholder="Your Location (e.g., Brooklyn, NY)" required>
-            <p id="location-error" class="form-field-error"></p>
-            
-            <div id="image-uploader">
-                <label style="font-weight: 500; display: block;">Upload Images (1-5 Required)</label>
-                <div class="image-preview-grid">
-                    <div id="image-preview-container"></div>
-                    <label for="listing-image-input" id="add-photo-label">
-                        <span>+</span>
-                        <p>Add Photo</p>
-                    </label>
+    <main class="container auth-wrapper">
+        <div class="auth-card">
+            <h2 id="form-title">Welcome Back</h2>
+            <p id="form-subtitle">Log in to continue shopping and selling.</p>
+            <div id="auth-error" class="error-message"></div>
+            <form id="auth-form">
+                <div id="register-fields">
+                    <input type="text" id="firstName" placeholder="First Name">
+                    <input type="text" id="lastName" placeholder="Last Name">
                 </div>
-                <input type="file" id="listing-image-input" accept="image/*" style="display:none;">
-            </div>
-            <p id="image-error" class="form-field-error"></p>
-            
-            <div class="form-buttons">
-                <button class="btn" id="postListingBtn">Post Item</button>
-                <button class="btn btn-secondary" id="cancelListingFormBtn">Cancel</button>
-            </div>
-        </section>
+                <input type="email" id="email" placeholder="Email Address" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <button type="submit" class="btn-submit" id="submit-btn">Log In</button>
+            </form>
+            <div class="separator">OR</div>
+            <button type="button" class="btn-google" id="google-btn">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google Logo">
+                Sign in with Google
+            </button>
+            <a class="toggle-link" id="toggle-auth">New to Cheaplet? Create an account.</a>
+        </div>
     </main>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendEmailVerification, updateProfile } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, deleteDoc, addDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendEmailVerification, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
-            const CLOUDINARY_CLOUD_NAME = config.cloudinary.cloudName;
-            const CLOUDINARY_UPLOAD_PRESET = config.cloudinary.uploadPreset;
-            const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
             
             const app = initializeApp(config.firebaseConfig);
             const auth = getAuth(app);
             const db = getFirestore(app);
+            const googleProvider = new GoogleAuthProvider();
 
-            const userEmailDisplay = document.getElementById('userEmailDisplay');
-            const loginRegisterBtn = document.getElementById('loginRegisterBtn');
-            const logoutBtn = document.getElementById('logoutBtn');
-            const listAnItemBtn = document.getElementById('listAnItemBtn');
-            const logoLink = document.getElementById('logo-link');
-            const loader = document.getElementById('loader');
-            const listingDetailContainer = document.getElementById('listing-detail-container');
-            const authFormsSection = document.getElementById('auth-forms');
-            const listingFormSection = document.getElementById('listing-form');
-            const listingTitleInput = document.getElementById('listing-title');
-            const listingDescriptionInput = document.getElementById('listing-description');
-            const listingPriceInput = document.getElementById('listing-price');
-            const listingCategorySelect = document.getElementById('listing-category');
-            const listingLocationInput = document.getElementById('listing-location');
-            const listingImageInput = document.getElementById('listing-image-input');
-            const imagePreviewContainer = document.getElementById('image-preview-container');
-            const addPhotoLabel = document.getElementById('add-photo-label');
-            const postListingBtn = document.getElementById('postListingBtn');
+            const formTitle = document.getElementById('form-title');
+            const formSubtitle = document.getElementById('form-subtitle');
+            const authForm = document.getElementById('auth-form');
+            const registerFields = document.getElementById('register-fields');
+            const submitBtn = document.getElementById('submit-btn');
+            const toggleLink = document.getElementById('toggle-auth');
+            const authError = document.getElementById('auth-error');
+            const googleBtn = document.getElementById('google-btn');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const loadingText = document.getElementById('loading-text');
+            const smartBackBtn = document.getElementById('smart-back-btn');
             
-            let currentUser = null;
+            const emailInput = document.getElementById('email');
+            const passwordInput = document.getElementById('password');
+            const firstNameInput = document.getElementById('firstName');
+            const lastNameInput = document.getElementById('lastName');
+
             let isLoginMode = true;
-            let selectedFiles = [];
-            const maxFiles = 5;
 
-            function hideAllSections() {
-                loader.style.display = 'none';
-                listingDetailContainer.style.display = 'none';
-                authFormsSection.style.display = 'none';
-                listingFormSection.style.display = 'none';
-            }
-
-            function showAuthForm() {
-                hideAllSections();
-                authFormsSection.style.display = 'block';
-            }
-
-            function toggleListingFormVisibility(show) {
-                hideAllSections();
-                if (show) {
-                    listingFormSection.style.display = 'block';
+            smartBackBtn.addEventListener('click', () => {
+                if (window.history.length > 1 && document.referrer.includes(window.location.hostname)) {
+                    window.history.back();
                 } else {
-                    listingDetailContainer.style.display = 'flex';
+                    window.location.href = '/index.html';
+                }
+            });
+
+            // --- STRICT LOGIN HANDLER ---
+            async function handleLoginSuccess(user) {
+                loadingOverlay.style.display = 'flex';
+                loadingText.textContent = "Verifying account status...";
+
+                try {
+                    const userDocRef = doc(db, "users", user.uid);
+                    const userDoc = await getDoc(userDocRef);
+
+                    if (userDoc.exists()) {
+                        const userData = userDoc.data();
+
+                        // 1. BAN CHECK: This is the most important part
+                        if (userData.role === 'banned') {
+                            await signOut(auth); // Log them out immediately
+                            loadingOverlay.style.display = 'none';
+                            
+                            authError.textContent = "Access denied. This account has been banned for violating our terms.";
+                            authError.style.display = 'block';
+                            
+                            // Reset form to stop them from trying again immediately without reading
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = 'Log In';
+                            return; 
+                        }
+                        
+                        // 2. NAME SYNC (Restore correct name if Google overwrote it)
+                        if (userData.displayName && userData.displayName !== user.displayName) {
+                            await updateProfile(user, { displayName: userData.displayName });
+                        }
+                    } else {
+                        // 3. NEW USER CREATION (Only if not banned/existing)
+                        await setDoc(userDocRef, {
+                            uid: user.uid,
+                            displayName: user.displayName,
+                            email: user.email,
+                            photoURL: user.photoURL,
+                            role: 'user'
+                        });
+                    }
+                    
+                    // 4. Success Redirect
+                    window.location.href = '/index.html';
+
+                } catch (e) {
+                    console.error("Error verification:", e);
+                    // If permissions error, it usually means the Firestore rules blocked access (Banned user)
+                    if (e.code === 'permission-denied') {
+                         await signOut(auth);
+                         authError.textContent = "Access denied. Your account is banned.";
+                         authError.style.display = 'block';
+                         loadingOverlay.style.display = 'none';
+                    } else {
+                        // Allow login if it's a minor error to prevent locking users out due to network glitch
+                        window.location.href = '/index.html';
+                    }
                 }
             }
-            
-            function updateAuthModeUI() {
-                const registerNameFields = document.getElementById('register-name-fields');
-                const formLoginBtn = document.getElementById('loginBtn-form');
-                const formRegisterBtn = document.getElementById('registerBtn-form');
-                const formToggleLink = document.getElementById('toggleAuthModeLink');
-                const formTitle = authFormsSection.querySelector('h2');
-                const authError = document.getElementById('auth-error-form');
+
+            // Check if user is ALREADY logged in (e.g. remembered session)
+            onAuthStateChanged(auth, (user) => {
+                if (user && user.emailVerified) {
+                    handleLoginSuccess(user);
+                }
+            });
+
+            toggleLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                isLoginMode = !isLoginMode;
+                authError.style.display = 'none';
+                authForm.reset();
 
                 if (isLoginMode) {
-                    formLoginBtn.style.display = 'inline-block';
-                    formRegisterBtn.style.display = 'none';
-                    registerNameFields.style.display = 'none';
-                    formToggleLink.textContent = 'New user? Register here.';
-                    formTitle.textContent = 'Log In';
+                    formTitle.textContent = 'Welcome Back';
+                    formSubtitle.textContent = 'Log in to continue shopping and selling.';
+                    registerFields.style.display = 'none';
+                    submitBtn.textContent = 'Log In';
+                    toggleLink.textContent = 'New to Cheaplet? Create an account.';
+                    firstNameInput.removeAttribute('required');
+                    lastNameInput.removeAttribute('required');
                 } else {
-                    formLoginBtn.style.display = 'none';
-                    formRegisterBtn.style.display = 'inline-block';
-                    registerNameFields.style.display = 'block';
-                    formToggleLink.textContent = 'Already have an account? Log in.';
-                    formTitle.textContent = 'Register';
+                    formTitle.textContent = 'Join Cheaplet';
+                    formSubtitle.textContent = 'Create an account to start listing items.';
+                    registerFields.style.display = 'block';
+                    submitBtn.textContent = 'Register';
+                    toggleLink.textContent = 'Already have an account? Log in.';
+                    firstNameInput.setAttribute('required', 'true');
+                    lastNameInput.setAttribute('required', 'true');
                 }
-                if(authError) authError.textContent = '';
-            }
-
-            onAuthStateChanged(auth, user => {
-                currentUser = user;
-                if (user && user.emailVerified) {
-                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome!`;
-                    userEmailDisplay.style.display = 'block';
-                    loginRegisterBtn.style.display = 'none';
-                    logoutBtn.style.display = 'inline-block';
-                    listAnItemBtn.style.display = 'inline-block';
-
-                    // If the auth form was showing, a successful login should reload the page
-                    if(authFormsSection.style.display === 'block') {
-                        window.location.reload();
-                    }
-                } else {
-                    userEmailDisplay.style.display = 'none';
-                    loginRegisterBtn.style.display = 'inline-block';
-                    logoutBtn.style.display = 'none';
-                    listAnItemBtn.style.display = 'none';
-                }
-                fetchAndDisplayListing();
             });
 
-            async function fetchAndDisplayListing() {
+            googleBtn.addEventListener('click', async () => {
+                authError.style.display = 'none';
                 try {
-                    const params = new URLSearchParams(window.location.search);
-                    const listingId = params.get('id');
-
-                    if (!listingId) {
-                        hideAllSections();
-                        listingDetailContainer.style.display = 'block';
-                        listingDetailContainer.innerHTML = `<div style="text-align: center; padding: 40px; width: 100%;"><h2>No Item Selected</h2><p>Please <a href="/index.html" style="color: #4CAF50; font-weight: bold;">return to the homepage</a> to browse items.</p></div>`;
-                        return;
-                    }
-
-                    const listingRef = doc(db, 'listings', listingId);
-                    const listingSnap = await getDoc(listingRef);
-                    if (!listingSnap.exists()) { throw new Error('Listing not found.'); }
-                    
-                    const data = listingSnap.data();
-                    listingDetailContainer.innerHTML = `
-                        <div class="image-gallery">
-                            <div class="main-image" id="main-image"></div><div class="thumbnail-container" id="thumbnail-container"></div>
-                        </div>
-                        <div class="listing-info">
-                            <h1>${data.title}</h1>
-                            <p class="price">$${data.price.toFixed(2)}</p>
-                            <div class="seller-info">
-                                <div class="seller-details">
-                                    <div id="seller-avatar"></div>
-                                    <a href="/user.html?id=${data.posterUid}" id="seller-profile-link">A Cheaplet User</a>
-                                </div>
-                                <p><strong>Location:</strong> <span>${data.location}</span></p>
-                                <button id="message-seller-btn" class="btn btn-message">Message Seller</button>
-                                <button id="delete-listing-btn" class="btn btn-delete" style="display: none;">Delete Listing</button>
-                            </div>
-                            <hr><div class="description"><h3>Description</h3><p>${data.description}</p></div>
-                        </div>`;
-                    
-                    document.title = `${data.title} - Cheaplet`;
-
-                    const sellerProfileLink = document.getElementById('seller-profile-link');
-                    const sellerAvatar = document.getElementById('seller-avatar');
-                    const defaultAvatarSVG = `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23cccccc'><path d='M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'/></svg>`;
-                    
-                    try {
-                        const userDocRef = doc(db, "users", data.posterUid);
-                        const userDocSnap = await getDoc(userDocRef);
-                        let avatarUrl = defaultAvatarSVG;
-                        if (userDocSnap.exists()) {
-                            const userData = userDocSnap.data();
-                            if (userData.displayName) sellerProfileLink.textContent = userData.displayName;
-                            if (userData.photoURL) avatarUrl = userData.photoURL;
-                        }
-                        sellerAvatar.style.backgroundImage = `url('${avatarUrl}')`;
-                    } catch (e) {
-                        sellerAvatar.style.backgroundImage = `url('${defaultAvatarSVG}')`;
-                    }
-
-                    const mainImageEl = document.getElementById('main-image');
-                    const thumbnailContainer = document.getElementById('thumbnail-container');
-                    let imageUrls = data.imageUrls || [];
-                    if (imageUrls.length > 0) {
-                        mainImageEl.style.backgroundImage = `url('${imageUrls[0]}')`;
-                        imageUrls.forEach((url, index) => {
-                            const thumb = document.createElement('img');
-                            thumb.src = url; thumb.className = 'thumbnail-image';
-                            if (index === 0) thumb.classList.add('active');
-                            thumb.onclick = () => {
-                                mainImageEl.style.backgroundImage = `url('${url}')`;
-                                document.querySelectorAll('.thumbnail-image').forEach(t => t.classList.remove('active'));
-                                thumb.classList.add('active');
-                            };
-                            thumbnailContainer.appendChild(thumb);
-                        });
-                    } else { mainImageEl.textContent = 'No Image'; }
-
-                    document.getElementById('message-seller-btn').onclick = () => {
-                        if (!currentUser || !currentUser.emailVerified) { showAuthForm(); return; }
-                        if (currentUser.uid === data.posterUid) { alert("You cannot message yourself."); return; }
-                        handleCreateChat(data.posterUid, sellerProfileLink.textContent);
-                    };
-
-                    if (currentUser) {
-                        const isOwner = currentUser.uid === data.posterUid;
-                        const userDocRef = doc(db, "users", currentUser.uid);
-                        const userDocSnap = await getDoc(userDocRef);
-                        const isAdmin = userDocSnap.exists() && userDocSnap.data().role === 'admin';
-
-                        if (isOwner || isAdmin) {
-                            const deleteBtn = document.getElementById('delete-listing-btn');
-                            deleteBtn.style.display = 'block';
-                            deleteBtn.textContent = isAdmin ? 'Delete Listing (Admin)' : 'Delete My Listing';
-                            deleteBtn.onclick = async () => {
-                                const confirmMessage = isAdmin ? "ADMIN: Delete this user's listing?" : "Delete your listing permanently?";
-                                if (confirm(confirmMessage)) {
-                                    await deleteDoc(listingRef);
-                                    alert("Listing deleted.");
-                                    window.location.href = '/index.html';
-                                }
-                            };
-                        }
-                    }
-                    
-                    hideAllSections();
-                    listingDetailContainer.style.display = 'flex';
-
+                    await signInWithPopup(auth, googleProvider);
+                    // onAuthStateChanged will catch the success and run handleLoginSuccess
                 } catch (error) {
-                    console.error("Fatal Error fetching listing:", error);
-                    loader.textContent = `Error: ${error.message}`;
-                }
-            }
-
-            async function handleCreateChat(posterUid, posterName) {
-                // This function is unchanged
-                const uids = [currentUser.uid, posterUid].sort();
-                const chatId = uids.join('_');
-                const chatRef = doc(db, 'chats', chatId);
-                try {
-                    const chatSnap = await getDoc(chatRef);
-                    if (!chatSnap.exists()) {
-                        await setDoc(chatRef, {
-                            participants: uids,
-                            participantInfo: { [currentUser.uid]: currentUser.displayName, [posterUid]: posterName },
-                            lastUpdate: serverTimestamp(), lastMessage: ""
-                        });
-                    }
-                    window.location.href = `/messages.html?chatId=${chatId}`;
-                } catch (error) { console.error("Error creating chat:", error); alert("Could not start conversation."); }
-            }
-
-            function setupAuthForm() {
-                authFormsSection.innerHTML = `
-                    <h2>Log In</h2>
-                    <p>You must be logged in to send a message.</p>
-                    <div id="register-name-fields" style="display: none;">
-                        <input type="text" id="firstName-form" placeholder="First Name" required>
-                        <input type="text" id="lastName-form" placeholder="Last Name" required>
-                    </div>
-                    <input type="email" id="email-form" placeholder="Email" required>
-                    <input type="password" id="password-form" placeholder="Password (min. 6 characters)" required>
-                    <div class="form-buttons">
-                        <button class="btn" id="loginBtn-form">Login</button>
-                        <button class="btn" id="registerBtn-form" style="display: none;">Register</button>
-                        <button class="btn btn-secondary" id="cancelAuthFormBtn">Cancel</button>
-                    </div>
-                    <p id="auth-error-form"></p>
-                    <p style="margin-top: 15px;"><a href="#" id="toggleAuthModeLink">New user? Register here.</a></p>`;
-
-                document.getElementById('cancelAuthFormBtn').addEventListener('click', () => window.location.reload());
-                document.getElementById('toggleAuthModeLink').addEventListener('click', (e) => {
-                    e.preventDefault(); isLoginMode = !isLoginMode; updateAuthModeUI();
-                });
-
-                document.getElementById('loginBtn-form').addEventListener('click', async () => {
-                    const email = document.getElementById('email-form').value;
-                    const password = document.getElementById('password-form').value;
-                    const authError = document.getElementById('auth-error-form');
-                    authError.textContent = '';
-                    try {
-                        const cred = await signInWithEmailAndPassword(auth, email, password);
-                        if (!cred.user.emailVerified) {
-                            authError.textContent = 'Please verify your email before logging in.';
-                            await signOut(auth);
-                        }
-                    } catch (error) { authError.textContent = error.message; }
-                });
-
-                document.getElementById('registerBtn-form').addEventListener('click', async () => {
-                    const email = document.getElementById('email-form').value;
-                    const password = document.getElementById('password-form').value;
-                    const firstName = document.getElementById('firstName-form').value;
-                    const lastName = document.getElementById('lastName-form').value;
-                    const authError = document.getElementById('auth-error-form');
-                    authError.textContent = '';
-                    if (!firstName || !lastName) { authError.textContent = "Name is required."; return; }
-                    try {
-                        const cred = await createUserWithEmailAndPassword(auth, email, password);
-                        const displayName = `${firstName} ${lastName}`;
-                        await updateProfile(cred.user, { displayName });
-                        await sendEmailVerification(cred.user);
-                        const userDocRef = doc(db, "users", cred.user.uid);
-                        await setDoc(userDocRef, { uid: cred.user.uid, displayName, email });
-                        await signOut(auth);
-                        alert("Registration successful! Please check your email (and spam folder) to verify your account, then log in.");
-                        isLoginMode = true;
-                        updateAuthModeUI();
-                    } catch (error) { authError.textContent = error.message; }
-                });
-                updateAuthModeUI();
-            }
-
-            function renderPreviews() { /* This function is unchanged */ }
-            function removeImage(index) { /* This function is unchanged */ }
-            function validateListingForm() { /* This function is unchanged */ }
-
-            logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
-            logoutBtn.addEventListener('click', () => signOut(auth));
-            loginRegisterBtn.addEventListener('click', showAuthForm);
-            
-            listAnItemBtn.addEventListener('click', () => {
-                if (currentUser && currentUser.emailVerified) {
-                    toggleListingFormVisibility(true);
-                } else {
-                    alert('Please log in to list an item.');
-                    showAuthForm();
+                    console.error("Google Auth Error:", error);
+                    authError.textContent = "Google Sign-In failed. " + error.message;
+                    authError.style.display = 'block';
                 }
             });
-            document.getElementById('cancelListingFormBtn').addEventListener('click', () => window.location.reload());
 
-            listingImageInput.addEventListener('change', (e) => { /* This event listener is unchanged */ });
+            authForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                authError.style.display = 'none';
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Processing...';
 
-            postListingBtn.addEventListener('click', async () => { /* This event listener is unchanged */ });
-            
-            setupAuthForm(); // This is crucial to make the login form work
+                const email = emailInput.value;
+                const password = passwordInput.value;
+
+                try {
+                    if (isLoginMode) {
+                        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                        if (!userCredential.user.emailVerified) {
+                            await signOut(auth);
+                            throw new Error('Please verify your email address before logging in. Check your inbox.');
+                        }
+                    } else {
+                        if (password.length < 6) { throw new Error('Password must be at least 6 characters long.'); }
+                        const firstName = firstNameInput.value.trim();
+                        const lastName = lastNameInput.value.trim();
+                        
+                        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                        const displayName = `${firstName} ${lastName}`;
+                        
+                        await updateProfile(userCredential.user, { displayName: displayName });
+                        await sendEmailVerification(userCredential.user);
+
+                        // Optimistically create the profile (Rules will block if banned email exists)
+                        try {
+                            await setDoc(doc(db, "users", userCredential.user.uid), {
+                                uid: userCredential.user.uid,
+                                displayName: displayName,
+                                email: email,
+                                role: 'user'
+                            });
+                        } catch (dbError) { console.error("Database error:", dbError); }
+
+                        await signOut(auth);
+                        alert("Registration successful! Verification email sent. Please check inbox/spam, then log in.");
+                        isLoginMode = true;
+                        toggleLink.click(); 
+                    }
+                } catch (error) {
+                    console.error("Auth Error:", error);
+                    let msg = error.message.replace('Firebase: ', '');
+                    if (msg.includes('auth/email-already-in-use')) msg = 'That email is already registered. Please log in.';
+                    authError.textContent = msg;
+                    authError.style.display = 'block';
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = isLoginMode ? 'Log In' : 'Register';
+                }
+            });
         }
 
         main();
