@@ -7,113 +7,144 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f0f2f5; color: #050505; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { background-color: #f8f9fa; color: #333; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* --- FB-Style Header --- */
-        header { background-color: white; padding: 0 16px; height: 56px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; z-index: 100; flex-shrink: 0; }
-        .header-left { display: flex; align-items: center; gap: 10px; }
-        .logo { font-size: 28px; font-weight: bold; color: #4CAF50; text-decoration: none; letter-spacing: -0.5px; }
+        /* --- Cheaplet Header --- */
+        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; height: 60px; padding: 0 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; z-index: 100; flex-shrink: 0; }
+        .logo { font-size: 24px; font-weight: bold; color: white; text-decoration: none; display: flex; align-items: center; }
         .logo span { color: #FFD700; }
         
-        .header-right { display: flex; align-items: center; gap: 8px; }
+        /* Header Right Side */
+        .header-right { display: flex; align-items: center; gap: 15px; }
+        .icon-btn { color: white; font-size: 1.2rem; cursor: pointer; text-decoration: none; opacity: 0.9; transition: opacity 0.2s; }
+        .icon-btn:hover { opacity: 1; transform: scale(1.1); }
         
-        /* Circular Icon Buttons */
-        .icon-btn {
-            width: 40px; height: 40px; border-radius: 50%; background-color: #e4e6eb; border: none;
-            display: flex; align-items: center; justify-content: center; cursor: pointer; color: #050505; text-decoration: none;
-            transition: background-color 0.2s; font-size: 18px;
-        }
-        .icon-btn:hover { background-color: #d8dadf; }
-        
-        /* Profile Dropdown Trigger */
-        .profile-trigger { width: 40px; height: 40px; border-radius: 50%; overflow: hidden; cursor: pointer; border: 1px solid #ddd; }
+        .profile-trigger { width: 35px; height: 35px; border-radius: 50%; background-color: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer; border: 2px solid rgba(255,255,255,0.5); text-decoration: none; color: white; font-weight: bold; }
         .profile-trigger img { width: 100%; height: 100%; object-fit: cover; }
-        .profile-trigger div { width: 100%; height: 100%; background-color: #ccc; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #666; }
 
-        /* --- Main Content Layout (Split Screen) --- */
-        .main-wrapper { display: flex; flex: 1; height: calc(100vh - 56px); overflow: hidden; }
+        /* --- Split Layout Container --- */
+        .main-wrapper { display: flex; flex: 1; height: calc(100vh - 60px); overflow: hidden; }
         
-        /* Left: Image Stage */
+        /* --- LEFT: Image Stage (Cinematic Effect) --- */
         .image-stage {
-            flex: 1; background-color: black; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
+            flex: 1; 
+            background-color: #000; 
+            position: relative; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center;
+            overflow: hidden;
         }
-        .main-image-container { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-        .main-image { max-width: 100%; max-height: 100%; object-fit: contain; }
-        
+
+        /* The Blurred Background Layer */
+        .blurred-bg {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-size: cover;
+            background-position: center;
+            filter: blur(20px) brightness(0.5);
+            z-index: 0;
+            transition: background-image 0.3s ease-in-out;
+        }
+
+        /* The Main Sharp Image */
+        .main-image-container {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px; /* Space so image doesn't touch edges */
+        }
+        .main-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+        }
+
         /* Navigation Arrows */
         .nav-arrow {
             position: absolute; top: 50%; transform: translateY(-50%);
-            width: 48px; height: 48px; border-radius: 50%; background-color: rgba(255,255,255,0.3);
-            border: 1px solid rgba(255,255,255,0.5); color: white; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: 20px; transition: background 0.3s;
+            width: 50px; height: 50px; border-radius: 50%; background-color: rgba(0,0,0,0.5);
+            color: white; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 20px; border: none; transition: background 0.3s; z-index: 10;
         }
-        .nav-arrow:hover { background-color: rgba(255,255,255,0.5); }
+        .nav-arrow:hover { background-color: rgba(0,0,0,0.8); }
         .nav-prev { left: 20px; }
         .nav-next { right: 20px; }
 
-        /* Right: Details Panel */
+        /* Thumbnails Overlay */
+        .thumbnails-overlay {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 8px; z-index: 10;
+            background: rgba(0,0,0,0.6); padding: 8px; border-radius: 30px;
+        }
+        .thumb { width: 50px; height: 50px; border-radius: 4px; object-fit: cover; cursor: pointer; opacity: 0.6; border: 2px solid transparent; transition: all 0.2s; }
+        .thumb.active { opacity: 1; border-color: #FFD700; transform: scale(1.1); }
+
+        /* --- RIGHT: Details Panel --- */
         .details-panel {
-            width: 400px; background-color: white; border-left: 1px solid #ddd; overflow-y: auto; display: flex; flex-direction: column;
-            padding: 20px; flex-shrink: 0;
+            width: 420px; background-color: white; border-left: 1px solid #ddd; overflow-y: auto; display: flex; flex-direction: column;
+            padding: 25px; flex-shrink: 0; box-shadow: -2px 0 10px rgba(0,0,0,0.05);
         }
 
-        /* Listing Info Styles */
-        h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; line-height: 1.2; }
-        .price { font-size: 1.2rem; font-weight: 600; margin-bottom: 8px; }
-        .meta-info { font-size: 0.9rem; color: #65676b; margin-bottom: 16px; }
+        h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 5px; color: #333; line-height: 1.2; }
+        .price { font-size: 1.5rem; font-weight: 700; color: #2E7D32; margin-bottom: 10px; }
+        .meta-info { font-size: 0.85rem; color: #777; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
         
-        /* Action Buttons Row */
-        .action-buttons { display: flex; gap: 10px; margin-bottom: 20px; }
+        /* Cheaplet Action Buttons */
+        .action-buttons { display: flex; gap: 10px; margin-bottom: 25px; }
         .btn-primary {
-            flex: 1; background-color: #e7f3ff; color: #1877f2; border: none; border-radius: 6px; font-weight: 600;
-            padding: 0 12px; height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
-            transition: background 0.2s; text-decoration: none;
+            flex: 1; background-color: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: 600;
+            padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: background 0.2s; font-size: 1rem;
         }
-        .btn-primary:hover { background-color: #dbe7f2; }
+        .btn-primary:hover { background-color: #43a047; }
+        
         .btn-icon {
-            width: 48px; height: 36px; background-color: #e4e6eb; border-radius: 6px; border: none;
-            display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px;
+            width: 45px; height: 42px; background-color: #f0f0f0; border-radius: 6px; border: none; color: #555;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; transition: all 0.2s;
         }
-        .btn-icon:hover { background-color: #d8dadf; }
+        .btn-icon:hover { background-color: #FFD700; color: #333; }
 
-        /* Sections */
-        .section-header { font-weight: 600; font-size: 1.1rem; margin-top: 20px; margin-bottom: 10px; }
-        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; }
-        .info-label { font-weight: 600; color: #050505; }
-        .info-value { color: #65676b; }
+        /* Details & Description */
+        .section-header { font-weight: 700; font-size: 1.1rem; margin-top: 15px; margin-bottom: 10px; color: #333; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; border-bottom: 1px dashed #eee; padding-bottom: 5px; }
+        .info-label { font-weight: 600; color: #555; }
+        .info-value { color: #333; }
         
-        .description-text { font-size: 0.9rem; line-height: 1.5; color: #050505; white-space: pre-wrap; }
+        .description-text { font-size: 0.95rem; line-height: 1.6; color: #444; white-space: pre-wrap; background: #f9f9f9; padding: 15px; border-radius: 8px; }
 
-        /* Seller Map/Info Placeholder */
-        .seller-map { height: 120px; background-color: #f0f2f5; border-radius: 8px; margin-top: 10px; display: flex; align-items: center; justify-content: center; color: #65676b; font-size: 0.8rem; }
-
+        /* Seller Info */
+        .seller-section { display: flex; align-items: center; gap: 12px; margin-top: 20px; padding: 15px; border: 1px solid #eee; border-radius: 8px; }
+        #seller-avatar-small { width: 45px; height: 45px; border-radius: 50%; background: #ddd; background-size: cover; background-position: center; border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .seller-name { font-weight: 700; color: #2E7D32; text-decoration: none; font-size: 1.05rem; }
+        
         /* Quick Message Box */
-        .quick-message-container { margin-top: 30px; border-top: 1px solid #ddd; padding-top: 15px; }
-        .quick-msg-label { font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; color: #1877f2; }
+        .quick-message-container { margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
+        .quick-msg-label { font-weight: 600; margin-bottom: 10px; color: #4CAF50; font-size: 0.9rem; }
         .quick-msg-input {
-            width: 100%; border: 1px solid #ccc; border-radius: 20px; padding: 10px 15px; font-size: 0.95rem; resize: none; margin-bottom: 10px; outline: none; background: #f0f2f5;
+            width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 12px; font-size: 0.95rem; resize: none; margin-bottom: 10px; outline: none; background: #fff;
         }
-        .quick-msg-input:focus { border-color: #1877f2; }
+        .quick-msg-input:focus { border-color: #4CAF50; box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1); }
         .btn-send {
-            background-color: #1877f2; color: white; width: 100%; border: none; border-radius: 6px; height: 36px; font-weight: 600; cursor: pointer; transition: background 0.2s;
+            background-color: #4CAF50; color: white; width: 100%; border: none; border-radius: 6px; height: 40px; font-weight: 600; cursor: pointer; transition: background 0.2s;
         }
-        .btn-send:hover { background-color: #166fe5; }
+        .btn-send:hover { background-color: #43a047; }
 
-        /* Admin Delete Button */
-        .admin-controls { margin-top: 20px; border-top: 1px solid #ddd; padding-top: 20px; display: none; }
-        .btn-delete { background-color: #fce8e6; color: #d32f2f; width: 100%; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        
-        /* Thumbnails on Image Stage */
-        .thumbnails-row {
-            height: 60px; display: flex; gap: 10px; padding: 10px; overflow-x: auto; background: rgba(0,0,0,0.5); width: 100%; justify-content: center;
-        }
-        .thumb { width: 40px; height: 40px; border-radius: 4px; object-fit: cover; cursor: pointer; opacity: 0.6; border: 2px solid transparent; }
-        .thumb.active { opacity: 1; border-color: white; }
+        /* Admin Controls */
+        .admin-controls { margin-top: 20px; border-top: 2px solid #d32f2f; padding-top: 15px; display: none; background: #fff5f5; padding: 15px; border-radius: 8px; }
+        .btn-delete { background-color: #d32f2f; color: white; width: 100%; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-delete:hover { background-color: #b71c1c; }
 
         /* Responsive */
         @media (max-width: 900px) {
             .main-wrapper { flex-direction: column; overflow-y: auto; height: auto; }
-            .image-stage { height: 300px; }
+            .image-stage { height: 350px; }
             .details-panel { width: 100%; border-left: none; overflow: visible; height: auto; }
         }
     </style>
@@ -125,12 +156,8 @@
             <a href="/index.html" class="logo">Cheap<span>let</span></a>
         </div>
         <div class="header-right">
-            <!-- Icons -->
-            <a href="/index.html" class="icon-btn" title="Menu"><i class="fas fa-th"></i></a>
-            <a href="/messages.html" class="icon-btn" title="Messages"><i class="fab fa-facebook-messenger"></i></a>
-            <div class="icon-btn" title="Notifications"><i class="fas fa-bell"></i></div>
-            
-            <!-- Profile Avatar (Click goes to profile) -->
+            <a href="/index.html" class="icon-btn" title="Browse"><i class="fas fa-th"></i></a>
+            <a href="/messages.html" class="icon-btn" title="Messages"><i class="fas fa-comment-dots"></i></a>
             <a href="/profile.html" class="profile-trigger" id="header-profile-link">
                 <div id="header-avatar-placeholder">?</div>
             </a>
@@ -138,19 +165,24 @@
     </header>
 
     <div class="main-wrapper">
-        <!-- Left: Image Gallery -->
+        <!-- Left: Image Stage with Blur Effect -->
         <div class="image-stage">
+            <!-- This div creates the blurry background effect -->
+            <div class="blurred-bg" id="blur-bg"></div>
+
             <div class="main-image-container">
                 <button class="nav-arrow nav-prev" id="prev-img-btn"><i class="fas fa-chevron-left"></i></button>
+                <!-- This is the sharp, centered image -->
                 <img src="" alt="Listing Item" class="main-image" id="main-image">
                 <button class="nav-arrow nav-next" id="next-img-btn"><i class="fas fa-chevron-right"></i></button>
             </div>
-            <div class="thumbnails-row" id="thumbnail-container">
+            
+            <div class="thumbnails-overlay" id="thumbnail-container">
                 <!-- Thumbnails injected here -->
             </div>
         </div>
 
-        <!-- Right: Details -->
+        <!-- Right: Details Panel -->
         <div class="details-panel" id="details-container">
             <h1 id="listing-title">Loading...</h1>
             <div class="price" id="listing-price"></div>
@@ -158,11 +190,10 @@
 
             <div class="action-buttons">
                 <button class="btn-primary" id="btn-message-seller">
-                    <i class="fab fa-facebook-messenger"></i> Message
+                    <i class="fas fa-paper-plane"></i> &nbsp; Message Seller
                 </button>
-                <button class="btn-icon" title="Save"><i class="fas fa-bookmark"></i></button>
-                <button class="btn-icon" title="Share"><i class="fas fa-share"></i></button>
-                <button class="btn-icon" title="More"><i class="fas fa-ellipsis-h"></i></button>
+                <button class="btn-icon" title="Save"><i class="far fa-bookmark"></i></button>
+                <button class="btn-icon" title="Share"><i class="fas fa-share-alt"></i></button>
             </div>
 
             <div class="section-header">Details</div>
@@ -174,33 +205,33 @@
                 <span class="info-label">Category</span>
                 <span class="info-value" id="listing-category"></span>
             </div>
+            <div class="info-row">
+                <span class="info-label">Location</span>
+                <span class="info-value" id="location-text"></span>
+            </div>
 
             <div class="section-header">Description</div>
             <p class="description-text" id="listing-description"></p>
 
             <div class="section-header">Seller Information</div>
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                <div id="seller-avatar-small" style="width: 40px; height: 40px; border-radius: 50%; background: #ddd; background-size: cover; background-position: center;"></div>
+            <div class="seller-section">
+                <div id="seller-avatar-small"></div>
                 <div>
-                    <a href="#" id="seller-name-link" style="text-decoration: none; color: #050505; font-weight: 600;">Loading...</a>
-                    <div style="font-size: 0.8rem; color: #65676b;">Joined 2025</div>
+                    <a href="#" id="seller-name-link" class="seller-name">Loading...</a>
+                    <div style="font-size: 0.8rem; color: #777;">Verified Member</div>
                 </div>
-            </div>
-
-            <div class="section-header">Pickup in <span id="location-text"></span></div>
-            <div class="seller-map">
-                <i class="fas fa-map-marker-alt"></i> &nbsp; Map view placeholder
             </div>
 
             <!-- Quick Message Box -->
             <div class="quick-message-container">
-                <div class="quick-msg-label"><i class="fab fa-facebook-messenger"></i> Send seller a message</div>
+                <div class="quick-msg-label">Send a quick message</div>
                 <textarea class="quick-msg-input" id="quick-msg-text">Hi, is this available?</textarea>
-                <button class="btn-send" id="btn-quick-send">Send</button>
+                <button class="btn-send" id="btn-quick-send">Send Message</button>
             </div>
 
             <!-- Admin Controls -->
             <div class="admin-controls" id="admin-controls">
+                <p style="color: #d32f2f; font-weight: bold; font-size: 0.9rem; margin-bottom: 5px;">Admin Zone</p>
                 <button class="btn-delete" id="delete-listing-btn">Delete Listing</button>
             </div>
         </div>
@@ -221,6 +252,7 @@
 
             // Elements
             const mainImage = document.getElementById('main-image');
+            const blurBg = document.getElementById('blur-bg'); // NEW: The background blur div
             const thumbnailContainer = document.getElementById('thumbnail-container');
             const prevBtn = document.getElementById('prev-img-btn');
             const nextBtn = document.getElementById('next-img-btn');
@@ -237,18 +269,14 @@
             onAuthStateChanged(auth, user => {
                 currentUser = user;
                 if (user && user.emailVerified) {
-                    // Update Header Avatar
                     if (user.photoURL) {
                         headerProfileLink.innerHTML = `<img src="${user.photoURL}" alt="Profile">`;
                     } else {
                         headerAvatarPlaceholder.textContent = user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U';
                     }
                 } else {
-                    // Default header state
                     headerAvatarPlaceholder.textContent = '?';
                 }
-                
-                // Once auth is checked, load data
                 fetchAndDisplayListing();
             });
 
@@ -257,7 +285,6 @@
                 currentListingId = params.get('id');
 
                 if (!currentListingId) {
-                    alert("No listing selected.");
                     window.location.href = '/index.html';
                     return;
                 }
@@ -278,9 +305,8 @@
                     document.getElementById('listing-title').textContent = data.title;
                     document.getElementById('listing-price').textContent = `$${data.price.toFixed(2)}`;
                     
-                    // Meta Info (Time/Location)
                     const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : 'Recently';
-                    document.getElementById('listing-meta').textContent = `Listed ${date} in ${data.location}`;
+                    document.getElementById('listing-meta').textContent = `Listed ${date}`;
                     document.getElementById('location-text').textContent = data.location;
 
                     document.getElementById('listing-condition').textContent = data.condition || "Used";
@@ -291,7 +317,6 @@
                     document.getElementById('seller-name-link').textContent = data.posterDisplayName || "A User";
                     document.getElementById('seller-name-link').href = `/user.html?id=${data.posterUid}`;
                     
-                    // Fetch Seller Avatar if possible (Optional optimization)
                     if (data.posterUid) {
                         try {
                             const sellerDoc = await getDoc(doc(db, "users", data.posterUid));
@@ -301,10 +326,10 @@
                         } catch(e) {}
                     }
 
-                    // --- Images ---
+                    // --- Images (With Blur Logic) ---
                     imageUrls = data.imageUrls || [];
                     if (imageUrls.length > 0) {
-                        updateMainImage(0);
+                        updateMainImage(0); // This sets the first image and background
                         
                         // Create Thumbnails
                         thumbnailContainer.innerHTML = '';
@@ -317,12 +342,13 @@
                         });
                     } else {
                         mainImage.alt = "No Image Available";
+                        mainImage.src = ""; 
+                        blurBg.style.backgroundColor = "#333"; // Fallback background
                     }
 
                     // --- Admin/Owner Controls ---
                     if (currentUser) {
                         const isOwner = currentUser.uid === data.posterUid;
-                        // Check admin status
                         const userDoc = await getDoc(doc(db, "users", currentUser.uid));
                         const isAdmin = userDoc.exists() && userDoc.data().role === 'admin';
 
@@ -339,7 +365,14 @@
 
             function updateMainImage(index) {
                 currentImageIndex = index;
-                mainImage.src = imageUrls[index];
+                const url = imageUrls[index];
+                
+                // 1. Update the Sharp Foreground Image
+                mainImage.src = url;
+                
+                // 2. Update the Blurred Background Layer
+                blurBg.style.backgroundImage = `url('${url}')`;
+
                 // Update active thumbnail
                 document.querySelectorAll('.thumb').forEach((thumb, i) => {
                     thumb.classList.toggle('active', i === index);
@@ -371,8 +404,6 @@
                     alert("You cannot message yourself.");
                     return;
                 }
-                
-                // Create Chat
                 createChat(currentListingData.posterUid, currentListingData.posterDisplayName);
             }
 
@@ -388,7 +419,7 @@
                             participants: uids,
                             participantInfo: { [currentUser.uid]: currentUser.displayName, [posterUid]: posterName },
                             lastUpdate: serverTimestamp(),
-                            lastMessage: "" // Could optionally set this to the quick message text
+                            lastMessage: "" 
                         });
                     }
                     window.location.href = `/messages.html?chatId=${chatId}`;
