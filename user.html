@@ -36,6 +36,10 @@
         .profile-header h1 { font-size: 2.5rem; margin-bottom: 10px; }
         .listings-section-header { margin-bottom: 20px; font-size: 1.5rem; font-weight: 600; }
         
+        /* Delete Button Style */
+        .btn-delete { background-color: #f44336; color: white; margin-top: 10px; }
+        .btn-delete:hover { background-color: #d32f2f; }
+        
         @media (max-width: 767px) { nav { display: none; } }
         @media (min-width: 768px) {
              .header-content { flex-wrap: nowrap; }
@@ -73,6 +77,8 @@
         <div id="profile-content" style="display: none;">
             <div class="profile-header">
                 <h1 id="user-display-name"></h1>
+                <!-- NEW: Admin Delete Button -->
+                <button id="admin-delete-user-btn" class="btn btn-delete" style="display: none;">Admin: Delete User & All Listings</button>
             </div>
 
             <h2 class="listings-section-header">Listings from this user</h2>
@@ -85,7 +91,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        // Added getDocs and deleteDoc to imports
+        import { getFirestore, doc, getDoc, collection, query, where, onSnapshot, orderBy, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             // --- INITIALIZATION ---
@@ -105,10 +112,11 @@
             const profileContent = document.getElementById('profile-content');
             const userDisplayName = document.getElementById('user-display-name');
             const userListingsGrid = document.getElementById('user-listings-grid');
+            const adminDeleteBtn = document.getElementById('admin-delete-user-btn'); // New Button
             
             // --- HEADER LOGIC ---
             logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
-            loginRegisterBtn.addEventListener('click', () => { window.location.href = '/index.html'; });
+            loginRegisterBtn.addEventListener('click', () => { window.location.href = '/LoginInToCheaplet.html'; }); // Updated to new login page
             logoutBtn.addEventListener('click', () => signOut(auth));
 
             onAuthStateChanged(auth, (user) => {
@@ -117,12 +125,62 @@
                     userEmailDisplay.style.display = 'block';
                     loginRegisterBtn.style.display = 'none';
                     logoutBtn.style.display = 'inline-block';
+                    
+                    // Check if current user is admin
+                    checkAdminStatus(user.uid);
                 } else {
                     userEmailDisplay.style.display = 'none';
                     loginRegisterBtn.style.display = 'inline-block';
                     logoutBtn.style.display = 'none';
                 }
             });
+
+            // --- ADMIN CHECK ---
+            async function checkAdminStatus(currentUid) {
+                try {
+                    const userDoc = await getDoc(doc(db, "users", currentUid));
+                    if (userDoc.exists() && userDoc.data().role === 'admin') {
+                        adminDeleteBtn.style.display = 'inline-block';
+                    }
+                } catch (e) {
+                    console.error("Admin check failed", e);
+                }
+            }
+
+            // --- ADMIN DELETE FUNCTION ---
+            async function deleteUserAndListings(targetUserId) {
+                if (!confirm("WARNING: You are about to delete this user and ALL of their listings.\n\nThis action cannot be undone. Are you sure?")) {
+                    return;
+                }
+
+                adminDeleteBtn.disabled = true;
+                adminDeleteBtn.textContent = "Deleting...";
+
+                try {
+                    // 1. Get all listings by this user
+                    const listingsRef = collection(db, "listings");
+                    const q = query(listingsRef, where("posterUid", "==", targetUserId));
+                    const querySnapshot = await getDocs(q);
+
+                    // 2. Delete all listings
+                    const deletePromises = querySnapshot.docs.map(document => deleteDoc(document.ref));
+                    await Promise.all(deletePromises);
+                    console.log(`Deleted ${deletePromises.length} listings.`);
+
+                    // 3. Delete the user profile document
+                    await deleteDoc(doc(db, "users", targetUserId));
+                    console.log("Deleted user profile.");
+
+                    alert("User and all associated listings have been deleted.");
+                    window.location.href = '/index.html';
+
+                } catch (error) {
+                    console.error("Error deleting user:", error);
+                    alert("An error occurred while deleting the user: " + error.message);
+                    adminDeleteBtn.disabled = false;
+                    adminDeleteBtn.textContent = "Admin: Delete User & All Listings";
+                }
+            }
 
             // --- MAIN PAGE LOGIC ---
             async function loadUserProfile() {
@@ -133,6 +191,9 @@
                     loader.innerHTML = `<p class="info-message">No user profile specified.</p>`;
                     return;
                 }
+
+                // Attach click handler to admin button with the correct User ID
+                adminDeleteBtn.onclick = () => deleteUserAndListings(userId);
 
                 try {
                     // 1. Fetch user's name
