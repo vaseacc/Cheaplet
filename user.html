@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Profile - Cheaplet</title>
     <style>
-        /* --- Basic, Header, and Listing Card Styles (Copied from index.html for consistency) --- */
+        /* --- Basic, Header, and Listing Card Styles --- */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
         .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
@@ -36,9 +36,9 @@
         .profile-header h1 { font-size: 2.5rem; margin-bottom: 10px; }
         .listings-section-header { margin-bottom: 20px; font-size: 1.5rem; font-weight: 600; }
         
-        /* Delete Button Style */
-        .btn-delete { background-color: #f44336; color: white; margin-top: 10px; }
-        .btn-delete:hover { background-color: #d32f2f; }
+        /* Ban Button Style */
+        .btn-ban { background-color: #d32f2f; color: white; margin-top: 10px; border: 2px solid #b71c1c; }
+        .btn-ban:hover { background-color: #b71c1c; }
         
         @media (max-width: 767px) { nav { display: none; } }
         @media (min-width: 768px) {
@@ -77,8 +77,8 @@
         <div id="profile-content" style="display: none;">
             <div class="profile-header">
                 <h1 id="user-display-name"></h1>
-                <!-- NEW: Admin Delete Button -->
-                <button id="admin-delete-user-btn" class="btn btn-delete" style="display: none;">Admin: Delete User & All Listings</button>
+                <!-- ADMIN ACTION BUTTON -->
+                <button id="admin-ban-user-btn" class="btn btn-ban" style="display: none;">Admin: Ban User & Delete Listings</button>
             </div>
 
             <h2 class="listings-section-header">Listings from this user</h2>
@@ -91,8 +91,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        // Added getDocs and deleteDoc to imports
-        import { getFirestore, doc, getDoc, collection, query, where, onSnapshot, orderBy, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        // IMPORTED updateDoc here to enable Banning
+        import { getFirestore, doc, getDoc, collection, query, where, onSnapshot, orderBy, getDocs, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             // --- INITIALIZATION ---
@@ -112,11 +112,11 @@
             const profileContent = document.getElementById('profile-content');
             const userDisplayName = document.getElementById('user-display-name');
             const userListingsGrid = document.getElementById('user-listings-grid');
-            const adminDeleteBtn = document.getElementById('admin-delete-user-btn'); // New Button
+            const adminBanBtn = document.getElementById('admin-ban-user-btn');
             
             // --- HEADER LOGIC ---
             logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
-            loginRegisterBtn.addEventListener('click', () => { window.location.href = '/LoginInToCheaplet.html'; }); // Updated to new login page
+            loginRegisterBtn.addEventListener('click', () => { window.location.href = '/LoginInToCheaplet.html'; });
             logoutBtn.addEventListener('click', () => signOut(auth));
 
             onAuthStateChanged(auth, (user) => {
@@ -140,21 +140,21 @@
                 try {
                     const userDoc = await getDoc(doc(db, "users", currentUid));
                     if (userDoc.exists() && userDoc.data().role === 'admin') {
-                        adminDeleteBtn.style.display = 'inline-block';
+                        adminBanBtn.style.display = 'inline-block';
                     }
                 } catch (e) {
                     console.error("Admin check failed", e);
                 }
             }
 
-            // --- ADMIN DELETE FUNCTION ---
-            async function deleteUserAndListings(targetUserId) {
-                if (!confirm("WARNING: You are about to delete this user and ALL of their listings.\n\nThis action cannot be undone. Are you sure?")) {
+            // --- ADMIN BAN FUNCTION ---
+            async function banUserAndListings(targetUserId) {
+                if (!confirm("WARNING: You are about to BAN this user.\n\n- All their listings will be deleted.\n- They will be blocked from logging in.\n\nAre you sure?")) {
                     return;
                 }
 
-                adminDeleteBtn.disabled = true;
-                adminDeleteBtn.textContent = "Deleting...";
+                adminBanBtn.disabled = true;
+                adminBanBtn.textContent = "Banning...";
 
                 try {
                     // 1. Get all listings by this user
@@ -167,18 +167,19 @@
                     await Promise.all(deletePromises);
                     console.log(`Deleted ${deletePromises.length} listings.`);
 
-                    // 3. Delete the user profile document
-                    await deleteDoc(doc(db, "users", targetUserId));
-                    console.log("Deleted user profile.");
+                    // 3. Update the user profile to role: 'banned'
+                    const userRef = doc(db, "users", targetUserId);
+                    await updateDoc(userRef, { role: 'banned' });
+                    console.log("User marked as banned.");
 
-                    alert("User and all associated listings have been deleted.");
+                    alert("User has been BANNED and their listings deleted.");
                     window.location.href = '/index.html';
 
                 } catch (error) {
-                    console.error("Error deleting user:", error);
-                    alert("An error occurred while deleting the user: " + error.message);
-                    adminDeleteBtn.disabled = false;
-                    adminDeleteBtn.textContent = "Admin: Delete User & All Listings";
+                    console.error("Error banning user:", error);
+                    alert("An error occurred: " + error.message);
+                    adminBanBtn.disabled = false;
+                    adminBanBtn.textContent = "Admin: Ban User & Delete Listings";
                 }
             }
 
@@ -192,11 +193,11 @@
                     return;
                 }
 
-                // Attach click handler to admin button with the correct User ID
-                adminDeleteBtn.onclick = () => deleteUserAndListings(userId);
+                // Attach click handler to admin button
+                adminBanBtn.onclick = () => banUserAndListings(userId);
 
                 try {
-                    // 1. Fetch user's name
+                    // 1. Fetch user's info
                     const userDocRef = doc(db, "users", userId);
                     const userDocSnap = await getDoc(userDocRef);
 
@@ -206,7 +207,16 @@
                     }
                     
                     const userData = userDocSnap.data();
-                    userDisplayName.textContent = userData.displayName || "Cheaplet User";
+                    
+                    // Optional: Visual indicator if they are already banned
+                    if (userData.role === 'banned') {
+                        userDisplayName.innerHTML = `${userData.displayName || "Cheaplet User"} <span style="color:red; font-size:0.5em; vertical-align:middle;">(BANNED)</span>`;
+                        adminBanBtn.textContent = "User is already Banned";
+                        adminBanBtn.disabled = true;
+                    } else {
+                        userDisplayName.textContent = userData.displayName || "Cheaplet User";
+                    }
+                    
                     document.title = `${userData.displayName}'s Profile - Cheaplet`;
 
                     // 2. Fetch user's listings
