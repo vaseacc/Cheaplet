@@ -51,7 +51,7 @@
         /* --- Split Layout --- */
         .main-wrapper { display: flex; flex: 1; height: calc(100vh - 60px); overflow: hidden; }
         
-        /* --- LEFT: Cinematic Image Stage --- */
+        /* --- LEFT: Image Stage --- */
         .image-stage {
             flex: 1; 
             background-color: #000; 
@@ -63,7 +63,6 @@
             overflow: hidden;
         }
 
-        /* Blurred Background */
         .blurred-bg {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -76,7 +75,6 @@
             transform: scale(1.1);
         }
 
-        /* Main Image Container */
         .main-image-container {
             position: relative;
             z-index: 2; 
@@ -88,7 +86,6 @@
             padding: 40px;
         }
         
-        /* Main Image */
         .main-image {
             display: block;
             max-width: 100%;
@@ -99,7 +96,6 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.6);
         }
 
-        /* Navigation Arrows */
         .nav-arrow {
             position: absolute; top: 50%; transform: translateY(-50%);
             width: 50px; height: 50px; border-radius: 50%; 
@@ -111,7 +107,6 @@
         .nav-prev { left: 20px; }
         .nav-next { right: 20px; }
 
-        /* Thumbnails Overlay */
         .thumbnails-overlay {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
             display: flex; gap: 10px; z-index: 10;
@@ -226,9 +221,8 @@
                 <button class="btn-primary" id="btn-message-seller">
                     <i class="fas fa-paper-plane"></i> &nbsp; Message
                 </button>
-                <button class="btn-icon" title="Save"><i class="far fa-bookmark"></i></button>
-                
-                <!-- SHARE BUTTON WITH ID -->
+                <!-- SAVE BUTTON WITH ID -->
+                <button class="btn-icon" title="Save" id="btn-save"><i class="far fa-bookmark"></i></button>
                 <button class="btn-icon" title="Share" id="btn-share"><i class="fas fa-share-alt"></i></button>
             </div>
 
@@ -274,7 +268,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, serverTimestamp, deleteDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -292,6 +286,8 @@
             const nextBtn = document.getElementById('next-img-btn');
             const headerProfileLink = document.getElementById('header-profile-link');
             const headerAvatarPlaceholder = document.getElementById('header-avatar-placeholder');
+            const saveBtn = document.getElementById('btn-save');
+            const shareBtn = document.getElementById('btn-share');
             
             let currentUser = null;
             let currentListingData = null;
@@ -458,8 +454,34 @@
             document.getElementById('btn-message-seller').onclick = initiateMessage;
             document.getElementById('btn-quick-send').onclick = initiateMessage;
 
+            // --- SAVE LISTING LOGIC ---
+            saveBtn.onclick = async () => {
+                if (!currentUser || !currentUser.emailVerified) {
+                    const currentPath = window.location.pathname + window.location.search;
+                    window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(currentPath)}`;
+                    return;
+                }
+
+                try {
+                    const userRef = doc(db, "users", currentUser.uid);
+                    await updateDoc(userRef, {
+                        savedListings: arrayUnion(currentListingId)
+                    });
+                    
+                    // Toggle Icon visual
+                    const icon = saveBtn.querySelector('i');
+                    icon.classList.remove('far'); // remove outline
+                    icon.classList.add('fas');    // add solid
+                    icon.style.color = '#4CAF50';
+
+                    alert("Listing saved, go check it at your profile.");
+                } catch (error) {
+                    console.error("Error saving listing:", error);
+                    alert("Could not save listing. Please try again.");
+                }
+            };
+
             // --- SHARE BUTTON LOGIC ---
-            const shareBtn = document.getElementById('btn-share');
             shareBtn.onclick = async () => {
                 const url = window.location.href;
                 const title = currentListingData ? currentListingData.title : 'Cheaplet Listing';
@@ -471,7 +493,6 @@
                             url: url
                         });
                     } catch (err) {
-                        // If they cancel or share fails, fallback to copy
                         copyToClipboard(url);
                     }
                 } else {
