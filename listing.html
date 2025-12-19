@@ -63,21 +63,20 @@
             overflow: hidden;
         }
 
-        /* 1. Blurred Background (Fills the whole space) */
+        /* Blurred Background */
         .blurred-bg {
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            /* Heavy blur + Darkening for contrast */
             filter: blur(40px) brightness(0.5); 
             z-index: 1;
             transition: background-image 0.3s ease-in-out;
-            transform: scale(1.1); /* Slight zoom to hide blur edges */
+            transform: scale(1.1);
         }
 
-        /* 2. Main Image Container (Centers the sharp image) */
+        /* Main Image Container */
         .main-image-container {
             position: relative;
             z-index: 2; 
@@ -86,18 +85,18 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 40px; /* Padding ensures the image doesn't touch the very edge */
+            padding: 40px;
         }
         
-        /* 3. The Main Image (Natural Size, No Crop) */
+        /* Main Image */
         .main-image {
             display: block;
             max-width: 100%;
             max-height: 100%;
-            width: auto;  /* Respect aspect ratio */
-            height: auto; /* Respect aspect ratio */
-            object-fit: contain; /* Ensure the whole image is seen */
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6); /* Nice shadow to pop off background */
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
         }
 
         /* Navigation Arrows */
@@ -206,18 +205,14 @@
     <div class="main-wrapper">
         <!-- LEFT: Image Stage -->
         <div class="image-stage">
-            <!-- 1. Blurred Background: Fills the whole space -->
             <div class="blurred-bg" id="blur-bg"></div>
 
-            <!-- 2. Main Image Container: Centers the image naturally -->
             <div class="main-image-container">
                 <button class="nav-arrow nav-prev" id="prev-img-btn"><i class="fas fa-chevron-left"></i></button>
-                <!-- Image fits naturally without cropping -->
                 <img src="" alt="Listing Item" class="main-image" id="main-image">
                 <button class="nav-arrow nav-next" id="next-img-btn"><i class="fas fa-chevron-right"></i></button>
             </div>
             
-            <!-- 3. Thumbnails: Floating at the bottom -->
             <div class="thumbnails-overlay" id="thumbnail-container"></div>
         </div>
 
@@ -232,7 +227,9 @@
                     <i class="fas fa-paper-plane"></i> &nbsp; Message
                 </button>
                 <button class="btn-icon" title="Save"><i class="far fa-bookmark"></i></button>
-                <button class="btn-icon" title="Share"><i class="fas fa-share-alt"></i></button>
+                
+                <!-- SHARE BUTTON WITH ID -->
+                <button class="btn-icon" title="Share" id="btn-share"><i class="fas fa-share-alt"></i></button>
             </div>
 
             <div class="section-header">Details</div>
@@ -402,10 +399,7 @@
                 currentImageIndex = index;
                 const url = imageUrls[index];
                 
-                // 1. Foreground Image (Natural aspect ratio)
                 mainImage.src = url;
-                
-                // 2. Background Blur (Fills container)
                 blurBg.style.backgroundImage = `url('${url}')`;
 
                 document.querySelectorAll('.thumb').forEach((thumb, i) => {
@@ -463,6 +457,37 @@
 
             document.getElementById('btn-message-seller').onclick = initiateMessage;
             document.getElementById('btn-quick-send').onclick = initiateMessage;
+
+            // --- SHARE BUTTON LOGIC ---
+            const shareBtn = document.getElementById('btn-share');
+            shareBtn.onclick = async () => {
+                const url = window.location.href;
+                const title = currentListingData ? currentListingData.title : 'Cheaplet Listing';
+                
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: title,
+                            url: url
+                        });
+                    } catch (err) {
+                        // If they cancel or share fails, fallback to copy
+                        copyToClipboard(url);
+                    }
+                } else {
+                    copyToClipboard(url);
+                }
+            };
+
+            async function copyToClipboard(text) {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    alert("Listing link copied to clipboard!");
+                } catch (err) {
+                    console.error('Failed to copy: ', err);
+                    alert("Could not copy link automatically.");
+                }
+            }
 
             async function deleteListing(docId, isAdmin) {
                 if (confirm(isAdmin ? "ADMIN: Delete this listing?" : "Delete your listing?")) {
