@@ -9,7 +9,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f8f9fa; color: #333; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* --- Header (Green Branding) --- */
+        /* --- Header --- */
         header { 
             background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); 
             color: white; 
@@ -51,7 +51,7 @@
         /* --- Split Layout --- */
         .main-wrapper { display: flex; flex: 1; height: calc(100vh - 60px); overflow: hidden; }
         
-        /* --- LEFT: Image Stage (The Facebook Style Logic) --- */
+        /* --- LEFT: Cinematic Image Stage --- */
         .image-stage {
             flex: 1; 
             background-color: #000; 
@@ -60,24 +60,24 @@
             flex-direction: column; 
             align-items: center; 
             justify-content: center;
-            overflow: hidden; /* Ensures blur doesn't leak */
+            overflow: hidden;
         }
 
-        /* 1. The Blurred Background Layer */
-        /* This fills the ENTIRE space behind the main image */
+        /* 1. Blurred Background (Fills the whole space) */
         .blurred-bg {
             position: absolute;
-            top: -20px; left: -20px; right: -20px; bottom: -20px; /* Slight overlap to prevent white edges */
-            background-size: cover;      /* Forces image to fill the screen */
-            background-position: center; 
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-size: cover;
+            background-position: center;
             background-repeat: no-repeat;
-            filter: blur(30px) brightness(0.6); /* Heavy blur + darkening */
+            /* Heavy blur + Darkening for contrast */
+            filter: blur(40px) brightness(0.5); 
             z-index: 1;
             transition: background-image 0.3s ease-in-out;
+            transform: scale(1.1); /* Slight zoom to hide blur edges */
         }
 
-        /* 2. The Main Image Container */
-        /* Sits on TOP of the blur */
+        /* 2. Main Image Container (Centers the sharp image) */
         .main-image-container {
             position: relative;
             z-index: 2; 
@@ -86,90 +86,88 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 30px; /* Give the image some breathing room from the edges */
+            padding: 40px; /* Padding ensures the image doesn't touch the very edge */
         }
         
-        /* 3. The Main Image Itself */
-        /* object-fit: contain ensures we NEVER crop the actual product */
+        /* 3. The Main Image (Natural Size, No Crop) */
         .main-image {
+            display: block;
             max-width: 100%;
             max-height: 100%;
-            width: auto;
-            height: auto;
-            object-fit: contain; 
-            box-shadow: 0 5px 30px rgba(0,0,0,0.5); /* Drop shadow to separate from bg */
+            width: auto;  /* Respect aspect ratio */
+            height: auto; /* Respect aspect ratio */
+            object-fit: contain; /* Ensure the whole image is seen */
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6); /* Nice shadow to pop off background */
         }
 
         /* Navigation Arrows */
         .nav-arrow {
             position: absolute; top: 50%; transform: translateY(-50%);
-            width: 48px; height: 48px; border-radius: 50%; 
-            background-color: rgba(40, 40, 40, 0.6); /* Dark semi-transparent */
+            width: 50px; height: 50px; border-radius: 50%; 
+            background-color: rgba(60, 60, 60, 0.6);
             color: white; display: flex; align-items: center; justify-content: center;
             cursor: pointer; font-size: 20px; border: none; transition: background 0.2s; z-index: 10;
         }
-        .nav-arrow:hover { background-color: rgba(40, 40, 40, 0.9); }
+        .nav-arrow:hover { background-color: rgba(60, 60, 60, 0.9); }
         .nav-prev { left: 20px; }
         .nav-next { right: 20px; }
 
         /* Thumbnails Overlay */
         .thumbnails-overlay {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 8px; z-index: 10;
-            padding: 5px; /* Removed black background here per request */
+            display: flex; gap: 10px; z-index: 10;
+            padding: 5px;
         }
         .thumb { 
-            width: 48px; height: 48px; border-radius: 6px; object-fit: cover; cursor: pointer; 
+            width: 50px; height: 50px; border-radius: 6px; object-fit: cover; cursor: pointer; 
             opacity: 0.6; border: 2px solid white; transition: all 0.2s; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
         }
-        .thumb.active { opacity: 1; border-color: #FFD700; transform: scale(1.1); }
+        .thumb.active { opacity: 1; border-color: #FFD700; transform: scale(1.15); }
 
         /* --- RIGHT: Details Panel --- */
         .details-panel {
-            width: 400px; background-color: white; border-left: 1px solid #ddd; overflow-y: auto; display: flex; flex-direction: column;
+            width: 420px; background-color: white; border-left: 1px solid #ddd; overflow-y: auto; display: flex; flex-direction: column;
             padding: 25px; flex-shrink: 0;
         }
 
         h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 5px; color: #050505; line-height: 1.2; }
-        .price { font-size: 1.5rem; font-weight: 600; color: #050505; margin-bottom: 10px; }
+        .price { font-size: 1.5rem; font-weight: 700; color: #2E7D32; margin-bottom: 10px; }
         .meta-info { font-size: 0.85rem; color: #65676b; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
         
         .action-buttons { display: flex; gap: 10px; margin-bottom: 25px; }
         .btn-primary {
-            flex: 1; background-color: #e7f3ff; color: #1877f2; /* FB Blue-ish style but adapted */
-            background-color: #4CAF50; color: white; /* Reverting to Cheaplet Green */
-            border: none; border-radius: 6px; font-weight: 600;
+            flex: 1; background-color: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: 600;
             padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
             transition: background 0.2s; font-size: 1rem;
         }
         .btn-primary:hover { background-color: #43a047; }
         
         .btn-icon {
-            width: 45px; height: 40px; background-color: #e4e6eb; border-radius: 6px; border: none; color: #050505;
+            width: 45px; height: 42px; background-color: #f0f0f0; border-radius: 6px; border: none; color: #050505;
             display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; transition: background 0.2s;
         }
         .btn-icon:hover { background-color: #d8dadf; }
 
-        .section-header { font-weight: 600; font-size: 1.1rem; margin-top: 15px; margin-bottom: 10px; color: #050505; }
+        .section-header { font-weight: 700; font-size: 1.1rem; margin-top: 15px; margin-bottom: 10px; color: #050505; }
         .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; }
-        .info-label { font-weight: 600; color: #050505; }
-        .info-value { color: #65676b; }
+        .info-label { font-weight: 600; color: #555; }
+        .info-value { color: #333; }
         
-        .description-text { font-size: 0.9rem; line-height: 1.5; color: #050505; white-space: pre-wrap; margin-bottom: 20px; }
+        .description-text { font-size: 0.95rem; line-height: 1.6; color: #444; white-space: pre-wrap; margin-bottom: 20px; }
 
         .seller-section { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 10px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; }
         #seller-avatar-small { width: 45px; height: 45px; border-radius: 50%; background: #ddd; background-size: cover; background-position: center; border: 1px solid #eee; }
-        .seller-name { font-weight: 600; color: #050505; text-decoration: none; font-size: 1rem; }
+        .seller-name { font-weight: 600; color: #050505; text-decoration: none; font-size: 1.05rem; }
         
-        .quick-message-container { margin-top: 20px; }
-        .quick-msg-label { font-weight: 600; margin-bottom: 8px; color: #050505; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; }
+        .quick-message-container { margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
+        .quick-msg-label { font-weight: 600; margin-bottom: 10px; color: #4CAF50; font-size: 0.9rem; }
         .quick-msg-input {
-            width: 100%; border: 1px solid #ccc; border-radius: 18px; padding: 10px 15px; font-size: 0.95rem; resize: none; margin-bottom: 10px; outline: none; background: #f0f2f5;
+            width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 12px; font-size: 0.95rem; resize: none; margin-bottom: 10px; outline: none; background: #fff;
         }
-        .quick-msg-input:focus { border-color: #4CAF50; }
+        .quick-msg-input:focus { border-color: #4CAF50; box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1); }
         .btn-send {
-            background-color: #4CAF50; color: white; width: 100%; border: none; border-radius: 6px; height: 36px; font-weight: 600; cursor: pointer; transition: background 0.2s;
+            background-color: #4CAF50; color: white; width: 100%; border: none; border-radius: 6px; height: 40px; font-weight: 600; cursor: pointer; transition: background 0.2s;
         }
         .btn-send:hover { background-color: #43a047; }
 
@@ -206,14 +204,15 @@
     </header>
 
     <div class="main-wrapper">
-        <!-- LEFT: THE FACEBOOK-STYLE IMAGE STAGE -->
+        <!-- LEFT: Image Stage -->
         <div class="image-stage">
-            <!-- 1. Blurred Background: Fills the whole stage with the active image -->
+            <!-- 1. Blurred Background: Fills the whole space -->
             <div class="blurred-bg" id="blur-bg"></div>
 
-            <!-- 2. Main Image Container: Sits on top, centers the sharp image -->
+            <!-- 2. Main Image Container: Centers the image naturally -->
             <div class="main-image-container">
                 <button class="nav-arrow nav-prev" id="prev-img-btn"><i class="fas fa-chevron-left"></i></button>
+                <!-- Image fits naturally without cropping -->
                 <img src="" alt="Listing Item" class="main-image" id="main-image">
                 <button class="nav-arrow nav-next" id="next-img-btn"><i class="fas fa-chevron-right"></i></button>
             </div>
@@ -222,7 +221,7 @@
             <div class="thumbnails-overlay" id="thumbnail-container"></div>
         </div>
 
-        <!-- RIGHT: DETAILS PANEL -->
+        <!-- RIGHT: Details Panel -->
         <div class="details-panel" id="details-container">
             <h1 id="listing-title">Loading...</h1>
             <div class="price" id="listing-price"></div>
@@ -233,7 +232,7 @@
                     <i class="fas fa-paper-plane"></i> &nbsp; Message
                 </button>
                 <button class="btn-icon" title="Save"><i class="far fa-bookmark"></i></button>
-                <button class="btn-icon" title="Share"><i class="fas fa-share"></i></button>
+                <button class="btn-icon" title="Share"><i class="fas fa-share-alt"></i></button>
             </div>
 
             <div class="section-header">Details</div>
@@ -263,7 +262,7 @@
             </div>
 
             <div class="quick-message-container">
-                <div class="quick-msg-label"><i class="fab fa-facebook-messenger" style="color:#0084ff"></i> Send seller a message</div>
+                <div class="quick-msg-label">Send a quick message</div>
                 <textarea class="quick-msg-input" id="quick-msg-text">Hi, is this available?</textarea>
                 <button class="btn-send" id="btn-quick-send">Send</button>
             </div>
@@ -363,10 +362,10 @@
                         } catch(e) {}
                     }
 
-                    // --- IMAGE LOGIC (CINEMATIC) ---
+                    // --- IMAGE LOGIC ---
                     imageUrls = data.imageUrls || [];
                     if (imageUrls.length > 0) {
-                        updateMainImage(0); // Sets both foreground and background
+                        updateMainImage(0); 
                         
                         thumbnailContainer.innerHTML = '';
                         imageUrls.forEach((url, index) => {
@@ -403,10 +402,10 @@
                 currentImageIndex = index;
                 const url = imageUrls[index];
                 
-                // 1. Set Sharp Image (Foreground)
+                // 1. Foreground Image (Natural aspect ratio)
                 mainImage.src = url;
                 
-                // 2. Set Blurred Image (Background)
+                // 2. Background Blur (Fills container)
                 blurBg.style.backgroundImage = `url('${url}')`;
 
                 document.querySelectorAll('.thumb').forEach((thumb, i) => {
