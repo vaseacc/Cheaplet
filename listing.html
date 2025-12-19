@@ -221,7 +221,6 @@
                 <button class="btn-primary" id="btn-message-seller">
                     <i class="fas fa-paper-plane"></i> &nbsp; Message
                 </button>
-                <!-- SAVE BUTTON WITH ID -->
                 <button class="btn-icon" title="Save" id="btn-save"><i class="far fa-bookmark"></i></button>
                 <button class="btn-icon" title="Share" id="btn-share"><i class="fas fa-share-alt"></i></button>
             </div>
@@ -268,7 +267,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, serverTimestamp, deleteDoc, updateDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, serverTimestamp, deleteDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -294,6 +293,7 @@
             let currentListingId = null;
             let currentImageIndex = 0;
             let imageUrls = [];
+            let isSaved = false; // State to track if saved
 
             // --- AUTH STATE ---
             onAuthStateChanged(auth, user => {
@@ -374,11 +374,21 @@
                         blurBg.style.backgroundColor = "#222"; 
                     }
 
-                    // --- Admin/Owner Controls ---
+                    // --- CHECK IF SAVED (Persistence) ---
                     if (currentUser) {
+                        const userRef = doc(db, "users", currentUser.uid);
+                        const userSnap = await getDoc(userRef);
+                        if (userSnap.exists()) {
+                            const userData = userSnap.data();
+                            if (userData.savedListings && userData.savedListings.includes(currentListingId)) {
+                                isSaved = true;
+                                updateSaveIcon();
+                            }
+                        }
+
+                        // --- Admin/Owner Controls ---
                         const isOwner = currentUser.uid === data.posterUid;
-                        const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-                        const isAdmin = userDoc.exists() && userDoc.data().role === 'admin';
+                        const isAdmin = userData && userData.role === 'admin'; // userData from above check
 
                         if (isOwner || isAdmin) {
                             document.getElementById('admin-controls').style.display = 'block';
@@ -394,7 +404,6 @@
             function updateMainImage(index) {
                 currentImageIndex = index;
                 const url = imageUrls[index];
-                
                 mainImage.src = url;
                 blurBg.style.backgroundImage = `url('${url}')`;
 
@@ -454,7 +463,20 @@
             document.getElementById('btn-message-seller').onclick = initiateMessage;
             document.getElementById('btn-quick-send').onclick = initiateMessage;
 
-            // --- SAVE LISTING LOGIC ---
+            // --- SAVE LISTING LOGIC (With Persistence) ---
+            function updateSaveIcon() {
+                const icon = saveBtn.querySelector('i');
+                if (isSaved) {
+                    icon.classList.remove('far'); // remove outline
+                    icon.classList.add('fas');    // add solid
+                    icon.style.color = '#4CAF50';
+                } else {
+                    icon.classList.remove('fas');
+                    icon.classList.add('far');
+                    icon.style.color = '#555';
+                }
+            }
+
             saveBtn.onclick = async () => {
                 if (!currentUser || !currentUser.emailVerified) {
                     const currentPath = window.location.pathname + window.location.search;
@@ -462,22 +484,28 @@
                     return;
                 }
 
-                try {
-                    const userRef = doc(db, "users", currentUser.uid);
-                    await updateDoc(userRef, {
-                        savedListings: arrayUnion(currentListingId)
-                    });
-                    
-                    // Toggle Icon visual
-                    const icon = saveBtn.querySelector('i');
-                    icon.classList.remove('far'); // remove outline
-                    icon.classList.add('fas');    // add solid
-                    icon.style.color = '#4CAF50';
+                const userRef = doc(db, "users", currentUser.uid);
 
-                    alert("Listing saved, go check it at your profile.");
+                try {
+                    if (isSaved) {
+                        // Unsave
+                        await updateDoc(userRef, {
+                            savedListings: arrayRemove(currentListingId)
+                        });
+                        isSaved = false;
+                        alert("Listing removed from your saved items.");
+                    } else {
+                        // Save
+                        await updateDoc(userRef, {
+                            savedListings: arrayUnion(currentListingId)
+                        });
+                        isSaved = true;
+                        alert("Listing saved! Check your profile.");
+                    }
+                    updateSaveIcon();
                 } catch (error) {
-                    console.error("Error saving listing:", error);
-                    alert("Could not save listing. Please try again.");
+                    console.error("Error toggling save:", error);
+                    alert("Action failed. Please try again.");
                 }
             };
 
@@ -488,13 +516,8 @@
                 
                 if (navigator.share) {
                     try {
-                        await navigator.share({
-                            title: title,
-                            url: url
-                        });
-                    } catch (err) {
-                        copyToClipboard(url);
-                    }
+                        await navigator.share({ title: title, url: url });
+                    } catch (err) { copyToClipboard(url); }
                 } else {
                     copyToClipboard(url);
                 }
