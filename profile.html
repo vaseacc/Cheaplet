@@ -84,7 +84,6 @@
             </nav>
             <div class="header-auth-buttons">
                 <span id="userEmailDisplay" style="display: none;"></span>
-                <!-- Updated Button for Login Page -->
                 <button class="btn" id="loginRegisterBtn">Login / Register</button>
                 <button class="btn" id="logoutBtn" style="display: none;">Logout</button>
             </div>
@@ -105,7 +104,6 @@
             
             <!-- SECTION 1: PERSONAL INFO -->
             <div class="profile-section">
-                <!-- Profile Picture Section -->
                 <div class="profile-picture-section">
                     <div id="avatar-display"></div>
                     <div class="photo-buttons">
@@ -132,7 +130,7 @@
                 <p id="update-feedback"></p>
             </div>
 
-            <!-- SECTION 2: SAVED LISTINGS (NEW) -->
+            <!-- SECTION 2: SAVED LISTINGS -->
             <div class="profile-section">
                 <h2>Saved Items</h2>
                 <div id="saved-listings-container" class="saved-listings-grid">
@@ -209,14 +207,22 @@
                     
                     populateProfileForm(user);
                     infoContainer.style.display = 'none';
-                    profileContainer.style.display = 'flex'; // Changed to flex for vertical spacing
+                    profileContainer.style.display = 'flex';
 
-                    // Fetch User Doc for Avatar & Saved Listings
+                    // Fetch User Doc for Ban Check, Avatar & Saved Listings
                     const userDocRef = doc(db, "users", user.uid);
                     const userDocSnap = await getDoc(userDocRef);
                     
                     if (userDocSnap.exists()) {
                         const data = userDocSnap.data();
+
+                        // --- NEW: BAN CHECK ---
+                        if (data.role === 'banned') {
+                            await signOut(auth);
+                            alert("You have been banned from Cheaplet.");
+                            window.location.href = '/LoginInToCheaplet.html';
+                            return; // Stop execution
+                        }
                         
                         // 1. Set Avatar
                         if (data.photoURL) {
@@ -233,11 +239,13 @@
                         }
 
                     } else {
+                        // Doc doesn't exist? Just use auth profile data
                         setAvatar(user.photoURL, user.displayName);
                         savedListingsContainer.innerHTML = '<p style="color:#999; grid-column:1/-1;">You haven\'t saved any items yet.</p>';
                     }
 
                 } else {
+                    // Not logged in
                     profileContainer.style.display = 'none';
                     infoContainer.innerHTML = `<p class="info-message">Please <a href="/LoginInToCheaplet.html" style="color:#4CAF50; font-weight:bold;">log in</a> to view your profile.</p>`;
                     infoContainer.style.display = 'block';
@@ -247,11 +255,10 @@
                 }
             });
             
-            // --- NEW: FETCH SAVED ITEMS ---
+            // --- SAVED ITEMS ---
             async function fetchSavedListings(listingIds) {
-                savedListingsContainer.innerHTML = ''; // Clear loading text
+                savedListingsContainer.innerHTML = ''; 
                 
-                // Firestore doesn't support "get array of docs" easily, so we loop (fine for profile page)
                 const promises = listingIds.map(id => getDoc(doc(db, "listings", id)));
                 const snapshots = await Promise.all(promises);
 
@@ -292,7 +299,7 @@
                 }
             }
             
-            // --- PROFILE FORM FUNCTIONS ---
+            // --- PROFILE FORM ---
             function populateProfileForm(user) {
                 emailInput.value = user.email;
                 if (user.displayName) {
@@ -302,7 +309,6 @@
                 }
             }
 
-            // Save Profile Changes
             saveProfileBtn.addEventListener('click', async () => {
                 const user = auth.currentUser;
                 if (!user) return;
@@ -334,7 +340,6 @@
                 }
             });
 
-            // Reset Password
             resetPasswordBtn.addEventListener('click', async () => {
                 const user = auth.currentUser;
                 if (!user) return;
@@ -349,7 +354,6 @@
                 }
             });
 
-            // Delete Account
             deleteAccountBtn.addEventListener('click', async () => {
                 const user = auth.currentUser;
                 if (!user) return;
@@ -370,13 +374,13 @@
                 }
             });
 
-            // --- PHOTO UPLOAD LOGIC ---
+            // --- PHOTO UPLOAD ---
             photoUploadInput.addEventListener('change', (e) => {
                 if (e.target.files && e.target.files[0]) {
                     selectedPhotoFile = e.target.files[0];
                     const reader = new FileReader();
                     reader.onload = (event) => {
-                        setAvatar(event.target.result); // Show local preview
+                        setAvatar(event.target.result); 
                     }
                     reader.readAsDataURL(selectedPhotoFile);
                     savePhotoBtn.style.display = 'inline-block';
