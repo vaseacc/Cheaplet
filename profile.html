@@ -30,13 +30,16 @@
         /* Profile Page Styles */
         .page-header { display: flex; justify-content: space-between; align-items: center; padding: 40px 0 20px; border-bottom: 1px solid #ddd; margin-bottom: 30px; }
         .page-header h1 { font-size: 2rem; }
-        .profile-container { max-width: 600px; margin: 0 auto; }
-        .profile-section { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        .profile-container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 30px; }
+        
+        .profile-section { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .profile-section h2 { font-size: 1.5rem; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; font-weight: 600; margin-bottom: 5px; }
         .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 1rem; }
         .form-group input[disabled] { background-color: #f4f4f4; cursor: not-allowed; }
+        
         .info-message { text-align: center; padding: 50px; font-size: 1.2rem; color: #777; }
         #update-feedback { text-align: center; margin-top: 15px; font-weight: 500; height: 1em; }
         .success { color: #4CAF50; }
@@ -47,6 +50,15 @@
         #avatar-display { width: 120px; height: 120px; border-radius: 50%; background-color: #e9e9e9; color: #aaa; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 3rem; margin: 0 auto 15px; background-size: cover; background-position: center; border: 3px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
         #photo-upload-input { display: none; }
         .photo-buttons { display: flex; justify-content: center; gap: 10px; }
+
+        /* SAVED LISTINGS STYLES */
+        .saved-listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+        .saved-item-card { border: 1px solid #eee; border-radius: 8px; overflow: hidden; text-decoration: none; color: inherit; transition: transform 0.2s; }
+        .saved-item-card:hover { transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .saved-item-img { height: 140px; background-color: #eee; background-size: cover; background-position: center; }
+        .saved-item-details { padding: 10px; }
+        .saved-item-price { font-weight: bold; color: #4CAF50; }
+        .saved-item-title { font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         @media (max-width: 767px) { nav { display: none; } }
         @media (min-width: 768px) {
@@ -90,6 +102,8 @@
         </div>
     
         <div class="profile-container" id="profile-container" style="display: none;">
+            
+            <!-- SECTION 1: PERSONAL INFO -->
             <div class="profile-section">
                 <!-- Profile Picture Section -->
                 <div class="profile-picture-section">
@@ -118,6 +132,15 @@
                 <p id="update-feedback"></p>
             </div>
 
+            <!-- SECTION 2: SAVED LISTINGS (NEW) -->
+            <div class="profile-section">
+                <h2>Saved Items</h2>
+                <div id="saved-listings-container" class="saved-listings-grid">
+                    <p style="color: #777;">Loading saved items...</p>
+                </div>
+            </div>
+
+            <!-- SECTION 3: SECURITY -->
             <div class="profile-section">
                 <h2>Account Security</h2>
                 <div class="form-group">
@@ -167,15 +190,13 @@
             const avatarDisplay = document.getElementById('avatar-display');
             const photoUploadInput = document.getElementById('photo-upload-input');
             const savePhotoBtn = document.getElementById('savePhotoBtn');
+            const savedListingsContainer = document.getElementById('saved-listings-container');
             
             let selectedPhotoFile = null;
 
-            // --- HEADER & NAVIGATION (UPDATED) ---
+            // --- HEADER & NAVIGATION ---
             logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
-            
-            // Redirect to Login Page
             loginRegisterBtn.addEventListener('click', () => { window.location.href = '/LoginInToCheaplet.html'; });
-            
             logoutBtn.addEventListener('click', () => signOut(auth));
 
             // --- MAIN AUTH LOGIC ---
@@ -188,19 +209,35 @@
                     
                     populateProfileForm(user);
                     infoContainer.style.display = 'none';
-                    profileContainer.style.display = 'block';
+                    profileContainer.style.display = 'flex'; // Changed to flex for vertical spacing
 
-                    // Get photoURL from Firestore document
+                    // Fetch User Doc for Avatar & Saved Listings
                     const userDocRef = doc(db, "users", user.uid);
                     const userDocSnap = await getDoc(userDocRef);
-                    if (userDocSnap.exists() && userDocSnap.data().photoURL) {
-                        setAvatar(userDocSnap.data().photoURL);
+                    
+                    if (userDocSnap.exists()) {
+                        const data = userDocSnap.data();
+                        
+                        // 1. Set Avatar
+                        if (data.photoURL) {
+                            setAvatar(data.photoURL);
+                        } else {
+                            setAvatar(user.photoURL, user.displayName);
+                        }
+
+                        // 2. Fetch Saved Listings
+                        if (data.savedListings && data.savedListings.length > 0) {
+                            fetchSavedListings(data.savedListings);
+                        } else {
+                            savedListingsContainer.innerHTML = '<p style="color:#999; grid-column:1/-1;">You haven\'t saved any items yet.</p>';
+                        }
+
                     } else {
                         setAvatar(user.photoURL, user.displayName);
+                        savedListingsContainer.innerHTML = '<p style="color:#999; grid-column:1/-1;">You haven\'t saved any items yet.</p>';
                     }
 
                 } else {
-                    // Not logged in: Show message with link to NEW login page
                     profileContainer.style.display = 'none';
                     infoContainer.innerHTML = `<p class="info-message">Please <a href="/LoginInToCheaplet.html" style="color:#4CAF50; font-weight:bold;">log in</a> to view your profile.</p>`;
                     infoContainer.style.display = 'block';
@@ -210,6 +247,41 @@
                 }
             });
             
+            // --- NEW: FETCH SAVED ITEMS ---
+            async function fetchSavedListings(listingIds) {
+                savedListingsContainer.innerHTML = ''; // Clear loading text
+                
+                // Firestore doesn't support "get array of docs" easily, so we loop (fine for profile page)
+                const promises = listingIds.map(id => getDoc(doc(db, "listings", id)));
+                const snapshots = await Promise.all(promises);
+
+                let hasItems = false;
+                snapshots.forEach(snap => {
+                    if (snap.exists()) {
+                        hasItems = true;
+                        const data = snap.data();
+                        const card = document.createElement('a');
+                        card.className = 'saved-item-card';
+                        card.href = `/listing.html?id=${snap.id}`;
+                        
+                        const img = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls[0] : '';
+                        
+                        card.innerHTML = `
+                            <div class="saved-item-img" style="background-image: url('${img}')"></div>
+                            <div class="saved-item-details">
+                                <div class="saved-item-price">$${data.price.toFixed(2)}</div>
+                                <div class="saved-item-title">${data.title}</div>
+                            </div>
+                        `;
+                        savedListingsContainer.appendChild(card);
+                    }
+                });
+
+                if (!hasItems) {
+                    savedListingsContainer.innerHTML = '<p style="color:#999;">Items you saved may have been deleted.</p>';
+                }
+            }
+
             function setAvatar(url, displayName) {
                 if (url) {
                     avatarDisplay.style.backgroundImage = `url('${url}')`;
@@ -286,16 +358,13 @@
                     const confirm2 = prompt("Type 'DELETE' to confirm.");
                     if (confirm2 === 'DELETE') {
                         try {
-                            // Optional: Delete user document from Firestore
                             await deleteDoc(doc(db, "users", user.uid));
-                            
-                            // Delete Auth User
                             await deleteUser(user);
                             alert("Account deleted.");
                             window.location.href = '/index.html';
                         } catch (error) {
                             console.error("Delete error:", error);
-                            alert("Error: " + error.message + " (You may need to log in again recently to delete account).");
+                            alert("Error: " + error.message);
                         }
                     }
                 }
@@ -323,7 +392,6 @@
                 updateFeedback.textContent = "";
 
                 try {
-                    // 1. Upload to Cloudinary
                     const formData = new FormData();
                     formData.append('file', selectedPhotoFile);
                     formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
@@ -332,14 +400,9 @@
                     const data = await res.json();
                     const newPhotoURL = data.secure_url;
 
-                    if (!newPhotoURL) {
-                        throw new Error("Image upload failed.");
-                    }
+                    if (!newPhotoURL) { throw new Error("Image upload failed."); }
 
-                    // 2. Update Firebase Auth profile
                     await updateProfile(user, { photoURL: newPhotoURL });
-
-                    // 3. Update Firestore user document
                     const userDocRef = doc(db, "users", user.uid);
                     await updateDoc(userDocRef, { photoURL: newPhotoURL });
 
