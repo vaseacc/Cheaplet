@@ -34,11 +34,13 @@
         .btn-submit:disabled { background: #ccc; cursor: not-allowed; transform: none; }
         .btn-cancel { background: #e0e0e0; color: #333; border: none; padding: 10px; border-radius: 6px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; }
 
-        .status-message {
-            padding: 15px; border-radius: 6px; margin-bottom: 20px; display: none; text-align: center;
-        }
-        .status-pending { background-color: #e3f2fd; color: #0d47a1; border: 1px solid #bbdefb; }
-        .status-banned { background-color: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+        /* Status Messages */
+        .status-container { text-align: center; padding: 20px; display: none; }
+        .status-icon { font-size: 3rem; margin-bottom: 15px; }
+        .status-success { color: #4CAF50; }
+        .status-pending { color: #2196F3; }
+        .status-banned { color: #f44336; }
+        .status-text { font-size: 1.1rem; margin-bottom: 20px; }
 
     </style>
 </head>
@@ -51,11 +53,21 @@
 
     <main class="container">
         <div class="form-wrapper">
-            <h2>Become a Seller</h2>
-            <p class="subtitle">Join our community of verified sellers. Please provide your details below for review.</p>
             
-            <div id="status-display" class="status-message"></div>
+            <!-- Default Title -->
+            <div id="default-header">
+                <h2>Become a Seller</h2>
+                <p class="subtitle">Join our community of verified sellers. Please provide your details below for review.</p>
+            </div>
 
+            <!-- Status Message Container (Hidden by default) -->
+            <div id="status-display" class="status-container">
+                <i id="status-icon" class="fas fa-info-circle status-icon"></i>
+                <p id="status-text" class="status-text"></p>
+                <button class="btn-submit" id="action-btn" style="display:none;"></button>
+            </div>
+
+            <!-- Application Form -->
             <form id="application-form">
                 <div class="form-group">
                     <label>Phone Number</label>
@@ -92,8 +104,14 @@
             const db = getFirestore(app);
 
             let currentUser = null;
-            const statusDisplay = document.getElementById('status-display');
+            
+            // Elements
             const applicationForm = document.getElementById('application-form');
+            const defaultHeader = document.getElementById('default-header');
+            const statusDisplay = document.getElementById('status-display');
+            const statusIcon = document.getElementById('status-icon');
+            const statusText = document.getElementById('status-text');
+            const actionBtn = document.getElementById('action-btn');
             const submitBtn = document.getElementById('submitBtn');
 
             // --- AUTH CHECK ---
@@ -107,36 +125,55 @@
                 }
             });
 
-            // --- CHECK IF ALREADY APPLIED ---
+            // --- CHECK STATUS ---
             async function checkExistingApplication(uid) {
-                // 1. Check if they are already a seller or banned
                 const userDoc = await getDoc(doc(db, "users", uid));
+                
+                // 1. Check if Seller or Admin
                 if (userDoc.exists()) {
                     const role = userDoc.data().role;
+                    
                     if (role === 'seller' || role === 'admin') {
-                        alert("You are already a verified seller!");
-                        window.location.href = '/listanitem.html'; // Redirect to actual listing page (we'll rename this later maybe)
+                        showStatus('success', 'check-circle', 'You are already a verified seller.');
+                        
+                        // Setup button to go to the (future) listing creation page
+                        actionBtn.textContent = "Go to Listing Dashboard";
+                        actionBtn.style.display = "inline-block";
+                        actionBtn.onclick = () => {
+                            // Currently, we don't have a dedicated listing page since we renamed it.
+                            // For now, send home. In the next step, we will create create-listing.html
+                            alert("We will create the listing page in the next step!");
+                            window.location.href = '/index.html'; 
+                        };
                         return;
                     }
+                    
                     if (role === 'banned') {
-                        statusDisplay.textContent = "Your account is banned. You cannot apply.";
-                        statusDisplay.className = "status-message status-banned";
-                        statusDisplay.style.display = "block";
-                        applicationForm.style.display = "none";
+                        showStatus('banned', 'ban', 'Your account is banned. You cannot apply.');
                         return;
                     }
                 }
 
-                // 2. Check if they have a pending application
+                // 2. Check if Pending
                 const q = query(collection(db, "seller_applications"), where("userId", "==", uid), where("status", "==", "pending"));
                 const querySnapshot = await getDocs(q);
 
                 if (!querySnapshot.empty) {
-                    statusDisplay.innerHTML = "<strong>Application Pending</strong><br>You have already submitted an application. Our team is reviewing it.";
-                    statusDisplay.className = "status-message status-pending";
-                    statusDisplay.style.display = "block";
-                    applicationForm.style.display = "none";
+                    showStatus('pending', 'clock', 'Application Pending. Our team is reviewing your details.');
+                    actionBtn.textContent = "Back to Home";
+                    actionBtn.style.display = "inline-block";
+                    actionBtn.onclick = () => window.location.href = '/index.html';
                 }
+            }
+
+            // --- HELPER TO SHOW STATUS SCREENS ---
+            function showStatus(type, iconName, message) {
+                applicationForm.style.display = 'none';
+                defaultHeader.style.display = 'none';
+                statusDisplay.style.display = 'block';
+                
+                statusIcon.className = `fas fa-${iconName} status-icon status-${type}`;
+                statusText.textContent = message;
             }
 
             // --- SUBMIT APPLICATION ---
@@ -146,7 +183,6 @@
                 submitBtn.textContent = "Submitting...";
 
                 try {
-                    // Create a new document in 'seller_applications'
                     await addDoc(collection(db, 'seller_applications'), {
                         userId: currentUser.uid,
                         userEmail: currentUser.email,
@@ -154,16 +190,18 @@
                         phone: document.getElementById('app-phone').value.trim(),
                         location: document.getElementById('app-location').value.trim(),
                         reason: document.getElementById('app-reason').value.trim(),
-                        status: 'pending', // Default status
+                        status: 'pending',
                         timestamp: serverTimestamp()
                     });
 
-                    alert("Application submitted successfully!");
-                    window.location.href = '/profile.html';
+                    showStatus('pending', 'clock', 'Application submitted! We will review it shortly.');
+                    actionBtn.textContent = "Back to Home";
+                    actionBtn.style.display = "inline-block";
+                    actionBtn.onclick = () => window.location.href = '/index.html';
 
                 } catch (error) {
-                    console.error("Error submitting application:", error);
-                    alert("Error submitting application. Please try again.");
+                    console.error("Error:", error);
+                    alert("Error submitting. Please try again.");
                     submitBtn.disabled = false;
                     submitBtn.textContent = "Submit Application";
                 }
