@@ -129,32 +129,19 @@
             async function checkExistingApplication(uid) {
                 const userDoc = await getDoc(doc(db, "users", uid));
                 
-                // 1. Check if Seller or Admin
+                // 1. Check if Banned (We keep this for security)
                 if (userDoc.exists()) {
                     const role = userDoc.data().role;
-                    
-                    if (role === 'seller' || role === 'admin') {
-                        showStatus('success', 'check-circle', 'You are already a verified seller.');
-                        
-                        // Setup button to go to the (future) listing creation page
-                        actionBtn.textContent = "Go to Listing Dashboard";
-                        actionBtn.style.display = "inline-block";
-                        actionBtn.onclick = () => {
-                            // Currently, we don't have a dedicated listing page since we renamed it.
-                            // For now, send home. In the next step, we will create create-listing.html
-                            alert("We will create the listing page in the next step!");
-                            window.location.href = '/index.html'; 
-                        };
-                        return;
-                    }
-                    
                     if (role === 'banned') {
                         showStatus('banned', 'ban', 'Your account is banned. You cannot apply.');
                         return;
                     }
+                    
+                    // REMOVED: The block that checked if role === 'seller' || role === 'admin'
+                    // Now, even if you are an admin or seller, you can see the form.
                 }
 
-                // 2. Check if Pending
+                // 2. Check if Pending (We keep this so they don't spam applications)
                 const q = query(collection(db, "seller_applications"), where("userId", "==", uid), where("status", "==", "pending"));
                 const querySnapshot = await getDocs(q);
 
