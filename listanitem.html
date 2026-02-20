@@ -9,13 +9,13 @@
         body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
         .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
 
-        /* Header (Consistent) */
+        /* Header */
         header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .header-content { display: flex; justify-content: space-between; align-items: center; }
         .logo { font-size: 24px; font-weight: bold; color: white; text-decoration: none; }
         .logo span { color: #FFD700; }
 
-        /* Form Container */
+        /* Form Wrapper */
         .form-wrapper { max-width: 600px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         h2 { text-align: center; color: #2E7D32; margin-bottom: 25px; }
 
@@ -24,6 +24,65 @@
         input:focus, textarea:focus, select:focus { outline: none; border-color: #4CAF50; }
         textarea { resize: vertical; min-height: 100px; }
         label { font-weight: 600; margin-bottom: 5px; display: block; color: #555; }
+
+        /* --- NEW TAG SYSTEM STYLES --- */
+        .tag-container {
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 15px;
+            background: #fff;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            position: relative;
+        }
+        .tag-container:focus-within { border-color: #4CAF50; }
+        
+        .tag-chip {
+            background-color: #e8f5e9;
+            color: #2E7D32;
+            padding: 5px 10px;
+            border-radius: 16px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .tag-close { cursor: pointer; font-weight: bold; font-size: 1.1rem; line-height: 1; }
+        .tag-close:hover { color: #d32f2f; }
+
+        #tag-input {
+            border: none;
+            outline: none;
+            padding: 5px;
+            flex-grow: 1;
+            min-width: 120px;
+            margin-bottom: 0; /* Override global input margin */
+        }
+
+        /* Suggestions Dropdown */
+        .suggestions-box {
+            position: absolute;
+            top: 100%; left: 0; width: 100%;
+            background: white;
+            border: 1px solid #ddd;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 10;
+            display: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .suggestion-item {
+            padding: 10px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+        }
+        .suggestion-item:hover { background-color: #f1f8e9; }
+        .suggestion-item strong { color: #4CAF50; }
 
         /* Image Uploader */
         #image-uploader { margin-bottom: 20px; text-align: center; }
@@ -42,13 +101,10 @@
         .btn-cancel { background: #e0e0e0; color: #333; border: none; padding: 10px; border-radius: 6px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; }
 
         .form-field-error { color: red; font-size: 0.85rem; margin-top: -10px; margin-bottom: 10px; display: none; }
-        
-        /* Ban Loader */
         #page-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; color: #666; }
     </style>
 </head>
 <body>
-    <!-- Overlay to hide page content while we check permissions -->
     <div id="page-loader">Checking permissions...</div>
 
     <header>
@@ -59,37 +115,37 @@
 
     <main class="container">
         <div class="form-wrapper">
-            <h2>List a New Item</h2>
+            <h2>List a Book</h2>
             <form id="listing-form">
-                <label>Item Title</label>
-                <input type="text" id="listing-title" placeholder="e.g., Vintage Coffee Table" required>
+                <label>Title</label>
+                <input type="text" id="listing-title" placeholder="e.g., Harry Potter and the Sorcerer's Stone" required>
                 
                 <label>Description</label>
-                <textarea id="listing-description" placeholder="Describe your item..." required></textarea>
+                <textarea id="listing-description" placeholder="Condition details, summary, or reason for selling..." required></textarea>
                 
                 <label>Price ($)</label>
                 <input type="number" id="listing-price" placeholder="0.00" min="0" step="0.01" required>
                 
-                <label>Category</label>
-                <select id="listing-category" required>
-                    <option value="">Select Category</option>
-                    <option value="furniture">Furniture</option>
-                    <option value="electronics">Electronics</option>
-                    <option value="clothing">Clothing</option>
-                    <option value="books">Books & Media</option>
-                    <option value="toys">Toys & Games</option>
-                    <option value="other">Other</option>
-                </select>
+                <!-- NEW: Tag Input System -->
+                <label>Tags (e.g., French, Fantasy, Hardcover)</label>
+                <div class="tag-container" id="tag-container">
+                    <div id="selected-tags"></div>
+                    <input type="text" id="tag-input" placeholder="Type and press Enter..." autocomplete="off">
+                    <div class="suggestions-box" id="suggestions-box"></div>
+                </div>
+                <p id="tags-error" class="form-field-error"></p>
 
                 <label>Condition</label>
                 <select id="listing-condition" required>
                     <option value="">Select Condition</option>
                     <option value="New">New</option>
-                    <option value="Used">Used</option>
+                    <option value="Like New">Like New</option>
+                    <option value="Good">Good</option>
+                    <option value="Fair">Fair</option>
                 </select>
 
                 <label>Location</label>
-                <input type="text" id="listing-location" placeholder="e.g., Brooklyn, NY" required>
+                <input type="text" id="listing-location" placeholder="e.g., Montreal, QC" required>
 
                 <label>Photos (Max 5)</label>
                 <div id="image-uploader">
@@ -113,7 +169,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, setDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -131,35 +187,123 @@
             const maxFiles = 5;
             const pageLoader = document.getElementById('page-loader');
 
-            // --- AUTH & BAN CHECK ---
+            // --- TAG VARIABLES ---
+            let tags = [];
+            const tagInput = document.getElementById('tag-input');
+            const selectedTagsContainer = document.getElementById('selected-tags');
+            const suggestionsBox = document.getElementById('suggestions-box');
+
+            // --- AUTH CHECK ---
             onAuthStateChanged(auth, async (user) => {
                 if (user && user.emailVerified) {
                     try {
-                        const userDocRef = doc(db, "users", user.uid);
-                        const userDocSnap = await getDoc(userDocRef);
-
-                        // Even though listing is free, we still block BANNED users
-                        if (userDocSnap.exists() && userDocSnap.data().role === 'banned') {
+                        const userDoc = await getDoc(doc(db, "users", user.uid));
+                        if (userDoc.exists() && userDoc.data().role === 'banned') {
                             await signOut(auth);
-                            alert("You have been banned. You cannot list items.");
+                            alert("You have been banned.");
                             window.location.href = '/LoginInToCheaplet.html';
                             return;
                         }
-
                         currentUser = user;
                         pageLoader.style.display = 'none';
-
-                    } catch (e) {
-                        console.error("Error checking status:", e);
-                        pageLoader.style.display = 'none'; 
-                    }
+                    } catch (e) { pageLoader.style.display = 'none'; }
                 } else {
                     alert("Please log in to list an item.");
                     window.location.href = '/LoginInToCheaplet.html';
                 }
             });
 
-            // Image Handling
+            // --- TAG SYSTEM LOGIC ---
+            function renderTags() {
+                selectedTagsContainer.innerHTML = '';
+                tags.forEach((tag, index) => {
+                    const chip = document.createElement('div');
+                    chip.className = 'tag-chip';
+                    chip.innerHTML = `<span>${tag}</span><span class="tag-close">&times;</span>`;
+                    chip.querySelector('.tag-close').onclick = () => {
+                        tags.splice(index, 1);
+                        renderTags();
+                    };
+                    selectedTagsContainer.appendChild(chip);
+                });
+            }
+
+            function addTag(tagName) {
+                const cleanedTag = tagName.trim();
+                // Check dupes (case insensitive)
+                if (cleanedTag && !tags.some(t => t.toLowerCase() === cleanedTag.toLowerCase())) {
+                    // Store properly capitalized
+                    const displayTag = cleanedTag.charAt(0).toUpperCase() + cleanedTag.slice(1);
+                    tags.push(displayTag);
+                    renderTags();
+                }
+                tagInput.value = '';
+                suggestionsBox.style.display = 'none';
+            }
+
+            // Input Event (Suggestions)
+            tagInput.addEventListener('input', async (e) => {
+                const val = e.target.value.trim();
+                if (val.length < 2) {
+                    suggestionsBox.style.display = 'none';
+                    return;
+                }
+
+                // Query Global Tags Collection
+                // Simple query: find tags that match search text
+                // In real app, consider Algolia for full text search. Here we use exact/prefix match hack
+                const q = query(
+                    collection(db, "global_tags"), 
+                    where("tag", ">=", val),
+                    where("tag", "<=", val + '\uf8ff')
+                );
+                
+                const querySnapshot = await getDocs(q);
+                suggestionsBox.innerHTML = '';
+                
+                if (!querySnapshot.empty) {
+                    suggestionsBox.style.display = 'block';
+                    querySnapshot.forEach(doc => {
+                        const tagName = doc.data().tag;
+                        const div = document.createElement('div');
+                        div.className = 'suggestion-item';
+                        div.textContent = tagName;
+                        div.onclick = () => addTag(tagName);
+                        suggestionsBox.appendChild(div);
+                    });
+                } else {
+                    // Option to create new
+                    suggestionsBox.style.display = 'block';
+                    const div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    div.innerHTML = `Create tag: <strong>"${val}"</strong>`;
+                    div.onclick = () => addTag(val);
+                    suggestionsBox.appendChild(div);
+                }
+            });
+
+            // Keydown (Enter/Comma)
+            tagInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    addTag(tagInput.value);
+                }
+                // Backspace to remove last tag if input empty
+                if (e.key === 'Backspace' && tagInput.value === '' && tags.length > 0) {
+                    tags.pop();
+                    renderTags();
+                }
+            });
+
+            // Hide suggestions on click out
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.tag-container')) {
+                    suggestionsBox.style.display = 'none';
+                }
+            });
+
+
+            // --- IMAGE HANDLING ---
             const imageInput = document.getElementById('listing-image-input');
             const previewContainer = document.getElementById('image-preview-container');
             const addPhotoLabel = document.getElementById('add-photo-label');
@@ -169,20 +313,14 @@
                 selectedFiles.forEach((file, index) => {
                     const wrapper = document.createElement('div');
                     wrapper.classList.add('image-preview-wrapper');
-                    
                     const img = document.createElement('img');
                     img.src = URL.createObjectURL(file);
                     img.classList.add('image-preview');
-                    
                     const removeBtn = document.createElement('button');
-                    removeBtn.classList.add('remove-image-btn');
+                    removeBtn.className = 'remove-image-btn';
                     removeBtn.textContent = 'X';
                     removeBtn.type = 'button';
-                    removeBtn.onclick = () => {
-                        selectedFiles.splice(index, 1);
-                        renderPreviews();
-                    };
-
+                    removeBtn.onclick = () => { selectedFiles.splice(index, 1); renderPreviews(); };
                     wrapper.appendChild(img);
                     wrapper.appendChild(removeBtn);
                     previewContainer.appendChild(wrapper);
@@ -198,13 +336,15 @@
                 e.target.value = '';
             });
 
-            // Form Submission
+            // --- FORM SUBMISSION ---
             document.getElementById('listing-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const submitBtn = document.getElementById('postListingBtn');
                 const imageError = document.getElementById('image-error');
+                const tagsError = document.getElementById('tags-error');
                 
                 imageError.textContent = '';
+                tagsError.textContent = '';
                 
                 if (selectedFiles.length === 0) {
                     imageError.style.display = 'block';
@@ -212,29 +352,46 @@
                     return;
                 }
 
+                if (tags.length === 0) {
+                    tagsError.style.display = 'block';
+                    tagsError.textContent = 'Please add at least one tag (e.g., English).';
+                    return;
+                }
+
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Uploading...';
 
                 try {
-                    // Upload Images
+                    // 1. Upload Images
                     const uploadPromises = selectedFiles.map(file => {
                         const formData = new FormData();
                         formData.append('file', file);
                         formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
                         return fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData }).then(res => res.json());
                     });
-
                     const uploadResults = await Promise.all(uploadPromises);
                     const imageUrls = uploadResults.map(res => res.secure_url);
 
                     submitBtn.textContent = 'Publishing...';
 
-                    // Save to Firestore
+                    // 2. Update Global Tags Collection (Crowdsourcing)
+                    // We loop through tags and try to create them. If they exist, it just overwrites or we could use set with merge
+                    // Using setDoc with doc ID as tag name prevents duplicates efficiently
+                    const tagPromises = tags.map(t => {
+                        // Use tag as ID (normalized to lowercase for uniqueness check if desired, but here preserving case)
+                        // Or simply addDoc. Using setDoc with text as ID is cleaner for "Autocomplete" query
+                        // NOTE: Firestore IDs cannot have slashes.
+                        const safeId = t.replace(/\//g, "-").toLowerCase(); 
+                        return setDoc(doc(db, "global_tags", safeId), { tag: t }, { merge: true });
+                    });
+                    await Promise.all(tagPromises);
+
+                    // 3. Save Listing
                     const docRef = await addDoc(collection(db, 'listings'), {
                         title: document.getElementById('listing-title').value.trim(),
                         description: document.getElementById('listing-description').value.trim(),
                         price: parseFloat(document.getElementById('listing-price').value),
-                        category: document.getElementById('listing-category').value,
+                        tags: tags, // Saving the ARRAY of tags
                         condition: document.getElementById('listing-condition').value,
                         location: document.getElementById('listing-location').value.trim(),
                         imageUrls: imageUrls,
@@ -250,11 +407,11 @@
                     console.error("Error:", error);
                     if (error.code === 'permission-denied') {
                         imageError.textContent = 'Error: Permission denied. Your account may be banned.';
-                        imageError.style.display = 'block';
+                        window.location.reload();
                     } else {
                         imageError.textContent = 'Error creating listing. Please try again.';
-                        imageError.style.display = 'block';
                     }
+                    imageError.style.display = 'block';
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Post Item';
                 }
