@@ -3,48 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Become a Seller - Cheaplet</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>List an Item - Cheaplet</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
         .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
 
-        /* Header */
+        /* Header (Consistent) */
         header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         .header-content { display: flex; justify-content: space-between; align-items: center; }
         .logo { font-size: 24px; font-weight: bold; color: white; text-decoration: none; }
         .logo span { color: #FFD700; }
 
         /* Form Container */
-        .form-wrapper { max-width: 600px; margin: 40px auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        h2 { text-align: center; color: #2E7D32; margin-bottom: 10px; }
-        .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-size: 0.95rem; }
+        .form-wrapper { max-width: 600px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        h2 { text-align: center; color: #2E7D32; margin-bottom: 25px; }
 
         /* Form Elements */
-        .form-group { margin-bottom: 20px; }
-        label { font-weight: 600; margin-bottom: 8px; display: block; color: #555; }
-        input, textarea, select { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 1rem; transition: border-color 0.3s; display: block; }
+        input, textarea, select { width: 100%; padding: 12px; margin-bottom: 15px; border: 2px solid #ddd; border-radius: 6px; font-size: 1rem; transition: border-color 0.3s; display: block; }
         input:focus, textarea:focus, select:focus { outline: none; border-color: #4CAF50; }
-        textarea { resize: vertical; min-height: 120px; }
+        textarea { resize: vertical; min-height: 100px; }
+        label { font-weight: 600; margin-bottom: 5px; display: block; color: #555; }
+
+        /* Image Uploader */
+        #image-uploader { margin-bottom: 20px; text-align: center; }
+        .image-preview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; justify-content: center; }
+        .image-preview-wrapper { position: relative; width: 100px; height: 100px; }
+        .image-preview { width: 100%; height: 100%; border-radius: 8px; object-fit: cover; border: 1px solid #ddd; }
+        .remove-image-btn { position: absolute; top: -5px; right: -5px; width: 25px; height: 25px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; cursor: pointer; font-weight: bold; }
+        #add-photo-label { width: 100px; height: 100px; border: 2px dashed #ccc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #777; margin: 0 auto; }
+        #add-photo-label:hover { background: #f8f9fa; border-color: #4CAF50; }
+        #listing-image-input { display: none; }
 
         /* Buttons */
-        .btn-submit { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); color: #333; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1.1rem; margin-top: 10px; }
+        .btn-submit { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); color: #333; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1.1rem; }
         .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
         .btn-submit:disabled { background: #ccc; cursor: not-allowed; transform: none; }
         .btn-cancel { background: #e0e0e0; color: #333; border: none; padding: 10px; border-radius: 6px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; }
 
-        /* Status Messages */
-        .status-container { text-align: center; padding: 20px; display: none; }
-        .status-icon { font-size: 3rem; margin-bottom: 15px; }
-        .status-success { color: #4CAF50; }
-        .status-pending { color: #2196F3; }
-        .status-banned { color: #f44336; }
-        .status-text { font-size: 1.1rem; margin-bottom: 20px; }
-
+        .form-field-error { color: red; font-size: 0.85rem; margin-top: -10px; margin-bottom: 10px; display: none; }
+        
+        /* Ban Loader */
+        #page-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; color: #666; }
     </style>
 </head>
 <body>
+    <!-- Overlay to hide page content while we check permissions -->
+    <div id="page-loader">Checking permissions...</div>
+
     <header>
         <div class="container header-content">
             <a href="/index.html" class="logo">Cheap<span>let</span></a>
@@ -53,38 +59,52 @@
 
     <main class="container">
         <div class="form-wrapper">
-            
-            <!-- Default Title -->
-            <div id="default-header">
-                <h2>Become a Seller</h2>
-                <p class="subtitle">Join our community of verified sellers. Please provide your details below for review.</p>
-            </div>
+            <h2>List a New Item</h2>
+            <form id="listing-form">
+                <label>Item Title</label>
+                <input type="text" id="listing-title" placeholder="e.g., Vintage Coffee Table" required>
+                
+                <label>Description</label>
+                <textarea id="listing-description" placeholder="Describe your item..." required></textarea>
+                
+                <label>Price ($)</label>
+                <input type="number" id="listing-price" placeholder="0.00" min="0" step="0.01" required>
+                
+                <label>Category</label>
+                <select id="listing-category" required>
+                    <option value="">Select Category</option>
+                    <option value="furniture">Furniture</option>
+                    <option value="electronics">Electronics</option>
+                    <option value="clothing">Clothing</option>
+                    <option value="books">Books & Media</option>
+                    <option value="toys">Toys & Games</option>
+                    <option value="other">Other</option>
+                </select>
 
-            <!-- Status Message Container (Hidden by default) -->
-            <div id="status-display" class="status-container">
-                <i id="status-icon" class="fas fa-info-circle status-icon"></i>
-                <p id="status-text" class="status-text"></p>
-                <button class="btn-submit" id="action-btn" style="display:none;"></button>
-            </div>
+                <label>Condition</label>
+                <select id="listing-condition" required>
+                    <option value="">Select Condition</option>
+                    <option value="New">New</option>
+                    <option value="Used">Used</option>
+                </select>
 
-            <!-- Application Form -->
-            <form id="application-form">
-                <div class="form-group">
-                    <label>Phone Number</label>
-                    <input type="tel" id="app-phone" placeholder="e.g., +1 555-0123" required>
+                <label>Location</label>
+                <input type="text" id="listing-location" placeholder="e.g., Brooklyn, NY" required>
+
+                <label>Photos (Max 5)</label>
+                <div id="image-uploader">
+                    <div class="image-preview-grid">
+                        <div id="image-preview-container"></div>
+                        <label for="listing-image-input" id="add-photo-label">
+                            <span style="font-size: 24px;">+</span>
+                            <span style="font-size: 12px;">Add Photo</span>
+                        </label>
+                    </div>
+                    <input type="file" id="listing-image-input" accept="image/*">
                 </div>
+                <p id="image-error" class="form-field-error" style="display: block; text-align: center;"></p>
 
-                <div class="form-group">
-                    <label>Location (City/Region)</label>
-                    <input type="text" id="app-location" placeholder="e.g., Montreal, QC" required>
-                </div>
-
-                <div class="form-group">
-                    <label>What do you plan to sell?</label>
-                    <textarea id="app-reason" placeholder="Briefly describe the items you want to list on Cheaplet..." required></textarea>
-                </div>
-
-                <button type="submit" class="btn-submit" id="submitBtn">Submit Application</button>
+                <button type="submit" class="btn-submit" id="postListingBtn">Post Item</button>
                 <button type="button" class="btn-cancel" onclick="window.location.href='/index.html'">Cancel</button>
             </form>
         </div>
@@ -92,109 +112,154 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
-            
+            const CLOUDINARY_CLOUD_NAME = config.cloudinary.cloudName;
+            const CLOUDINARY_UPLOAD_PRESET = config.cloudinary.uploadPreset;
+            const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+
             const app = initializeApp(config.firebaseConfig);
             const auth = getAuth(app);
             const db = getFirestore(app);
 
             let currentUser = null;
-            
-            // Elements
-            const applicationForm = document.getElementById('application-form');
-            const defaultHeader = document.getElementById('default-header');
-            const statusDisplay = document.getElementById('status-display');
-            const statusIcon = document.getElementById('status-icon');
-            const statusText = document.getElementById('status-text');
-            const actionBtn = document.getElementById('action-btn');
-            const submitBtn = document.getElementById('submitBtn');
+            let selectedFiles = [];
+            const maxFiles = 5;
+            const pageLoader = document.getElementById('page-loader');
 
-            // --- AUTH CHECK ---
+            // --- AUTH & BAN CHECK ---
             onAuthStateChanged(auth, async (user) => {
                 if (user && user.emailVerified) {
-                    currentUser = user;
-                    checkExistingApplication(user.uid);
+                    try {
+                        const userDocRef = doc(db, "users", user.uid);
+                        const userDocSnap = await getDoc(userDocRef);
+
+                        // Even though listing is free, we still block BANNED users
+                        if (userDocSnap.exists() && userDocSnap.data().role === 'banned') {
+                            await signOut(auth);
+                            alert("You have been banned. You cannot list items.");
+                            window.location.href = '/LoginInToCheaplet.html';
+                            return;
+                        }
+
+                        currentUser = user;
+                        pageLoader.style.display = 'none';
+
+                    } catch (e) {
+                        console.error("Error checking status:", e);
+                        pageLoader.style.display = 'none'; 
+                    }
                 } else {
-                    alert("Please log in to apply.");
+                    alert("Please log in to list an item.");
                     window.location.href = '/LoginInToCheaplet.html';
                 }
             });
 
-            // --- CHECK STATUS ---
-            async function checkExistingApplication(uid) {
-                const userDoc = await getDoc(doc(db, "users", uid));
-                
-                // 1. Check if Banned (We keep this for security)
-                if (userDoc.exists()) {
-                    const role = userDoc.data().role;
-                    if (role === 'banned') {
-                        showStatus('banned', 'ban', 'Your account is banned. You cannot apply.');
-                        return;
-                    }
+            // Image Handling
+            const imageInput = document.getElementById('listing-image-input');
+            const previewContainer = document.getElementById('image-preview-container');
+            const addPhotoLabel = document.getElementById('add-photo-label');
+
+            function renderPreviews() {
+                previewContainer.innerHTML = '';
+                selectedFiles.forEach((file, index) => {
+                    const wrapper = document.createElement('div');
+                    wrapper.classList.add('image-preview-wrapper');
                     
-                    // REMOVED: The block that checked if role === 'seller' || role === 'admin'
-                    // Now, even if you are an admin or seller, you can see the form.
-                }
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(file);
+                    img.classList.add('image-preview');
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.classList.add('remove-image-btn');
+                    removeBtn.textContent = 'X';
+                    removeBtn.type = 'button';
+                    removeBtn.onclick = () => {
+                        selectedFiles.splice(index, 1);
+                        renderPreviews();
+                    };
 
-                // 2. Check if Pending (We keep this so they don't spam applications)
-                const q = query(collection(db, "seller_applications"), where("userId", "==", uid), where("status", "==", "pending"));
-                const querySnapshot = await getDocs(q);
-
-                if (!querySnapshot.empty) {
-                    showStatus('pending', 'clock', 'Application Pending. Our team is reviewing your details.');
-                    actionBtn.textContent = "Back to Home";
-                    actionBtn.style.display = "inline-block";
-                    actionBtn.onclick = () => window.location.href = '/index.html';
-                }
+                    wrapper.appendChild(img);
+                    wrapper.appendChild(removeBtn);
+                    previewContainer.appendChild(wrapper);
+                });
+                addPhotoLabel.style.display = selectedFiles.length < maxFiles ? 'flex' : 'none';
             }
 
-            // --- HELPER TO SHOW STATUS SCREENS ---
-            function showStatus(type, iconName, message) {
-                applicationForm.style.display = 'none';
-                defaultHeader.style.display = 'none';
-                statusDisplay.style.display = 'block';
-                
-                statusIcon.className = `fas fa-${iconName} status-icon status-${type}`;
-                statusText.textContent = message;
-            }
+            imageInput.addEventListener('change', (e) => {
+                if (e.target.files[0] && selectedFiles.length < maxFiles) {
+                    selectedFiles.push(e.target.files[0]);
+                    renderPreviews();
+                }
+                e.target.value = '';
+            });
 
-            // --- SUBMIT APPLICATION ---
-            applicationForm.addEventListener('submit', async (e) => {
+            // Form Submission
+            document.getElementById('listing-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
+                const submitBtn = document.getElementById('postListingBtn');
+                const imageError = document.getElementById('image-error');
+                
+                imageError.textContent = '';
+                
+                if (selectedFiles.length === 0) {
+                    imageError.style.display = 'block';
+                    imageError.textContent = 'Please upload at least one image.';
+                    return;
+                }
+
                 submitBtn.disabled = true;
-                submitBtn.textContent = "Submitting...";
+                submitBtn.textContent = 'Uploading...';
 
                 try {
-                    await addDoc(collection(db, 'seller_applications'), {
-                        userId: currentUser.uid,
-                        userEmail: currentUser.email,
-                        displayName: currentUser.displayName,
-                        phone: document.getElementById('app-phone').value.trim(),
-                        location: document.getElementById('app-location').value.trim(),
-                        reason: document.getElementById('app-reason').value.trim(),
-                        status: 'pending',
+                    // Upload Images
+                    const uploadPromises = selectedFiles.map(file => {
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                        return fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData }).then(res => res.json());
+                    });
+
+                    const uploadResults = await Promise.all(uploadPromises);
+                    const imageUrls = uploadResults.map(res => res.secure_url);
+
+                    submitBtn.textContent = 'Publishing...';
+
+                    // Save to Firestore
+                    const docRef = await addDoc(collection(db, 'listings'), {
+                        title: document.getElementById('listing-title').value.trim(),
+                        description: document.getElementById('listing-description').value.trim(),
+                        price: parseFloat(document.getElementById('listing-price').value),
+                        category: document.getElementById('listing-category').value,
+                        condition: document.getElementById('listing-condition').value,
+                        location: document.getElementById('listing-location').value.trim(),
+                        imageUrls: imageUrls,
+                        posterUid: currentUser.uid,
+                        posterDisplayName: currentUser.displayName,
                         timestamp: serverTimestamp()
                     });
 
-                    showStatus('pending', 'clock', 'Application submitted! We will review it shortly.');
-                    actionBtn.textContent = "Back to Home";
-                    actionBtn.style.display = "inline-block";
-                    actionBtn.onclick = () => window.location.href = '/index.html';
+                    alert('Item listed successfully!');
+                    window.location.href = `/listing.html?id=${docRef.id}`;
 
                 } catch (error) {
                     console.error("Error:", error);
-                    alert("Error submitting. Please try again.");
+                    if (error.code === 'permission-denied') {
+                        imageError.textContent = 'Error: Permission denied. Your account may be banned.';
+                        imageError.style.display = 'block';
+                    } else {
+                        imageError.textContent = 'Error creating listing. Please try again.';
+                        imageError.style.display = 'block';
+                    }
                     submitBtn.disabled = false;
-                    submitBtn.textContent = "Submit Application";
+                    submitBtn.textContent = 'Post Item';
                 }
             });
         }
-
         main();
     </script>
 </body>
