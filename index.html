@@ -29,18 +29,30 @@
         .hero { background: linear-gradient(rgba(76,175,80,0.9), rgba(56,142,60,0.9)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%234CAF50"/></svg>'); background-size: cover; color: white; text-align: center; padding: 40px 20px; }
         .hero h1 { font-size: 2rem; margin-bottom: 15px; }
         
-        /* Categories */
-        .categories { padding: 40px 0; text-align: center; }
+        /* --- NEW: TAGS SECTION STYLES --- */
+        .tags-section { padding: 40px 0; text-align: center; }
         .section-title { font-size: 1.8rem; color: #2E7D32; margin-bottom: 25px; font-weight: 600; }
-        .category-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 20px; }
-        .category-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-decoration: none; color: #333; transition: transform 0.3s; }
-        .category-card:hover { transform: translateY(-5px); color: #4CAF50; }
-        .category-card i { font-size: 2.5rem; margin-bottom: 10px; color: #4CAF50; }
+        
+        .tags-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
+        
+        .tag-pill {
+            background: white; border: 1px solid #ddd; padding: 10px 20px;
+            border-radius: 30px; cursor: pointer; transition: all 0.3s;
+            font-weight: 600; display: flex; align-items: center; gap: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); color: #555;
+        }
+        .tag-pill:hover { border-color: #4CAF50; transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); color: #2E7D32; }
+        .tag-pill.active { background-color: #e8f5e9; border-color: #4CAF50; color: #2E7D32; }
+        
+        .tag-count {
+            background: #eee; font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; color: #666;
+        }
 
         /* Filters */
         .filters { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin: 30px 0; }
         .filter-options { display: flex; flex-direction: column; gap: 15px; }
         .filter-group { display: flex; align-items: center; width: 100%; }
+        /* Removed Category Select styles since we removed it */
         select, input { padding: 10px; border: 2px solid #ddd; border-radius: 6px; width: 100%; }
         
         /* Listings */
@@ -56,8 +68,12 @@
         .listing-title { font-weight: 600; font-size: 1rem; }
         .listing-price { color: #4CAF50; font-weight: bold; font-size: 1.1rem; }
         .listing-footer { display: flex; justify-content: space-between; margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px; font-size: 0.85rem; color: #666; }
-        
-        /* Footer (Restored) */
+        .seller-name { font-weight: 500; color: #555; }
+        .condition-tag { background-color: #e0e0e0; color: #333; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+        .condition-tag.new { background-color: #e8f5e9; color: #2E7D32; }
+        .no-listings-message { grid-column: 1 / -1; text-align: center; padding: 40px; color: #777; }
+
+        /* Footer */
         footer { background: linear-gradient(135deg, #2E7D32 0%, #1b5e20 100%); color: white; padding: 40px 0 20px; margin-top: 40px; }
         .footer-content { display: grid; grid-template-columns: 1fr; gap: 30px; margin-bottom: 30px; text-align: center; }
         .footer-column h3 { margin-bottom: 15px; font-size: 1.2rem; }
@@ -104,37 +120,23 @@
     <section class="hero">
         <div class="container">
             <h1>Great Finds, Unbeatable Prices.</h1>
-            <p>Cheaplet is the online marketplace for smart savings. Discover secondhand, clearance, and giveaway items in your area.</p>
+            <p>Cheaplet is the online marketplace for smart savings. Discover secondhand books, clearance, and giveaway items in your area.</p>
             <button class="btn" id="startBrowsingBtn">Start Browsing</button>
         </div>
     </section>
     
-    <section class="categories container">
-        <h2 class="section-title">Browse by Category</h2>
-        <div class="category-grid">
-            <a href="#" class="category-card" data-category="furniture"><i class="fas fa-couch"></i><p>Furniture</p></a>
-            <a href="#" class="category-card" data-category="electronics"><i class="fas fa-tv"></i><p>Electronics</p></a>
-            <a href="#" class="category-card" data-category="clothing"><i class="fas fa-tshirt"></i><p>Clothing</p></a>
-            <a href="#" class="category-card" data-category="books"><i class="fas fa-book-open"></i><p>Books & Media</p></a>
-            <a href="#" class="category-card" data-category="toys"><i class="fas fa-gamepad"></i><p>Toys & Games</p></a>
-            <a href="#" class="category-card" data-category="other"><i class="fas fa-box"></i><p>Other</p></a>
+    <!-- NEW: BROWSE BY TAGS SECTION -->
+    <section class="tags-section container">
+        <h2 class="section-title">Browse by Tag</h2>
+        <div class="tags-grid" id="tags-grid-container">
+            <p style="color:#777;">Loading popular tags...</p>
         </div>
     </section>
 
     <main class="container">
         <section class="filters">
             <div class="filter-options">
-                <div class="filter-group">
-                    <select id="category-filter">
-                        <option value="all">All Categories</option>
-                        <option value="furniture">Furniture</option>
-                        <option value="electronics">Electronics</option>
-                        <option value="clothing">Clothing</option>
-                        <option value="books">Books & Media</option>
-                        <option value="toys">Toys & Games</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
+                <!-- Removed Category Filter - Replaced by Tag logic -->
                 <div class="filter-group">
                     <select id="sort-filter">
                         <option value="newest">Newest First</option>
@@ -145,6 +147,10 @@
                 <div class="filter-group" style="flex-grow: 1;">
                     <input type="text" placeholder="Search listings..." id="search-input">
                 </div>
+            </div>
+            <!-- Show active tag if selected -->
+            <div id="active-tag-display" style="margin-top: 10px; color: #4CAF50; font-weight: bold; display: none;">
+                Filtered by tag: <span id="current-tag-name"></span> <button id="clear-tag-btn" style="border:none; background:none; color:#666; cursor:pointer;">(Clear)</button>
             </div>
         </section>
 
@@ -161,51 +167,46 @@
         <div class="container">
             <h2 class="section-title">How It Works</h2>
             <div class="steps-grid">
-                <div class="step-card"><i class="fas fa-user-plus"></i><h3>Create an Account</h3><p>Quickly sign up for free to start buying and selling.</p></div>
-                <div class="step-card"><i class="fas fa-camera-retro"></i><h3>Post Your Item</h3><p>Snap some photos and create a listing in just a few minutes.</p></div>
-                <div class="step-card"><i class="fas fa-comments-dollar"></i><h3>Connect & Sell</h3><p>Message with buyers securely and arrange a sale.</p></div>
+                <div class="step-card">
+                    <i class="fas fa-user-plus" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i>
+                    <h3>Create an Account</h3><p>Quickly sign up for free to start buying and selling.</p>
+                </div>
+                <div class="step-card">
+                    <i class="fas fa-camera-retro" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i>
+                    <h3>Post Your Item</h3><p>Snap some photos, add tags, and list in minutes.</p>
+                </div>
+                <div class="step-card">
+                    <i class="fas fa-comments-dollar" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i>
+                    <h3>Connect & Sell</h3><p>Message with buyers securely and arrange a sale.</p>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- RESTORED: Full Footer with Links -->
     <footer>
         <div class="container">
             <div class="footer-content">
                 <div class="footer-column">
                     <h3>About Cheaplet</h3>
-                    <ul>
-                        <li><a href="#">About Us</a></li>
-                        <li><a href="#">How It Works</a></li>
-                        <li><a href="#">Contact</a></li>
-                    </ul>
+                    <ul><li><a href="#">About Us</a></li><li><a href="#">How It Works</a></li><li><a href="#">Contact</a></li></ul>
                 </div>
                 <div class="footer-column">
                     <h3>Support</h3>
-                    <ul>
-                        <li><a href="#">Help Center</a></li>
-                        <li><a href="#">Safety Tips</a></li>
-                        <li><a href="#">Report Issue</a></li>
-                    </ul>
+                    <ul><li><a href="#">Help Center</a></li><li><a href="#">Safety Tips</a></li><li><a href="#">Report Issue</a></li></ul>
                 </div>
                 <div class="footer-column">
                     <h3>Legal</h3>
-                    <ul>
-                        <li><a href="#">Terms of Service</a></li>
-                        <li><a href="#">Privacy Policy</a></li>
-                    </ul>
+                    <ul><li><a href="#">Terms of Service</a></li><li><a href="#">Privacy Policy</a></li></ul>
                 </div>
             </div>
-            <div class="copyright">
-                © 2025 Cheaplet. All rights reserved.
-            </div>
+            <div class="copyright">© 2025 Cheaplet. All rights reserved.</div>
         </div>
     </footer>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, query, orderBy, onSnapshot, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -221,11 +222,16 @@
             const logoutBtn = document.getElementById('logoutBtn');
             const listingsContainer = document.getElementById('listings-container');
             const itemCountSpan = document.getElementById('itemCount');
-            const categoryFilter = document.getElementById('category-filter');
             const sortFilter = document.getElementById('sort-filter');
             const searchInput = document.getElementById('search-input');
+            const tagsGridContainer = document.getElementById('tags-grid-container');
+            const activeTagDisplay = document.getElementById('active-tag-display');
+            const currentTagName = document.getElementById('current-tag-name');
+            const clearTagBtn = document.getElementById('clear-tag-btn');
 
-            // Auth State
+            let activeTagFilter = null; // Stores the currently selected tag
+
+            // --- AUTH STATE ---
             onAuthStateChanged(auth, user => {
                 if (user && user.emailVerified) {
                     userEmailDisplay.textContent = `Hi, ${user.displayName || 'User'}!`;
@@ -239,45 +245,105 @@
                 }
             });
 
-            // Navigation Logic
-            loginRegisterBtn.addEventListener('click', () => {
-                window.location.href = '/LoginInToCheaplet.html';
-            });
-
-            listAnItemBtn.addEventListener('click', () => {
+            // --- NAVIGATION ---
+            loginRegisterBtn.addEventListener('click', () => { window.location.href = '/LoginInToCheaplet.html'; });
+            listAnItemBtn.addEventListener('click', () => { 
                 if (auth.currentUser && auth.currentUser.emailVerified) {
-                    window.location.href = '/listanitem.html';
+                    window.location.href = '/listanitem.html'; 
                 } else {
-                    alert("Please log in to list an item.");
+                    alert('Please log in to list an item.');
                     window.location.href = '/LoginInToCheaplet.html';
-                }
+                } 
             });
-
             logoutBtn.addEventListener('click', () => signOut(auth));
-            
             document.getElementById('logo-link').addEventListener('click', () => window.location.href = '/index.html');
             document.getElementById('startBrowsingBtn').addEventListener('click', () => document.querySelector('.filters').scrollIntoView({ behavior: 'smooth' }));
 
-            // Listings Logic
+            // --- LOAD DYNAMIC TAGS ---
+            async function loadGlobalTags() {
+                try {
+                    // Fetch top 10 tags by usage count
+                    const q = query(collection(db, "global_tags"), orderBy("count", "desc"), limit(12));
+                    const snapshot = await getDocs(q);
+                    
+                    tagsGridContainer.innerHTML = '';
+                    
+                    if(snapshot.empty) {
+                        tagsGridContainer.innerHTML = '<p style="color:#999;">No tags yet. Be the first to list!</p>';
+                        return;
+                    }
+
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const pill = document.createElement('div');
+                        pill.className = 'tag-pill';
+                        
+                        // Format count (e.g., 1400 -> 1.4k)
+                        let count = data.count || 0;
+                        if (count >= 1000) count = (count/1000).toFixed(1) + 'k';
+
+                        pill.innerHTML = `
+                            ${data.tag}
+                            <span class="tag-count">${count}</span>
+                        `;
+                        
+                        // Click Handler
+                        pill.addEventListener('click', () => {
+                            setActiveTag(data.tag);
+                        });
+
+                        tagsGridContainer.appendChild(pill);
+                    });
+
+                } catch (e) {
+                    console.error("Error loading tags:", e);
+                    tagsGridContainer.innerHTML = '<p style="color:#999;">Could not load tags.</p>';
+                }
+            }
+
+            function setActiveTag(tagName) {
+                activeTagFilter = tagName;
+                
+                // Update UI
+                document.querySelectorAll('.tag-pill').forEach(p => p.classList.remove('active'));
+                // Note: Finding specific pill to add active class is tricky with dynamic gen, 
+                // but visual feedback on filter bar below is better.
+                
+                currentTagName.textContent = tagName;
+                activeTagDisplay.style.display = 'block';
+                
+                fetchListings();
+                document.querySelector('.filters').scrollIntoView({ behavior: 'smooth' });
+            }
+
+            clearTagBtn.addEventListener('click', () => {
+                activeTagFilter = null;
+                activeTagDisplay.style.display = 'none';
+                fetchListings();
+            });
+
+            // --- LISTINGS LOGIC ---
             function renderListing(doc) {
                 const data = doc.data();
                 const firstImage = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls[0] : '';
-                
                 const condition = data.condition || "Used";
                 const conditionClass = condition === "New" ? "new" : "";
+                const sellerName = data.posterDisplayName || "User";
 
                 const div = document.createElement('a');
                 div.className = 'listing-card';
                 div.href = `/listing.html?id=${doc.id}`;
                 div.innerHTML = `
-                    <div class="listing-image" style="background-image: url('${firstImage}');"></div>
+                    <div class="listing-image" style="background-image: url('${firstImage}');">
+                         <button class="favorite-button" aria-label="Add to favorites"><i class="fas fa-heart"></i></button>
+                    </div>
                     <div class="listing-details">
                         <div class="listing-header-card">
                             <span class="listing-title">${data.title}</span>
                             <span class="listing-price">$${data.price.toFixed(2)}</span>
                         </div>
                         <div class="listing-footer">
-                            <span>${data.location}</span>
+                            <span class="seller-name">${sellerName}</span>
                             <span class="condition-tag ${conditionClass}">${condition}</span>
                         </div>
                     </div>
@@ -289,8 +355,9 @@
                 let q = collection(db, 'listings');
                 const constraints = [];
                 
-                if (categoryFilter.value !== 'all') {
-                    constraints.push(where('category', '==', categoryFilter.value));
+                // NEW: Tag Filtering Logic
+                if (activeTagFilter) {
+                    constraints.push(where('tags', 'array-contains', activeTagFilter));
                 }
 
                 if (sortFilter.value === 'price-low') constraints.push(orderBy('price', 'asc'));
@@ -303,36 +370,28 @@
                     listingsContainer.innerHTML = '';
                     itemCountSpan.textContent = `${snapshot.docs.length} items`;
                     if (snapshot.empty) {
-                        listingsContainer.innerHTML = '<p style="grid-column: 1/-1; text-align: center; padding: 20px;">No items found.</p>';
+                        listingsContainer.innerHTML = '<div class="no-listings-message"><h3>No items found.</h3><p>Try searching for a different tag.</p></div>';
                     } else {
                         snapshot.forEach(doc => {
                             listingsContainer.appendChild(renderListing(doc));
                         });
                     }
+                }, error => {
+                    console.error("Error fetching listings:", error);
+                    // Often caused by missing compound index. Check console for link.
                 });
             }
 
-            // Filters
-            categoryFilter.addEventListener('change', fetchListings);
+            // Listeners
             sortFilter.addEventListener('change', fetchListings);
-            
-            // Category Cards
-            document.querySelectorAll('.category-card').forEach(card => {
-                card.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    categoryFilter.value = card.dataset.category;
-                    fetchListings();
-                    document.querySelector('.filters').scrollIntoView({ behavior: 'smooth' });
-                });
-            });
-
-            // Search
             searchInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && searchInput.value.trim()) {
                     window.location.href = `/search.html?q=${encodeURIComponent(searchInput.value.trim())}`;
                 }
             });
 
+            // Initial Loads
+            loadGlobalTags();
             fetchListings();
         }
         main();
