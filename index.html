@@ -29,7 +29,7 @@
         .hero { background: linear-gradient(rgba(76,175,80,0.9), rgba(56,142,60,0.9)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%234CAF50"/></svg>'); background-size: cover; color: white; text-align: center; padding: 40px 20px; }
         .hero h1 { font-size: 2rem; margin-bottom: 15px; }
         
-        /* TAGS SECTION STYLES (Static) */
+        /* TAGS SECTION STYLES */
         .tags-section { padding: 40px 0; text-align: center; }
         .section-title { font-size: 1.8rem; color: #2E7D32; margin-bottom: 25px; font-weight: 600; }
         
@@ -40,8 +40,9 @@
             border-radius: 30px; 
             font-weight: 600; display: flex; align-items: center; gap: 10px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05); color: #555;
-            cursor: default; /* Non-clickable cursor */
+            cursor: pointer; transition: all 0.2s;
         }
+        .tag-pill:hover { border-color: #4CAF50; transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); color: #2E7D32; }
         
         .tag-count {
             background: #eee; font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; color: #666;
@@ -60,8 +61,6 @@
         .listing-card:hover { transform: translateY(-5px); }
         .listing-image { height: 180px; background-color: #eee; background-size: cover; background-position: center; position: relative; }
         
-        /* Removed .favorite-button styles */
-
         .listing-details { padding: 15px; }
         .listing-header-card { display: flex; justify-content: space-between; }
         .listing-title { font-weight: 600; font-size: 1rem; }
@@ -124,7 +123,7 @@
         </div>
     </section>
     
-    <!-- TAGS SECTION (Static) -->
+    <!-- BROWSE BY TAGS SECTION -->
     <section class="tags-section container">
         <h2 class="section-title">Popular Tags</h2>
         <div class="tags-grid" id="tags-grid-container">
@@ -248,7 +247,7 @@
             document.getElementById('logo-link').addEventListener('click', () => window.location.href = '/index.html');
             document.getElementById('startBrowsingBtn').addEventListener('click', () => document.querySelector('.filters').scrollIntoView({ behavior: 'smooth' }));
 
-            // --- LOAD TAGS (STATIC) ---
+            // --- LOAD TAGS & REDIRECT ---
             async function loadGlobalTags() {
                 try {
                     const q = query(collection(db, "global_tags"), orderBy("count", "desc"), limit(12));
@@ -273,7 +272,12 @@
                             ${data.tag}
                             <span class="tag-count">${count}</span>
                         `;
-                        // No click listener attached = No action
+                        
+                        // CLICK EVENT: Redirect to tag.html with the selected tag
+                        pill.addEventListener('click', () => {
+                            window.location.href = `/tag.html?tag=${encodeURIComponent(data.tag)}`;
+                        });
+
                         tagsGridContainer.appendChild(pill);
                     });
 
@@ -295,7 +299,6 @@
                 div.className = 'listing-card';
                 div.href = `/listing.html?id=${doc.id}`;
                 
-                // NO HEART BUTTON HERE
                 div.innerHTML = `
                     <div class="listing-image" style="background-image: url('${firstImage}');"></div>
                     <div class="listing-details">
@@ -326,7 +329,7 @@
                     listingsContainer.innerHTML = '';
                     itemCountSpan.textContent = `${snapshot.docs.length} items`;
                     if (snapshot.empty) {
-                        listingsContainer.innerHTML = '<div class="no-listings-message"><h3>No items found.</h3><p>Try checking back later!</p></div>';
+                        listingsContainer.innerHTML = '<div class="no-listings-message"><h3>No listings found.</h3><p>Try checking back later!</p></div>';
                     } else {
                         snapshot.forEach(doc => {
                             listingsContainer.appendChild(renderListing(doc));
@@ -337,7 +340,6 @@
                 });
             }
 
-            // Listeners
             sortFilter.addEventListener('change', fetchListings);
             searchInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && searchInput.value.trim()) {
@@ -345,7 +347,6 @@
                 }
             });
 
-            // Initial Loads
             loadGlobalTags();
             fetchListings();
         }
