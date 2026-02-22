@@ -29,7 +29,7 @@
         .hero { background: linear-gradient(rgba(76,175,80,0.9), rgba(56,142,60,0.9)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%234CAF50"/></svg>'); background-size: cover; color: white; text-align: center; padding: 40px 20px; }
         .hero h1 { font-size: 2rem; margin-bottom: 15px; }
         
-        /* --- NEW: TAGS SECTION STYLES --- */
+        /* TAGS SECTION STYLES (Static) */
         .tags-section { padding: 40px 0; text-align: center; }
         .section-title { font-size: 1.8rem; color: #2E7D32; margin-bottom: 25px; font-weight: 600; }
         
@@ -37,12 +37,11 @@
         
         .tag-pill {
             background: white; border: 1px solid #ddd; padding: 10px 20px;
-            border-radius: 30px; cursor: pointer; transition: all 0.3s;
+            border-radius: 30px; 
             font-weight: 600; display: flex; align-items: center; gap: 10px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05); color: #555;
+            cursor: default; /* Non-clickable cursor */
         }
-        .tag-pill:hover { border-color: #4CAF50; transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); color: #2E7D32; }
-        .tag-pill.active { background-color: #e8f5e9; border-color: #4CAF50; color: #2E7D32; }
         
         .tag-count {
             background: #eee; font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; color: #666;
@@ -52,7 +51,6 @@
         .filters { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin: 30px 0; }
         .filter-options { display: flex; flex-direction: column; gap: 15px; }
         .filter-group { display: flex; align-items: center; width: 100%; }
-        /* Removed Category Select styles since we removed it */
         select, input { padding: 10px; border: 2px solid #ddd; border-radius: 6px; width: 100%; }
         
         /* Listings */
@@ -61,8 +59,9 @@
         .listing-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: block; text-decoration: none; color: inherit; transition: transform 0.3s; }
         .listing-card:hover { transform: translateY(-5px); }
         .listing-image { height: 180px; background-color: #eee; background-size: cover; background-position: center; position: relative; }
-        .favorite-button { position: absolute; top: 10px; right: 10px; background-color: rgba(255, 255, 255, 0.8); border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background-color 0.3s, color 0.3s; }
-        .favorite-button:hover { background-color: #FFD700; }
+        
+        /* Removed .favorite-button styles */
+
         .listing-details { padding: 15px; }
         .listing-header-card { display: flex; justify-content: space-between; }
         .listing-title { font-weight: 600; font-size: 1rem; }
@@ -125,9 +124,9 @@
         </div>
     </section>
     
-    <!-- NEW: BROWSE BY TAGS SECTION -->
+    <!-- TAGS SECTION (Static) -->
     <section class="tags-section container">
-        <h2 class="section-title">Browse by Tag</h2>
+        <h2 class="section-title">Popular Tags</h2>
         <div class="tags-grid" id="tags-grid-container">
             <p style="color:#777;">Loading popular tags...</p>
         </div>
@@ -136,7 +135,6 @@
     <main class="container">
         <section class="filters">
             <div class="filter-options">
-                <!-- Removed Category Filter - Replaced by Tag logic -->
                 <div class="filter-group">
                     <select id="sort-filter">
                         <option value="newest">Newest First</option>
@@ -147,10 +145,6 @@
                 <div class="filter-group" style="flex-grow: 1;">
                     <input type="text" placeholder="Search listings..." id="search-input">
                 </div>
-            </div>
-            <!-- Show active tag if selected -->
-            <div id="active-tag-display" style="margin-top: 10px; color: #4CAF50; font-weight: bold; display: none;">
-                Filtered by tag: <span id="current-tag-name"></span> <button id="clear-tag-btn" style="border:none; background:none; color:#666; cursor:pointer;">(Clear)</button>
             </div>
         </section>
 
@@ -225,11 +219,6 @@
             const sortFilter = document.getElementById('sort-filter');
             const searchInput = document.getElementById('search-input');
             const tagsGridContainer = document.getElementById('tags-grid-container');
-            const activeTagDisplay = document.getElementById('active-tag-display');
-            const currentTagName = document.getElementById('current-tag-name');
-            const clearTagBtn = document.getElementById('clear-tag-btn');
-
-            let activeTagFilter = null; // Stores the currently selected tag
 
             // --- AUTH STATE ---
             onAuthStateChanged(auth, user => {
@@ -259,17 +248,16 @@
             document.getElementById('logo-link').addEventListener('click', () => window.location.href = '/index.html');
             document.getElementById('startBrowsingBtn').addEventListener('click', () => document.querySelector('.filters').scrollIntoView({ behavior: 'smooth' }));
 
-            // --- LOAD DYNAMIC TAGS ---
+            // --- LOAD TAGS (STATIC) ---
             async function loadGlobalTags() {
                 try {
-                    // Fetch top 10 tags by usage count
                     const q = query(collection(db, "global_tags"), orderBy("count", "desc"), limit(12));
                     const snapshot = await getDocs(q);
                     
                     tagsGridContainer.innerHTML = '';
                     
                     if(snapshot.empty) {
-                        tagsGridContainer.innerHTML = '<p style="color:#999;">No tags yet. Be the first to list!</p>';
+                        tagsGridContainer.innerHTML = '<p style="color:#999;">No tags yet.</p>';
                         return;
                     }
 
@@ -278,7 +266,6 @@
                         const pill = document.createElement('div');
                         pill.className = 'tag-pill';
                         
-                        // Format count (e.g., 1400 -> 1.4k)
                         let count = data.count || 0;
                         if (count >= 1000) count = (count/1000).toFixed(1) + 'k';
 
@@ -286,12 +273,7 @@
                             ${data.tag}
                             <span class="tag-count">${count}</span>
                         `;
-                        
-                        // Click Handler
-                        pill.addEventListener('click', () => {
-                            setActiveTag(data.tag);
-                        });
-
+                        // No click listener attached = No action
                         tagsGridContainer.appendChild(pill);
                     });
 
@@ -300,27 +282,6 @@
                     tagsGridContainer.innerHTML = '<p style="color:#999;">Could not load tags.</p>';
                 }
             }
-
-            function setActiveTag(tagName) {
-                activeTagFilter = tagName;
-                
-                // Update UI
-                document.querySelectorAll('.tag-pill').forEach(p => p.classList.remove('active'));
-                // Note: Finding specific pill to add active class is tricky with dynamic gen, 
-                // but visual feedback on filter bar below is better.
-                
-                currentTagName.textContent = tagName;
-                activeTagDisplay.style.display = 'block';
-                
-                fetchListings();
-                document.querySelector('.filters').scrollIntoView({ behavior: 'smooth' });
-            }
-
-            clearTagBtn.addEventListener('click', () => {
-                activeTagFilter = null;
-                activeTagDisplay.style.display = 'none';
-                fetchListings();
-            });
 
             // --- LISTINGS LOGIC ---
             function renderListing(doc) {
@@ -333,10 +294,10 @@
                 const div = document.createElement('a');
                 div.className = 'listing-card';
                 div.href = `/listing.html?id=${doc.id}`;
+                
+                // NO HEART BUTTON HERE
                 div.innerHTML = `
-                    <div class="listing-image" style="background-image: url('${firstImage}');">
-                         <button class="favorite-button" aria-label="Add to favorites"><i class="fas fa-heart"></i></button>
-                    </div>
+                    <div class="listing-image" style="background-image: url('${firstImage}');"></div>
                     <div class="listing-details">
                         <div class="listing-header-card">
                             <span class="listing-title">${data.title}</span>
@@ -355,11 +316,6 @@
                 let q = collection(db, 'listings');
                 const constraints = [];
                 
-                // NEW: Tag Filtering Logic
-                if (activeTagFilter) {
-                    constraints.push(where('tags', 'array-contains', activeTagFilter));
-                }
-
                 if (sortFilter.value === 'price-low') constraints.push(orderBy('price', 'asc'));
                 else if (sortFilter.value === 'price-high') constraints.push(orderBy('price', 'desc'));
                 else constraints.push(orderBy('timestamp', 'desc'));
@@ -370,7 +326,7 @@
                     listingsContainer.innerHTML = '';
                     itemCountSpan.textContent = `${snapshot.docs.length} items`;
                     if (snapshot.empty) {
-                        listingsContainer.innerHTML = '<div class="no-listings-message"><h3>No items found.</h3><p>Try searching for a different tag.</p></div>';
+                        listingsContainer.innerHTML = '<div class="no-listings-message"><h3>No items found.</h3><p>Try checking back later!</p></div>';
                     } else {
                         snapshot.forEach(doc => {
                             listingsContainer.appendChild(renderListing(doc));
@@ -378,7 +334,6 @@
                     }
                 }, error => {
                     console.error("Error fetching listings:", error);
-                    // Often caused by missing compound index. Check console for link.
                 });
             }
 
