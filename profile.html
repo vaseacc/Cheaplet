@@ -76,16 +76,16 @@
             <a href="/index.html" class="logo">Cheap<span>let</span></a>
             <nav>
                 <ul>
-                    <li><a href="/index.html" data-i18n="nav_home">Home</a></li>
-                    <li><a href="/my-listings.html" data-i18n="nav_listings">My Listings</a></li>
-                    <li><a href="/messages.html" data-i18n="nav_messages">Messages</a></li>
-                    <li><a href="/profile.html" data-i18n="nav_profile">My Profile</a></li>
+                    <li><a href="/index.html">Home</a></li>
+                    <li><a href="/my-listings.html">My Listings</a></li>
+                    <li><a href="/messages.html">Messages</a></li>
+                    <li><a href="/profile.html">My Profile</a></li>
                 </ul>
             </nav>
             <div class="header-auth-buttons">
                 <span id="userEmailDisplay" style="display: none;"></span>
-                <button class="btn" id="loginRegisterBtn" data-i18n="btn_login">Login / Register</button>
-                <button class="btn" id="logoutBtn" style="display: none;" data-i18n="btn_logout">Logout</button>
+                <button class="btn" id="loginRegisterBtn">Login / Register</button>
+                <button class="btn" id="logoutBtn" style="display: none;">Logout</button>
             </div>
         </div>
     </header>
@@ -127,7 +127,7 @@
                     <input type="email" id="email" disabled>
                 </div>
 
-                <!-- NEW: LANGUAGE SELECTOR -->
+                <!-- LANGUAGE SELECTOR -->
                 <div class="form-group">
                     <label for="languageSelect">Language / Langue</label>
                     <select id="languageSelect">
@@ -203,38 +203,40 @@
             
             let selectedPhotoFile = null;
 
-            // --- HEADER & NAVIGATION ---
-            logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
-            loginRegisterBtn.addEventListener('click', () => { window.location.href = '/LoginInToCheaplet.html'; });
-            logoutBtn.addEventListener('click', () => signOut(auth));
+            // --- HEADER & NAVIGATION (With Null Checks) ---
+            if (logoLink) logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
+            if (loginRegisterBtn) loginRegisterBtn.addEventListener('click', () => { window.location.href = '/LoginInToCheaplet.html'; });
+            if (logoutBtn) logoutBtn.addEventListener('click', () => signOut(auth));
 
-            // --- INITIALIZE LANGUAGE SELECTOR ---
-            // Set the dropdown to match the current saved language
-            const currentLang = localStorage.getItem('preferred_language') || 'en';
-            languageSelect.value = currentLang;
+            // --- LANGUAGE INITIALIZATION ---
+            if (languageSelect) {
+                const currentLang = localStorage.getItem('preferred_language') || 'en';
+                languageSelect.value = currentLang;
 
-            // Handle Language Change
-            languageSelect.addEventListener('change', (e) => {
-                const newLang = e.target.value;
-                if (window.applyLanguage) {
-                    window.applyLanguage(newLang); // Use function from global.js
-                } else {
-                    localStorage.setItem('preferred_language', newLang);
-                    window.location.reload(); // Fallback if global.js is slow to load
-                }
-            });
+                languageSelect.addEventListener('change', (e) => {
+                    const newLang = e.target.value;
+                    if (window.applyLanguage) {
+                        window.applyLanguage(newLang);
+                    } else {
+                        localStorage.setItem('preferred_language', newLang);
+                        window.location.reload();
+                    }
+                });
+            }
 
             // --- MAIN AUTH LOGIC ---
             onAuthStateChanged(auth, async (user) => {
                 if (user && user.emailVerified) {
-                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome!`;
-                    userEmailDisplay.style.display = 'block';
-                    loginRegisterBtn.style.display = 'none';
-                    logoutBtn.style.display = 'inline-block';
+                    if (userEmailDisplay) {
+                        userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome!`;
+                        userEmailDisplay.style.display = 'block';
+                    }
+                    if (loginRegisterBtn) loginRegisterBtn.style.display = 'none';
+                    if (logoutBtn) logoutBtn.style.display = 'inline-block';
                     
                     populateProfileForm(user);
-                    infoContainer.style.display = 'none';
-                    profileContainer.style.display = 'flex';
+                    if (infoContainer) infoContainer.style.display = 'none';
+                    if (profileContainer) profileContainer.style.display = 'flex';
 
                     // Fetch User Doc
                     try {
@@ -260,29 +262,33 @@
                             if (data.savedListings && data.savedListings.length > 0) {
                                 fetchSavedListings(data.savedListings);
                             } else {
-                                savedListingsContainer.innerHTML = '<p style="color:#999; grid-column:1/-1;">You haven\'t saved any items yet.</p>';
+                                if (savedListingsContainer) savedListingsContainer.innerHTML = '<p style="color:#999; grid-column:1/-1;">You haven\'t saved any items yet.</p>';
                             }
 
                         } else {
                             setAvatar(user.photoURL, user.displayName);
-                            savedListingsContainer.innerHTML = '<p style="color:#999; grid-column:1/-1;">You haven\'t saved any items yet.</p>';
+                            if (savedListingsContainer) savedListingsContainer.innerHTML = '<p style="color:#999; grid-column:1/-1;">You haven\'t saved any items yet.</p>';
                         }
                     } catch (e) {
                         console.error("Error loading profile data:", e);
                     }
 
                 } else {
-                    profileContainer.style.display = 'none';
-                    infoContainer.innerHTML = `<p class="info-message">Please <a href="/LoginInToCheaplet.html" style="color:#4CAF50; font-weight:bold;">log in</a> to view your profile.</p>`;
-                    infoContainer.style.display = 'block';
-                    userEmailDisplay.style.display = 'none';
-                    loginRegisterBtn.style.display = 'inline-block';
-                    logoutBtn.style.display = 'none';
+                    // Not logged in
+                    if (profileContainer) profileContainer.style.display = 'none';
+                    if (infoContainer) {
+                        infoContainer.innerHTML = `<p class="info-message">Please <a href="/LoginInToCheaplet.html" style="color:#4CAF50; font-weight:bold;">log in</a> to view your profile.</p>`;
+                        infoContainer.style.display = 'block';
+                    }
+                    if (userEmailDisplay) userEmailDisplay.style.display = 'none';
+                    if (loginRegisterBtn) loginRegisterBtn.style.display = 'inline-block';
+                    if (logoutBtn) logoutBtn.style.display = 'none';
                 }
             });
             
             // --- SAVED ITEMS ---
             async function fetchSavedListings(listingIds) {
+                if (!savedListingsContainer) return;
                 savedListingsContainer.innerHTML = ''; 
                 
                 const promises = listingIds.map(id => getDoc(doc(db, "listings", id)));
@@ -316,6 +322,7 @@
             }
 
             function setAvatar(url, displayName) {
+                if (!avatarDisplay) return;
                 if (url) {
                     avatarDisplay.style.backgroundImage = `url('${url}')`;
                     avatarDisplay.textContent = '';
@@ -325,134 +332,128 @@
                 }
             }
             
-            // --- PROFILE FORM ---
             function populateProfileForm(user) {
-                emailInput.value = user.email;
+                if (emailInput) emailInput.value = user.email;
                 if (user.displayName) {
                     const names = user.displayName.split(' ');
-                    firstNameInput.value = names[0];
-                    lastNameInput.value = names.length > 1 ? names.slice(1).join(' ') : '';
+                    if (firstNameInput) firstNameInput.value = names[0];
+                    if (lastNameInput) lastNameInput.value = names.length > 1 ? names.slice(1).join(' ') : '';
                 }
             }
 
-            // Save Profile Changes
-            saveProfileBtn.addEventListener('click', async () => {
-                const user = auth.currentUser;
-                if (!user) return;
+            if (saveProfileBtn) {
+                saveProfileBtn.addEventListener('click', async () => {
+                    const user = auth.currentUser;
+                    if (!user) return;
 
-                const firstName = firstNameInput.value.trim();
-                const lastName = lastNameInput.value.trim();
-                const newDisplayName = `${firstName} ${lastName}`;
+                    const firstName = firstNameInput.value.trim();
+                    const lastName = lastNameInput.value.trim();
+                    const newDisplayName = `${firstName} ${lastName}`;
 
-                saveProfileBtn.disabled = true;
-                saveProfileBtn.textContent = 'Saving...';
-                updateFeedback.textContent = '';
+                    saveProfileBtn.disabled = true;
+                    saveProfileBtn.textContent = 'Saving...';
+                    updateFeedback.textContent = '';
 
-                try {
-                    await updateProfile(user, { displayName: newDisplayName });
-                    
-                    const userDocRef = doc(db, "users", user.uid);
-                    await updateDoc(userDocRef, { displayName: newDisplayName });
-
-                    userEmailDisplay.textContent = `Welcome, ${newDisplayName}!`;
-                    updateFeedback.textContent = 'Profile updated successfully!';
-                    updateFeedback.className = 'success';
-                } catch (error) {
-                    console.error("Error updating profile:", error);
-                    updateFeedback.textContent = 'Failed to update profile.';
-                    updateFeedback.className = 'error';
-                } finally {
-                    saveProfileBtn.disabled = false;
-                    saveProfileBtn.textContent = 'Save Changes';
-                }
-            });
-
-            resetPasswordBtn.addEventListener('click', async () => {
-                const user = auth.currentUser;
-                if (!user) return;
-                
-                if(confirm("Send a password reset email to " + user.email + "?")) {
                     try {
-                        await sendPasswordResetEmail(auth, user.email);
-                        alert("Password reset email sent!");
+                        await updateProfile(user, { displayName: newDisplayName });
+                        const userDocRef = doc(db, "users", user.uid);
+                        await updateDoc(userDocRef, { displayName: newDisplayName });
+
+                        if (userEmailDisplay) userEmailDisplay.textContent = `Welcome, ${newDisplayName}!`;
+                        updateFeedback.textContent = 'Profile updated successfully!';
+                        updateFeedback.className = 'success';
                     } catch (error) {
-                        alert("Error: " + error.message);
+                        console.error("Error updating profile:", error);
+                        updateFeedback.textContent = 'Failed to update profile.';
+                        updateFeedback.className = 'error';
+                    } finally {
+                        saveProfileBtn.disabled = false;
+                        saveProfileBtn.textContent = 'Save Changes';
                     }
-                }
-            });
+                });
+            }
 
-            deleteAccountBtn.addEventListener('click', async () => {
-                const user = auth.currentUser;
-                if (!user) return;
-
-                if (confirm("Are you SURE you want to delete your account? This cannot be undone.")) {
-                    const confirm2 = prompt("Type 'DELETE' to confirm.");
-                    if (confirm2 === 'DELETE') {
+            if (resetPasswordBtn) {
+                resetPasswordBtn.addEventListener('click', async () => {
+                    const user = auth.currentUser;
+                    if (!user) return;
+                    if(confirm("Send a password reset email to " + user.email + "?")) {
                         try {
-                            await deleteDoc(doc(db, "users", user.uid));
-                            await deleteUser(user);
-                            alert("Account deleted.");
-                            window.location.href = '/index.html';
+                            await sendPasswordResetEmail(auth, user.email);
+                            alert("Password reset email sent!");
                         } catch (error) {
-                            console.error("Delete error:", error);
                             alert("Error: " + error.message);
                         }
                     }
-                }
-            });
+                });
+            }
 
-            // --- PHOTO UPLOAD ---
-            photoUploadInput.addEventListener('change', (e) => {
-                if (e.target.files && e.target.files[0]) {
-                    selectedPhotoFile = e.target.files[0];
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                        setAvatar(event.target.result); 
+            if (deleteAccountBtn) {
+                deleteAccountBtn.addEventListener('click', async () => {
+                    const user = auth.currentUser;
+                    if (!user) return;
+                    if (confirm("Are you SURE you want to delete your account? This cannot be undone.")) {
+                        const confirm2 = prompt("Type 'DELETE' to confirm.");
+                        if (confirm2 === 'DELETE') {
+                            try {
+                                await deleteDoc(doc(db, "users", user.uid));
+                                await deleteUser(user);
+                                alert("Account deleted.");
+                                window.location.href = '/index.html';
+                            } catch (error) {
+                                console.error("Delete error:", error);
+                                alert("Error: " + error.message);
+                            }
+                        }
                     }
-                    reader.readAsDataURL(selectedPhotoFile);
-                    savePhotoBtn.style.display = 'inline-block';
-                }
-            });
+                });
+            }
 
-            savePhotoBtn.addEventListener('click', async () => {
-                const user = auth.currentUser;
-                if (!user || !selectedPhotoFile) return;
+            if (photoUploadInput) {
+                photoUploadInput.addEventListener('change', (e) => {
+                    if (e.target.files && e.target.files[0]) {
+                        selectedPhotoFile = e.target.files[0];
+                        const reader = new FileReader();
+                        reader.onload = (event) => { setAvatar(event.target.result); }
+                        reader.readAsDataURL(selectedPhotoFile);
+                        if (savePhotoBtn) savePhotoBtn.style.display = 'inline-block';
+                    }
+                });
+            }
 
-                savePhotoBtn.disabled = true;
-                savePhotoBtn.textContent = "Uploading...";
-                updateFeedback.textContent = "";
-
-                try {
-                    const formData = new FormData();
-                    formData.append('file', selectedPhotoFile);
-                    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-                    const res = await fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData });
-                    const data = await res.json();
-                    const newPhotoURL = data.secure_url;
-
-                    if (!newPhotoURL) { throw new Error("Image upload failed."); }
-
-                    await updateProfile(user, { photoURL: newPhotoURL });
-                    const userDocRef = doc(db, "users", user.uid);
-                    await updateDoc(userDocRef, { photoURL: newPhotoURL });
-
-                    updateFeedback.textContent = "Profile picture updated!";
-                    updateFeedback.className = 'success';
-                    savePhotoBtn.style.display = 'none';
-                    selectedPhotoFile = null;
-
-                } catch (error) {
-                    console.error("Error updating profile picture:", error);
-                    updateFeedback.textContent = "Could not update photo. Please try again.";
-                    updateFeedback.className = 'error';
-                } finally {
-                    savePhotoBtn.disabled = false;
-                    savePhotoBtn.textContent = "Save Photo";
-                }
-            });
+            if (savePhotoBtn) {
+                savePhotoBtn.addEventListener('click', async () => {
+                    const user = auth.currentUser;
+                    if (!user || !selectedPhotoFile) return;
+                    savePhotoBtn.disabled = true;
+                    savePhotoBtn.textContent = "Uploading...";
+                    updateFeedback.textContent = "";
+                    try {
+                        const formData = new FormData();
+                        formData.append('file', selectedPhotoFile);
+                        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+                        const res = await fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData });
+                        const data = await res.json();
+                        const newPhotoURL = data.secure_url;
+                        if (!newPhotoURL) { throw new Error("Image upload failed."); }
+                        await updateProfile(user, { photoURL: newPhotoURL });
+                        const userDocRef = doc(db, "users", user.uid);
+                        await updateDoc(userDocRef, { photoURL: newPhotoURL });
+                        updateFeedback.textContent = "Profile picture updated!";
+                        updateFeedback.className = 'success';
+                        savePhotoBtn.style.display = 'none';
+                        selectedPhotoFile = null;
+                    } catch (error) {
+                        console.error("Error updating profile picture:", error);
+                        updateFeedback.textContent = "Could not update photo. Please try again.";
+                        updateFeedback.className = 'error';
+                    } finally {
+                        savePhotoBtn.disabled = false;
+                        savePhotoBtn.textContent = "Save Photo";
+                    }
+                });
+            }
         }
-
         main();
     </script>
 </body>
