@@ -3,456 +3,436 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Profile - Cheaplet</title>
-    <!-- GLOBAL CONFIGURATION (Language & Ban Check) -->
+    <title>Cheaplet - Great Finds, Unbeatable Prices</title>
+    <!-- GLOBAL BRAIN -->
     <script type="module" src="global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
         .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
-        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
-        .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+
+        /* Header */
+        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 10px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        .header-content { display: flex; justify-content: space-between; align-items: center; }
+        
+        .header-left { display: flex; align-items: center; gap: 30px; }
         .logo { font-size: 24px; font-weight: bold; display: flex; align-items: center; cursor: pointer; color: white; text-decoration: none; }
         .logo span { color: #FFD700; }
-        nav ul { display: flex; list-style: none; }
-        nav ul li { margin-left: 20px; }
-        nav ul li a { color: white; text-decoration: none; font-weight: 500; opacity: 0.9; }
+        
+        nav ul { display: flex; list-style: none; margin: 0; padding: 0; gap: 20px; }
+        nav ul li a { color: white; text-decoration: none; font-weight: 500; opacity: 0.9; transition: opacity 0.2s; }
         nav ul li a:hover { opacity: 1; }
-        .btn { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); color: #333; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: transform 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+        .header-right { display: flex; align-items: center; gap: 15px; }
+
+        .btn { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); color: #333; border: none; padding: 8px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; transition: transform 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size: 0.9rem; }
         .btn:hover { transform: translateY(-2px); }
-        .btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
-        .header-auth-buttons { display: flex; gap: 10px; align-items: center; }
-        #userEmailDisplay { color: white; font-weight: 500; margin-right: 10px; }
-        #logoutBtn { background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); color: white; }
-        .btn-danger { background-color: #f44336; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-danger:hover { background-color: #d32f2f; }
-        .btn-secondary { background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-secondary:hover { background-color: #5a6268; }
 
-        /* Profile Page Styles */
-        .page-header { display: flex; justify-content: space-between; align-items: center; padding: 40px 0 20px; border-bottom: 1px solid #ddd; margin-bottom: 30px; }
-        .page-header h1 { font-size: 2rem; }
-        .profile-container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 30px; padding-bottom: 50px; }
+        /* --- NEW PROFILE DROPDOWN STYLES --- */
+        .profile-menu-container { position: relative; }
         
-        .profile-section { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .profile-section h2 { font-size: 1.5rem; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; color: #2E7D32; }
-        
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; font-weight: 600; margin-bottom: 5px; color: #555; }
-        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
-        .form-group input[disabled] { background-color: #f4f4f4; cursor: not-allowed; }
-        
-        .info-message { text-align: center; padding: 50px; font-size: 1.2rem; color: #777; }
-        #update-feedback { text-align: center; margin-top: 15px; font-weight: 500; height: 1em; }
-        .success { color: #4CAF50; }
-        .error { color: #f44336; }
-
-        /* PROFILE PICTURE STYLES */
-        .profile-picture-section { text-align: center; margin-bottom: 30px; }
-        #avatar-display { width: 120px; height: 120px; border-radius: 50%; background-color: #e9e9e9; color: #aaa; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 3rem; margin: 0 auto 15px; background-size: cover; background-position: center; border: 4px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        #photo-upload-input { display: none; }
-        .photo-buttons { display: flex; justify-content: center; gap: 10px; }
-
-        /* SAVED LISTINGS STYLES */
-        .saved-listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
-        .saved-item-card { border: 1px solid #eee; border-radius: 8px; overflow: hidden; text-decoration: none; color: inherit; transition: transform 0.2s; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .saved-item-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-color: #4CAF50; }
-        .saved-item-img { height: 140px; background-color: #eee; background-size: cover; background-position: center; }
-        .saved-item-details { padding: 12px; }
-        .saved-item-price { font-weight: bold; color: #4CAF50; font-size: 1.1rem; }
-        .saved-item-title { font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; margin-top: 4px; }
-
-        @media (max-width: 767px) { nav { display: none; } }
-        @media (min-width: 768px) {
-            .header-content { flex-wrap: nowrap; }
-            .header-auth-buttons { width: auto; margin-top: 0; }
-            #userEmailDisplay { width: auto; text-align: right; margin-bottom: 0; margin-right: 10px; order: 0; }
+        .profile-avatar {
+            width: 40px; height: 40px; border-radius: 50%; 
+            background-color: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.8);
+            color: white; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 1.2rem; cursor: pointer; 
+            background-size: cover; background-position: center;
+            transition: transform 0.2s, border-color 0.2s;
         }
+        .profile-avatar:hover { transform: scale(1.05); border-color: #FFD700; }
+
+        .dropdown-menu {
+            position: absolute; top: 50px; right: 0; width: 200px;
+            background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: none; flex-direction: column; overflow: hidden; animation: fadeIn 0.2s ease;
+            color: #333;
+        }
+        .dropdown-menu.show { display: flex; }
+        
+        .dropdown-header { padding: 15px; border-bottom: 1px solid #eee; background: #f9f9f9; font-weight: bold; color: #2E7D32; font-size: 0.9rem; }
+        
+        .dropdown-item {
+            padding: 12px 15px; text-decoration: none; color: #333; display: flex; align-items: center; gap: 10px; transition: background 0.2s;
+        }
+        .dropdown-item:hover { background-color: #f1f8e9; color: #2E7D32; }
+        .dropdown-item i { width: 20px; text-align: center; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Hero */
+        .hero { background: linear-gradient(rgba(76,175,80,0.9), rgba(56,142,60,0.9)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%234CAF50"/></svg>'); background-size: cover; color: white; text-align: center; padding: 40px 20px; }
+        .hero h1 { font-size: 2rem; margin-bottom: 15px; }
+        
+        /* Tags */
+        .tags-section { padding: 40px 0; text-align: center; }
+        .section-title { font-size: 1.8rem; color: #2E7D32; margin-bottom: 25px; font-weight: 600; }
+        .tags-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
+        .tag-pill { background: white; border: 1px solid #ddd; padding: 10px 20px; border-radius: 30px; font-weight: 600; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); color: #555; cursor: pointer; transition: all 0.2s; }
+        .tag-pill:hover { border-color: #4CAF50; transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); color: #2E7D32; }
+        .tag-pill.active { background-color: #e8f5e9; border-color: #4CAF50; color: #2E7D32; }
+        .tag-count { background: #eee; font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; color: #666; }
+
+        /* Filters */
+        .filters { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin: 30px 0; }
+        .filter-options { display: flex; flex-direction: column; gap: 15px; }
+        .filter-group { display: flex; align-items: center; width: 100%; }
+        select, input { padding: 10px; border: 2px solid #ddd; border-radius: 6px; width: 100%; }
+
+        /* Listings */
+        .listings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px; }
+        .listing-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: block; text-decoration: none; color: inherit; transition: transform 0.3s; }
+        .listing-card:hover { transform: translateY(-5px); }
+        .listing-image { height: 180px; background-color: #eee; background-size: cover; background-position: center; position: relative; }
+        .listing-details { padding: 15px; }
+        .listing-header-card { display: flex; justify-content: space-between; }
+        .listing-title { font-weight: 600; font-size: 1rem; }
+        .listing-price { color: #4CAF50; font-weight: bold; font-size: 1.1rem; }
+        .listing-footer { display: flex; justify-content: space-between; margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px; font-size: 0.85rem; color: #666; }
+        .seller-name { font-weight: 500; color: #555; }
+        .condition-tag { background-color: #e0e0e0; color: #333; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+        .condition-tag.new { background-color: #e8f5e9; color: #2E7D32; }
+        .no-listings-message { grid-column: 1 / -1; text-align: center; padding: 40px; color: #777; }
+
+        /* Footer */
+        footer { background: linear-gradient(135deg, #2E7D32 0%, #1b5e20 100%); color: white; padding: 40px 0 20px; margin-top: 40px; }
+        .footer-content { display: grid; grid-template-columns: 1fr; gap: 30px; margin-bottom: 30px; text-align: center; }
+        .footer-column h3 { margin-bottom: 15px; font-size: 1.2rem; }
+        .footer-column ul { list-style: none; }
+        .footer-column ul li { margin-bottom: 10px; }
+        .footer-column ul li a { color: #ddd; text-decoration: none; transition: color 0.3s; }
+        .footer-column ul li a:hover { color: white; }
+        .copyright { text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem; color: #ccc; }
+        
+        @media (min-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .filter-options { flex-direction: row; }
+            .footer-content { grid-template-columns: repeat(3, 1fr); text-align: left; }
+            nav { display: block; }
+        }
+        @media (max-width: 767px) { nav { display: none; } }
     </style>
 </head>
 <body>
     <header>
         <div class="container header-content">
-            <a href="/index.html" class="logo">Cheap<span>let</span></a>
-            <nav>
-                <ul>
-                    <li><a href="/index.html" data-i18n="nav_home">Home</a></li>
-                    <li><a href="/my-listings.html" data-i18n="nav_listings">My Listings</a></li>
-                    <li><a href="/messages.html" data-i18n="nav_messages">Messages</a></li>
-                    <li><a href="/profile.html" data-i18n="nav_profile">My Profile</a></li>
-                </ul>
-            </nav>
-            <div class="header-auth-buttons">
-                <span id="userEmailDisplay" style="display: none;"></span>
+            <div class="header-left">
+                <div class="logo" id="logo-link">Cheap<span>let</span></div>
+                <nav>
+                    <ul>
+                        <li><a href="/index.html" data-i18n="nav_home">Home</a></li>
+                        <li><a href="/my-listings.html" data-i18n="nav_listings">My Listings</a></li>
+                        <li><a href="/messages.html" data-i18n="nav_messages">Messages</a></li>
+                    </ul>
+                </nav>
+            </div>
+            
+            <div class="header-right">
+                <button class="btn" id="listAnItemBtn" data-i18n="btn_list">List an Item</button>
                 <button class="btn" id="loginRegisterBtn" data-i18n="btn_login">Login / Register</button>
-                <button class="btn" id="logoutBtn" style="display: none;" data-i18n="btn_logout">Logout</button>
+
+                <!-- NEW: PROFILE DROPDOWN MENU -->
+                <div class="profile-menu-container" id="profileMenuContainer" style="display: none;">
+                    <div class="profile-avatar" id="profileAvatar"></div>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <div class="dropdown-header" id="dropdownName">User</div>
+                        <a href="/profile.html" class="dropdown-item"><i class="fas fa-user"></i> My Profile</a>
+                        <a href="#" class="dropdown-item" id="dropdownLogout"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
 
-    <main class="container">
-        <div class="page-header">
-            <h1>My Profile</h1>
-            <a href="/my-listings.html" class="btn">View My Listings</a>
+    <section class="hero">
+        <div class="container">
+            <h1 data-i18n="hero_title">Great Finds, Unbeatable Prices.</h1>
+            <p data-i18n="hero_sub">Cheaplet is the online marketplace for smart savings. Discover secondhand books, clearance, and giveaway items in your area.</p>
+            <button class="btn" id="startBrowsingBtn" data-i18n="btn_browse">Start Browsing</button>
         </div>
-
-        <div id="info-container">
-            <p class="info-message">Loading profile...</p>
-        </div>
+    </section>
     
-        <div class="profile-container" id="profile-container" style="display: none;">
-            
-            <!-- SECTION 1: PERSONAL INFO -->
-            <div class="profile-section">
-                <div class="profile-picture-section">
-                    <div id="avatar-display"></div>
-                    <div class="photo-buttons">
-                        <label for="photo-upload-input" class="btn btn-secondary">Change Photo</label>
-                        <button class="btn" id="savePhotoBtn" style="display: none;">Save Photo</button>
-                    </div>
-                    <input type="file" id="photo-upload-input" accept="image/*">
-                </div>
-                
-                <h2>Personal Information</h2>
-                <div class="form-group">
-                    <label for="firstName">First Name</label>
-                    <input type="text" id="firstName" placeholder="Your first name">
-                </div>
-                <div class="form-group">
-                    <label for="lastName">Last Name</label>
-                    <input type="text" id="lastName" placeholder="Your last name">
-                </div>
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" disabled>
-                </div>
+    <section class="tags-section container">
+        <h2 class="section-title" data-i18n="title_tags">Popular Tags</h2>
+        <div class="tags-grid" id="tags-grid-container">
+            <p style="color:#777;" data-i18n="loading_tags">Loading popular tags...</p>
+        </div>
+    </section>
 
-                <!-- NEW: LANGUAGE SELECTOR -->
-                <div class="form-group">
-                    <label for="languageSelect">Language / Langue</label>
-                    <select id="languageSelect">
-                        <option value="en">English</option>
-                        <option value="fr">Français</option>
+    <main class="container">
+        <section class="filters">
+            <div class="filter-options">
+                <div class="filter-group">
+                    <select id="sort-filter">
+                        <option value="newest">Newest First</option>
+                        <option value="price-low">Price: Low to High</option>
+                        <option value="price-high">Price: High to Low</option>
                     </select>
                 </div>
-
-                <button class="btn" id="saveProfileBtn">Save Changes</button>
-                <p id="update-feedback"></p>
-            </div>
-
-            <!-- SECTION 2: SAVED LISTINGS -->
-            <div class="profile-section">
-                <h2>Saved Items</h2>
-                <div id="saved-listings-container" class="saved-listings-grid">
-                    <p style="color: #777;">Loading saved items...</p>
+                <div class="filter-group" style="flex-grow: 1;">
+                    <input type="text" data-i18n-placeholder="search_placeholder" placeholder="Search listings..." id="search-input">
                 </div>
             </div>
+            <div id="active-tag-display" style="margin-top: 10px; color: #4CAF50; font-weight: bold; display: none;">
+                Filtered by tag: <span id="current-tag-name"></span> <button id="clear-tag-btn" style="border:none; background:none; color:#666; cursor:pointer;">(Clear)</button>
+            </div>
+        </section>
 
-            <!-- SECTION 3: SECURITY -->
-            <div class="profile-section">
-                <h2>Account Security</h2>
-                <div class="form-group">
-                    <label>Password</label>
-                    <button class="btn btn-secondary" id="resetPasswordBtn">Send Password Reset Email</button>
+        <section class="listings">
+            <div class="listings-header">
+                <h2 data-i18n="title_listings">Featured Listings</h2>
+                <span id="itemCount">Loading...</span>
+            </div>
+            <div class="listings-grid" id="listings-container"></div>
+        </section>
+    </main>
+
+    <section class="how-it-works">
+        <div class="container">
+            <h2 class="section-title" data-i18n="how_title">How It Works</h2>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <i class="fas fa-user-plus" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i>
+                    <h3 data-i18n="step_1_title">Create an Account</h3>
+                    <p data-i18n="step_1_text">Quickly sign up for free to start buying and selling.</p>
                 </div>
-                <div class="form-group">
-                    <label>Delete Account</label>
-                    <button class="btn-danger" id="deleteAccountBtn">Delete My Account</button>
+                <div class="step-card">
+                    <i class="fas fa-camera-retro" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i>
+                    <h3 data-i18n="step_2_title">Post Your Item</h3>
+                    <p data-i18n="step_2_text">Snap some photos, add tags, and list in minutes.</p>
+                </div>
+                <div class="step-card">
+                    <i class="fas fa-comments-dollar" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i>
+                    <h3 data-i18n="step_3_title">Connect & Sell</h3>
+                    <p data-i18n="step_3_text">Message with buyers securely and arrange a sale.</p>
                 </div>
             </div>
         </div>
-    </main>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h3 data-i18n="footer_about">About Cheaplet</h3>
+                    <ul><li><a href="#">About Us</a></li><li><a href="#">How It Works</a></li><li><a href="#">Contact</a></li></ul>
+                </div>
+                <div class="footer-column">
+                    <h3 data-i18n="footer_support">Support</h3>
+                    <ul><li><a href="#">Help Center</a></li><li><a href="#">Safety Tips</a></li><li><a href="#">Report Issue</a></li></ul>
+                </div>
+                <div class="footer-column">
+                    <h3 data-i18n="footer_legal">Legal</h3>
+                    <ul><li><a href="#">Terms of Service</a></li><li><a href="#">Privacy Policy</a></li></ul>
+                </div>
+            </div>
+            <div class="copyright">© 2025 Cheaplet. All rights reserved.</div>
+        </div>
+    </footer>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut, updateProfile, sendPasswordResetEmail, deleteUser } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
-            // --- INITIALIZATION ---
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
-            const firebaseConfig = config.firebaseConfig;
-            const CLOUDINARY_CLOUD_NAME = config.cloudinary.cloudName;
-            const CLOUDINARY_UPLOAD_PRESET = config.cloudinary.uploadPreset;
-            const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-
-            const app = initializeApp(firebaseConfig);
+            const app = initializeApp(config.firebaseConfig);
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            // --- DOM SELECTORS ---
-            const userEmailDisplay = document.getElementById('userEmailDisplay');
+            // DOM Elements
             const loginRegisterBtn = document.getElementById('loginRegisterBtn');
-            const logoutBtn = document.getElementById('logoutBtn');
-            const logoLink = document.getElementById('logo-link');
-            const infoContainer = document.getElementById('info-container');
-            const profileContainer = document.getElementById('profile-container');
-            const firstNameInput = document.getElementById('firstName');
-            const lastNameInput = document.getElementById('lastName');
-            const emailInput = document.getElementById('email');
-            const saveProfileBtn = document.getElementById('saveProfileBtn');
-            const updateFeedback = document.getElementById('update-feedback');
-            const resetPasswordBtn = document.getElementById('resetPasswordBtn');
-            const deleteAccountBtn = document.getElementById('deleteAccountBtn');
-            const avatarDisplay = document.getElementById('avatar-display');
-            const photoUploadInput = document.getElementById('photo-upload-input');
-            const savePhotoBtn = document.getElementById('savePhotoBtn');
-            const savedListingsContainer = document.getElementById('saved-listings-container');
-            const languageSelect = document.getElementById('languageSelect');
+            const listAnItemBtn = document.getElementById('listAnItemBtn');
             
-            let selectedPhotoFile = null;
+            // New Dropdown Elements
+            const profileMenuContainer = document.getElementById('profileMenuContainer');
+            const profileAvatar = document.getElementById('profileAvatar');
+            const dropdownMenu = document.getElementById('dropdownMenu');
+            const dropdownName = document.getElementById('dropdownName');
+            const dropdownLogout = document.getElementById('dropdownLogout');
 
-            // --- HEADER & NAVIGATION ---
-            logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
-            loginRegisterBtn.addEventListener('click', () => { window.location.href = '/LoginInToCheaplet.html'; });
-            logoutBtn.addEventListener('click', () => signOut(auth));
+            const listingsContainer = document.getElementById('listings-container');
+            const itemCountSpan = document.getElementById('itemCount');
+            const sortFilter = document.getElementById('sort-filter');
+            const searchInput = document.getElementById('search-input');
+            const tagsGridContainer = document.getElementById('tags-grid-container');
+            const activeTagDisplay = document.getElementById('active-tag-display');
+            const currentTagName = document.getElementById('current-tag-name');
+            const btnClearFilter = document.getElementById('btn-clear-filter');
 
-            // --- INITIALIZE LANGUAGE SELECTOR ---
-            // Set the dropdown to match the current saved language
-            const currentLang = localStorage.getItem('preferred_language') || 'en';
-            languageSelect.value = currentLang;
+            let allTags = [];
+            let currentActiveTag = null;
+            let unsubscribeListings = null;
 
-            // Handle Language Change
-            languageSelect.addEventListener('change', (e) => {
-                const newLang = e.target.value;
-                if (window.applyLanguage) {
-                    window.applyLanguage(newLang); // Use function from global.js
-                } else {
-                    localStorage.setItem('preferred_language', newLang);
-                    window.location.reload(); // Fallback if global.js is slow to load
-                }
-            });
-
-            // --- MAIN AUTH LOGIC ---
-            onAuthStateChanged(auth, async (user) => {
+            // --- AUTH STATE & HEADER LOGIC ---
+            onAuthStateChanged(auth, user => {
                 if (user && user.emailVerified) {
-                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome!`;
-                    userEmailDisplay.style.display = 'block';
+                    // Logged In
                     loginRegisterBtn.style.display = 'none';
-                    logoutBtn.style.display = 'inline-block';
+                    profileMenuContainer.style.display = 'block';
+                    listAnItemBtn.style.display = 'inline-block';
+
+                    // Set Avatar / Name
+                    dropdownName.textContent = user.displayName || 'User';
                     
-                    populateProfileForm(user);
-                    infoContainer.style.display = 'none';
-                    profileContainer.style.display = 'flex';
-
-                    // Fetch User Doc
-                    try {
-                        const userDocRef = doc(db, "users", user.uid);
-                        const userDocSnap = await getDoc(userDocRef);
-                        
-                        if (userDocSnap.exists()) {
-                            const data = userDocSnap.data();
-
-                            if (data.role === 'banned') {
-                                await signOut(auth);
-                                alert("You have been banned from Cheaplet.");
-                                window.location.href = '/LoginInToCheaplet.html';
-                                return;
-                            }
-                            
-                            if (data.photoURL) {
-                                setAvatar(data.photoURL);
-                            } else {
-                                setAvatar(user.photoURL, user.displayName);
-                            }
-
-                            if (data.savedListings && data.savedListings.length > 0) {
-                                fetchSavedListings(data.savedListings);
-                            } else {
-                                savedListingsContainer.innerHTML = '<p style="color:#999; grid-column:1/-1;">You haven\'t saved any items yet.</p>';
-                            }
-
-                        } else {
-                            setAvatar(user.photoURL, user.displayName);
-                            savedListingsContainer.innerHTML = '<p style="color:#999; grid-column:1/-1;">You haven\'t saved any items yet.</p>';
-                        }
-                    } catch (e) {
-                        console.error("Error loading profile data:", e);
+                    if (user.photoURL) {
+                        profileAvatar.style.backgroundImage = `url('${user.photoURL}')`;
+                        profileAvatar.textContent = '';
+                    } else {
+                        profileAvatar.style.backgroundImage = 'none';
+                        profileAvatar.textContent = user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U';
                     }
 
                 } else {
-                    profileContainer.style.display = 'none';
-                    infoContainer.innerHTML = `<p class="info-message">Please <a href="/LoginInToCheaplet.html" style="color:#4CAF50; font-weight:bold;">log in</a> to view your profile.</p>`;
-                    infoContainer.style.display = 'block';
-                    userEmailDisplay.style.display = 'none';
+                    // Logged Out
                     loginRegisterBtn.style.display = 'inline-block';
-                    logoutBtn.style.display = 'none';
+                    profileMenuContainer.style.display = 'none';
+                    // We keep list button visible but it redirects to login
+                    listAnItemBtn.style.display = 'inline-block'; 
                 }
             });
-            
-            // --- SAVED ITEMS ---
-            async function fetchSavedListings(listingIds) {
-                savedListingsContainer.innerHTML = ''; 
-                
-                const promises = listingIds.map(id => getDoc(doc(db, "listings", id)));
-                const snapshots = await Promise.all(promises);
 
-                let hasItems = false;
-                snapshots.forEach(snap => {
-                    if (snap.exists()) {
-                        hasItems = true;
-                        const data = snap.data();
-                        const card = document.createElement('a');
-                        card.className = 'saved-item-card';
-                        card.href = `/listing.html?id=${snap.id}`;
-                        
-                        const img = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls[0] : '';
-                        
-                        card.innerHTML = `
-                            <div class="saved-item-img" style="background-image: url('${img}')"></div>
-                            <div class="saved-item-details">
-                                <div class="saved-item-price">$${data.price.toFixed(2)}</div>
-                                <div class="saved-item-title">${data.title}</div>
-                            </div>
-                        `;
-                        savedListingsContainer.appendChild(card);
-                    }
-                });
+            // --- DROPDOWN INTERACTIONS ---
+            profileAvatar.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdownMenu.classList.toggle('show');
+            });
 
-                if (!hasItems) {
-                    savedListingsContainer.innerHTML = '<p style="color:#999;">Items you saved may have been deleted.</p>';
+            // Close dropdown if clicked outside
+            document.addEventListener('click', (e) => {
+                if (!profileMenuContainer.contains(e.target)) {
+                    dropdownMenu.classList.remove('show');
                 }
-            }
+            });
 
-            function setAvatar(url, displayName) {
-                if (url) {
-                    avatarDisplay.style.backgroundImage = `url('${url}')`;
-                    avatarDisplay.textContent = '';
+            dropdownLogout.addEventListener('click', (e) => {
+                e.preventDefault();
+                signOut(auth);
+                dropdownMenu.classList.remove('show');
+            });
+
+            // --- NAVIGATION ---
+            document.getElementById('logo-link').addEventListener('click', () => window.location.href = '/index.html');
+            loginRegisterBtn.addEventListener('click', () => { window.location.href = '/LoginInToCheaplet.html'; });
+            listAnItemBtn.addEventListener('click', () => { 
+                if (auth.currentUser && auth.currentUser.emailVerified) {
+                    window.location.href = '/listanitem.html'; 
                 } else {
-                    avatarDisplay.style.backgroundImage = 'none';
-                    avatarDisplay.textContent = displayName ? displayName.charAt(0).toUpperCase() : '?';
-                }
-            }
-            
-            // --- PROFILE FORM ---
-            function populateProfileForm(user) {
-                emailInput.value = user.email;
-                if (user.displayName) {
-                    const names = user.displayName.split(' ');
-                    firstNameInput.value = names[0];
-                    lastNameInput.value = names.length > 1 ? names.slice(1).join(' ') : '';
-                }
-            }
+                    alert('Please log in to list an item.');
+                    window.location.href = '/LoginInToCheaplet.html';
+                } 
+            });
+            document.getElementById('startBrowsingBtn').addEventListener('click', () => document.querySelector('.filters').scrollIntoView({ behavior: 'smooth' }));
 
-            // Save Profile Changes
-            saveProfileBtn.addEventListener('click', async () => {
-                const user = auth.currentUser;
-                if (!user) return;
-
-                const firstName = firstNameInput.value.trim();
-                const lastName = lastNameInput.value.trim();
-                const newDisplayName = `${firstName} ${lastName}`;
-
-                saveProfileBtn.disabled = true;
-                saveProfileBtn.textContent = 'Saving...';
-                updateFeedback.textContent = '';
-
+            // --- LOAD TAGS & REDIRECT ---
+            async function loadGlobalTags() {
                 try {
-                    await updateProfile(user, { displayName: newDisplayName });
+                    const q = query(collection(db, "global_tags"), orderBy("count", "desc"), limit(12));
+                    const snapshot = await getDocs(q);
                     
-                    const userDocRef = doc(db, "users", user.uid);
-                    await updateDoc(userDocRef, { displayName: newDisplayName });
+                    tagsGridContainer.innerHTML = '';
+                    
+                    if(snapshot.empty) {
+                        tagsGridContainer.innerHTML = '<p style="color:#999;">No tags yet.</p>';
+                        return;
+                    }
 
-                    userEmailDisplay.textContent = `Welcome, ${newDisplayName}!`;
-                    updateFeedback.textContent = 'Profile updated successfully!';
-                    updateFeedback.className = 'success';
-                } catch (error) {
-                    console.error("Error updating profile:", error);
-                    updateFeedback.textContent = 'Failed to update profile.';
-                    updateFeedback.className = 'error';
-                } finally {
-                    saveProfileBtn.disabled = false;
-                    saveProfileBtn.textContent = 'Save Changes';
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const pill = document.createElement('div');
+                        pill.className = 'tag-pill';
+                        
+                        let count = data.count || 0;
+                        if (count >= 1000) count = (count/1000).toFixed(1) + 'k';
+
+                        pill.innerHTML = `
+                            ${data.tag}
+                            <span class="tag-count">${count}</span>
+                        `;
+                        
+                        pill.addEventListener('click', () => {
+                            window.location.href = `/tag.html?tag=${encodeURIComponent(data.tag)}`;
+                        });
+
+                        tagsGridContainer.appendChild(pill);
+                    });
+
+                } catch (e) {
+                    console.error("Error loading tags:", e);
+                    tagsGridContainer.innerHTML = '<p style="color:#999;">Could not load tags.</p>';
                 }
-            });
+            }
 
-            resetPasswordBtn.addEventListener('click', async () => {
-                const user = auth.currentUser;
-                if (!user) return;
+            // --- LISTINGS LOGIC ---
+            function renderListing(doc) {
+                const data = doc.data();
+                const firstImage = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls[0] : '';
+                const condition = data.condition || "Used";
+                const conditionClass = condition === "New" ? "new" : "";
+                const sellerName = data.posterDisplayName || "User";
+
+                const div = document.createElement('a');
+                div.className = 'listing-card';
+                div.href = `/listing.html?id=${doc.id}`;
                 
-                if(confirm("Send a password reset email to " + user.email + "?")) {
-                    try {
-                        await sendPasswordResetEmail(auth, user.email);
-                        alert("Password reset email sent!");
-                    } catch (error) {
-                        alert("Error: " + error.message);
+                div.innerHTML = `
+                    <div class="listing-image" style="background-image: url('${firstImage}');"></div>
+                    <div class="listing-details">
+                        <div class="listing-header-card">
+                            <span class="listing-title">${data.title}</span>
+                            <span class="listing-price">$${data.price.toFixed(2)}</span>
+                        </div>
+                        <div class="listing-footer">
+                            <span class="seller-name">${sellerName}</span>
+                            <span class="condition-tag ${conditionClass}">${condition}</span>
+                        </div>
+                    </div>
+                `;
+                return div;
+            }
+
+            function fetchListings() {
+                if (unsubscribeListings) unsubscribeListings();
+
+                let q = collection(db, 'listings');
+                const constraints = [];
+                
+                if (sortFilter.value === 'price-low') constraints.push(orderBy('price', 'asc'));
+                else if (sortFilter.value === 'price-high') constraints.push(orderBy('price', 'desc'));
+                else constraints.push(orderBy('timestamp', 'desc'));
+
+                const finalQuery = query(q, ...constraints);
+
+                unsubscribeListings = onSnapshot(finalQuery, snapshot => {
+                    listingsContainer.innerHTML = '';
+                    const count = snapshot.docs.length;
+                    itemCountSpan.textContent = `${count} ${count === 1 ? 'item' : 'items'}`;
+                    
+                    if (snapshot.empty) {
+                        listingsContainer.innerHTML = '<div class="no-listings-message"><h3>No listings found.</h3><p>Try checking back later!</p></div>';
+                    } else {
+                        snapshot.forEach(doc => {
+                            listingsContainer.appendChild(renderListing(doc));
+                        });
                     }
+                }, error => {
+                    console.error("Error fetching listings:", error);
+                });
+            }
+
+            sortFilter.addEventListener('change', fetchListings);
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && searchInput.value.trim()) {
+                    window.location.href = `/search.html?q=${encodeURIComponent(searchInput.value.trim())}`;
                 }
             });
 
-            deleteAccountBtn.addEventListener('click', async () => {
-                const user = auth.currentUser;
-                if (!user) return;
-
-                if (confirm("Are you SURE you want to delete your account? This cannot be undone.")) {
-                    const confirm2 = prompt("Type 'DELETE' to confirm.");
-                    if (confirm2 === 'DELETE') {
-                        try {
-                            await deleteDoc(doc(db, "users", user.uid));
-                            await deleteUser(user);
-                            alert("Account deleted.");
-                            window.location.href = '/index.html';
-                        } catch (error) {
-                            console.error("Delete error:", error);
-                            alert("Error: " + error.message);
-                        }
-                    }
-                }
-            });
-
-            // --- PHOTO UPLOAD ---
-            photoUploadInput.addEventListener('change', (e) => {
-                if (e.target.files && e.target.files[0]) {
-                    selectedPhotoFile = e.target.files[0];
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                        setAvatar(event.target.result); 
-                    }
-                    reader.readAsDataURL(selectedPhotoFile);
-                    savePhotoBtn.style.display = 'inline-block';
-                }
-            });
-
-            savePhotoBtn.addEventListener('click', async () => {
-                const user = auth.currentUser;
-                if (!user || !selectedPhotoFile) return;
-
-                savePhotoBtn.disabled = true;
-                savePhotoBtn.textContent = "Uploading...";
-                updateFeedback.textContent = "";
-
-                try {
-                    const formData = new FormData();
-                    formData.append('file', selectedPhotoFile);
-                    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-
-                    const res = await fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData });
-                    const data = await res.json();
-                    const newPhotoURL = data.secure_url;
-
-                    if (!newPhotoURL) { throw new Error("Image upload failed."); }
-
-                    await updateProfile(user, { photoURL: newPhotoURL });
-                    const userDocRef = doc(db, "users", user.uid);
-                    await updateDoc(userDocRef, { photoURL: newPhotoURL });
-
-                    updateFeedback.textContent = "Profile picture updated!";
-                    updateFeedback.className = 'success';
-                    savePhotoBtn.style.display = 'none';
-                    selectedPhotoFile = null;
-
-                } catch (error) {
-                    console.error("Error updating profile picture:", error);
-                    updateFeedback.textContent = "Could not update photo. Please try again.";
-                    updateFeedback.className = 'error';
-                } finally {
-                    savePhotoBtn.disabled = false;
-                    savePhotoBtn.textContent = "Save Photo";
-                }
-            });
+            loadGlobalTags();
+            fetchListings();
         }
-
         main();
     </script>
 </body>
