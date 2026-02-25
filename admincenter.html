@@ -22,44 +22,60 @@
         .logo { font-size: 20px; font-weight: bold; color: #4CAF50; letter-spacing: 1px; }
         .admin-badge { background: #4CAF50; color: black; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px; }
         
-        .nav-btn { color: #ccc; text-decoration: none; margin-left: 20px; font-size: 0.9rem; transition: color 0.2s; }
+        .header-controls { display: flex; gap: 20px; align-items: center; }
+        .nav-btn { color: #ccc; text-decoration: none; font-size: 0.9rem; transition: color 0.2s; cursor: pointer; }
         .nav-btn:hover { color: white; }
+
+        /* --- Tabs --- */
+        .tabs { display: flex; justify-content: center; margin-top: 20px; gap: 10px; }
+        .tab-btn {
+            background-color: #333; color: #aaa; border: 1px solid #444; padding: 10px 20px;
+            cursor: pointer; font-weight: bold; border-radius: 4px; transition: all 0.2s;
+        }
+        .tab-btn.active { background-color: #4CAF50; color: black; border-color: #4CAF50; }
 
         /* --- Dashboard --- */
         .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
-        h1 { margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        h1 { margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 10px; font-size: 1.5rem; }
 
+        /* Grid Layouts */
         .dashboard-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;
         }
 
-        /* --- Admin Card --- */
+        /* --- Admin Card (Listings) --- */
         .admin-card {
             background-color: #2d2d2d; border: 1px solid #444; border-radius: 8px; overflow: hidden;
             display: flex; flex-direction: column;
         }
-        
         .card-header { padding: 10px; background: #333; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: #aaa; }
         .user-link { color: #4CAF50; text-decoration: none; font-weight: bold; }
-        .user-link:hover { text-decoration: underline; }
-
         .card-body { padding: 15px; flex-grow: 1; display: flex; gap: 10px; }
         .card-img { width: 80px; height: 80px; background: #000; object-fit: cover; border-radius: 4px; }
         .card-info { flex: 1; }
         .card-title { font-weight: bold; margin-bottom: 5px; color: white; font-size: 1.1rem; }
         .card-price { color: #FFD700; font-weight: bold; }
         .card-tags { font-size: 0.8rem; color: #888; margin-top: 5px; }
+        .card-actions { padding: 10px; background: #222; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-        /* --- Action Buttons --- */
-        .card-actions {
-            padding: 10px; background: #222; display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+        /* --- Tag Card --- */
+        .tag-card {
+            background-color: #2d2d2d; border: 1px solid #444; border-radius: 8px; padding: 15px;
+            display: flex; justify-content: space-between; align-items: center;
         }
-
-        .btn { border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
+        .tag-info h3 { margin: 0; color: #fff; font-size: 1.1rem; }
+        .tag-meta { color: #888; font-size: 0.85rem; margin-top: 5px; }
+        
+        /* Buttons */
+        .btn { border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
         .btn:hover { opacity: 0.9; }
+        .btn-delete { background-color: #ff9800; color: black; } 
+        .btn-ban { background-color: #d32f2f; color: white; } 
+        .btn-tag-delete { background-color: #d32f2f; color: white; font-size: 0.8rem; }
 
-        .btn-delete { background-color: #ff9800; color: black; } /* Orange */
-        .btn-ban { background-color: #d32f2f; color: white; } /* Red */
+        /* Views */
+        .view-section { display: none; }
+        .view-section.active { display: block; }
 
     </style>
 </head>
@@ -71,23 +87,39 @@
         <div>VERIFYING ADMIN CREDENTIALS...</div>
     </div>
 
-    <!-- MAIN INTERFACE (Hidden initially) -->
+    <!-- MAIN INTERFACE -->
     <div id="main-interface" style="display: none;">
         <header>
-            <div class="logo">CHEAPLET <span class="admin-badge">ADMIN CENTER</span></div>
-            <div>
+            <div class="logo">CHEAPLET <span class="admin-badge">ADMIN</span></div>
+            <div class="header-controls">
                 <a href="/index.html" class="nav-btn">Back to Site</a>
                 <a href="#" id="logoutBtn" class="nav-btn">Logout</a>
             </div>
         </header>
 
-        <main class="container">
-            <h1>All Active Listings</h1>
-            <div id="listings-grid" class="dashboard-grid">
-                <!-- Cards injected here -->
-                <p style="color: #666;">Loading listings...</p>
+        <div class="container">
+            <!-- TABS -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('listings')">Manage Listings</button>
+                <button class="tab-btn" onclick="switchTab('tags')">Manage Tags</button>
             </div>
-        </main>
+
+            <!-- VIEW: LISTINGS -->
+            <div id="view-listings" class="view-section active">
+                <h1>All Listings</h1>
+                <div id="listings-grid" class="dashboard-grid">
+                    <p style="color: #666;">Loading listings...</p>
+                </div>
+            </div>
+
+            <!-- VIEW: TAGS -->
+            <div id="view-tags" class="view-section">
+                <h1>Global Tags</h1>
+                <div id="tags-grid" class="dashboard-grid">
+                    <p style="color: #666;">Loading tags...</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -106,6 +138,7 @@
             const securityScreen = document.getElementById('security-screen');
             const mainInterface = document.getElementById('main-interface');
             const listingsGrid = document.getElementById('listings-grid');
+            const tagsGrid = document.getElementById('tags-grid');
 
             // --- 1. SECURITY CHECK ---
             onAuthStateChanged(auth, async (user) => {
@@ -113,12 +146,11 @@
                     try {
                         const userDoc = await getDoc(doc(db, "users", user.uid));
                         if (userDoc.exists() && userDoc.data().role === 'admin') {
-                            // ACCESS GRANTED
                             securityScreen.style.display = 'none';
                             mainInterface.style.display = 'block';
                             loadAllListings();
+                            loadAllTags();
                         } else {
-                            // ACCESS DENIED
                             alert("ACCESS DENIED: Admins only.");
                             window.location.href = '/index.html';
                         }
@@ -131,107 +163,127 @@
                 }
             });
 
-            // --- 2. LOAD DATA ---
+            // --- 2. LOAD LISTINGS ---
             async function loadAllListings() {
                 listingsGrid.innerHTML = '';
                 const q = query(collection(db, "listings"), orderBy("timestamp", "desc"));
                 const snapshot = await getDocs(q);
 
                 if (snapshot.empty) {
-                    listingsGrid.innerHTML = '<p>No active listings found.</p>';
+                    listingsGrid.innerHTML = '<p>No listings found.</p>';
                     return;
                 }
 
                 snapshot.forEach(doc => {
-                    renderAdminCard(doc);
+                    const data = doc.data();
+                    const card = document.createElement('div');
+                    card.className = 'admin-card';
+                    card.id = `listing-${doc.id}`;
+
+                    const imgUrl = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls[0] : '';
+                    const tags = data.tags ? data.tags.join(', ') : 'No tags';
+
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <span>ID: ${doc.id.substring(0, 6)}...</span>
+                            <a href="/user.html?id=${data.posterUid}" target="_blank" class="user-link">
+                                <i class="fas fa-user"></i> ${data.posterDisplayName || 'User'}
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <img src="${imgUrl}" class="card-img" alt="Item">
+                            <div class="card-info">
+                                <div class="card-title"><a href="/listing.html?id=${doc.id}" style="color:white;" target="_blank">${data.title}</a></div>
+                                <div class="card-price">$${data.price}</div>
+                                <div class="card-tags"><i class="fas fa-tag"></i> ${tags}</div>
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-delete" onclick="window.deleteListing('${doc.id}')"><i class="fas fa-trash"></i> Delete</button>
+                            <button class="btn btn-ban" onclick="window.banUser('${data.posterUid}')"><i class="fas fa-ban"></i> BAN USER</button>
+                        </div>
+                    `;
+                    listingsGrid.appendChild(card);
                 });
             }
 
-            function renderAdminCard(docSnap) {
-                const data = docSnap.data();
-                const card = document.createElement('div');
-                card.className = 'admin-card';
-                card.id = `card-${docSnap.id}`;
+            // --- 3. LOAD TAGS ---
+            async function loadAllTags() {
+                tagsGrid.innerHTML = '';
+                const q = query(collection(db, "global_tags"), orderBy("count", "desc"));
+                const snapshot = await getDocs(q);
 
-                const imgUrl = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls[0] : '';
-                const tags = data.tags ? data.tags.join(', ') : 'No tags';
-
-                card.innerHTML = `
-                    <div class="card-header">
-                        <span>ID: ${docSnap.id.substring(0, 6)}...</span>
-                        <a href="/user.html?id=${data.posterUid}" target="_blank" class="user-link">
-                            <i class="fas fa-user"></i> ${data.posterDisplayName || 'User'}
-                        </a>
-                    </div>
-                    <div class="card-body">
-                        <img src="${imgUrl}" class="card-img" alt="Item">
-                        <div class="card-info">
-                            <div class="card-title"><a href="/listing.html?id=${docSnap.id}" style="color:white;text-decoration:none;" target="_blank">${data.title}</a></div>
-                            <div class="card-price">$${data.price}</div>
-                            <div class="card-tags"><i class="fas fa-tag"></i> ${tags}</div>
-                        </div>
-                    </div>
-                    <div class="card-actions">
-                        <button class="btn btn-delete" onclick="window.deleteSingle('${docSnap.id}')">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                        <button class="btn btn-ban" onclick="window.banAndWipe('${data.posterUid}')">
-                            <i class="fas fa-ban"></i> BAN USER
-                        </button>
-                    </div>
-                `;
-                listingsGrid.appendChild(card);
-            }
-
-            // --- 3. ACTIONS (Attached to Window for HTML access) ---
-            
-            // Delete Single Listing
-            window.deleteSingle = async (listingId) => {
-                if (confirm("Delete this listing only?")) {
-                    try {
-                        await deleteDoc(doc(db, "listings", listingId));
-                        // Remove from UI immediately
-                        const card = document.getElementById(`card-${listingId}`);
-                        if(card) card.remove();
-                    } catch (e) {
-                        alert("Error: " + e.message);
-                    }
-                }
-            };
-
-            // Ban User & Delete All Their Stuff
-            window.banAndWipe = async (targetUid) => {
-                if (!confirm("⚠️ CRITICAL ACTION ⚠️\n\n1. This user will be BANNED.\n2. ALL their listings will be DELETED.\n\nProceed?")) {
+                if (snapshot.empty) {
+                    tagsGrid.innerHTML = '<p>No tags found.</p>';
                     return;
                 }
 
-                try {
-                    // 1. Get all listings by user
-                    const q = query(collection(db, "listings"), where("posterUid", "==", targetUid));
-                    const snapshot = await getDocs(q);
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const card = document.createElement('div');
+                    card.className = 'tag-card';
+                    card.id = `tag-${doc.id}`;
 
-                    let count = 0;
-                    const deletePromises = snapshot.docs.map(d => {
-                        count++;
-                        // Remove from UI as we go
-                        const card = document.getElementById(`card-${d.id}`);
-                        if(card) card.remove();
-                        // Delete from DB
+                    card.innerHTML = `
+                        <div class="tag-info">
+                            <h3>#${data.tag}</h3>
+                            <div class="tag-meta">Used in ${data.count || 0} listings</div>
+                        </div>
+                        <button class="btn btn-tag-delete" onclick="window.deleteTag('${doc.id}')">Delete Tag</button>
+                    `;
+                    tagsGrid.appendChild(card);
+                });
+            }
+
+            // --- 4. WINDOW FUNCTIONS ---
+            
+            // Delete Listing
+            window.deleteListing = async (id) => {
+                if(confirm("Delete this listing?")) {
+                    await deleteDoc(doc(db, "listings", id));
+                    document.getElementById(`listing-${id}`).remove();
+                }
+            };
+
+            // Ban User
+            window.banUser = async (uid) => {
+                if(confirm("BAN User and Delete ALL their listings?")) {
+                    // 1. Get listings
+                    const q = query(collection(db, "listings"), where("posterUid", "==", uid));
+                    const snap = await getDocs(q);
+                    
+                    // 2. Delete listings
+                    const promises = snap.docs.map(d => {
+                        const el = document.getElementById(`listing-${d.id}`);
+                        if(el) el.remove();
                         return deleteDoc(d.ref);
                     });
+                    await Promise.all(promises);
 
-                    // 2. Execute Deletes
-                    await Promise.all(deletePromises);
-
-                    // 3. Mark User as Banned
-                    await updateDoc(doc(db, "users", targetUid), { role: 'banned' });
-
-                    alert(`Success: User banned and ${count} listings removed.`);
-
-                } catch (e) {
-                    console.error(e);
-                    alert("Error executing ban: " + e.message);
+                    // 3. Mark Banned
+                    await updateDoc(doc(db, "users", uid), { role: 'banned' });
+                    alert("User Banned.");
                 }
+            };
+
+            // Delete Tag
+            window.deleteTag = async (tagDocId) => {
+                if(confirm("Delete this tag? It will no longer be suggested to users.")) {
+                    await deleteDoc(doc(db, "global_tags", tagDocId));
+                    document.getElementById(`tag-${tagDocId}`).remove();
+                }
+            };
+
+            // Tab Switcher Logic
+            window.switchTab = (tabName) => {
+                // Toggle Buttons
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                const clickedBtn = document.querySelector(`.tab-btn[onclick="switchTab('${tabName}')"]`);
+                if(clickedBtn) clickedBtn.classList.add('active');
+
+                // Toggle Content
+                document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
+                document.getElementById(`view-${tabName}`).classList.add('active');
             };
 
             document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
