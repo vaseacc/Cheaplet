@@ -8,23 +8,63 @@
     <script type="module" src="global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* Styles remain exactly the same as before */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
         .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
-        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
-        .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        .logo { font-size: 24px; font-weight: bold; display: flex; align-items: center; cursor: pointer; }
+
+        /* Header */
+        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 10px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        .header-content { display: flex; justify-content: space-between; align-items: center; }
+        
+        .header-left { display: flex; align-items: center; gap: 30px; }
+        .logo { font-size: 24px; font-weight: bold; display: flex; align-items: center; cursor: pointer; color: white; text-decoration: none; }
         .logo span { color: #FFD700; }
-        nav ul { display: flex; list-style: none; }
-        nav ul li { margin-left: 20px; }
-        nav ul li a { color: white; text-decoration: none; font-weight: 500; opacity: 0.9; }
+        
+        nav ul { display: flex; list-style: none; margin: 0; padding: 0; gap: 20px; }
+        nav ul li a { color: white; text-decoration: none; font-weight: 500; opacity: 0.9; transition: opacity 0.2s; }
         nav ul li a:hover { opacity: 1; }
-        .btn { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); color: #333; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: transform 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+        .header-right { display: flex; align-items: center; gap: 15px; }
+
+        .btn { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); color: #333; border: none; padding: 8px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; transition: transform 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size: 0.9rem; }
         .btn:hover { transform: translateY(-2px); }
-        #logoutBtn { background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); color: white; }
+
+        /* --- NEW PROFILE DROPDOWN STYLES --- */
+        .profile-menu-container { position: relative; }
+        
+        .profile-avatar {
+            width: 40px; height: 40px; border-radius: 50%; 
+            background-color: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.8);
+            color: white; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 1.2rem; cursor: pointer; 
+            background-size: cover; background-position: center;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .profile-avatar:hover { transform: scale(1.05); border-color: #FFD700; }
+
+        .dropdown-menu {
+            position: absolute; top: 50px; right: 0; width: 200px;
+            background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: none; flex-direction: column; overflow: hidden; animation: fadeIn 0.2s ease;
+            color: #333;
+        }
+        .dropdown-menu.show { display: flex; }
+        
+        .dropdown-header { padding: 15px; border-bottom: 1px solid #eee; background: #f9f9f9; font-weight: bold; color: #2E7D32; font-size: 0.9rem; }
+        
+        .dropdown-item {
+            padding: 12px 15px; text-decoration: none; color: #333; display: flex; align-items: center; gap: 10px; transition: background 0.2s;
+        }
+        .dropdown-item:hover { background-color: #f1f8e9; color: #2E7D32; }
+        .dropdown-item i { width: 20px; text-align: center; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Hero */
         .hero { background: linear-gradient(rgba(76,175,80,0.9), rgba(56,142,60,0.9)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%234CAF50"/></svg>'); background-size: cover; color: white; text-align: center; padding: 40px 20px; }
         .hero h1 { font-size: 2rem; margin-bottom: 15px; }
+        
+        /* Tags */
         .tags-section { padding: 40px 0; text-align: center; }
         .section-title { font-size: 1.8rem; color: #2E7D32; margin-bottom: 25px; font-weight: 600; }
         .tags-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
@@ -32,10 +72,14 @@
         .tag-pill:hover { border-color: #4CAF50; transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); color: #2E7D32; }
         .tag-pill.active { background-color: #e8f5e9; border-color: #4CAF50; color: #2E7D32; }
         .tag-count { background: #eee; font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; color: #666; }
+
+        /* Filters */
         .filters { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin: 30px 0; }
         .filter-options { display: flex; flex-direction: column; gap: 15px; }
         .filter-group { display: flex; align-items: center; width: 100%; }
         select, input { padding: 10px; border: 2px solid #ddd; border-radius: 6px; width: 100%; }
+
+        /* Listings */
         .listings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px; }
         .listing-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: block; text-decoration: none; color: inherit; transition: transform 0.3s; }
@@ -46,9 +90,12 @@
         .listing-title { font-weight: 600; font-size: 1rem; }
         .listing-price { color: #4CAF50; font-weight: bold; font-size: 1.1rem; }
         .listing-footer { display: flex; justify-content: space-between; margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px; font-size: 0.85rem; color: #666; }
+        .seller-name { font-weight: 500; color: #555; }
         .condition-tag { background-color: #e0e0e0; color: #333; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
         .condition-tag.new { background-color: #e8f5e9; color: #2E7D32; }
         .no-listings-message { grid-column: 1 / -1; text-align: center; padding: 40px; color: #777; }
+
+        /* Footer */
         footer { background: linear-gradient(135deg, #2E7D32 0%, #1b5e20 100%); color: white; padding: 40px 0 20px; margin-top: 40px; }
         .footer-content { display: grid; grid-template-columns: 1fr; gap: 30px; margin-bottom: 30px; text-align: center; }
         .footer-column h3 { margin-bottom: 15px; font-size: 1.2rem; }
@@ -57,29 +104,43 @@
         .footer-column ul li a { color: #ddd; text-decoration: none; transition: color 0.3s; }
         .footer-column ul li a:hover { color: white; }
         .copyright { text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem; color: #ccc; }
-        .header-auth-buttons { display: flex; gap: 10px; align-items: center; }
-        #userEmailDisplay { color: white; font-weight: 500; margin-right: 10px; }
-        @media (min-width: 768px) { .hero h1 { font-size: 2.5rem; } .filter-options { flex-direction: row; } .footer-content { grid-template-columns: repeat(3, 1fr); text-align: left; } nav { display: block; } }
+        
+        @media (min-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .filter-options { flex-direction: row; }
+            .footer-content { grid-template-columns: repeat(3, 1fr); text-align: left; }
+            nav { display: block; }
+        }
         @media (max-width: 767px) { nav { display: none; } }
     </style>
 </head>
 <body>
     <header>
         <div class="container header-content">
-            <div class="logo" id="logo-link">Cheap<span>let</span></div>
-            <nav>
-                <ul>
-                    <li><a href="/index.html" data-i18n="nav_home">Home</a></li>
-                    <li><a href="/my-listings.html" data-i18n="nav_listings">My Listings</a></li>
-                    <li><a href="/messages.html" data-i18n="nav_messages">Messages</a></li>
-                    <li><a href="/profile.html" data-i18n="nav_profile">My Profile</a></li>
-                </ul>
-            </nav>
-            <div class="header-auth-buttons">
-                <span id="userEmailDisplay" style="display: none;"></span>
+            <div class="header-left">
+                <div class="logo" id="logo-link">Cheap<span>let</span></div>
+                <nav>
+                    <ul>
+                        <li><a href="/index.html" data-i18n="nav_home">Home</a></li>
+                        <li><a href="/my-listings.html" data-i18n="nav_listings">My Listings</a></li>
+                        <li><a href="/messages.html" data-i18n="nav_messages">Messages</a></li>
+                    </ul>
+                </nav>
+            </div>
+            
+            <div class="header-right">
                 <button class="btn" id="listAnItemBtn" data-i18n="btn_list">List an Item</button>
                 <button class="btn" id="loginRegisterBtn" data-i18n="btn_login">Login / Register</button>
-                <button class="btn" id="logoutBtn" style="display: none;" data-i18n="btn_logout">Logout</button>
+
+                <!-- NEW: PROFILE DROPDOWN MENU -->
+                <div class="profile-menu-container" id="profileMenuContainer" style="display: none;">
+                    <div class="profile-avatar" id="profileAvatar"></div>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <div class="dropdown-header" id="dropdownName">User</div>
+                        <a href="/profile.html" class="dropdown-item"><i class="fas fa-user"></i> My Profile</a>
+                        <a href="#" class="dropdown-item" id="dropdownLogout"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
@@ -121,7 +182,7 @@
         <section class="listings">
             <div class="listings-header">
                 <h2 data-i18n="title_listings">Featured Listings</h2>
-                <span id="itemCount">...</span>
+                <span id="itemCount">Loading...</span>
             </div>
             <div class="listings-grid" id="listings-container"></div>
         </section>
@@ -183,10 +244,16 @@
             const db = getFirestore(app);
 
             // DOM Elements
-            const userEmailDisplay = document.getElementById('userEmailDisplay');
             const loginRegisterBtn = document.getElementById('loginRegisterBtn');
             const listAnItemBtn = document.getElementById('listAnItemBtn');
-            const logoutBtn = document.getElementById('logoutBtn');
+            
+            // New Dropdown Elements
+            const profileMenuContainer = document.getElementById('profileMenuContainer');
+            const profileAvatar = document.getElementById('profileAvatar');
+            const dropdownMenu = document.getElementById('dropdownMenu');
+            const dropdownName = document.getElementById('dropdownName');
+            const dropdownLogout = document.getElementById('dropdownLogout');
+
             const listingsContainer = document.getElementById('listings-container');
             const itemCountSpan = document.getElementById('itemCount');
             const sortFilter = document.getElementById('sort-filter');
@@ -200,18 +267,51 @@
             let currentActiveTag = null;
             let unsubscribeListings = null;
 
-            // --- AUTH STATE ---
+            // --- AUTH STATE & HEADER LOGIC ---
             onAuthStateChanged(auth, user => {
                 if (user && user.emailVerified) {
-                    userEmailDisplay.textContent = `Hi, ${user.displayName || 'User'}!`;
-                    userEmailDisplay.style.display = 'block';
+                    // Logged In
                     loginRegisterBtn.style.display = 'none';
-                    logoutBtn.style.display = 'inline-block';
+                    profileMenuContainer.style.display = 'block';
+                    listAnItemBtn.style.display = 'inline-block';
+
+                    // Set Avatar / Name
+                    dropdownName.textContent = user.displayName || 'User';
+                    
+                    if (user.photoURL) {
+                        profileAvatar.style.backgroundImage = `url('${user.photoURL}')`;
+                        profileAvatar.textContent = '';
+                    } else {
+                        profileAvatar.style.backgroundImage = 'none';
+                        profileAvatar.textContent = user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U';
+                    }
+
                 } else {
-                    userEmailDisplay.style.display = 'none';
+                    // Logged Out
                     loginRegisterBtn.style.display = 'inline-block';
-                    logoutBtn.style.display = 'none';
+                    profileMenuContainer.style.display = 'none';
+                    // We keep list button visible but it redirects to login
+                    listAnItemBtn.style.display = 'inline-block'; 
                 }
+            });
+
+            // --- DROPDOWN INTERACTIONS ---
+            profileAvatar.addEventListener('click', (e) => {
+                e.stopPropagation();
+                dropdownMenu.classList.toggle('show');
+            });
+
+            // Close dropdown if clicked outside
+            document.addEventListener('click', (e) => {
+                if (!profileMenuContainer.contains(e.target)) {
+                    dropdownMenu.classList.remove('show');
+                }
+            });
+
+            dropdownLogout.addEventListener('click', (e) => {
+                e.preventDefault();
+                signOut(auth);
+                dropdownMenu.classList.remove('show');
             });
 
             // --- NAVIGATION ---
@@ -225,7 +325,6 @@
                     window.location.href = '/LoginInToCheaplet.html';
                 } 
             });
-            logoutBtn.addEventListener('click', () => signOut(auth));
             document.getElementById('startBrowsingBtn').addEventListener('click', () => document.querySelector('.filters').scrollIntoView({ behavior: 'smooth' }));
 
             // --- LOAD TAGS & REDIRECT ---
