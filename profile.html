@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile - Cheaplet</title>
-    <!-- GLOBAL CONFIGURATION (Language Popup & Ban Check) -->
+    <!-- GLOBAL CONFIGURATION (Language & Ban Check) -->
     <script type="module" src="global.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
         .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
-        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
         .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
         .logo { font-size: 24px; font-weight: bold; display: flex; align-items: center; cursor: pointer; color: white; text-decoration: none; }
         .logo span { color: #FFD700; }
@@ -39,7 +39,7 @@
         
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; font-weight: 600; margin-bottom: 5px; color: #555; }
-        .form-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
+        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
         .form-group input[disabled] { background-color: #f4f4f4; cursor: not-allowed; }
         
         .info-message { text-align: center; padding: 50px; font-size: 1.2rem; color: #777; }
@@ -76,16 +76,16 @@
             <a href="/index.html" class="logo">Cheap<span>let</span></a>
             <nav>
                 <ul>
-                    <li><a href="/index.html">Home</a></li>
-                    <li><a href="/my-listings.html">My Listings</a></li>
-                    <li><a href="/messages.html">Messages</a></li>
-                    <li><a href="/profile.html">My Profile</a></li>
+                    <li><a href="/index.html" data-i18n="nav_home">Home</a></li>
+                    <li><a href="/my-listings.html" data-i18n="nav_listings">My Listings</a></li>
+                    <li><a href="/messages.html" data-i18n="nav_messages">Messages</a></li>
+                    <li><a href="/profile.html" data-i18n="nav_profile">My Profile</a></li>
                 </ul>
             </nav>
             <div class="header-auth-buttons">
                 <span id="userEmailDisplay" style="display: none;"></span>
-                <button class="btn" id="loginRegisterBtn">Login / Register</button>
-                <button class="btn" id="logoutBtn" style="display: none;">Logout</button>
+                <button class="btn" id="loginRegisterBtn" data-i18n="btn_login">Login / Register</button>
+                <button class="btn" id="logoutBtn" style="display: none;" data-i18n="btn_logout">Logout</button>
             </div>
         </div>
     </header>
@@ -126,6 +126,16 @@
                     <label for="email">Email</label>
                     <input type="email" id="email" disabled>
                 </div>
+
+                <!-- NEW: LANGUAGE SELECTOR -->
+                <div class="form-group">
+                    <label for="languageSelect">Language / Langue</label>
+                    <select id="languageSelect">
+                        <option value="en">English</option>
+                        <option value="fr">Français</option>
+                    </select>
+                </div>
+
                 <button class="btn" id="saveProfileBtn">Save Changes</button>
                 <p id="update-feedback"></p>
             </div>
@@ -175,6 +185,7 @@
             const userEmailDisplay = document.getElementById('userEmailDisplay');
             const loginRegisterBtn = document.getElementById('loginRegisterBtn');
             const logoutBtn = document.getElementById('logoutBtn');
+            const logoLink = document.getElementById('logo-link');
             const infoContainer = document.getElementById('info-container');
             const profileContainer = document.getElementById('profile-container');
             const firstNameInput = document.getElementById('firstName');
@@ -188,41 +199,64 @@
             const photoUploadInput = document.getElementById('photo-upload-input');
             const savePhotoBtn = document.getElementById('savePhotoBtn');
             const savedListingsContainer = document.getElementById('saved-listings-container');
+            const languageSelect = document.getElementById('languageSelect');
             
             let selectedPhotoFile = null;
 
             // --- HEADER & NAVIGATION ---
+            logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
             loginRegisterBtn.addEventListener('click', () => { window.location.href = '/LoginInToCheaplet.html'; });
             logoutBtn.addEventListener('click', () => signOut(auth));
+
+            // --- INITIALIZE LANGUAGE SELECTOR ---
+            // Set the dropdown to match the current saved language
+            const currentLang = localStorage.getItem('preferred_language') || 'en';
+            languageSelect.value = currentLang;
+
+            // Handle Language Change
+            languageSelect.addEventListener('change', (e) => {
+                const newLang = e.target.value;
+                if (window.applyLanguage) {
+                    window.applyLanguage(newLang); // Use function from global.js
+                } else {
+                    localStorage.setItem('preferred_language', newLang);
+                    window.location.reload(); // Fallback if global.js is slow to load
+                }
+            });
 
             // --- MAIN AUTH LOGIC ---
             onAuthStateChanged(auth, async (user) => {
                 if (user && user.emailVerified) {
-                    userEmailDisplay.textContent = `Hi, ${user.displayName || 'User'}!`;
+                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome!`;
                     userEmailDisplay.style.display = 'block';
                     loginRegisterBtn.style.display = 'none';
                     logoutBtn.style.display = 'inline-block';
                     
                     populateProfileForm(user);
                     infoContainer.style.display = 'none';
-                    profileContainer.style.display = 'flex'; // Changed to flex for vertical spacing
+                    profileContainer.style.display = 'flex';
 
-                    // Fetch User Doc for Avatar & Saved Listings
+                    // Fetch User Doc
                     try {
                         const userDocRef = doc(db, "users", user.uid);
                         const userDocSnap = await getDoc(userDocRef);
                         
                         if (userDocSnap.exists()) {
                             const data = userDocSnap.data();
+
+                            if (data.role === 'banned') {
+                                await signOut(auth);
+                                alert("You have been banned from Cheaplet.");
+                                window.location.href = '/LoginInToCheaplet.html';
+                                return;
+                            }
                             
-                            // 1. Set Avatar
                             if (data.photoURL) {
                                 setAvatar(data.photoURL);
                             } else {
                                 setAvatar(user.photoURL, user.displayName);
                             }
 
-                            // 2. Fetch Saved Listings
                             if (data.savedListings && data.savedListings.length > 0) {
                                 fetchSavedListings(data.savedListings);
                             } else {
@@ -249,9 +283,8 @@
             
             // --- SAVED ITEMS ---
             async function fetchSavedListings(listingIds) {
-                savedListingsContainer.innerHTML = ''; // Clear loading text
+                savedListingsContainer.innerHTML = ''; 
                 
-                // Firestore doesn't support "get array of docs" easily, so we loop (fine for profile page)
                 const promises = listingIds.map(id => getDoc(doc(db, "listings", id)));
                 const snapshots = await Promise.all(promises);
 
@@ -292,7 +325,7 @@
                 }
             }
             
-            // --- PROFILE FORM FUNCTIONS ---
+            // --- PROFILE FORM ---
             function populateProfileForm(user) {
                 emailInput.value = user.email;
                 if (user.displayName) {
@@ -321,7 +354,7 @@
                     const userDocRef = doc(db, "users", user.uid);
                     await updateDoc(userDocRef, { displayName: newDisplayName });
 
-                    userEmailDisplay.textContent = `Hi, ${newDisplayName}!`;
+                    userEmailDisplay.textContent = `Welcome, ${newDisplayName}!`;
                     updateFeedback.textContent = 'Profile updated successfully!';
                     updateFeedback.className = 'success';
                 } catch (error) {
@@ -334,7 +367,6 @@
                 }
             });
 
-            // Reset Password
             resetPasswordBtn.addEventListener('click', async () => {
                 const user = auth.currentUser;
                 if (!user) return;
@@ -349,7 +381,6 @@
                 }
             });
 
-            // Delete Account
             deleteAccountBtn.addEventListener('click', async () => {
                 const user = auth.currentUser;
                 if (!user) return;
@@ -358,28 +389,25 @@
                     const confirm2 = prompt("Type 'DELETE' to confirm.");
                     if (confirm2 === 'DELETE') {
                         try {
-                            // Delete listings first if possible (optional but cleaner)
-                            // Then delete user doc
                             await deleteDoc(doc(db, "users", user.uid));
-                            // Finally delete Auth user
                             await deleteUser(user);
                             alert("Account deleted.");
                             window.location.href = '/index.html';
                         } catch (error) {
                             console.error("Delete error:", error);
-                            alert("Error: " + error.message + " (You may need to log in again recently to delete account).");
+                            alert("Error: " + error.message);
                         }
                     }
                 }
             });
 
-            // --- PHOTO UPLOAD LOGIC ---
+            // --- PHOTO UPLOAD ---
             photoUploadInput.addEventListener('change', (e) => {
                 if (e.target.files && e.target.files[0]) {
                     selectedPhotoFile = e.target.files[0];
                     const reader = new FileReader();
                     reader.onload = (event) => {
-                        setAvatar(event.target.result); // Show local preview
+                        setAvatar(event.target.result); 
                     }
                     reader.readAsDataURL(selectedPhotoFile);
                     savePhotoBtn.style.display = 'inline-block';
@@ -403,9 +431,7 @@
                     const data = await res.json();
                     const newPhotoURL = data.secure_url;
 
-                    if (!newPhotoURL) {
-                        throw new Error("Image upload failed.");
-                    }
+                    if (!newPhotoURL) { throw new Error("Image upload failed."); }
 
                     await updateProfile(user, { photoURL: newPhotoURL });
                     const userDocRef = doc(db, "users", user.uid);
