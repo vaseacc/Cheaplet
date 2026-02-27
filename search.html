@@ -35,7 +35,7 @@
         /* Grid */
         .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-bottom: 50px; }
         .listing-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.06); text-decoration: none; color: inherit; transition: transform 0.3s; }
-        .listing-card:hover { transform: translateY(-5px); }
+        .listing-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
         .listing-image { height: 200px; background-color: #f0f0f0; background-size: cover; background-position: center; }
         .listing-details { padding: 15px; }
         .listing-price { color: #4CAF50; font-weight: 800; font-size: 1.2rem; }
@@ -54,11 +54,11 @@
         <section class="filters">
             <div class="filter-options">
                 <div class="filter-group">
-                    <select id="category-filter">
-                        <option value="all">All Categories</option>
-                        <option value="furniture">Furniture</option>
-                        <option value="electronics">Electronics</option>
-                        <option value="books">Books</option>
+                    <!-- REPLACED CATEGORY WITH SORT OPTIONS -->
+                    <select id="sort-filter">
+                        <option value="newest">Newest First</option>
+                        <option value="price-low">Price: Low to High</option>
+                        <option value="price-high">Price: High to Low</option>
                     </select>
                 </div>
                 <div class="filter-group" style="flex: 2;">
@@ -76,7 +76,7 @@
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getFirestore, collection, query, orderBy, onSnapshot, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -87,17 +87,25 @@
             const listingsContainer = document.getElementById('listings-container');
             const itemCountSpan = document.getElementById('itemCount');
             const searchInput = document.getElementById('search-input');
+            const sortFilter = document.getElementById('sort-filter');
 
             let unsubscribe;
 
             function fetchListings() {
                 if (unsubscribe) unsubscribe();
-                const q = query(collection(db, 'listings'), orderBy('timestamp', 'desc'));
 
-                unsubscribe = onSnapshot(q, snapshot => {
+                let q = collection(db, 'listings');
+                const constraints = [];
+                
+                // Applying requested sort logic
+                if (sortFilter.value === 'price-low') constraints.push(orderBy('price', 'asc'));
+                else if (sortFilter.value === 'price-high') constraints.push(orderBy('price', 'desc'));
+                else constraints.push(orderBy('timestamp', 'desc'));
+
+                unsubscribe = onSnapshot(query(q, ...constraints), snapshot => {
                     listingsContainer.innerHTML = '';
                     const term = searchInput.value.toLowerCase();
-                    const filtered = snapshot.docs.filter(doc => doc.data().title.toLowerCase().includes(term));
+                    const filtered = snapshot.docs.filter(doc => (doc.data().title || '').toLowerCase().includes(term));
                     
                     itemCountSpan.textContent = `${filtered.length} items found`;
                     filtered.forEach(doc => {
@@ -118,6 +126,7 @@
             }
 
             searchInput.addEventListener('input', fetchListings);
+            sortFilter.addEventListener('change', fetchListings);
             fetchListings();
         }
         main();
