@@ -178,11 +178,10 @@
             <a href="/index.html" class="logo">Cheap<span>let</span></a>
             <nav>
                 <ul>
-                    <!-- Global.js will fill this with Browse, My Listings, Messages -->
+                    <!-- Filled by global.js -->
                 </ul>
             </nav>
         </div>
-        <!-- Target for global.js header brain -->
         <div class="header-right"></div>
     </header>
 
@@ -262,12 +261,11 @@
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
             
-            // FIX: Prevent double-initialization crash
+            // FIX: Double-init check
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            // Elements
             const mainImage = document.getElementById('main-image');
             const blurBg = document.getElementById('blur-bg'); 
             const thumbnailContainer = document.getElementById('thumbnail-container');
@@ -283,7 +281,6 @@
             let imageUrls = [];
             let isSaved = false; 
 
-            // --- AUTH STATE ---
             onAuthStateChanged(auth, user => {
                 currentUser = user;
                 fetchAndDisplayListing();
@@ -310,35 +307,27 @@
                     const data = listingSnap.data();
                     currentListingData = data;
 
-                    // Populate Info
                     document.getElementById('listing-title').textContent = data.title;
                     document.getElementById('listing-price').textContent = `$${data.price.toFixed(2)}`;
-                    
                     const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : 'Recently';
                     document.getElementById('listing-meta').textContent = `Listed ${date} • ${data.location}`;
                     document.getElementById('location-text').textContent = data.location;
-
                     document.getElementById('listing-condition').textContent = data.condition || "Used";
                     document.getElementById('listing-category').textContent = data.category || "General";
                     document.getElementById('listing-description').textContent = data.description;
-
                     document.getElementById('seller-name-link').textContent = data.posterDisplayName || "A User";
                     document.getElementById('seller-name-link').href = `/user.html?id=${data.posterUid}`;
                     
                     if (data.posterUid) {
-                        try {
-                            const sellerDoc = await getDoc(doc(db, "users", data.posterUid));
-                            if (sellerDoc.exists() && sellerDoc.data().photoURL) {
-                                document.getElementById('seller-avatar-small').style.backgroundImage = `url('${sellerDoc.data().photoURL}')`;
-                            }
-                        } catch(e) {}
+                        const sellerDoc = await getDoc(doc(db, "users", data.posterUid));
+                        if (sellerDoc.exists() && sellerDoc.data().photoURL) {
+                            document.getElementById('seller-avatar-small').style.backgroundImage = `url('${sellerDoc.data().photoURL}')`;
+                        }
                     }
 
-                    // --- IMAGE LOGIC ---
                     imageUrls = data.imageUrls || [];
                     if (imageUrls.length > 0) {
                         updateMainImage(0); 
-                        
                         thumbnailContainer.innerHTML = '';
                         imageUrls.forEach((url, index) => {
                             const img = document.createElement('img');
@@ -347,13 +336,8 @@
                             img.onclick = () => updateMainImage(index);
                             thumbnailContainer.appendChild(img);
                         });
-                    } else {
-                        mainImage.alt = "No Image Available";
-                        mainImage.src = ""; 
-                        blurBg.style.backgroundColor = "#222"; 
                     }
 
-                    // --- CHECK IF SAVED (Persistence) ---
                     if (currentUser) {
                         const userRef = doc(db, "users", currentUser.uid);
                         const userSnap = await getDoc(userRef);
@@ -363,30 +347,22 @@
                                 isSaved = true;
                                 updateSaveIcon();
                             }
-                        }
-
-                        // --- Admin/Owner Controls ---
-                        const isOwner = currentUser.uid === data.posterUid;
-                        const isAdmin = userData && userData.role === 'admin'; 
-
-                        if (isOwner || isAdmin) {
-                            document.getElementById('admin-controls').style.display = 'block';
-                            document.getElementById('delete-listing-btn').onclick = () => deleteListing(currentListingId, isAdmin);
+                            const isOwner = currentUser.uid === data.posterUid;
+                            const isAdmin = userData.role === 'admin'; 
+                            if (isOwner || isAdmin) {
+                                document.getElementById('admin-controls').style.display = 'block';
+                                document.getElementById('delete-listing-btn').onclick = () => deleteListing(currentListingId, isAdmin);
+                            }
                         }
                     }
-
-                } catch (error) {
-                    console.error("Error loading listing:", error);
-                }
+                } catch (error) { console.error(error); }
             }
 
             function updateMainImage(index) {
                 currentImageIndex = index;
                 const url = imageUrls[index];
-                
                 mainImage.src = url;
                 blurBg.style.backgroundImage = `url('${url}')`;
-
                 document.querySelectorAll('.thumb').forEach((thumb, i) => {
                     thumb.classList.toggle('active', i === index);
                 });
@@ -433,9 +409,9 @@
                             lastMessage: "" 
                         });
                     }
-                    window.location.href = `/messages.html?chatId=${chatId}`;
+                    // FIX: Go DIRECTLY to chat.html now
+                    window.location.href = `/chat.html?id=${chatId}`;
                 } catch (error) {
-                    console.error("Chat error:", error);
                     alert("Error starting chat.");
                 }
             }
@@ -443,82 +419,38 @@
             document.getElementById('btn-message-seller').onclick = initiateMessage;
             document.getElementById('btn-quick-send').onclick = initiateMessage;
 
-            // --- SAVE LISTING LOGIC ---
             function updateSaveIcon() {
                 const icon = saveBtn.querySelector('i');
-                if (isSaved) {
-                    icon.classList.remove('far');
-                    icon.classList.add('fas');    
-                    icon.style.color = '#4CAF50';
-                } else {
-                    icon.classList.remove('fas');
-                    icon.classList.add('far');
-                    icon.style.color = '#555';
-                }
+                if (isSaved) { icon.classList.replace('far', 'fas'); icon.style.color = '#4CAF50'; }
+                else { icon.classList.replace('fas', 'far'); icon.style.color = '#555'; }
             }
 
             saveBtn.onclick = async () => {
-                if (!currentUser || !currentUser.emailVerified) {
-                    const currentPath = window.location.pathname + window.location.search;
-                    window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(currentPath)}`;
-                    return;
-                }
-
+                if (!currentUser) return;
                 const userRef = doc(db, "users", currentUser.uid);
-
-                try {
-                    if (isSaved) {
-                        await updateDoc(userRef, {
-                            savedListings: arrayRemove(currentListingId)
-                        });
-                        isSaved = false;
-                        alert("Listing removed from your saved items.");
-                    } else {
-                        await updateDoc(userRef, {
-                            savedListings: arrayUnion(currentListingId)
-                        });
-                        isSaved = true;
-                        alert("Listing saved! Check your profile.");
-                    }
-                    updateSaveIcon();
-                } catch (error) {
-                    console.error("Error toggling save:", error);
-                    alert("Action failed. Please try again.");
-                }
-            };
-
-            shareBtn.onclick = async () => {
-                const url = window.location.href;
-                const title = currentListingData ? currentListingData.title : 'Cheaplet Listing';
-                
-                if (navigator.share) {
-                    try {
-                        await navigator.share({ title: title, url: url });
-                    } catch (err) { copyToClipboard(url); }
+                if (isSaved) {
+                    await updateDoc(userRef, { savedListings: arrayRemove(currentListingId) });
+                    isSaved = false;
                 } else {
-                    copyToClipboard(url);
+                    await updateDoc(userRef, { savedListings: arrayUnion(currentListingId) });
+                    isSaved = true;
                 }
+                updateSaveIcon();
             };
 
-            async function copyToClipboard(text) {
-                try {
-                    await navigator.clipboard.writeText(text);
-                    alert("Listing link copied to clipboard!");
-                } catch (err) {
-                    console.error('Failed to copy: ', err);
-                    alert("Could not copy link automatically.");
-                }
-            }
+            shareBtn.onclick = () => {
+                const url = window.location.href;
+                if (navigator.share) navigator.share({ title: currentListingData.title, url: url });
+                else { navigator.clipboard.writeText(url); alert("Link copied!"); }
+            };
 
             async function deleteListing(docId, isAdmin) {
-                if (confirm(isAdmin ? "ADMIN: Delete this listing?" : "Delete your listing?")) {
+                if (confirm("Delete listing?")) {
                     await deleteDoc(doc(db, 'listings', docId));
-                    alert("Deleted.");
                     window.location.href = '/index.html';
                 }
             }
         }
-
         main();
     </script>
 </body>
