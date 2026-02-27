@@ -4,34 +4,50 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Profile - Cheaplet</title>
-    <!-- GLOBAL CONFIGURATION (Language & Ban Check) -->
+    <!-- GLOBAL BRAIN (Connects Profile Circle, Ban Check, Language) -->
     <script type="module" src="global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
         .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
-        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
-        .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+
+        /* Header Styles - Matches Global Theme */
+        header { 
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); 
+            color: white; 
+            padding: 15px 0; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+            position: sticky; 
+            top: 0; 
+            z-index: 100; 
+        }
+        .header-content { display: flex; justify-content: space-between; align-items: center; }
         .logo { font-size: 24px; font-weight: bold; display: flex; align-items: center; cursor: pointer; color: white; text-decoration: none; }
         .logo span { color: #FFD700; }
+        
         nav ul { display: flex; list-style: none; }
         nav ul li { margin-left: 20px; }
-        nav ul li a { color: white; text-decoration: none; font-weight: 500; opacity: 0.9; }
+        nav ul li a { color: white; text-decoration: none; font-weight: 500; opacity: 0.9; transition: opacity 0.2s; }
         nav ul li a:hover { opacity: 1; }
-        .btn { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); color: #333; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: transform 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+        /* Container for global.js to inject buttons/avatar */
+        .header-auth-buttons { display: flex; gap: 10px; align-items: center; }
+
+        .btn { 
+            background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); 
+            color: #333; border: none; padding: 10px 20px; border-radius: 6px; 
+            font-weight: bold; cursor: pointer; transition: transform 0.3s; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+        }
         .btn:hover { transform: translateY(-2px); }
         .btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
-        .header-auth-buttons { display: flex; gap: 10px; align-items: center; }
-        #userEmailDisplay { color: white; font-weight: 500; margin-right: 10px; }
-        #logoutBtn { background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); color: white; }
-        .btn-danger { background-color: #f44336; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-danger:hover { background-color: #d32f2f; }
+        
+        .btn-danger { background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .btn-secondary { background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-secondary:hover { background-color: #5a6268; }
 
-        /* Profile Page Styles */
+        /* Profile Page Layout */
         .page-header { display: flex; justify-content: space-between; align-items: center; padding: 40px 0 20px; border-bottom: 1px solid #ddd; margin-bottom: 30px; }
-        .page-header h1 { font-size: 2rem; }
         .profile-container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 30px; padding-bottom: 50px; }
         
         .profile-section { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
@@ -40,34 +56,28 @@
         .form-group { margin-bottom: 20px; }
         .form-group label { display: block; font-weight: 600; margin-bottom: 5px; color: #555; }
         .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
-        .form-group input[disabled] { background-color: #f4f4f4; cursor: not-allowed; }
+        .form-group input[disabled] { background-color: #f4f4f4; }
         
         .info-message { text-align: center; padding: 50px; font-size: 1.2rem; color: #777; }
-        #update-feedback { text-align: center; margin-top: 15px; font-weight: 500; height: 1em; }
+        #update-feedback { text-align: center; margin-top: 15px; font-weight: 500; }
         .success { color: #4CAF50; }
         .error { color: #f44336; }
 
-        /* PROFILE PICTURE STYLES */
+        /* Profile Picture */
         .profile-picture-section { text-align: center; margin-bottom: 30px; }
         #avatar-display { width: 120px; height: 120px; border-radius: 50%; background-color: #e9e9e9; color: #aaa; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 3rem; margin: 0 auto 15px; background-size: cover; background-position: center; border: 4px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
         #photo-upload-input { display: none; }
         .photo-buttons { display: flex; justify-content: center; gap: 10px; }
 
-        /* SAVED LISTINGS STYLES */
+        /* Saved Listings */
         .saved-listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
-        .saved-item-card { border: 1px solid #eee; border-radius: 8px; overflow: hidden; text-decoration: none; color: inherit; transition: transform 0.2s; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .saved-item-card:hover { transform: translateY(-3px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-color: #4CAF50; }
+        .saved-item-card { border: 1px solid #eee; border-radius: 8px; overflow: hidden; text-decoration: none; color: inherit; transition: transform 0.2s; background: white; }
+        .saved-item-card:hover { transform: translateY(-3px); border-color: #4CAF50; }
         .saved-item-img { height: 140px; background-color: #eee; background-size: cover; background-position: center; }
         .saved-item-details { padding: 12px; }
-        .saved-item-price { font-weight: bold; color: #4CAF50; font-size: 1.1rem; }
-        .saved-item-title { font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; margin-top: 4px; }
+        .saved-item-price { font-weight: bold; color: #4CAF50; }
 
         @media (max-width: 767px) { nav { display: none; } }
-        @media (min-width: 768px) {
-            .header-content { flex-wrap: nowrap; }
-            .header-auth-buttons { width: auto; margin-top: 0; }
-            #userEmailDisplay { width: auto; text-align: right; margin-bottom: 0; margin-right: 10px; order: 0; }
-        }
     </style>
 </head>
 <body>
@@ -79,14 +89,10 @@
                     <li><a href="/index.html">Home</a></li>
                     <li><a href="/my-listings.html">My Listings</a></li>
                     <li><a href="/messages.html">Messages</a></li>
-                    <li><a href="/profile.html">My Profile</a></li>
                 </ul>
             </nav>
-            <div class="header-auth-buttons">
-                <span id="userEmailDisplay" style="display: none;"></span>
-                <button class="btn" id="loginRegisterBtn">Login / Register</button>
-                <button class="btn" id="logoutBtn" style="display: none;">Logout</button>
-            </div>
+            <!-- global.js will inject the Profile Circle or Login buttons here -->
+            <div class="header-auth-buttons"></div>
         </div>
     </header>
 
@@ -102,7 +108,6 @@
     
         <div class="profile-container" id="profile-container" style="display: none;">
             
-            <!-- SECTION 1: PERSONAL INFO -->
             <div class="profile-section">
                 <div class="profile-picture-section">
                     <div id="avatar-display"></div>
@@ -115,21 +120,20 @@
                 
                 <h2>Personal Information</h2>
                 <div class="form-group">
-                    <label for="firstName">First Name</label>
+                    <label>First Name</label>
                     <input type="text" id="firstName" placeholder="Your first name">
                 </div>
                 <div class="form-group">
-                    <label for="lastName">Last Name</label>
+                    <label>Last Name</label>
                     <input type="text" id="lastName" placeholder="Your last name">
                 </div>
                 <div class="form-group">
-                    <label for="email">Email</label>
+                    <label>Email</label>
                     <input type="email" id="email" disabled>
                 </div>
 
-                <!-- LANGUAGE SELECTOR -->
                 <div class="form-group">
-                    <label for="languageSelect">Language / Langue</label>
+                    <label>Language / Langue</label>
                     <select id="languageSelect">
                         <option value="en">English</option>
                         <option value="fr">Français</option>
@@ -140,7 +144,6 @@
                 <p id="update-feedback"></p>
             </div>
 
-            <!-- SECTION 2: SAVED LISTINGS -->
             <div class="profile-section">
                 <h2>Saved Items</h2>
                 <div id="saved-listings-container" class="saved-listings-grid">
@@ -148,7 +151,6 @@
                 </div>
             </div>
 
-            <!-- SECTION 3: SECURITY -->
             <div class="profile-section">
                 <h2>Account Security</h2>
                 <div class="form-group">
@@ -165,294 +167,131 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut, updateProfile, sendPasswordResetEmail, deleteUser } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, updateProfile, sendPasswordResetEmail, deleteUser } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
-            // --- INITIALIZATION ---
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
-            const firebaseConfig = config.firebaseConfig;
-            const CLOUDINARY_CLOUD_NAME = config.cloudinary.cloudName;
-            const CLOUDINARY_UPLOAD_PRESET = config.cloudinary.uploadPreset;
-            const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-
-            const app = initializeApp(firebaseConfig);
+            const app = initializeApp(config.firebaseConfig);
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            // --- DOM SELECTORS ---
-            const userEmailDisplay = document.getElementById('userEmailDisplay');
-            const loginRegisterBtn = document.getElementById('loginRegisterBtn');
-            const logoutBtn = document.getElementById('logoutBtn');
-            const logoLink = document.getElementById('logo-link');
+            const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`;
+            const UPLOAD_PRESET = config.cloudinary.uploadPreset;
+
             const infoContainer = document.getElementById('info-container');
             const profileContainer = document.getElementById('profile-container');
             const firstNameInput = document.getElementById('firstName');
             const lastNameInput = document.getElementById('lastName');
             const emailInput = document.getElementById('email');
-            const saveProfileBtn = document.getElementById('saveProfileBtn');
-            const updateFeedback = document.getElementById('update-feedback');
-            const resetPasswordBtn = document.getElementById('resetPasswordBtn');
-            const deleteAccountBtn = document.getElementById('deleteAccountBtn');
             const avatarDisplay = document.getElementById('avatar-display');
-            const photoUploadInput = document.getElementById('photo-upload-input');
             const savePhotoBtn = document.getElementById('savePhotoBtn');
             const savedListingsContainer = document.getElementById('saved-listings-container');
             const languageSelect = document.getElementById('languageSelect');
-            
+
             let selectedPhotoFile = null;
 
-            // --- HEADER & NAVIGATION (With Null Checks) ---
-            if (logoLink) logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
-            if (loginRegisterBtn) loginRegisterBtn.addEventListener('click', () => { window.location.href = '/LoginInToCheaplet.html'; });
-            if (logoutBtn) logoutBtn.addEventListener('click', () => signOut(auth));
-
-            // --- LANGUAGE INITIALIZATION ---
-            if (languageSelect) {
-                const currentLang = localStorage.getItem('preferred_language') || 'en';
-                languageSelect.value = currentLang;
-
-                languageSelect.addEventListener('change', (e) => {
-                    const newLang = e.target.value;
-                    if (window.applyLanguage) {
-                        window.applyLanguage(newLang);
-                    } else {
-                        localStorage.setItem('preferred_language', newLang);
-                        window.location.reload();
-                    }
-                });
-            }
-
-            // --- MAIN AUTH LOGIC ---
+            // --- AUTH LOGIC (Content specific) ---
             onAuthStateChanged(auth, async (user) => {
                 if (user && user.emailVerified) {
-                    if (userEmailDisplay) {
-                        userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome!`;
-                        userEmailDisplay.style.display = 'block';
-                    }
-                    if (loginRegisterBtn) loginRegisterBtn.style.display = 'none';
-                    if (logoutBtn) logoutBtn.style.display = 'inline-block';
-                    
                     populateProfileForm(user);
-                    if (infoContainer) infoContainer.style.display = 'none';
-                    if (profileContainer) profileContainer.style.display = 'flex';
+                    infoContainer.style.display = 'none';
+                    profileContainer.style.display = 'flex';
 
-                    // Fetch User Doc
-                    try {
-                        const userDocRef = doc(db, "users", user.uid);
-                        const userDocSnap = await getDoc(userDocRef);
-                        
-                        if (userDocSnap.exists()) {
-                            const data = userDocSnap.data();
+                    // Load Data from Firestore
+                    const userDocSnap = await getDoc(doc(db, "users", user.uid));
+                    if (userDocSnap.exists()) {
+                        const data = userDocSnap.data();
+                        if (data.photoURL) setAvatar(data.photoURL);
+                        else setAvatar(user.photoURL, user.displayName);
 
-                            if (data.role === 'banned') {
-                                await signOut(auth);
-                                alert("You have been banned from Cheaplet.");
-                                window.location.href = '/LoginInToCheaplet.html';
-                                return;
-                            }
-                            
-                            if (data.photoURL) {
-                                setAvatar(data.photoURL);
-                            } else {
-                                setAvatar(user.photoURL, user.displayName);
-                            }
-
-                            if (data.savedListings && data.savedListings.length > 0) {
-                                fetchSavedListings(data.savedListings);
-                            } else {
-                                if (savedListingsContainer) savedListingsContainer.innerHTML = '<p style="color:#999; grid-column:1/-1;">You haven\'t saved any items yet.</p>';
-                            }
-
-                        } else {
-                            setAvatar(user.photoURL, user.displayName);
-                            if (savedListingsContainer) savedListingsContainer.innerHTML = '<p style="color:#999; grid-column:1/-1;">You haven\'t saved any items yet.</p>';
-                        }
-                    } catch (e) {
-                        console.error("Error loading profile data:", e);
+                        if (data.savedListings) fetchSavedListings(data.savedListings);
+                        else savedListingsContainer.innerHTML = '<p>No saved items.</p>';
                     }
-
                 } else {
-                    // Not logged in
-                    if (profileContainer) profileContainer.style.display = 'none';
-                    if (infoContainer) {
-                        infoContainer.innerHTML = `<p class="info-message">Please <a href="/LoginInToCheaplet.html" style="color:#4CAF50; font-weight:bold;">log in</a> to view your profile.</p>`;
-                        infoContainer.style.display = 'block';
-                    }
-                    if (userEmailDisplay) userEmailDisplay.style.display = 'none';
-                    if (loginRegisterBtn) loginRegisterBtn.style.display = 'inline-block';
-                    if (logoutBtn) logoutBtn.style.display = 'none';
+                    window.location.href = '/LoginInToCheaplet.html';
                 }
             });
-            
-            // --- SAVED ITEMS ---
-            async function fetchSavedListings(listingIds) {
-                if (!savedListingsContainer) return;
-                savedListingsContainer.innerHTML = ''; 
-                
-                const promises = listingIds.map(id => getDoc(doc(db, "listings", id)));
-                const snapshots = await Promise.all(promises);
 
-                let hasItems = false;
-                snapshots.forEach(snap => {
+            // --- FETCH SAVED ITEMS ---
+            async function fetchSavedListings(ids) {
+                savedListingsContainer.innerHTML = '';
+                const promises = ids.map(id => getDoc(doc(db, "listings", id)));
+                const snaps = await Promise.all(promises);
+                snaps.forEach(snap => {
                     if (snap.exists()) {
-                        hasItems = true;
-                        const data = snap.data();
+                        const d = snap.data();
                         const card = document.createElement('a');
                         card.className = 'saved-item-card';
                         card.href = `/listing.html?id=${snap.id}`;
-                        
-                        const img = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls[0] : '';
-                        
                         card.innerHTML = `
-                            <div class="saved-item-img" style="background-image: url('${img}')"></div>
+                            <div class="saved-item-img" style="background-image: url('${d.imageUrls?.[0] || ''}')"></div>
                             <div class="saved-item-details">
-                                <div class="saved-item-price">$${data.price.toFixed(2)}</div>
-                                <div class="saved-item-title">${data.title}</div>
-                            </div>
-                        `;
+                                <div class="saved-item-price">$${d.price.toFixed(2)}</div>
+                                <div class="saved-item-title">${d.title}</div>
+                            </div>`;
                         savedListingsContainer.appendChild(card);
                     }
                 });
-
-                if (!hasItems) {
-                    savedListingsContainer.innerHTML = '<p style="color:#999;">Items you saved may have been deleted.</p>';
-                }
             }
 
-            function setAvatar(url, displayName) {
-                if (!avatarDisplay) return;
+            function setAvatar(url, name) {
                 if (url) {
                     avatarDisplay.style.backgroundImage = `url('${url}')`;
                     avatarDisplay.textContent = '';
                 } else {
                     avatarDisplay.style.backgroundImage = 'none';
-                    avatarDisplay.textContent = displayName ? displayName.charAt(0).toUpperCase() : '?';
+                    avatarDisplay.textContent = name ? name.charAt(0).toUpperCase() : '?';
                 }
             }
-            
+
             function populateProfileForm(user) {
-                if (emailInput) emailInput.value = user.email;
+                emailInput.value = user.email;
                 if (user.displayName) {
-                    const names = user.displayName.split(' ');
-                    if (firstNameInput) firstNameInput.value = names[0];
-                    if (lastNameInput) lastNameInput.value = names.length > 1 ? names.slice(1).join(' ') : '';
+                    const parts = user.displayName.split(' ');
+                    firstNameInput.value = parts[0];
+                    lastNameInput.value = parts.slice(1).join(' ');
                 }
             }
 
-            if (saveProfileBtn) {
-                saveProfileBtn.addEventListener('click', async () => {
-                    const user = auth.currentUser;
-                    if (!user) return;
+            // --- ACTIONS ---
+            document.getElementById('saveProfileBtn').onclick = async () => {
+                const newName = `${firstNameInput.value.trim()} ${lastNameInput.value.trim()}`;
+                await updateProfile(auth.currentUser, { displayName: newName });
+                await updateDoc(doc(db, "users", auth.currentUser.uid), { displayName: newName });
+                alert("Profile Updated!");
+            };
 
-                    const firstName = firstNameInput.value.trim();
-                    const lastName = lastNameInput.value.trim();
-                    const newDisplayName = `${firstName} ${lastName}`;
+            document.getElementById('photo-upload-input').onchange = (e) => {
+                selectedPhotoFile = e.target.files[0];
+                if (selectedPhotoFile) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => setAvatar(ev.target.result);
+                    reader.readAsDataURL(selectedPhotoFile);
+                    savePhotoBtn.style.display = 'inline-block';
+                }
+            };
 
-                    saveProfileBtn.disabled = true;
-                    saveProfileBtn.textContent = 'Saving...';
-                    updateFeedback.textContent = '';
+            savePhotoBtn.onclick = async () => {
+                savePhotoBtn.disabled = true;
+                const fd = new FormData();
+                fd.append('file', selectedPhotoFile);
+                fd.append('upload_preset', UPLOAD_PRESET);
+                const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd });
+                const data = await res.json();
+                await updateProfile(auth.currentUser, { photoURL: data.secure_url });
+                await updateDoc(doc(db, "users", auth.currentUser.uid), { photoURL: data.secure_url });
+                savePhotoBtn.style.display = 'none';
+                alert("Photo Saved!");
+            };
 
-                    try {
-                        await updateProfile(user, { displayName: newDisplayName });
-                        const userDocRef = doc(db, "users", user.uid);
-                        await updateDoc(userDocRef, { displayName: newDisplayName });
+            document.getElementById('resetPasswordBtn').onclick = () => {
+                sendPasswordResetEmail(auth, auth.currentUser.email);
+                alert("Reset email sent!");
+            };
 
-                        if (userEmailDisplay) userEmailDisplay.textContent = `Welcome, ${newDisplayName}!`;
-                        updateFeedback.textContent = 'Profile updated successfully!';
-                        updateFeedback.className = 'success';
-                    } catch (error) {
-                        console.error("Error updating profile:", error);
-                        updateFeedback.textContent = 'Failed to update profile.';
-                        updateFeedback.className = 'error';
-                    } finally {
-                        saveProfileBtn.disabled = false;
-                        saveProfileBtn.textContent = 'Save Changes';
-                    }
-                });
-            }
-
-            if (resetPasswordBtn) {
-                resetPasswordBtn.addEventListener('click', async () => {
-                    const user = auth.currentUser;
-                    if (!user) return;
-                    if(confirm("Send a password reset email to " + user.email + "?")) {
-                        try {
-                            await sendPasswordResetEmail(auth, user.email);
-                            alert("Password reset email sent!");
-                        } catch (error) {
-                            alert("Error: " + error.message);
-                        }
-                    }
-                });
-            }
-
-            if (deleteAccountBtn) {
-                deleteAccountBtn.addEventListener('click', async () => {
-                    const user = auth.currentUser;
-                    if (!user) return;
-                    if (confirm("Are you SURE you want to delete your account? This cannot be undone.")) {
-                        const confirm2 = prompt("Type 'DELETE' to confirm.");
-                        if (confirm2 === 'DELETE') {
-                            try {
-                                await deleteDoc(doc(db, "users", user.uid));
-                                await deleteUser(user);
-                                alert("Account deleted.");
-                                window.location.href = '/index.html';
-                            } catch (error) {
-                                console.error("Delete error:", error);
-                                alert("Error: " + error.message);
-                            }
-                        }
-                    }
-                });
-            }
-
-            if (photoUploadInput) {
-                photoUploadInput.addEventListener('change', (e) => {
-                    if (e.target.files && e.target.files[0]) {
-                        selectedPhotoFile = e.target.files[0];
-                        const reader = new FileReader();
-                        reader.onload = (event) => { setAvatar(event.target.result); }
-                        reader.readAsDataURL(selectedPhotoFile);
-                        if (savePhotoBtn) savePhotoBtn.style.display = 'inline-block';
-                    }
-                });
-            }
-
-            if (savePhotoBtn) {
-                savePhotoBtn.addEventListener('click', async () => {
-                    const user = auth.currentUser;
-                    if (!user || !selectedPhotoFile) return;
-                    savePhotoBtn.disabled = true;
-                    savePhotoBtn.textContent = "Uploading...";
-                    updateFeedback.textContent = "";
-                    try {
-                        const formData = new FormData();
-                        formData.append('file', selectedPhotoFile);
-                        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-                        const res = await fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData });
-                        const data = await res.json();
-                        const newPhotoURL = data.secure_url;
-                        if (!newPhotoURL) { throw new Error("Image upload failed."); }
-                        await updateProfile(user, { photoURL: newPhotoURL });
-                        const userDocRef = doc(db, "users", user.uid);
-                        await updateDoc(userDocRef, { photoURL: newPhotoURL });
-                        updateFeedback.textContent = "Profile picture updated!";
-                        updateFeedback.className = 'success';
-                        savePhotoBtn.style.display = 'none';
-                        selectedPhotoFile = null;
-                    } catch (error) {
-                        console.error("Error updating profile picture:", error);
-                        updateFeedback.textContent = "Could not update photo. Please try again.";
-                        updateFeedback.className = 'error';
-                    } finally {
-                        savePhotoBtn.disabled = false;
-                        savePhotoBtn.textContent = "Save Photo";
-                    }
-                });
-            }
+            languageSelect.onchange = (e) => window.applyLanguage(e.target.value);
         }
         main();
     </script>
