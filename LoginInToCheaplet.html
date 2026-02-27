@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Cheaplet</title>
-    <!-- GLOBAL BRAIN -->
+    <!-- GLOBAL BRAIN (Added) -->
     <script type="module" src="global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -13,14 +13,14 @@
         .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
         header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         
-        /* FIX: Added space-between to push buttons to the right */
+        /* Layout Fix for Header */
         .header-content { display: flex; justify-content: space-between; align-items: center; }
         
         .header-left { display: flex; align-items: center; gap: 15px; }
         .logo { font-size: 24px; font-weight: bold; cursor: pointer; text-decoration: none; color: white; }
         .logo span { color: #FFD700; }
         
-        /* FIX: Container for global.js buttons */
+        /* Container for Global.js buttons */
         .header-right { display: flex; align-items: center; gap: 10px; }
 
         .btn-back { background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; transition: background 0.3s; }
@@ -59,7 +59,7 @@
                 </button>
                 <a href="/index.html" class="logo">Cheap<span>let</span></a>
             </div>
-            <!-- FIX: Added this placeholder for global.js -->
+            <!-- Container for global.js buttons -->
             <div class="header-right"></div>
         </div>
     </header>
@@ -93,16 +93,14 @@
     </main>
 
     <script type="module">
-        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendEmailVerification, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
-            
-            // Safety Check
-            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
+            const app = initializeApp(config.firebaseConfig);
             const auth = getAuth(app);
             const db = getFirestore(app);
             const googleProvider = new GoogleAuthProvider();
@@ -144,9 +142,10 @@
                     if (userDoc.exists()) {
                         const userData = userDoc.data();
                         if (userData.role === 'banned') {
+                            console.warn("User is banned. Signing out.");
                             await signOut(auth);
                             loadingOverlay.style.display = 'none';
-                            alert("This account has been banned.");
+                            alert("This account has been banned for violating our terms of service.");
                             window.location.reload(); 
                             return; 
                         }
@@ -165,10 +164,22 @@
                     
                     const urlParams = new URLSearchParams(window.location.search);
                     const redirectTarget = urlParams.get('redirect');
-                    window.location.href = redirectTarget || '/index.html';
+
+                    if (redirectTarget) {
+                        window.location.href = redirectTarget;
+                    } else {
+                        window.location.href = '/index.html';
+                    }
 
                 } catch (e) {
-                    window.location.href = '/index.html';
+                    console.error("Error during login verification:", e);
+                    if (e.code === 'permission-denied') {
+                         await signOut(auth);
+                         alert("Access denied. Your account may be banned.");
+                         loadingOverlay.style.display = 'none';
+                    } else {
+                        window.location.href = '/index.html';
+                    }
                 }
             }
 
@@ -189,20 +200,27 @@
                     registerFields.style.display = 'none';
                     submitBtn.textContent = 'Log In';
                     toggleLink.textContent = 'New to Cheaplet? Create an account.';
+                    firstNameInput.removeAttribute('required');
+                    lastNameInput.removeAttribute('required');
                 } else {
                     formTitle.textContent = 'Join Cheaplet';
                     formSubtitle.textContent = 'Create an account to start listing items.';
                     registerFields.style.display = 'block';
                     submitBtn.textContent = 'Register';
                     toggleLink.textContent = 'Already have an account? Log in.';
+                    firstNameInput.setAttribute('required', 'true');
+                    lastNameInput.setAttribute('required', 'true');
                 }
             });
 
             googleBtn.addEventListener('click', async () => {
+                authError.style.display = 'none';
                 try {
                     await signInWithPopup(auth, googleProvider);
                 } catch (error) {
-                    console.error(error);
+                    console.error("Google Auth Error:", error);
+                    authError.textContent = "Google Sign-In failed. " + error.message;
+                    authError.style.display = 'block';
                 }
             });
 
@@ -210,6 +228,7 @@
                 e.preventDefault();
                 authError.style.display = 'none';
                 submitBtn.disabled = true;
+                submitBtn.textContent = 'Processing...';
                 const email = emailInput.value;
                 const password = passwordInput.value;
 
@@ -218,23 +237,38 @@
                         const userCredential = await signInWithEmailAndPassword(auth, email, password);
                         if (!userCredential.user.emailVerified) {
                             await signOut(auth);
-                            throw new Error('Please verify your email address.');
+                            throw new Error('Please verify your email address before logging in. Check your inbox.');
                         }
                     } else {
+                        if (password.length < 6) { throw new Error('Password must be at least 6 characters long.'); }
+                        const firstName = firstNameInput.value.trim();
+                        const lastName = lastNameInput.value.trim();
                         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                        const displayName = `${firstNameInput.value.trim()} ${lastNameInput.value.trim()}`;
+                        const displayName = `${firstName} ${lastName}`;
                         await updateProfile(userCredential.user, { displayName: displayName });
                         await sendEmailVerification(userCredential.user);
-                        await setDoc(doc(db, "users", userCredential.user.uid), { uid: userCredential.user.uid, displayName, email, role: 'user' });
+                        try {
+                            await setDoc(doc(db, "users", userCredential.user.uid), {
+                                uid: userCredential.user.uid,
+                                displayName: displayName,
+                                email: email,
+                                role: 'user'
+                            });
+                        } catch (dbError) { console.error("Database error:", dbError); }
                         await signOut(auth);
-                        alert("Verification email sent!");
-                        isLoginMode = true; toggleLink.click(); 
+                        alert("Registration successful! Verification email sent. Please check inbox/spam, then log in.");
+                        isLoginMode = true;
+                        toggleLink.click(); 
                     }
                 } catch (error) {
-                    authError.textContent = error.message;
+                    console.error("Auth Error:", error);
+                    let msg = error.message.replace('Firebase: ', '');
+                    if (msg.includes('auth/email-already-in-use')) msg = 'That email is already registered. Please log in.';
+                    authError.textContent = msg;
                     authError.style.display = 'block';
                 } finally {
                     submitBtn.disabled = false;
+                    submitBtn.textContent = isLoginMode ? 'Log In' : 'Register';
                 }
             });
         }
