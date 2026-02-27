@@ -30,7 +30,16 @@ const translations = {
         "btn_signout": "Sign Out",
         "search_placeholder": "What are you looking for?",
         "hero_title": "Great Finds, Unbeatable Prices.",
-        "hero_sub": "Cheaplet is the online marketplace for smart savings."
+        "hero_sub": "Cheaplet is the online marketplace for smart savings.",
+        "footer_about": "About Cheaplet",
+        "footer_support": "Support",
+        "footer_legal": "Legal",
+        "how_title": "How It Works",
+        "step_1_title": "Create an Account",
+        "step_2_title": "Post Your Item",
+        "step_3_title": "Connect & Sell",
+        "title_listings": "Featured Listings",
+        "title_tags": "Popular Tags"
     },
     "fr": {
         "nav_browse": "Parcourir",
@@ -43,7 +52,16 @@ const translations = {
         "btn_signout": "Déconnexion",
         "search_placeholder": "Que cherchez-vous ?",
         "hero_title": "Super trouvailles, prix imbattables.",
-        "hero_sub": "Cheaplet est le marché en ligne pour des économies intelligentes."
+        "hero_sub": "Cheaplet est le marché en ligne pour des économies intelligentes.",
+        "footer_about": "À propos",
+        "footer_support": "Support",
+        "footer_legal": "Légal",
+        "how_title": "Comment ça marche",
+        "step_1_title": "Créer un compte",
+        "step_2_title": "Publiez un article",
+        "step_3_title": "Vendez",
+        "title_listings": "Annonces en vedette",
+        "title_tags": "Tags populaires"
     }
 };
 
@@ -59,20 +77,17 @@ window.applyLanguage = (lang) => {
     localStorage.setItem('preferred_language', lang);
 };
 
-// --- 3. GLOBAL CSS INJECTION (Fixed Button Heights & Spacing) ---
+// --- 3. GLOBAL CSS INJECTION ---
 const globalStyle = document.createElement('style');
 globalStyle.innerHTML = `
     .btn {
         background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%) !important;
-        color: #333 !important; border: none !important; 
-        padding: 0 18px !important; /* Side padding only */
-        height: 38px !important;    /* Fixed height to prevent "fat" buttons */
-        line-height: 38px !important;
-        border-radius: 20px !important; font-weight: bold !important; cursor: pointer !important;
-        transition: transform 0.2s !important; box-shadow: 0 3px 6px rgba(0,0,0,0.1) !important;
-        font-size: 0.85rem !important; display: inline-flex !important; 
-        align-items: center; justify-content: center;
-        text-align: center; white-space: nowrap !important;
+        color: #333 !important; border: none !important; padding: 0 18px !important;
+        height: 38px !important; line-height: 38px !important; border-radius: 20px !important;
+        font-weight: bold !important; cursor: pointer !important; transition: transform 0.2s !important;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.1) !important; font-size: 0.85rem !important;
+        display: inline-flex !important; align-items: center; justify-content: center;
+        text-align: center; white-space: nowrap !important; text-decoration: none !important;
     }
     .profile-menu-container { position: relative; display: flex; align-items: center; }
     .profile-avatar { width: 38px; height: 38px; border-radius: 50%; background-color: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.8); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; background-size: cover; background-position: center; }
@@ -83,9 +98,6 @@ globalStyle.innerHTML = `
     .dropdown-item:hover { background-color: #f1f8e9; }
     .msg-btn-mobile { background-color: #FFD700; color: #333; width: 36px; height: 36px; border-radius: 50%; display: none; align-items: center; justify-content: center; text-decoration: none; margin-right: 12px; font-size: 1rem; }
     body.page-messages .msg-btn-mobile, body.page-chat .msg-btn-mobile { display: none !important; }
-    
-    .header-content { gap: 10px; } /* Prevent logo/button overlap */
-
     @media (max-width: 767px) {
         nav { display: none !important; } .msg-btn-mobile { display: flex; } .mobile-link { display: flex; }
         .btn { font-size: 0.75rem !important; padding: 0 12px !important; height: 34px !important; }
@@ -96,6 +108,10 @@ document.head.appendChild(globalStyle);
 // --- 4. STATE & LISTENERS ---
 let globalSettings = {};
 let currentUser = null;
+
+const path = window.location.pathname;
+if (path.includes('messages.html')) document.body.classList.add('page-messages');
+if (path.includes('chat.html')) document.body.classList.add('page-chat');
 
 onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
     if (docSnap.exists()) {
