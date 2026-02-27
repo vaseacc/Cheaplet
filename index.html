@@ -2,89 +2,58 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cheaplet - Great Finds, Unbeatable Prices</title>
     <!-- GLOBAL BRAIN -->
     <script type="module" src="global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
+        body { background-color: #f8f9fa; color: #333; line-height: 1.6; overflow-x: hidden; }
         .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
 
-        /* Header */
-        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 10px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
-        .header-content { display: flex; justify-content: space-between; align-items: center; }
+        /* RESPONSIVE HEADER FIX */
+        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 12px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; width: 100%; }
+        .header-content { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         
-        .header-left { display: flex; align-items: center; gap: 30px; }
-        .logo { font-size: 24px; font-weight: bold; display: flex; align-items: center; cursor: pointer; color: white; text-decoration: none; }
+        .header-left { display: flex; align-items: center; gap: clamp(10px, 3vw, 30px); flex-shrink: 1; min-width: 0; }
+        .logo { font-size: clamp(20px, 5vw, 24px); font-weight: bold; cursor: pointer; color: white; text-decoration: none; white-space: nowrap; flex-shrink: 0; }
         .logo span { color: #FFD700; }
         
-        nav ul { display: flex; list-style: none; margin: 0; padding: 0; gap: 20px; }
-        nav ul li a { color: white; text-decoration: none; font-weight: 500; opacity: 0.9; transition: opacity 0.2s; }
-        nav ul li a:hover { opacity: 1; }
+        nav { flex-shrink: 1; overflow: hidden; }
+        nav ul { display: flex; list-style: none; gap: 15px; white-space: nowrap; }
+        nav ul li a { color: white; text-decoration: none; font-weight: 500; opacity: 0.9; font-size: 0.95rem; }
 
-        .header-right { display: flex; align-items: center; gap: 15px; }
+        .header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
         /* Hero */
-        .hero { background: linear-gradient(rgba(76,175,80,0.9), rgba(56,142,60,0.9)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%234CAF50"/></svg>'); background-size: cover; color: white; text-align: center; padding: 40px 20px; }
-        .hero h1 { font-size: 2rem; margin-bottom: 15px; }
+        .hero { background: linear-gradient(rgba(76,175,80,0.9), rgba(56,142,60,0.9)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="%234CAF50"/></svg>'); background-size: cover; color: white; text-align: center; padding: clamp(40px, 10vw, 80px) 20px; }
+        .hero h1 { font-size: clamp(1.8rem, 6vw, 2.5rem); margin-bottom: 15px; }
         
-        /* Tags */
-        .tags-section { padding: 40px 0; text-align: center; }
-        .section-title { font-size: 1.8rem; color: #2E7D32; margin-bottom: 25px; font-weight: 600; }
-        .tags-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 15px; }
-        .tag-pill { background: white; border: 1px solid #ddd; padding: 10px 20px; border-radius: 30px; font-weight: 600; display: flex; align-items: center; gap: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); color: #555; cursor: pointer; transition: all 0.2s; }
-        .tag-pill:hover { border-color: #4CAF50; transform: translateY(-3px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); color: #2E7D32; }
-        .tag-pill.active { background-color: #e8f5e9; border-color: #4CAF50; color: #2E7D32; }
-        .tag-count { background: #eee; font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; color: #666; }
-
-        /* Filters */
-        .filters { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin: 30px 0; }
-        .filter-options { display: flex; flex-direction: column; gap: 15px; }
-        .filter-group { display: flex; align-items: center; width: 100%; }
-        select, input { padding: 10px; border: 2px solid #ddd; border-radius: 6px; width: 100%; }
-
-        /* Listings */
-        .listings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px; }
-        .listing-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: block; text-decoration: none; color: inherit; transition: transform 0.3s; }
-        .listing-card:hover { transform: translateY(-5px); }
-        .listing-image { height: 180px; background-color: #eee; background-size: cover; background-position: center; position: relative; }
-        .listing-details { padding: 15px; }
-        .listing-header-card { display: flex; justify-content: space-between; }
-        .listing-title { font-weight: 600; font-size: 1rem; }
-        .listing-price { color: #4CAF50; font-weight: bold; font-size: 1.1rem; }
-        .listing-footer { display: flex; justify-content: space-between; margin-top: 10px; border-top: 1px solid #eee; padding-top: 8px; font-size: 0.85rem; color: #666; }
-        .seller-name { font-weight: 500; color: #555; }
-        .condition-tag { background-color: #e0e0e0; color: #333; padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
-        .condition-tag.new { background-color: #e8f5e9; color: #2E7D32; }
-        .no-listings-message { grid-column: 1 / -1; text-align: center; padding: 40px; color: #777; }
-
-        /* Footer */
-        footer { background: linear-gradient(135deg, #2E7D32 0%, #1b5e20 100%); color: white; padding: 40px 0 20px; margin-top: 40px; }
-        .footer-content { display: grid; grid-template-columns: 1fr; gap: 30px; margin-bottom: 30px; text-align: center; }
-        .footer-column h3 { margin-bottom: 15px; font-size: 1.2rem; }
-        .footer-column ul { list-style: none; }
-        .footer-column ul li { margin-bottom: 10px; }
-        .footer-column ul li a { color: #ddd; text-decoration: none; transition: color 0.3s; }
-        .footer-column ul li a:hover { color: white; }
-        .copyright { text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem; color: #ccc; }
-
-        @media (min-width: 768px) {
-            .hero h1 { font-size: 2.5rem; }
-            .filter-options { flex-direction: row; }
-            .footer-content { grid-template-columns: repeat(3, 1fr); text-align: left; }
-            nav { display: block; }
+        /* Grid Responsiveness */
+        .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-bottom: 40px; }
+        
+        @media (max-width: 767px) {
+            nav { display: none; } /* global.js will move these to the pfp dropdown on mobile */
         }
-        @media (max-width: 767px) { nav { display: none; } }
+
+        /* Listing Card UI */
+        .listing-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: block; text-decoration: none; color: inherit; transition: transform 0.3s; }
+        .listing-image { height: 200px; background-color: #eee; background-size: cover; background-position: center; }
+        .listing-details { padding: 15px; }
+        .listing-price { color: #4CAF50; font-weight: bold; font-size: 1.2rem; }
+        
+        /* Section styling */
+        .section-title { font-size: 1.8rem; color: #2E7D32; margin-bottom: 25px; text-align: center; font-weight: 600; }
+        .tag-pill { background: white; border: 1px solid #ddd; padding: 8px 16px; border-radius: 30px; font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+        .tags-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding: 20px 0; }
     </style>
 </head>
 <body>
     <header>
         <div class="container header-content">
             <div class="header-left">
-                <div class="logo" id="logo-link">Cheap<span>let</span></div>
+                <a href="/index.html" class="logo">Cheap<span>let</span></a>
                 <nav><ul></ul></nav>
             </div>
             <div class="header-right"></div>
@@ -95,93 +64,77 @@
         <div class="container">
             <h1 data-i18n="hero_title">Great Finds, Unbeatable Prices.</h1>
             <p data-i18n="hero_sub">Cheaplet is the online marketplace for smart savings. Discover secondhand books, clearance, and giveaway items in your area.</p>
-            <button class="btn" id="startBrowsingBtn" data-i18n="btn_browse">Start Browsing</button>
+            <button class="btn" id="startBrowsingBtn" data-i18n="btn_browse" style="margin-top:20px;">Start Browsing</button>
         </div>
     </section>
     
     <section class="tags-section container">
         <h2 class="section-title" data-i18n="title_tags">Popular Tags</h2>
         <div class="tags-grid" id="tags-grid-container">
-            <p style="color:#777;">Loading popular tags...</p>
+            <p style="color:#777;">...</p>
         </div>
     </section>
 
     <main class="container">
-        <section class="filters">
-            <div class="filter-options">
-                <div class="filter-group">
-                    <select id="sort-filter">
-                        <option value="newest">Newest First</option>
-                        <option value="price-low">Price: Low to High</option>
-                        <option value="price-high">Price: High to Low</option>
-                    </select>
-                </div>
-                <div class="filter-group" style="flex-grow: 1;">
-                    <input type="text" data-i18n-placeholder="search_placeholder" placeholder="Search listings..." id="search-input">
-                </div>
+        <section class="filters" style="margin: 30px 0;">
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <select id="sort-filter" style="padding:10px; border-radius:8px; border:2px solid #ddd; flex:1; min-width:150px;">
+                    <option value="newest">Newest First</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                </select>
+                <input type="text" id="search-input" data-i18n-placeholder="search_placeholder" placeholder="Search listings..." style="padding:10px; border-radius:8px; border:2px solid #ddd; flex:2; min-width:200px;">
             </div>
         </section>
 
         <section class="listings">
-            <div class="listings-header">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                 <h2 data-i18n="title_listings">Featured Listings</h2>
-                <span id="itemCount">Loading...</span>
+                <span id="itemCount" style="color:#888; font-weight:600;">...</span>
             </div>
             <div class="listings-grid" id="listings-container"></div>
         </section>
     </main>
 
-    <section class="how-it-works">
+    <section class="how-it-works" style="padding: 60px 0; background: #fff;">
         <div class="container">
             <h2 class="section-title" data-i18n="how_title">How It Works</h2>
-            <div class="steps-grid">
-                <div class="step-card">
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:30px; text-align:center;">
+                <div>
                     <i class="fas fa-user-plus" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i>
                     <h3 data-i18n="step_1_title">Create an Account</h3>
-                    <p data-i18n="step_1_text">Quickly sign up for free to start buying and selling.</p>
                 </div>
-                <div class="step-card">
+                <div>
                     <i class="fas fa-camera-retro" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i>
                     <h3 data-i18n="step_2_title">Post Your Item</h3>
-                    <p data-i18n="step_2_text">Snap some photos, add tags, and list in minutes.</p>
                 </div>
-                <div class="step-card">
+                <div>
                     <i class="fas fa-comments-dollar" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i>
                     <h3 data-i18n="step_3_title">Connect & Sell</h3>
-                    <p data-i18n="step_3_text">Message with buyers securely and arrange a sale.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <footer>
+    <footer style="background: #2E7D32; color: white; padding: 40px 0; margin-top: 40px; text-align: center;">
         <div class="container">
-            <div class="footer-content">
-                <div class="footer-column">
-                    <h3 data-i18n="footer_about">About Cheaplet</h3>
-                    <ul><li><a href="#">About Us</a></li><li><a href="#">How It Works</a></li><li><a href="#">Contact</a></li></ul>
-                </div>
-                <div class="footer-column">
-                    <h3 data-i18n="footer_support">Support</h3>
-                    <ul><li><a href="#">Help Center</a></li><li><a href="#">Safety Tips</a></li><li><a href="#">Report Issue</a></li></ul>
-                </div>
-                <div class="footer-column">
-                    <h3 data-i18n="footer_legal">Legal</h3>
-                    <ul><li><a href="#">Terms of Service</a></li><li><a href="#">Privacy Policy</a></li></ul>
-                </div>
+            <div style="margin-bottom: 20px;">
+                <span data-i18n="footer_about" style="margin: 0 15px;">About</span>
+                <span data-i18n="footer_support" style="margin: 0 15px;">Support</span>
+                <span data-i18n="footer_legal" style="margin: 0 15px;">Legal</span>
             </div>
-            <div class="copyright">© 2025 Cheaplet. All rights reserved.</div>
+            <div>© 2025 Cheaplet. All rights reserved.</div>
         </div>
     </footer>
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, query, orderBy, onSnapshot, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot, getDocs, limit } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
+            
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const db = getFirestore(app);
 
@@ -193,11 +146,9 @@
 
             let unsubscribeListings = null;
 
-            // NAVIGATION
-            const logoLink = document.getElementById('logo-link');
-            if(logoLink) logoLink.addEventListener('click', () => window.location.href = '/index.html');
-            const browseBtn = document.getElementById('startBrowsingBtn');
-            if(browseBtn) browseBtn.addEventListener('click', () => document.querySelector('.filters').scrollIntoView({ behavior: 'smooth' }));
+            // SCROLL TO CONTENT
+            const startBtn = document.getElementById('startBrowsingBtn');
+            if(startBtn) startBtn.onclick = () => document.querySelector('main').scrollIntoView({ behavior: 'smooth' });
 
             // LOAD TAGS
             async function loadGlobalTags() {
@@ -205,16 +156,12 @@
                     const q = query(collection(db, "global_tags"), orderBy("count", "desc"), limit(12));
                     const snapshot = await getDocs(q);
                     tagsGridContainer.innerHTML = '';
-                    if(snapshot.empty) {
-                        tagsGridContainer.innerHTML = '<p style="color:#999;">No tags yet.</p>';
-                        return;
-                    }
                     snapshot.forEach(doc => {
                         const data = doc.data();
                         const pill = document.createElement('div');
                         pill.className = 'tag-pill';
-                        pill.innerHTML = `${data.tag} <span class="tag-count">${data.count || 0}</span>`;
-                        pill.addEventListener('click', () => { window.location.href = `/tag.html?tag=${encodeURIComponent(data.tag)}`; });
+                        pill.innerHTML = `${data.tag} <span style="color:#888; font-size:0.7rem;">${data.count || 0}</span>`;
+                        pill.onclick = () => window.location.href = `/tag.html?tag=${encodeURIComponent(data.tag)}`;
                         tagsGridContainer.appendChild(pill);
                     });
                 } catch (e) { console.error(e); }
@@ -223,23 +170,18 @@
             // LISTINGS
             function renderListing(doc) {
                 const data = doc.data();
-                const firstImage = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls[0] : '';
-                const div = document.createElement('a');
-                div.className = 'listing-card';
-                div.href = `/listing.html?id=${doc.id}`;
-                div.innerHTML = `
+                const firstImage = data.imageUrls?.[0] || '';
+                const card = document.createElement('a');
+                card.className = 'listing-card';
+                card.href = `/listing.html?id=${doc.id}`;
+                card.innerHTML = `
                     <div class="listing-image" style="background-image: url('${firstImage}');"></div>
                     <div class="listing-details">
-                        <div class="listing-header-card">
-                            <span class="listing-title">${data.title}</span>
-                            <span class="listing-price">$${data.price.toFixed(2)}</span>
-                        </div>
-                        <div class="listing-footer">
-                            <span class="seller-name">${data.posterDisplayName || 'User'}</span>
-                            <span class="condition-tag ${data.condition === 'New' ? 'new' : ''}">${data.condition || 'Used'}</span>
-                        </div>
+                        <div class="listing-price">$${data.price.toFixed(2)}</div>
+                        <h3 style="font-size: 1rem; margin: 5px 0;">${data.title}</h3>
+                        <div style="font-size: 0.85rem; color: #777;"><i class="fas fa-map-marker-alt"></i> ${data.location || 'Montreal'}</div>
                     </div>`;
-                return div;
+                return card;
             }
 
             function fetchListings() {
@@ -257,12 +199,12 @@
                 });
             }
 
-            sortFilter.addEventListener('change', fetchListings);
-            searchInput.addEventListener('keydown', (e) => {
+            sortFilter.onchange = fetchListings;
+            searchInput.onkeydown = (e) => {
                 if (e.key === 'Enter' && searchInput.value.trim()) {
                     window.location.href = `/search.html?q=${encodeURIComponent(searchInput.value.trim())}`;
                 }
-            });
+            };
 
             loadGlobalTags();
             fetchListings();
