@@ -177,9 +177,7 @@
         <div class="header-left">
             <a href="/index.html" class="logo">Cheap<span>let</span></a>
             <nav>
-                <ul>
-                    <!-- Filled by global.js -->
-                </ul>
+                <ul></ul>
             </nav>
         </div>
         <div class="header-right"></div>
@@ -217,6 +215,11 @@
             <div class="info-row">
                 <span class="info-label">Condition</span>
                 <span class="info-value" id="listing-condition"></span>
+            </div>
+            <!-- ADDED: DIGITAL ACCESS CODE DISPLAY -->
+            <div class="info-row">
+                <span class="info-label">Access Code</span>
+                <span class="info-value" id="listing-digital-code"></span>
             </div>
             <div class="info-row">
                 <span class="info-label">Category</span>
@@ -261,7 +264,6 @@
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
             
-            // FIX: Double-init check
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
@@ -289,20 +291,12 @@
             async function fetchAndDisplayListing() {
                 const params = new URLSearchParams(window.location.search);
                 currentListingId = params.get('id');
-
-                if (!currentListingId) {
-                    window.location.href = '/index.html';
-                    return;
-                }
+                if (!currentListingId) { window.location.href = '/index.html'; return; }
 
                 try {
                     const listingRef = doc(db, 'listings', currentListingId);
                     const listingSnap = await getDoc(listingRef);
-                    
-                    if (!listingSnap.exists()) {
-                        document.getElementById('listing-title').textContent = "Listing not found.";
-                        return;
-                    }
+                    if (!listingSnap.exists()) { document.getElementById('listing-title').textContent = "Listing not found."; return; }
 
                     const data = listingSnap.data();
                     currentListingData = data;
@@ -315,6 +309,10 @@
                     document.getElementById('listing-condition').textContent = data.condition || "Used";
                     document.getElementById('listing-category').textContent = data.category || "General";
                     document.getElementById('listing-description').textContent = data.description;
+                    
+                    // FETCHING THE NEW DIGITAL CODE VALUE
+                    document.getElementById('listing-digital-code').textContent = data.digitalCode || "N/A";
+
                     document.getElementById('seller-name-link').textContent = data.posterDisplayName || "A User";
                     document.getElementById('seller-name-link').href = `/user.html?id=${data.posterUid}`;
                     
@@ -347,11 +345,9 @@
                                 isSaved = true;
                                 updateSaveIcon();
                             }
-                            const isOwner = currentUser.uid === data.posterUid;
-                            const isAdmin = userData.role === 'admin'; 
-                            if (isOwner || isAdmin) {
+                            if (currentUser.uid === data.posterUid || userData.role === 'admin') {
                                 document.getElementById('admin-controls').style.display = 'block';
-                                document.getElementById('delete-listing-btn').onclick = () => deleteListing(currentListingId, isAdmin);
+                                document.getElementById('delete-listing-btn').onclick = () => deleteListing(currentListingId, userData.role === 'admin');
                             }
                         }
                     }
@@ -368,29 +364,12 @@
                 });
             }
 
-            prevBtn.onclick = () => {
-                if (imageUrls.length === 0) return;
-                let newIndex = currentImageIndex - 1;
-                if (newIndex < 0) newIndex = imageUrls.length - 1;
-                updateMainImage(newIndex);
-            };
-            nextBtn.onclick = () => {
-                if (imageUrls.length === 0) return;
-                let newIndex = currentImageIndex + 1;
-                if (newIndex >= imageUrls.length) newIndex = 0;
-                updateMainImage(newIndex);
-            };
+            prevBtn.onclick = () => { if (imageUrls.length === 0) return; let newIndex = currentImageIndex - 1; if (newIndex < 0) newIndex = imageUrls.length - 1; updateMainImage(newIndex); };
+            nextBtn.onclick = () => { if (imageUrls.length === 0) return; let newIndex = currentImageIndex + 1; if (newIndex >= imageUrls.length) newIndex = 0; updateMainImage(newIndex); };
 
             function initiateMessage() {
-                if (!currentUser || !currentUser.emailVerified) {
-                    const currentPath = window.location.pathname + window.location.search;
-                    window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(currentPath)}`;
-                    return;
-                }
-                if (currentUser.uid === currentListingData.posterUid) {
-                    alert("You cannot message yourself.");
-                    return;
-                }
+                if (!currentUser || !currentUser.emailVerified) { window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`; return; }
+                if (currentUser.uid === currentListingData.posterUid) { alert("You cannot message yourself."); return; }
                 createChat(currentListingData.posterUid, currentListingData.posterDisplayName);
             }
 
@@ -398,22 +377,11 @@
                 const uids = [currentUser.uid, posterUid].sort();
                 const chatId = uids.join('_');
                 const chatRef = doc(db, 'chats', chatId);
-                
                 try {
                     const chatSnap = await getDoc(chatRef);
-                    if (!chatSnap.exists()) {
-                        await setDoc(chatRef, {
-                            participants: uids,
-                            participantInfo: { [currentUser.uid]: currentUser.displayName, [posterUid]: posterName },
-                            lastUpdate: serverTimestamp(),
-                            lastMessage: "" 
-                        });
-                    }
-                    // FIX: Go DIRECTLY to chat.html now
+                    if (!chatSnap.exists()) { await setDoc(chatRef, { participants: uids, participantInfo: { [currentUser.uid]: currentUser.displayName, [posterUid]: posterName }, lastUpdate: serverTimestamp(), lastMessage: "" }); }
                     window.location.href = `/chat.html?id=${chatId}`;
-                } catch (error) {
-                    alert("Error starting chat.");
-                }
+                } catch (error) { alert("Error starting chat."); }
             }
 
             document.getElementById('btn-message-seller').onclick = initiateMessage;
@@ -428,28 +396,13 @@
             saveBtn.onclick = async () => {
                 if (!currentUser) return;
                 const userRef = doc(db, "users", currentUser.uid);
-                if (isSaved) {
-                    await updateDoc(userRef, { savedListings: arrayRemove(currentListingId) });
-                    isSaved = false;
-                } else {
-                    await updateDoc(userRef, { savedListings: arrayUnion(currentListingId) });
-                    isSaved = true;
-                }
+                if (isSaved) { await updateDoc(userRef, { savedListings: arrayRemove(currentListingId) }); isSaved = false; }
+                else { await updateDoc(userRef, { savedListings: arrayUnion(currentListingId) }); isSaved = true; }
                 updateSaveIcon();
             };
 
-            shareBtn.onclick = () => {
-                const url = window.location.href;
-                if (navigator.share) navigator.share({ title: currentListingData.title, url: url });
-                else { navigator.clipboard.writeText(url); alert("Link copied!"); }
-            };
-
-            async function deleteListing(docId, isAdmin) {
-                if (confirm("Delete listing?")) {
-                    await deleteDoc(doc(db, 'listings', docId));
-                    window.location.href = '/index.html';
-                }
-            }
+            shareBtn.onclick = () => { const url = window.location.href; if (navigator.share) navigator.share({ title: currentListingData.title, url: url }); else { navigator.clipboard.writeText(url); alert("Link copied!"); } };
+            async function deleteListing(docId, isAdmin) { if (confirm("Delete listing?")) { await deleteDoc(doc(db, 'listings', docId)); window.location.href = '/index.html'; } }
         }
         main();
     </script>
