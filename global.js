@@ -26,11 +26,9 @@ const translations = {
         "nav_profile": "My Profile",
         "btn_login": "Login / Register",
         "btn_list": "List an Item",
+        "btn_browse": "Start Browsing",
         "btn_signout": "Sign Out",
         "search_placeholder": "What are you looking for?",
-        "footer_about": "About Cheaplet",
-        "footer_support": "Support",
-        "footer_legal": "Legal",
         "hero_title": "Great Finds, Unbeatable Prices.",
         "hero_sub": "Cheaplet is the online marketplace for smart savings."
     },
@@ -39,13 +37,11 @@ const translations = {
         "nav_listings": "Mes Annonces",
         "nav_messages": "Messages",
         "nav_profile": "Mon Profil",
-        "btn_login": "Connexion / Inscription",
+        "btn_login": "Connexion",
         "btn_list": "Vendre un article",
+        "btn_browse": "Commencer à naviguer",
         "btn_signout": "Déconnexion",
         "search_placeholder": "Que cherchez-vous ?",
-        "footer_about": "À propos de Cheaplet",
-        "footer_support": "Support",
-        "footer_legal": "Légal",
         "hero_title": "Super trouvailles, prix imbattables.",
         "hero_sub": "Cheaplet est le marché en ligne pour des économies intelligentes."
     }
@@ -56,7 +52,6 @@ window.applyLanguage = (lang) => {
         const key = el.getAttribute('data-i18n');
         if (translations[lang] && translations[lang][key]) el.textContent = translations[lang][key];
     });
-    // Handle Input Placeholders
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
         const key = el.getAttribute('data-i18n-placeholder');
         if (translations[lang] && translations[lang][key]) el.placeholder = translations[lang][key];
@@ -64,15 +59,20 @@ window.applyLanguage = (lang) => {
     localStorage.setItem('preferred_language', lang);
 };
 
-// --- 3. GLOBAL CSS INJECTION ---
+// --- 3. GLOBAL CSS INJECTION (Fixed Button Heights & Spacing) ---
 const globalStyle = document.createElement('style');
 globalStyle.innerHTML = `
     .btn {
         background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%) !important;
-        color: #333 !important; border: none !important; padding: 10px 22px !important;
-        border-radius: 25px !important; font-weight: bold !important; cursor: pointer !important;
+        color: #333 !important; border: none !important; 
+        padding: 0 18px !important; /* Side padding only */
+        height: 38px !important;    /* Fixed height to prevent "fat" buttons */
+        line-height: 38px !important;
+        border-radius: 20px !important; font-weight: bold !important; cursor: pointer !important;
         transition: transform 0.2s !important; box-shadow: 0 3px 6px rgba(0,0,0,0.1) !important;
-        font-size: 0.9rem !important; display: inline-flex !important; align-items: center; justify-content: center;
+        font-size: 0.85rem !important; display: inline-flex !important; 
+        align-items: center; justify-content: center;
+        text-align: center; white-space: nowrap !important;
     }
     .profile-menu-container { position: relative; display: flex; align-items: center; }
     .profile-avatar { width: 38px; height: 38px; border-radius: 50%; background-color: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.8); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; background-size: cover; background-position: center; }
@@ -83,9 +83,12 @@ globalStyle.innerHTML = `
     .dropdown-item:hover { background-color: #f1f8e9; }
     .msg-btn-mobile { background-color: #FFD700; color: #333; width: 36px; height: 36px; border-radius: 50%; display: none; align-items: center; justify-content: center; text-decoration: none; margin-right: 12px; font-size: 1rem; }
     body.page-messages .msg-btn-mobile, body.page-chat .msg-btn-mobile { display: none !important; }
-    .mobile-link { display: none; }
+    
+    .header-content { gap: 10px; } /* Prevent logo/button overlap */
+
     @media (max-width: 767px) {
         nav { display: none !important; } .msg-btn-mobile { display: flex; } .mobile-link { display: flex; }
+        .btn { font-size: 0.75rem !important; padding: 0 12px !important; height: 34px !important; }
     }
 `;
 document.head.appendChild(globalStyle);
@@ -93,10 +96,6 @@ document.head.appendChild(globalStyle);
 // --- 4. STATE & LISTENERS ---
 let globalSettings = {};
 let currentUser = null;
-
-const path = window.location.pathname;
-if (path.includes('messages.html')) document.body.classList.add('page-messages');
-if (path.includes('chat.html')) document.body.classList.add('page-chat');
 
 onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
     if (docSnap.exists()) {
@@ -115,7 +114,6 @@ function refreshUI() {
     if (currentUser) updateHeaderToLoggedIn(currentUser);
     else updateHeaderToLoggedOut();
 
-    // Trigger Translation for the whole page
     const savedLang = localStorage.getItem('preferred_language') || 'en';
     window.applyLanguage(savedLang);
 }
