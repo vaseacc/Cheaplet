@@ -41,14 +41,6 @@
         nav ul li a:hover { opacity: 1; text-decoration: underline; }
 
         .header-right { display: flex; align-items: center; gap: 15px; }
-        .profile-trigger { 
-            width: 40px; height: 40px; border-radius: 50%; background-color: rgba(255,255,255,0.2); 
-            display: flex; align-items: center; justify-content: center; overflow: hidden; 
-            cursor: pointer; border: 2px solid rgba(255,255,255,0.8); text-decoration: none; 
-            color: white; font-weight: bold; transition: transform 0.2s;
-        }
-        .profile-trigger:hover { transform: scale(1.05); border-color: #FFD700; }
-        .profile-trigger img { width: 100%; height: 100%; object-fit: cover; }
 
         /* --- Split Layout --- */
         .main-wrapper { display: flex; flex: 1; height: calc(100vh - 60px); overflow: hidden; }
@@ -186,13 +178,11 @@
             <a href="/index.html" class="logo">Cheap<span>let</span></a>
             <nav>
                 <ul>
-                    <li><a href="/index.html">Home</a></li>
-                    <li><a href="/my-listings.html">My Listings</a></li>
-                    <li><a href="/messages.html">Messages</a></li>
+                    <!-- Global.js will fill this with Browse, My Listings, Messages -->
                 </ul>
             </nav>
         </div>
-        <!-- Left Empty for Global.js to fill -->
+        <!-- Target for global.js header brain -->
         <div class="header-right"></div>
     </header>
 
@@ -264,7 +254,7 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc, serverTimestamp, deleteDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
@@ -272,7 +262,8 @@
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
             
-            const app = initializeApp(config.firebaseConfig);
+            // FIX: Prevent double-initialization crash
+            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
 
@@ -290,12 +281,11 @@
             let currentListingId = null;
             let currentImageIndex = 0;
             let imageUrls = [];
-            let isSaved = false; // State to track if saved
+            let isSaved = false; 
 
             // --- AUTH STATE ---
             onAuthStateChanged(auth, user => {
                 currentUser = user;
-                // Header UI is handled by Global.js automatically now
                 fetchAndDisplayListing();
             });
 
@@ -457,8 +447,8 @@
             function updateSaveIcon() {
                 const icon = saveBtn.querySelector('i');
                 if (isSaved) {
-                    icon.classList.remove('far'); // remove outline
-                    icon.classList.add('fas');    // add solid
+                    icon.classList.remove('far');
+                    icon.classList.add('fas');    
                     icon.style.color = '#4CAF50';
                 } else {
                     icon.classList.remove('fas');
@@ -497,7 +487,6 @@
                 }
             };
 
-            // --- SHARE BUTTON LOGIC ---
             shareBtn.onclick = async () => {
                 const url = window.location.href;
                 const title = currentListingData ? currentListingData.title : 'Cheaplet Listing';
