@@ -4,405 +4,144 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat - Cheaplet</title>
-    <!-- GLOBAL BRAIN (Connects Profile Circle, Ban Check, Language) -->
+    <!-- GLOBAL BRAIN -->
     <script type="module" src="global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
+        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
 
-        body {
-            background-color: #f8f9fa;
-            color: #333;
-            line-height: 1.6;
+        header { 
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); 
+            color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+            position: sticky; top: 0; z-index: 100; 
         }
+        .header-content { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 24px; font-weight: bold; color: white; text-decoration: none; }
+        .logo span { color: #FFD700; }
+        nav ul { display: flex; list-style: none; gap: 20px; }
+        .header-right { display: flex; align-items: center; gap: 15px; }
 
-        .container {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 15px;
-        }
-
-        /* Header Styles */
-        header {
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-            color: white;
-            padding: 15px 0;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* Updated shadow to match global style */
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            color: white; /* Ensure text is white */
-            text-decoration: none; /* Remove underline */
-        }
-
-        .logo span {
-            color: #FFD700;
-        }
-
-        nav ul {
-            display: flex;
-            list-style: none;
-        }
-
-        nav ul li {
-            margin-left: 20px;
-        }
-
-        nav ul li a {
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            transition: opacity 0.3s;
-        }
-
-        nav ul li a:hover {
-            opacity: 0.8;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); /* Updated gradient */
-            color: #333;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Added shadow */
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px); /* Added hover effect */
-        }
-
-        /* --- STYLES FOR CHAT INTERFACE --- */
-        .chat-container {
-            max-width: 800px;
-            margin: 30px auto;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            display: flex;
-            flex-direction: column;
-            height: calc(100vh - 150px);
-        }
-
-        .chat-header {
-            padding: 15px;
-            border-bottom: 1px solid #eee;
-            font-weight: 600;
-        }
-
-        #messages-list {
-            flex-grow: 1;
-            padding: 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .message-bubble {
-            max-width: 70%;
-            padding: 10px 15px;
-            border-radius: 18px;
-            margin-bottom: 10px;
-            word-wrap: break-word;
-        }
-
-        .message-bubble.sent {
-            background-color: #4CAF50;
-            color: white;
-            align-self: flex-end;
-            border-bottom-right-radius: 4px;
-        }
-
-        .message-bubble.received {
-            background-color: #f1f0f0;
-            color: #333;
-            align-self: flex-start;
-            border-bottom-left-radius: 4px;
-        }
-        
-        .message-timestamp {
-            font-size: 0.75rem;
-            color: #b3e6b5;
-            margin-top: 5px;
-            text-align: right;
-        }
-        .message-bubble.received .message-timestamp {
-            color: #777;
-        }
-
-        .message-form {
-            display: flex;
-            padding: 15px;
-            border-top: 1px solid #eee;
-        }
-
-        #message-input {
-            flex-grow: 1;
-            border: 1px solid #ddd;
-            border-radius: 20px;
-            padding: 10px 15px;
-            margin-right: 10px;
-            outline: none; /* Removed default outline */
-        }
-        
-        #message-input:focus {
-            border-color: #4CAF50; /* Added focus color */
-        }
-        
-        #send-btn {
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2rem;
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); /* Match theme */
-            color: white; /* White arrow */
-        }
-
-        .info-message {
-            text-align: center;
-            padding: 50px;
-            font-size: 1.2rem;
-            color: #777;
-        }
-
-        /* Header Right (Placeholder for Global.js) */
-        .header-right {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        /* ====== MEDIA QUERIES ====== */
-        @media (min-width: 768px) {
-            .container { padding: 0 20px; }
-            .header-content { flex-wrap: nowrap; }
-            nav { display: block; }
-        }
-        
-        @media (max-width: 767px) {
-            nav { display: none; }
-        }
+        .chat-container { max-width: 800px; margin: 30px auto; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; height: calc(100vh - 150px); }
+        .chat-header { padding: 15px; border-bottom: 1px solid #eee; font-weight: 600; }
+        #messages-list { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
+        .message-bubble { max-width: 70%; padding: 10px 15px; border-radius: 18px; margin-bottom: 10px; word-wrap: break-word; }
+        .message-bubble.sent { background-color: #4CAF50; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .message-bubble.received { background-color: #f1f0f0; color: #333; align-self: flex-start; border-bottom-left-radius: 4px; }
+        .message-timestamp { font-size: 0.75rem; color: #b3e6b5; margin-top: 5px; text-align: right; }
+        .message-bubble.received .message-timestamp { color: #777; }
+        .message-form { display: flex; padding: 15px; border-top: 1px solid #eee; }
+        #message-input { flex-grow: 1; border: 1px solid #ddd; border-radius: 20px; padding: 10px 15px; margin-right: 10px; outline: none; }
+        #send-btn { border-radius: 50%; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; background: #FFD700; color: #333; border: none; cursor: pointer; }
+        .info-message { text-align: center; padding: 100px 0; font-size: 1.2rem; color: #777; }
+        @media (max-width: 767px) { nav { display: none; } }
     </style>
 </head>
 <body>
     <header>
         <div class="container header-content">
-            <a href="/index.html" class="logo" id="logo-link">Cheap<span>let</span></a>
-            <nav>
-                <ul>
-                    <li><a href="/index.html" data-i18n="nav_home">Home</a></li>
-                    <li><a href="/search.html">Browse</a></li>
-                    <li><a href="/my-listings.html" data-i18n="nav_listings">My Listings</a></li>
-                    <li><a href="/messages.html" data-i18n="nav_messages">Messages</a></li>
-                </ul>
-            </nav>
-            <!-- Global.js will inject Profile Circle here -->
+            <a href="/index.html" class="logo">Cheap<span>let</span></a>
+            <nav><ul></ul></nav>
             <div class="header-right"></div> 
         </div>
     </header>
 
     <main class="container">
         <div id="info-container">
-            <p class="info-message">Loading chat...</p>
+            <p class="info-message" data-i18n="loading_chat">Loading chat...</p>
         </div>
 
         <div class="chat-container" id="chat-container" style="display: none;">
-            <div class="chat-header" id="chat-header">
-                Chat
-            </div>
-            <div id="messages-list">
-                <!-- Messages will be injected here -->
-            </div>
+            <div class="chat-header" id="chat-header">Chat</div>
+            <div id="messages-list"></div>
             <form id="message-form" class="message-form">
-                <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
+                <input type="text" id="message-input" data-i18n-placeholder="search_placeholder" placeholder="Type a message..." autocomplete="off">
                 <button type="submit" id="send-btn" class="btn">&#10148;</button>
             </form>
         </div>
     </main>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
-            const firebaseConfig = config.firebaseConfig;
-
-            const app = initializeApp(firebaseConfig);
+            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            const logoLink = document.getElementById('logo-link');
             const infoContainer = document.getElementById('info-container');
             const chatContainer = document.getElementById('chat-container');
             const messagesList = document.getElementById('messages-list');
             const messageForm = document.getElementById('message-form');
             const messageInput = document.getElementById('message-input');
             const chatHeader = document.getElementById('chat-header');
-            
-            logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
-            
-            // Note: Logout button logic is now handled by global.js
 
-            let unsubscribe;
+            // --- LOCAL TRANSLATION LOGIC ---
+            const lang = localStorage.getItem('preferred_language') || 'en';
+            const strings = {
+                en: { notFound: "Chat not found.", denied: "You do not have permission to view this chat.", chatWith: "Chat with", error: "Error loading messages.", login: "Please log in to chat." },
+                fr: { notFound: "Chat introuvable.", denied: "Vous n'avez pas la permission de voir ce chat.", chatWith: "Discussion avec", error: "Erreur de chargement.", login: "Veuillez vous connecter." }
+            };
 
-            // Chat Initialization Logic
             onAuthStateChanged(auth, user => {
                 if (user && user.emailVerified) {
-                    const params = new URLSearchParams(window.location.search);
-                    const chatId = params.get('id'); // Note: Make sure URL uses ?id=... (messages.html usually sends chatId=...)
-                    // If your messages.html sends ?chatId=..., change this line to: const chatId = params.get('chatId');
-                    
-                    // Fallback to check both common params
-                    const finalChatId = chatId || params.get('chatId');
-
-                    if (finalChatId) {
-                        initializeChat(finalChatId, user);
-                    } else {
-                        infoContainer.innerHTML = `<p class="info-message"><a href="/messages.html">Go to your messages</a> to select a conversation.</p>`;
-                    }
+                    const chatId = new URLSearchParams(window.location.search).get('id');
+                    if (chatId) initializeChat(chatId, user);
                 } else {
-                    infoContainer.innerHTML = `<p class="info-message">You must be logged in to view your messages. <a href="/LoginInToCheaplet.html">Log in here.</a></p>`;
-                    chatContainer.style.display = 'none';
-                    if (unsubscribe) unsubscribe();
+                    infoContainer.innerHTML = `<p class="info-message">${strings[lang].login}</p>`;
                 }
             });
 
             async function initializeChat(chatId, currentUser) {
-                try {
-                    const chatRef = doc(db, 'chats', chatId);
-                    const chatSnap = await getDoc(chatRef);
+                const chatRef = doc(db, 'chats', chatId);
+                const chatSnap = await getDoc(chatRef);
 
-                    if (!chatSnap.exists()) {
-                         // This might happen if the chat ID is invalid or just created.
-                         // But we also need to check permissions if it DOES exist.
-                        infoContainer.innerHTML = `<p class="info-message">Chat not found.</p>`;
-                        return;
-                    }
-                    
-                    // Check if user is a participant
-                    if (!chatSnap.data().participants.includes(currentUser.uid)) {
-                        infoContainer.innerHTML = `<p class="info-message">Error: You do not have permission to view this chat.</p>`;
-                        return;
-                    }
-                    
-                    infoContainer.style.display = 'none';
-                    chatContainer.style.display = 'flex';
-                    
-                    const chatData = chatSnap.data();
-                    const otherParticipantId = chatData.participants.find(p => p !== currentUser.uid);
-                    const otherUserInfo = chatData.participantInfo ? chatData.participantInfo[otherParticipantId] : 'User';
-                    chatHeader.textContent = `Chat with ${otherUserInfo}`;
-
-                    const messagesRef = collection(db, 'chats', chatId, 'messages');
-                    const q = query(messagesRef, orderBy("timestamp", "asc"));
-
-                    unsubscribe = onSnapshot(q, (snapshot) => {
-                        messagesList.innerHTML = '';
-                        snapshot.forEach(doc => {
-                            renderMessage(doc.data(), currentUser.uid);
-                        });
-                        messagesList.scrollTop = messagesList.scrollHeight;
-                    }, (error) => {
-                        console.error("Error in snapshot listener:", error);
-                        infoContainer.innerHTML = `<p class="info-message">Error loading messages. Please refresh the page.</p>`;
-                        infoContainer.style.display = 'block';
-                        chatContainer.style.display = 'none';
-                    });
-
-                    messageForm.onsubmit = async (e) => {
-                        e.preventDefault();
-                        const messageText = messageInput.value.trim();
-                        if (messageText === "") return;
-                        
-                        const messagePayload = {
-                            text: messageText,
-                            senderId: currentUser.uid,
-                            timestamp: serverTimestamp()
-                        };
-                        
-                        messageInput.disabled = true;
-                        
-                        try {
-                            await addDoc(messagesRef, messagePayload);
-                            await updateDoc(chatRef, {
-                                lastMessage: messageText,
-                                lastUpdate: serverTimestamp()
-                            });
-                        } catch (error) {
-                            console.error("Error sending message: ", error);
-                            alert("Could not send message. Please try again.");
-                        } finally {
-                            messageInput.disabled = false;
-                            messageInput.value = '';
-                            messageInput.focus();
-                        }
-                    };
-
-                } catch (error) {
-                    console.error("Error initializing chat:", error);
-                    infoContainer.innerHTML = `<p class="info-message">An unexpected error occurred. Could not load chat.</p>`;
+                if (!chatSnap.exists()) {
+                    infoContainer.innerHTML = `<p class="info-message">${strings[lang].notFound}</p>`;
+                    return;
                 }
-            }
+                
+                const chatData = chatSnap.data();
+                if (!chatData.participants.includes(currentUser.uid)) {
+                    infoContainer.innerHTML = `<p class="info-message">${strings[lang].denied}</p>`;
+                    return;
+                }
+                
+                infoContainer.style.display = 'none';
+                chatContainer.style.display = 'flex';
+                
+                const otherId = chatData.participants.find(p => p !== currentUser.uid);
+                const otherName = chatData.participantInfo ? chatData.participantInfo[otherId] : 'User';
+                chatHeader.textContent = `${strings[lang].chatWith} ${otherName}`;
 
-            function formatTimestamp(timestamp) {
-                if (!timestamp) return '';
-                const date = timestamp.toDate();
-                return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                const q = query(collection(db, 'chats', chatId, 'messages'), orderBy("timestamp", "asc"));
+                onSnapshot(q, (snapshot) => {
+                    messagesList.innerHTML = '';
+                    snapshot.forEach(doc => renderMessage(doc.data(), currentUser.uid));
+                    messagesList.scrollTop = messagesList.scrollHeight;
+                });
+
+                messageForm.onsubmit = async (e) => {
+                    e.preventDefault();
+                    const text = messageInput.value.trim();
+                    if (!text) return;
+                    messageInput.value = '';
+                    await addDoc(collection(db, 'chats', chatId, 'messages'), { text, senderId: currentUser.uid, timestamp: serverTimestamp() });
+                    await updateDoc(chatRef, { lastMessage: text, lastUpdate: serverTimestamp() });
+                };
             }
 
             function renderMessage(data, currentUserId) {
-                const messageDiv = document.createElement('div');
-                messageDiv.classList.add('message-bubble');
-
-                if (data.senderId === currentUserId) {
-                    messageDiv.classList.add('sent');
-                } else {
-                    messageDiv.classList.add('received');
-                }
-
-                const textP = document.createElement('p');
-                textP.textContent = data.text;
-                textP.style.margin = "0"; // Remove default paragraph margin
-
-                const timeSpan = document.createElement('span');
-                timeSpan.classList.add('message-timestamp');
-                timeSpan.style.display = "block"; // Ensure timestamp breaks to new line
-                timeSpan.textContent = formatTimestamp(data.timestamp);
-
-                messageDiv.appendChild(textP);
-                messageDiv.appendChild(timeSpan);
-
-                messagesList.appendChild(messageDiv);
+                const div = document.createElement('div');
+                div.className = `message-bubble ${data.senderId === currentUserId ? 'sent' : 'received'}`;
+                const time = data.timestamp ? data.timestamp.toDate().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+                div.innerHTML = `<p>${data.text}</p><span class="message-timestamp">${time}</span>`;
+                messagesList.appendChild(div);
             }
         }
         main();
