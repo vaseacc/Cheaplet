@@ -48,9 +48,115 @@ globalStyle.innerHTML = `
 `;
 document.head.appendChild(globalStyle);
 
-// --- 2. AUTH & HEADER UI UPDATER ---
+
+// --- TRANSLATION DICTIONARY ---
+const translations = {
+    "en": {
+        "nav_home": "Home",
+        "nav_listings": "My Listings",
+        "nav_messages": "Messages",
+        "nav_profile": "My Profile",
+        "btn_login": "Login / Register",
+        "btn_logout": "Logout",
+        "btn_list": "List an Item",
+        "hero_title": "Great Finds, Unbeatable Prices.",
+        "hero_sub": "Cheaplet is the online marketplace for smart savings. Discover secondhand books, clearance, and giveaway items in your area.",
+        "btn_browse": "Start Browsing",
+        "title_tags": "Popular Tags",
+        "loading_tags": "Loading popular tags...",
+        "search_placeholder": "Search listings...",
+        "title_listings": "Featured Listings",
+        "loading_listings": "Loading...",
+        "no_listings": "No listings found.",
+        "how_title": "How It Works",
+        "step_1_title": "Create an Account",
+        "step_1_text": "Quickly sign up for free to start buying and selling.",
+        "step_2_title": "Post Your Item",
+        "step_2_text": "Snap some photos, add tags, and list in minutes.",
+        "step_3_title": "Connect & Sell",
+        "step_3_text": "Message with buyers securely and arrange a sale.",
+        "footer_about": "About Cheaplet",
+        "footer_support": "Support",
+        "footer_legal": "Legal"
+    },
+    "fr": {
+        "nav_home": "Accueil",
+        "nav_listings": "Mes Annonces",
+        "nav_messages": "Messages",
+        "nav_profile": "Mon Profil",
+        "btn_login": "Connexion / Inscription",
+        "btn_logout": "Déconnexion",
+        "btn_list": "Vendre un article",
+        "hero_title": "Super trouvailles, prix imbattables.",
+        "hero_sub": "Cheaplet est le marché en ligne pour des économies intelligentes. Découvrez des livres d'occasion et des articles en liquidation dans votre région.",
+        "btn_browse": "Commencer à naviguer",
+        "title_tags": "Tags Populaires",
+        "loading_tags": "Chargement des tags...",
+        "search_placeholder": "Rechercher des annonces...",
+        "title_listings": "Annonces en vedette",
+        "loading_listings": "Chargement...",
+        "no_listings": "Aucune annonce trouvée.",
+        "how_title": "Comment ça marche",
+        "step_1_title": "Créer un compte",
+        "step_1_text": "Inscrivez-vous gratuitement pour commencer à acheter et vendre.",
+        "step_2_title": "Publiez votre article",
+        "step_2_text": "Prenez des photos, ajoutez des tags et publiez en quelques minutes.",
+        "step_3_title": "Connectez et Vendez",
+        "step_3_text": "Discutez avec les acheteurs en toute sécurité et organisez la vente.",
+        "footer_about": "À propos de Cheaplet",
+        "footer_support": "Support",
+        "footer_legal": "Légal"
+    }
+};
+
+window.applyLanguage = (lang) => {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[lang] && translations[lang][key]) el.textContent = translations[lang][key];
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (translations[lang] && translations[lang][key]) el.placeholder = translations[lang][key];
+    });
+    localStorage.setItem('preferred_language', lang);
+};
+
+const savedLang = localStorage.getItem('preferred_language');
+if (savedLang) window.applyLanguage(savedLang);
+
+
+// --- STATE VARIABLES ---
+let globalSettings = {};
+let currentUser = null;
+
+// --- LISTEN FOR SETTINGS ---
+const settingsRef = doc(db, "site_settings", "config");
+onSnapshot(settingsRef, (docSnap) => {
+    if (docSnap.exists()) {
+        globalSettings = docSnap.data();
+        
+        // 1. Language Popup Check
+        if (globalSettings.enableLanguagePrompt === true) {
+            checkAndShowLanguagePopup();
+        } else {
+            const existingModal = document.getElementById('lang-modal');
+            if (existingModal) existingModal.remove();
+        }
+
+        // 2. Global Header Injection Check
+        if (globalSettings.enableGlobalHeader === true && currentUser) {
+            updateHeaderToLoggedIn(currentUser);
+        } else if (globalSettings.enableGlobalHeader === true && !currentUser) {
+            updateHeaderToLoggedOut();
+        }
+    }
+});
+
+
+// --- AUTH LISTENER ---
 onAuthStateChanged(auth, async (user) => {
     if (user && user.emailVerified) {
+        currentUser = user;
         
         // A. Global Ban Check
         const userRef = doc(db, "users", user.uid);
@@ -58,36 +164,41 @@ onAuthStateChanged(auth, async (user) => {
             if (docSnap.exists() && docSnap.data().role === 'banned') {
                 if (!window.location.href.includes('LoginInToCheaplet.html')) {
                     signOut(auth).then(() => {
-                        alert("You have been banned from Cheaplet.");
+                        alert(savedLang === 'fr' ? "Vous avez été banni." : "You have been banned.");
                         window.location.href = '/LoginInToCheaplet.html';
                     });
                 }
             }
         });
 
-        // B. Update Header UI (Inject Avatar)
-        updateHeaderToLoggedIn(user);
+        // B. Update Header if enabled
+        if (globalSettings.enableGlobalHeader) {
+            updateHeaderToLoggedIn(user);
+        }
 
     } else {
-        updateHeaderToLoggedOut();
+        currentUser = null;
+        if (globalSettings.enableGlobalHeader) {
+            updateHeaderToLoggedOut();
+        }
     }
 });
 
 // --- HELPER: Inject Logged In UI ---
 function updateHeaderToLoggedIn(user) {
-    // Look for the container. In index.html it's .header-right or .header-auth-buttons
+    // Finds the container (supports all your pages)
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
     if (!container) return;
 
-    // Get display name/photo
+    // Prevent duplicate injection
+    if (container.querySelector('#globalProfileMenu')) return;
+
     const name = user.displayName || 'User';
     const initial = name.charAt(0).toUpperCase();
     const photoStyle = user.photoURL ? `background-image: url('${user.photoURL}');` : '';
     const content = user.photoURL ? '' : initial;
 
-    // Inject HTML
     container.innerHTML = `
-        <!-- Keep 'List Item' button if it exists -->
         <button class="btn" id="globalListBtn" style="margin-right: 15px;">List an Item</button>
         
         <div class="profile-menu-container" id="globalProfileMenu">
@@ -101,12 +212,8 @@ function updateHeaderToLoggedIn(user) {
         </div>
     `;
 
-    // Re-attach List Button Logic
-    document.getElementById('globalListBtn').addEventListener('click', () => {
-        window.location.href = '/listanitem.html';
-    });
+    document.getElementById('globalListBtn').addEventListener('click', () => { window.location.href = '/listanitem.html'; });
 
-    // Attach Dropdown Logic
     const avatar = container.querySelector('.profile-avatar');
     const menu = document.getElementById('globalDropdown');
     const logoutBtn = document.getElementById('globalLogout');
@@ -131,6 +238,9 @@ function updateHeaderToLoggedOut() {
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
     if (!container) return;
 
+    // Prevent duplicate injection
+    if (container.querySelector('#globalLoginBtn')) return;
+
     container.innerHTML = `
         <button class="btn" id="globalListBtn">List an Item</button>
         <button class="btn" id="globalLoginBtn" style="margin-left: 10px;">Login / Register</button>
@@ -146,16 +256,11 @@ function updateHeaderToLoggedOut() {
     });
 }
 
-// --- 3. LANGUAGE SETTINGS ---
-const settingsRef = doc(db, "site_settings", "config");
-onSnapshot(settingsRef, (docSnap) => {
-    if (docSnap.exists() && docSnap.data().enableLanguagePrompt === true) {
-        checkAndShowLanguagePopup();
-    }
-});
-
 function checkAndShowLanguagePopup() {
     if (localStorage.getItem('preferred_language')) return;
+
+    // Prevent multiple modals
+    if (document.getElementById('lang-modal')) return;
 
     const modal = document.createElement('div');
     modal.id = 'lang-modal';
@@ -171,7 +276,7 @@ function checkAndShowLanguagePopup() {
     document.body.appendChild(modal);
 
     window.selectLang = (lang) => {
-        localStorage.setItem('preferred_language', lang);
+        window.applyLanguage(lang);
         document.getElementById('lang-modal').remove();
     };
 }
