@@ -2,6 +2,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
+// --- 0. AUTO-IMPORT ICONS (Fixes the missing icon glitch) ---
+if (!document.querySelector('link[href*="font-awesome"]')) {
+    const faLink = document.createElement('link');
+    faLink.rel = 'stylesheet';
+    faLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+    document.head.appendChild(faLink);
+}
+
 // --- 1. INITIALIZE CONFIG ---
 const response = await fetch('/.netlify/functions/config');
 const config = await response.json();
@@ -9,7 +17,7 @@ const app = initializeApp(config.firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// --- 2. GLOBAL CSS INJECTION (Updated for Mobile UI) ---
+// --- 2. GLOBAL CSS INJECTION ---
 const globalStyle = document.createElement('style');
 globalStyle.innerHTML = `
     /* Profile Dropdown Styles */
@@ -33,7 +41,7 @@ globalStyle.innerHTML = `
     .dropdown-item { padding: 12px 15px; text-decoration: none; color: #333; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.9rem; }
     .dropdown-item:hover { background-color: #f1f8e9; }
 
-    /* New Yellow Message Icon Button (GitHub Inspired) */
+    /* Yellow Message Icon Button (GitHub Inspired) */
     .msg-btn-mobile {
         background-color: #FFD700; color: #333; width: 35px; height: 35px;
         border-radius: 50%; display: none; align-items: center; justify-content: center;
@@ -42,14 +50,20 @@ globalStyle.innerHTML = `
     }
     .msg-btn-mobile:active { transform: scale(0.9); }
 
+    /* SMART HIDE: Don't show msg button if user is already on messages page */
+    body.page-messages .msg-btn-mobile, 
+    body.page-chat .msg-btn-mobile { 
+        display: none !important; 
+    }
+
     /* RESPONSIVE LOGIC */
-    .mobile-link { display: none; } /* Hidden by default on desktop */
+    .mobile-link { display: none; } 
 
     @media (max-width: 767px) {
-        nav { display: none !important; } /* Hide main horizontal nav */
-        .msg-btn-mobile { display: flex; } /* Show yellow msg icon */
-        .mobile-link { display: flex; } /* Show browse/listings in dropdown */
-        #globalListBtn { padding: 8px 12px; font-size: 0.85rem; } /* Shrink list button slightly */
+        nav { display: none !important; } 
+        .msg-btn-mobile { display: flex; } 
+        .mobile-link { display: flex; } 
+        #globalListBtn { padding: 8px 12px; font-size: 0.85rem; }
     }
 
     /* Language Modal */
@@ -63,6 +77,11 @@ document.head.appendChild(globalStyle);
 let globalSettings = {};
 let currentUser = null;
 
+// Page detection for CSS
+const path = window.location.pathname;
+if (path.includes('messages.html')) document.body.classList.add('page-messages');
+if (path.includes('chat.html')) document.body.classList.add('page-chat');
+
 onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
     if (docSnap.exists()) {
         globalSettings = docSnap.data();
@@ -72,6 +91,17 @@ onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
 
 onAuthStateChanged(auth, (user) => {
     currentUser = (user && user.emailVerified) ? user : null;
+    if (currentUser) {
+        // Live Ban Check
+        onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+            if (docSnap.exists() && docSnap.data().role === 'banned') {
+                signOut(auth).then(() => {
+                    alert("Account Banned.");
+                    window.location.href = '/LoginInToCheaplet.html';
+                });
+            }
+        });
+    }
     refreshUI();
 });
 
@@ -88,7 +118,6 @@ function refreshUI() {
 
 // --- LOGGED IN UI (Mobile & Desktop Optimized) ---
 function updateHeaderToLoggedIn(user) {
-    // 1. Desktop Nav (Hidden on Mobile via CSS)
     const navUl = document.querySelector('nav ul');
     if (navUl) {
         navUl.innerHTML = `
@@ -98,7 +127,6 @@ function updateHeaderToLoggedIn(user) {
         `;
     }
 
-    // 2. Right Side Injection
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
     if (!container || container.querySelector('#globalProfileMenu')) return;
 
@@ -110,7 +138,6 @@ function updateHeaderToLoggedIn(user) {
     container.innerHTML = `
         <button class="btn" id="globalListBtn" style="margin-right: 12px;">List an Item</button>
         
-        <!-- Yellow Message Icon (Mobile Only) -->
         <a href="/messages.html" class="msg-btn-mobile" title="Messages">
             <i class="fas fa-envelope"></i>
         </a>
@@ -120,11 +147,8 @@ function updateHeaderToLoggedIn(user) {
             <div class="dropdown-menu" id="globalDropdown">
                 <div class="dropdown-header">${name}</div>
                 <a href="/profile.html" class="dropdown-item"><i class="fas fa-user"></i> My Profile</a>
-                
-                <!-- Hidden on Desktop, Visible on Mobile -->
                 <a href="/search.html" class="dropdown-item mobile-link"><i class="fas fa-search"></i> Browse</a>
                 <a href="/my-listings.html" class="dropdown-item mobile-link"><i class="fas fa-list"></i> My Listings</a>
-                
                 <a href="#" class="dropdown-item" id="globalLogout" style="color:#d32f2f; border-top: 1px solid #eee;">
                     <i class="fas fa-sign-out-alt"></i> Sign Out
                 </a>
@@ -132,15 +156,11 @@ function updateHeaderToLoggedIn(user) {
         </div>
     `;
 
-    // Listeners
     document.getElementById('globalListBtn').onclick = () => window.location.href = '/listanitem.html';
-    
     const avatar = container.querySelector('.profile-avatar');
     const menu = document.getElementById('globalDropdown');
-    
     avatar.onclick = (e) => { e.stopPropagation(); menu.classList.toggle('show'); };
     document.addEventListener('click', () => menu.classList.remove('show'));
-    
     document.getElementById('globalLogout').onclick = (e) => {
         e.preventDefault();
         signOut(auth).then(() => window.location.href = '/index.html');
@@ -160,12 +180,18 @@ function updateHeaderToLoggedOut() {
         <button class="btn" id="globalLoginBtn" style="margin-left: 10px;">Login / Register</button>
     `;
 
-    document.getElementById('globalListBtn').onclick = () => window.location.href = '/LoginInToCheaplet.html';
+    document.getElementById('globalListBtn').onclick = () => {
+        alert("Please log in to list an item.");
+        window.location.href = '/LoginInToCheaplet.html';
+    };
     document.getElementById('globalLoginBtn').onclick = () => window.location.href = '/LoginInToCheaplet.html';
 }
 
-// Logo home redirect
+// Logo Click Logic
 document.addEventListener('DOMContentLoaded', () => {
     const logo = document.querySelector('.logo');
-    if (logo) logo.onclick = () => window.location.href = '/index.html';
+    if (logo) {
+        logo.style.cursor = 'pointer';
+        logo.onclick = () => window.location.href = '/index.html';
+    }
 });
