@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
-// --- 0. AUTO-IMPORT ICONS (Fixes the missing icon glitch) ---
+// --- 0. AUTO-IMPORT ICONS ---
 if (!document.querySelector('link[href*="font-awesome"]')) {
     const faLink = document.createElement('link');
     faLink.rel = 'stylesheet';
@@ -17,23 +17,42 @@ const app = initializeApp(config.firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// --- 2. GLOBAL CSS INJECTION ---
+// --- 2. GLOBAL CSS INJECTION (Including Master Button Fix) ---
 const globalStyle = document.createElement('style');
 globalStyle.innerHTML = `
-    /* Profile Dropdown Styles */
+    /* MASTER BUTTON STYLE - Fixes the plain white box issue */
+    .btn {
+        background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%) !important;
+        color: #333 !important;
+        border: none !important;
+        padding: 10px 22px !important;
+        border-radius: 25px !important;
+        font-weight: bold !important;
+        cursor: pointer !important;
+        transition: transform 0.2s, box-shadow 0.2s !important;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.1) !important;
+        font-size: 0.9rem !important;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none !important;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 5px 12px rgba(0,0,0,0.15) !important; }
+    .btn:active { transform: scale(0.95); }
+
+    /* Profile UI */
     .profile-menu-container { position: relative; display: flex; align-items: center; }
-    
     .profile-avatar {
         width: 38px; height: 38px; border-radius: 50%; 
         background-color: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.8);
         color: white; display: flex; align-items: center; justify-content: center;
         font-weight: bold; cursor: pointer; background-size: cover; background-position: center;
-        transition: transform 0.2s;
     }
 
     .dropdown-menu {
         position: absolute; top: 50px; right: 0; width: 200px;
-        background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15);
         display: none; flex-direction: column; overflow: hidden; color: #333; z-index: 1000;
     }
     .dropdown-menu.show { display: flex; }
@@ -41,35 +60,25 @@ globalStyle.innerHTML = `
     .dropdown-item { padding: 12px 15px; text-decoration: none; color: #333; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.9rem; }
     .dropdown-item:hover { background-color: #f1f8e9; }
 
-    /* Yellow Message Icon Button (GitHub Inspired) */
+    /* Mobile Envelope Icon (GitHub Inspired) */
     .msg-btn-mobile {
-        background-color: #FFD700; color: #333; width: 35px; height: 35px;
+        background-color: #FFD700; color: #333; width: 36px; height: 36px;
         border-radius: 50%; display: none; align-items: center; justify-content: center;
-        text-decoration: none; margin-right: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        font-size: 1rem; transition: transform 0.2s;
+        text-decoration: none; margin-right: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        font-size: 1rem;
     }
-    .msg-btn-mobile:active { transform: scale(0.9); }
+    
+    /* Hide Envelope icon if already on messages/chat page */
+    body.page-messages .msg-btn-mobile, body.page-chat .msg-btn-mobile { display: none !important; }
 
-    /* SMART HIDE: Don't show msg button if user is already on messages page */
-    body.page-messages .msg-btn-mobile, 
-    body.page-chat .msg-btn-mobile { 
-        display: none !important; 
-    }
-
-    /* RESPONSIVE LOGIC */
-    .mobile-link { display: none; } 
-
+    /* Responsive Logic */
+    .mobile-link { display: none; }
     @media (max-width: 767px) {
-        nav { display: none !important; } 
-        .msg-btn-mobile { display: flex; } 
-        .mobile-link { display: flex; } 
-        #globalListBtn { padding: 8px 12px; font-size: 0.85rem; }
+        nav { display: none !important; }
+        .msg-btn-mobile { display: flex; }
+        .mobile-link { display: flex; }
+        .btn { padding: 8px 15px !important; font-size: 0.8rem !important; }
     }
-
-    /* Language Modal */
-    .lang-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; justify-content: center; align-items: center; }
-    .lang-modal { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; width: 90%; }
-    .lang-btn { display: block; width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; background: white; font-weight: bold; cursor: pointer; }
 `;
 document.head.appendChild(globalStyle);
 
@@ -77,7 +86,7 @@ document.head.appendChild(globalStyle);
 let globalSettings = {};
 let currentUser = null;
 
-// Page detection for CSS
+// Page detection
 const path = window.location.pathname;
 if (path.includes('messages.html')) document.body.classList.add('page-messages');
 if (path.includes('chat.html')) document.body.classList.add('page-chat');
@@ -92,7 +101,6 @@ onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
 onAuthStateChanged(auth, (user) => {
     currentUser = (user && user.emailVerified) ? user : null;
     if (currentUser) {
-        // Live Ban Check
         onSnapshot(doc(db, "users", user.uid), (docSnap) => {
             if (docSnap.exists() && docSnap.data().role === 'banned') {
                 signOut(auth).then(() => {
@@ -105,19 +113,16 @@ onAuthStateChanged(auth, (user) => {
     refreshUI();
 });
 
-// --- 4. UI REFRESH ENGINE ---
 function refreshUI() {
     if (globalSettings.enableGlobalHeader === false) return;
-    
-    if (currentUser) {
-        updateHeaderToLoggedIn(currentUser);
-    } else {
-        updateHeaderToLoggedOut();
-    }
+    if (currentUser) updateHeaderToLoggedIn(currentUser);
+    else updateHeaderToLoggedOut();
 }
 
-// --- LOGGED IN UI (Mobile & Desktop Optimized) ---
+// --- 4. UI BUILDERS ---
+
 function updateHeaderToLoggedIn(user) {
+    // Desktop Nav
     const navUl = document.querySelector('nav ul');
     if (navUl) {
         navUl.innerHTML = `
@@ -127,6 +132,7 @@ function updateHeaderToLoggedIn(user) {
         `;
     }
 
+    // Right side injection
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
     if (!container || container.querySelector('#globalProfileMenu')) return;
 
@@ -137,10 +143,7 @@ function updateHeaderToLoggedIn(user) {
 
     container.innerHTML = `
         <button class="btn" id="globalListBtn" style="margin-right: 12px;">List an Item</button>
-        
-        <a href="/messages.html" class="msg-btn-mobile" title="Messages">
-            <i class="fas fa-envelope"></i>
-        </a>
+        <a href="/messages.html" class="msg-btn-mobile"><i class="fas fa-envelope"></i></a>
 
         <div class="profile-menu-container" id="globalProfileMenu">
             <div class="profile-avatar" style="${photoStyle}">${avatarContent}</div>
@@ -149,7 +152,7 @@ function updateHeaderToLoggedIn(user) {
                 <a href="/profile.html" class="dropdown-item"><i class="fas fa-user"></i> My Profile</a>
                 <a href="/search.html" class="dropdown-item mobile-link"><i class="fas fa-search"></i> Browse</a>
                 <a href="/my-listings.html" class="dropdown-item mobile-link"><i class="fas fa-list"></i> My Listings</a>
-                <a href="#" class="dropdown-item" id="globalLogout" style="color:#d32f2f; border-top: 1px solid #eee;">
+                <a href="#" class="dropdown-item" id="globalLogout" style="color:#d32f2f; border-top:1px solid #eee;">
                     <i class="fas fa-sign-out-alt"></i> Sign Out
                 </a>
             </div>
@@ -167,7 +170,6 @@ function updateHeaderToLoggedIn(user) {
     };
 }
 
-// --- LOGGED OUT UI ---
 function updateHeaderToLoggedOut() {
     const navUl = document.querySelector('nav ul');
     if (navUl) navUl.innerHTML = `<li><a href="/search.html">Browse</a></li>`;
