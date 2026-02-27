@@ -117,8 +117,9 @@
                 <label>Description</label>
                 <textarea id="listing-description" placeholder="Condition details, summary, or reason for selling..." required></textarea>
                 
-                <label>Price ($)</label>
-                <input type="number" id="listing-price" placeholder="0.00" min="0" step="0.01" required>
+                <!-- ADDED MAX PRICE ATTRIBUTE -->
+                <label>Price ($) - Max $1200</label>
+                <input type="number" id="listing-price" placeholder="0.00" min="0" max="1200" step="0.01" required>
                 
                 <!-- Tag Input System -->
                 <label>Tags (e.g., French, Fantasy, Hardcover)</label>
@@ -138,7 +139,6 @@
                     <option value="Fair">Fair</option>
                 </select>
 
-                <!-- UPDATED: DIGITAL CODE FIELD IN ENGLISH -->
                 <label>Digital Access Code (Online Version)</label>
                 <select id="listing-digital-code">
                     <option value="Not applicable">Not applicable</option>
@@ -146,7 +146,6 @@
                     <option value="Already used">Already used</option>
                 </select>
 
-                <!-- UPDATED: RESTRICTED LOCATION SELECT IN ENGLISH -->
                 <label>Campus Location (Montreal Only)</label>
                 <select id="listing-location" required>
                     <option value="">Select a Campus</option>
@@ -363,6 +362,14 @@
                 e.preventDefault();
                 const submitBtn = document.getElementById('postListingBtn');
                 
+                const price = parseFloat(document.getElementById('listing-price').value);
+
+                // --- ADDED MAX PRICE CHECK ---
+                if (price > 1200) {
+                    alert('Price cannot exceed $1200.');
+                    return;
+                }
+
                 if (selectedFiles.length === 0) { alert('Please upload at least one image.'); return; }
                 if (tags.length === 0) { alert('Please add at least one tag.'); return; }
 
@@ -392,10 +399,10 @@
                     const docRef = await addDoc(collection(db, 'listings'), {
                         title: document.getElementById('listing-title').value.trim(),
                         description: document.getElementById('listing-description').value.trim(),
-                        price: parseFloat(document.getElementById('listing-price').value),
+                        price: price,
                         tags: tags,
                         condition: document.getElementById('listing-condition').value,
-                        digitalCode: document.getElementById('listing-digital-code').value, // NEW English Var
+                        digitalCode: document.getElementById('listing-digital-code').value, 
                         location: document.getElementById('listing-location').value, 
                         imageUrls: imageUrls,
                         posterUid: currentUser.uid,
