@@ -85,7 +85,7 @@
         .btn-make-admin { background-color: #2196F3; color: white; width: 100%; }
         .btn-remove-admin { background-color: #555; color: white; width: 100%; }
 
-        /* --- SETTINGS SWITCH STYLE (NEW) --- */
+        /* --- SETTINGS SWITCH STYLE --- */
         .setting-row { background: #2d2d2d; padding: 20px; border-radius: 8px; border: 1px solid #444; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .setting-info h3 { color: white; margin: 0 0 5px 0; font-size: 1.1rem; }
         .setting-info p { color: #888; font-size: 0.9rem; margin: 0; }
@@ -127,7 +127,7 @@
                 <button class="tab-btn active" onclick="switchTab('listings')">Manage Listings</button>
                 <button class="tab-btn" onclick="switchTab('tags')">Manage Tags</button>
                 <button class="tab-btn" onclick="switchTab('users')">Manage Users</button>
-                <button class="tab-btn" onclick="switchTab('settings')">Site Settings</button> <!-- NEW TAB -->
+                <button class="tab-btn" onclick="switchTab('settings')">Site Settings</button>
             </div>
 
             <!-- VIEW: LISTINGS -->
@@ -161,6 +161,7 @@
             <!-- VIEW: SETTINGS (NEW) -->
             <div id="view-settings" class="view-section">
                 <h1>Global Configuration</h1>
+                
                 <div class="setting-row">
                     <div class="setting-info">
                         <h3>Language Selection Popup</h3>
@@ -168,6 +169,18 @@
                     </div>
                     <label class="switch">
                         <input type="checkbox" id="toggle-lang-prompt" onchange="window.toggleSetting('enableLanguagePrompt', this.checked)">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <!-- NEW: GLOBAL HEADER SWITCH -->
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <h3>Global Header Injection</h3>
+                        <p>If enabled, `global.js` will automatically replace the login buttons with the Profile Circle on all pages.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-global-header" onchange="window.toggleSetting('enableGlobalHeader', this.checked)">
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -179,7 +192,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        // Added 'setDoc' to imports for Settings
         import { getFirestore, doc, getDoc, getDocs, collection, query, orderBy, deleteDoc, where, updateDoc, limit, setDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
@@ -207,7 +219,7 @@
                             loadAllListings();
                             loadAllTags();
                             loadRecentUsers();
-                            loadSettings(); // NEW: Load settings on start
+                            loadSettings();
                         } else {
                             alert("ACCESS DENIED: Admins only.");
                             window.location.href = '/index.html';
@@ -221,20 +233,20 @@
                 }
             });
 
-            // --- 2. SETTINGS LOGIC (NEW) ---
+            // --- 2. SETTINGS LOGIC ---
             async function loadSettings() {
                 try {
                     const docSnap = await getDoc(doc(db, "site_settings", "config"));
                     if (docSnap.exists()) {
                         const data = docSnap.data();
                         document.getElementById('toggle-lang-prompt').checked = data.enableLanguagePrompt || false;
+                        document.getElementById('toggle-global-header').checked = data.enableGlobalHeader || false; // NEW
                     }
                 } catch (e) { console.error("Error loading settings:", e); }
             }
 
             window.toggleSetting = async (key, value) => {
                 try {
-                    // Create/Update the 'config' document in 'site_settings'
                     const settingRef = doc(db, "site_settings", "config");
                     await setDoc(settingRef, { [key]: value }, { merge: true });
                     console.log(`Updated ${key} to ${value}`);
@@ -243,7 +255,7 @@
                 }
             };
 
-            // --- 3. LOAD LISTINGS ---
+            // --- 3. LISTINGS ---
             async function loadAllListings() {
                 listingsGrid.innerHTML = '';
                 const q = query(collection(db, "listings"), orderBy("timestamp", "desc"));
@@ -287,7 +299,7 @@
                 });
             }
 
-            // --- 4. LOAD TAGS ---
+            // --- 4. TAGS ---
             async function loadAllTags() {
                 tagsGrid.innerHTML = '';
                 const q = query(collection(db, "global_tags"), orderBy("count", "desc"));
@@ -315,7 +327,7 @@
                 });
             }
 
-            // --- 5. LOAD USERS ---
+            // --- 5. USERS ---
             async function loadRecentUsers() {
                 usersGrid.innerHTML = '';
                 const q = query(collection(db, "users"), limit(20));
@@ -372,7 +384,7 @@
                 });
             }
 
-            // --- WINDOW ACTIONS ---
+            // --- ACTIONS ---
             
             window.deleteListing = async (id) => {
                 if(confirm("Delete this listing?")) {
