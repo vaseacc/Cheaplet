@@ -138,8 +138,44 @@
                     <option value="Fair">Fair</option>
                 </select>
 
-                <label>Location</label>
-                <input type="text" id="listing-location" placeholder="e.g., Montreal, QC" required>
+                <!-- NEW: DIGITAL CODE FIELD -->
+                <label>Code Numérique (Online Version)</label>
+                <select id="listing-digital-code">
+                    <option value="Non applicable">Non applicable</option>
+                    <option value="Disponible / Inutilisé">Disponible / Inutilisé</option>
+                    <option value="Déjà utilisé">Déjà utilisé</option>
+                </select>
+
+                <!-- UPDATED: RESTRICTED LOCATION SELECT -->
+                <label>Campus Location (Montreal Only)</label>
+                <select id="listing-location" required>
+                    <option value="">Select a Campus</option>
+                    <optgroup label="Cégeps">
+                        <option value="Dawson College">Dawson College</option>
+                        <option value="Vanier College">Vanier College</option>
+                        <option value="John Abbott College">John Abbott College</option>
+                        <option value="Cégep de Maisonneuve">Cégep de Maisonneuve</option>
+                        <option value="Cégep du Vieux Montréal">Cégep du Vieux Montréal</option>
+                        <option value="Cégep Ahuntsic">Cégep Ahuntsic</option>
+                        <option value="Cégep de Saint-Laurent">Cégep de Saint-Laurent</option>
+                        <option value="Cégep de Rosemont">Cégep de Rosemont</option>
+                        <option value="Cégep Marie-Victorin">Cégep Marie-Victorin</option>
+                        <option value="Collège de Bois-de-Boulogne">Collège de Bois-de-Boulogne</option>
+                        <option value="Cégep Gérald-Godin">Cégep Gérald-Godin</option>
+                    </optgroup>
+                    <optgroup label="Colleges / Universities">
+                        <option value="Marianopolis College">Marianopolis College</option>
+                        <option value="Collège LaSalle">Collège LaSalle</option>
+                        <option value="Collège Jean-de-Brébeuf">Collège Jean-de-Brébeuf</option>
+                        <option value="Collège André-Grasset">Collège André-Grasset</option>
+                        <option value="Concordia University">Concordia University</option>
+                        <option value="McGill University">McGill University</option>
+                        <option value="UQAM">UQAM</option>
+                        <option value="Université de Montréal">Université de Montréal</option>
+                        <option value="HEC Montréal">HEC Montréal</option>
+                        <option value="Polytechnique Montréal">Polytechnique Montréal</option>
+                    </optgroup>
+                </select>
 
                 <label>Photos (Max 5)</label>
                 <div id="image-uploader">
@@ -192,7 +228,6 @@
                     try {
                         const userDoc = await getDoc(doc(db, "users", user.uid));
                         if (userDoc.exists() && userDoc.data().role === 'banned') {
-                            // Global.js will handle the sign out, but we block here too
                             pageLoader.innerHTML = "Access Denied";
                             return;
                         }
@@ -203,19 +238,16 @@
                         pageLoader.style.display = 'none'; 
                     }
                 } else {
-                    // Not logged in? Send to login with return URL
                     const currentPath = window.location.pathname + window.location.search;
                     window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(currentPath)}`;
                 }
             });
 
-            // --- HELPER: Format Numbers ---
             function formatCount(num) {
                 if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
                 return num;
             }
 
-            // --- TAG SYSTEM LOGIC ---
             function renderTags() {
                 selectedTagsContainer.innerHTML = '';
                 tags.forEach((tag, index) => {
@@ -258,7 +290,6 @@
                     
                     const querySnapshot = await getDocs(q);
                     suggestionsBox.innerHTML = '';
-                    
                     let exactMatchFound = false;
 
                     if (!querySnapshot.empty) {
@@ -266,13 +297,9 @@
                         querySnapshot.forEach(doc => {
                             const data = doc.data();
                             if (data.tag_lowercase === val) exactMatchFound = true;
-
                             const div = document.createElement('div');
                             div.className = 'suggestion-item';
-                            div.innerHTML = `
-                                <span class="suggestion-text">${data.tag}</span>
-                                <span class="suggestion-count">${formatCount(data.count || 0)} listings</span>
-                            `;
+                            div.innerHTML = `<span class="suggestion-text">${data.tag}</span><span class="suggestion-count">${formatCount(data.count || 0)} listings</span>`;
                             div.onclick = () => addTag(data.tag);
                             suggestionsBox.appendChild(div);
                         });
@@ -282,17 +309,11 @@
                         suggestionsBox.style.display = 'block';
                         const div = document.createElement('div');
                         div.className = 'suggestion-item';
-                        div.innerHTML = `
-                            <span class="suggestion-text suggestion-new">Create tag "${e.target.value}"</span>
-                            <span class="suggestion-count">New</span>
-                        `;
+                        div.innerHTML = `<span class="suggestion-text suggestion-new">Create tag "${e.target.value}"</span><span class="suggestion-count">New</span>`;
                         div.onclick = () => addTag(e.target.value);
                         suggestionsBox.appendChild(div);
                     }
-
-                } catch(err) {
-                    console.error("Error fetching tags:", err);
-                }
+                } catch(err) { console.error(err); }
             });
 
             tagInput.addEventListener('keydown', (e) => {
@@ -306,13 +327,6 @@
                 }
             });
 
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('.tag-container')) {
-                    suggestionsBox.style.display = 'none';
-                }
-            });
-
-            // --- IMAGE HANDLING ---
             const imageInput = document.getElementById('listing-image-input');
             const previewContainer = document.getElementById('image-preview-container');
             const addPhotoLabel = document.getElementById('add-photo-label');
@@ -345,27 +359,12 @@
                 e.target.value = '';
             });
 
-            // --- FORM SUBMISSION ---
             document.getElementById('listing-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const submitBtn = document.getElementById('postListingBtn');
-                const imageError = document.getElementById('image-error');
-                const tagsError = document.getElementById('tags-error');
                 
-                imageError.textContent = '';
-                tagsError.textContent = '';
-                
-                if (selectedFiles.length === 0) {
-                    imageError.style.display = 'block';
-                    imageError.textContent = 'Please upload at least one image.';
-                    return;
-                }
-
-                if (tags.length === 0) {
-                    tagsError.style.display = 'block';
-                    tagsError.textContent = 'Please add at least one tag.';
-                    return;
-                }
+                if (selectedFiles.length === 0) { alert('Please upload at least one image.'); return; }
+                if (tags.length === 0) { alert('Please add at least one tag.'); return; }
 
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Uploading...';
@@ -379,8 +378,6 @@
                     });
                     const uploadResults = await Promise.all(uploadPromises);
                     const imageUrls = uploadResults.map(res => res.secure_url);
-
-                    submitBtn.textContent = 'Publishing...';
 
                     const tagPromises = tags.map(t => {
                         const safeId = t.toLowerCase().replace(/[^a-z0-9]/g, "_"); 
@@ -398,20 +395,17 @@
                         price: parseFloat(document.getElementById('listing-price').value),
                         tags: tags,
                         condition: document.getElementById('listing-condition').value,
-                        location: document.getElementById('listing-location').value.trim(),
+                        digitalCode: document.getElementById('listing-digital-code').value, // NEW
+                        location: document.getElementById('listing-location').value, // FROM SELECT
                         imageUrls: imageUrls,
                         posterUid: currentUser.uid,
                         posterDisplayName: currentUser.displayName,
                         timestamp: serverTimestamp()
                     });
 
-                    alert('Item listed successfully!');
                     window.location.href = `/listing.html?id=${docRef.id}`;
-
                 } catch (error) {
-                    console.error("Error:", error);
-                    imageError.textContent = 'Error creating listing: ' + error.message;
-                    imageError.style.display = 'block';
+                    console.error(error);
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Post Item';
                 }
