@@ -6,11 +6,12 @@
     <title>My Profile - Cheaplet</title>
     <!-- GLOBAL CONFIGURATION (Language & Ban Check) -->
     <script type="module" src="global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
         .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
-        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
         .header-content { display: flex; justify-content: space-between; align-items: center; }
         .logo { font-size: 24px; font-weight: bold; display: flex; align-items: center; cursor: pointer; color: white; text-decoration: none; }
         .logo span { color: #FFD700; }
@@ -57,7 +58,6 @@
 
         .saved-listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
         .saved-item-card { border: 1px solid #eee; border-radius: 8px; overflow: hidden; text-decoration: none; color: inherit; transition: transform 0.2s; background: white; }
-        .saved-item-card:hover { transform: translateY(-3px); border-color: #4CAF50; }
         .saved-item-img { height: 140px; background-color: #eee; background-size: cover; background-position: center; }
         .saved-item-details { padding: 12px; }
         .saved-item-price { font-weight: bold; color: #4CAF50; }
@@ -99,11 +99,11 @@
                 <h2>Personal Information</h2>
                 <div class="form-group">
                     <label>First Name</label>
-                    <input type="text" id="firstName" placeholder="Your first name">
+                    <input type="text" id="firstName">
                 </div>
                 <div class="form-group">
                     <label>Last Name</label>
-                    <input type="text" id="lastName" placeholder="Your last name">
+                    <input type="text" id="lastName">
                 </div>
                 <div class="form-group">
                     <label>Email</label>
@@ -125,7 +125,7 @@
             <div class="profile-section">
                 <h2>Saved Items</h2>
                 <div id="saved-listings-container" class="saved-listings-grid">
-                    <p style="color: #777;">Loading saved items...</p>
+                    <p>Loading saved items...</p>
                 </div>
             </div>
 
@@ -170,11 +170,12 @@
 
             let selectedPhotoFile = null;
 
-            // FIX: Initialize the dropdown value from storage immediately
-            languageSelect.value = localStorage.getItem('preferred_language') || 'en';
-
             onAuthStateChanged(auth, async (user) => {
                 if (user && user.emailVerified) {
+                    // --- FIX: FORCE DROPDOWN TO MATCH STORAGE ON LOAD ---
+                    const savedLang = localStorage.getItem('preferred_language') || 'en';
+                    languageSelect.value = savedLang;
+
                     populateProfileForm(user);
                     infoContainer.style.display = 'none';
                     profileContainer.style.display = 'flex';
@@ -185,12 +186,21 @@
                         if (data.photoURL) setAvatar(data.photoURL);
                         else setAvatar(user.photoURL, user.displayName);
                         if (data.savedListings) fetchSavedListings(data.savedListings);
-                        else savedListingsContainer.innerHTML = '<p>No saved items.</p>';
                     }
                 } else {
                     window.location.href = '/LoginInToCheaplet.html';
                 }
             });
+
+            // Handle language change
+            languageSelect.onchange = (e) => {
+                const newLang = e.target.value;
+                if (window.applyLanguage) {
+                    window.applyLanguage(newLang); // Updates global brain and localStorage
+                } else {
+                    localStorage.setItem('preferred_language', newLang);
+                }
+            };
 
             async function fetchSavedListings(ids) {
                 savedListingsContainer.innerHTML = '';
@@ -229,9 +239,15 @@
 
             document.getElementById('saveProfileBtn').onclick = async () => {
                 const newName = `${firstNameInput.value.trim()} ${lastNameInput.value.trim()}`;
-                await updateProfile(auth.currentUser, { displayName: newName });
-                await updateDoc(doc(db, "users", auth.currentUser.uid), { displayName: newName });
-                alert("Profile Updated!");
+                const user = auth.currentUser;
+                
+                // --- ADDED: Explicitly save language when "Save Changes" is clicked ---
+                localStorage.setItem('preferred_language', languageSelect.value);
+                
+                await updateProfile(user, { displayName: newName });
+                await updateDoc(doc(db, "users", user.uid), { displayName: newName });
+                alert("Profile and Language preferences saved!");
+                window.location.reload(); // Refresh to apply all changes
             };
 
             document.getElementById('photo-upload-input').onchange = (e) => {
@@ -245,7 +261,6 @@
             };
 
             savePhotoBtn.onclick = async () => {
-                savePhotoBtn.disabled = true;
                 const fd = new FormData();
                 fd.append('file', selectedPhotoFile);
                 fd.append('upload_preset', UPLOAD_PRESET);
@@ -261,9 +276,6 @@
                 sendPasswordResetEmail(auth, auth.currentUser.email);
                 alert("Reset email sent!");
             };
-
-            // Fix: This correctly updates the global brain and the local storage
-            languageSelect.onchange = (e) => window.applyLanguage(e.target.value);
         }
         main();
     </script>
