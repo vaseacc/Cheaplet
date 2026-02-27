@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Listing Details - Cheaplet</title>
+    <!-- GLOBAL BRAIN (Header, Auth, Ban Check) -->
+    <script type="module" src="global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -190,11 +192,8 @@
                 </ul>
             </nav>
         </div>
-        <div class="header-right">
-            <a href="/profile.html" class="profile-trigger" id="header-profile-link">
-                <div id="header-avatar-placeholder">?</div>
-            </a>
-        </div>
+        <!-- Left Empty for Global.js to fill -->
+        <div class="header-right"></div>
     </header>
 
     <div class="main-wrapper">
@@ -283,8 +282,6 @@
             const thumbnailContainer = document.getElementById('thumbnail-container');
             const prevBtn = document.getElementById('prev-img-btn');
             const nextBtn = document.getElementById('next-img-btn');
-            const headerProfileLink = document.getElementById('header-profile-link');
-            const headerAvatarPlaceholder = document.getElementById('header-avatar-placeholder');
             const saveBtn = document.getElementById('btn-save');
             const shareBtn = document.getElementById('btn-share');
             
@@ -298,15 +295,7 @@
             // --- AUTH STATE ---
             onAuthStateChanged(auth, user => {
                 currentUser = user;
-                if (user && user.emailVerified) {
-                    if (user.photoURL) {
-                        headerProfileLink.innerHTML = `<img src="${user.photoURL}" alt="Profile">`;
-                    } else {
-                        headerAvatarPlaceholder.textContent = user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U';
-                    }
-                } else {
-                    headerAvatarPlaceholder.textContent = '?';
-                }
+                // Header UI is handled by Global.js automatically now
                 fetchAndDisplayListing();
             });
 
@@ -388,7 +377,7 @@
 
                         // --- Admin/Owner Controls ---
                         const isOwner = currentUser.uid === data.posterUid;
-                        const isAdmin = userData && userData.role === 'admin'; // userData from above check
+                        const isAdmin = userData && userData.role === 'admin'; 
 
                         if (isOwner || isAdmin) {
                             document.getElementById('admin-controls').style.display = 'block';
@@ -404,6 +393,7 @@
             function updateMainImage(index) {
                 currentImageIndex = index;
                 const url = imageUrls[index];
+                
                 mainImage.src = url;
                 blurBg.style.backgroundImage = `url('${url}')`;
 
@@ -463,7 +453,7 @@
             document.getElementById('btn-message-seller').onclick = initiateMessage;
             document.getElementById('btn-quick-send').onclick = initiateMessage;
 
-            // --- SAVE LISTING LOGIC (With Persistence) ---
+            // --- SAVE LISTING LOGIC ---
             function updateSaveIcon() {
                 const icon = saveBtn.querySelector('i');
                 if (isSaved) {
@@ -488,14 +478,12 @@
 
                 try {
                     if (isSaved) {
-                        // Unsave
                         await updateDoc(userRef, {
                             savedListings: arrayRemove(currentListingId)
                         });
                         isSaved = false;
                         alert("Listing removed from your saved items.");
                     } else {
-                        // Save
                         await updateDoc(userRef, {
                             savedListings: arrayUnion(currentListingId)
                         });
