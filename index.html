@@ -232,22 +232,22 @@
     </footer>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, collection, query, orderBy, onSnapshot, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
-            const app = initializeApp(config.firebaseConfig);
+            
+            // FIX: Don't initialize twice
+            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
 
             // DOM Elements
             const loginRegisterBtn = document.getElementById('loginRegisterBtn');
             const listAnItemBtn = document.getElementById('listAnItemBtn');
-            
-            // New Dropdown Elements
             const profileMenuContainer = document.getElementById('profileMenuContainer');
             const profileAvatar = document.getElementById('profileAvatar');
             const dropdownMenu = document.getElementById('dropdownMenu');
@@ -259,125 +259,100 @@
             const sortFilter = document.getElementById('sort-filter');
             const searchInput = document.getElementById('search-input');
             const tagsGridContainer = document.getElementById('tags-grid-container');
-            const activeTagDisplay = document.getElementById('active-tag-display');
-            const currentTagName = document.getElementById('current-tag-name');
-            const btnClearFilter = document.getElementById('btn-clear-filter');
 
-            let allTags = [];
-            let currentActiveTag = null;
             let unsubscribeListings = null;
 
-            // --- AUTH STATE & HEADER LOGIC ---
+            // FIX: Use Null Checks to prevent crashing if global.js replaced the header
             onAuthStateChanged(auth, user => {
                 if (user && user.emailVerified) {
-                    // Logged In
-                    loginRegisterBtn.style.display = 'none';
-                    profileMenuContainer.style.display = 'block';
-                    listAnItemBtn.style.display = 'inline-block';
-
-                    // Set Avatar / Name
-                    dropdownName.textContent = user.displayName || 'User';
+                    if(loginRegisterBtn) loginRegisterBtn.style.display = 'none';
+                    if(profileMenuContainer) profileMenuContainer.style.display = 'block';
+                    if(listAnItemBtn) listAnItemBtn.style.display = 'inline-block';
+                    if(dropdownName) dropdownName.textContent = user.displayName || 'User';
                     
-                    if (user.photoURL) {
-                        profileAvatar.style.backgroundImage = `url('${user.photoURL}')`;
-                        profileAvatar.textContent = '';
-                    } else {
-                        profileAvatar.style.backgroundImage = 'none';
-                        profileAvatar.textContent = user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U';
+                    if (profileAvatar) {
+                        if (user.photoURL) {
+                            profileAvatar.style.backgroundImage = `url('${user.photoURL}')`;
+                            profileAvatar.textContent = '';
+                        } else {
+                            profileAvatar.style.backgroundImage = 'none';
+                            profileAvatar.textContent = user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U';
+                        }
                     }
-
                 } else {
-                    // Logged Out
-                    loginRegisterBtn.style.display = 'inline-block';
-                    profileMenuContainer.style.display = 'none';
-                    // We keep list button visible but it redirects to login
-                    listAnItemBtn.style.display = 'inline-block'; 
+                    if(loginRegisterBtn) loginRegisterBtn.style.display = 'inline-block';
+                    if(profileMenuContainer) profileMenuContainer.style.display = 'none';
                 }
             });
 
-            // --- DROPDOWN INTERACTIONS ---
-            profileAvatar.addEventListener('click', (e) => {
-                e.stopPropagation();
-                dropdownMenu.classList.toggle('show');
-            });
+            if(profileAvatar) {
+                profileAvatar.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if(dropdownMenu) dropdownMenu.classList.toggle('show');
+                });
+            }
 
-            // Close dropdown if clicked outside
             document.addEventListener('click', (e) => {
-                if (!profileMenuContainer.contains(e.target)) {
-                    dropdownMenu.classList.remove('show');
+                if (profileMenuContainer && !profileMenuContainer.contains(e.target)) {
+                    if(dropdownMenu) dropdownMenu.classList.remove('show');
                 }
             });
 
-            dropdownLogout.addEventListener('click', (e) => {
-                e.preventDefault();
-                signOut(auth);
-                dropdownMenu.classList.remove('show');
-            });
+            if(dropdownLogout) {
+                dropdownLogout.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    signOut(auth);
+                });
+            }
 
-            // --- NAVIGATION ---
-            document.getElementById('logo-link').addEventListener('click', () => window.location.href = '/index.html');
-            loginRegisterBtn.addEventListener('click', () => { window.location.href = '/LoginInToCheaplet.html'; });
-            listAnItemBtn.addEventListener('click', () => { 
-                if (auth.currentUser && auth.currentUser.emailVerified) {
-                    window.location.href = '/listanitem.html'; 
-                } else {
-                    alert('Please log in to list an item.');
-                    window.location.href = '/LoginInToCheaplet.html';
-                } 
-            });
-            document.getElementById('startBrowsingBtn').addEventListener('click', () => document.querySelector('.filters').scrollIntoView({ behavior: 'smooth' }));
+            // NAVIGATION
+            const logoLink = document.getElementById('logo-link');
+            if(logoLink) logoLink.addEventListener('click', () => window.location.href = '/index.html');
+            
+            if(loginRegisterBtn) loginRegisterBtn.addEventListener('click', () => { window.location.href = '/LoginInToCheaplet.html'; });
+            
+            if(listAnItemBtn) {
+                listAnItemBtn.addEventListener('click', () => { 
+                    if (auth.currentUser && auth.currentUser.emailVerified) {
+                        window.location.href = '/listanitem.html'; 
+                    } else {
+                        alert('Please log in to list an item.');
+                        window.location.href = '/LoginInToCheaplet.html';
+                    } 
+                });
+            }
 
-            // --- LOAD TAGS & REDIRECT ---
+            const browseBtn = document.getElementById('startBrowsingBtn');
+            if(browseBtn) browseBtn.addEventListener('click', () => document.querySelector('.filters').scrollIntoView({ behavior: 'smooth' }));
+
+            // LOAD TAGS
             async function loadGlobalTags() {
                 try {
                     const q = query(collection(db, "global_tags"), orderBy("count", "desc"), limit(12));
                     const snapshot = await getDocs(q);
-                    
                     tagsGridContainer.innerHTML = '';
-                    
                     if(snapshot.empty) {
                         tagsGridContainer.innerHTML = '<p style="color:#999;">No tags yet.</p>';
                         return;
                     }
-
                     snapshot.forEach(doc => {
                         const data = doc.data();
                         const pill = document.createElement('div');
                         pill.className = 'tag-pill';
-                        
-                        let count = data.count || 0;
-                        if (count >= 1000) count = (count/1000).toFixed(1) + 'k';
-
-                        pill.innerHTML = `
-                            ${data.tag}
-                            <span class="tag-count">${count}</span>
-                        `;
-                        
-                        pill.addEventListener('click', () => {
-                            window.location.href = `/tag.html?tag=${encodeURIComponent(data.tag)}`;
-                        });
-
+                        pill.innerHTML = `${data.tag} <span class="tag-count">${data.count || 0}</span>`;
+                        pill.addEventListener('click', () => { window.location.href = `/tag.html?tag=${encodeURIComponent(data.tag)}`; });
                         tagsGridContainer.appendChild(pill);
                     });
-
-                } catch (e) {
-                    console.error("Error loading tags:", e);
-                    tagsGridContainer.innerHTML = '<p style="color:#999;">Could not load tags.</p>';
-                }
+                } catch (e) { console.error(e); }
             }
 
-            // --- LISTINGS LOGIC ---
+            // LISTINGS
             function renderListing(doc) {
                 const data = doc.data();
                 const firstImage = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls[0] : '';
-                const condition = data.condition || "Used";
-                const conditionClass = condition === "New" ? "new" : "";
-                const sellerName = data.posterDisplayName || "User";
-
                 const div = document.createElement('a');
                 div.className = 'listing-card';
                 div.href = `/listing.html?id=${doc.id}`;
-                
                 div.innerHTML = `
                     <div class="listing-image" style="background-image: url('${firstImage}');"></div>
                     <div class="listing-details">
@@ -386,40 +361,25 @@
                             <span class="listing-price">$${data.price.toFixed(2)}</span>
                         </div>
                         <div class="listing-footer">
-                            <span class="seller-name">${sellerName}</span>
-                            <span class="condition-tag ${conditionClass}">${condition}</span>
+                            <span class="seller-name">${data.posterDisplayName || 'User'}</span>
+                            <span class="condition-tag ${data.condition === 'New' ? 'new' : ''}">${data.condition || 'Used'}</span>
                         </div>
-                    </div>
-                `;
+                    </div>`;
                 return div;
             }
 
             function fetchListings() {
                 if (unsubscribeListings) unsubscribeListings();
-
                 let q = collection(db, 'listings');
                 const constraints = [];
-                
                 if (sortFilter.value === 'price-low') constraints.push(orderBy('price', 'asc'));
                 else if (sortFilter.value === 'price-high') constraints.push(orderBy('price', 'desc'));
                 else constraints.push(orderBy('timestamp', 'desc'));
 
-                const finalQuery = query(q, ...constraints);
-
-                unsubscribeListings = onSnapshot(finalQuery, snapshot => {
+                unsubscribeListings = onSnapshot(query(q, ...constraints), snapshot => {
                     listingsContainer.innerHTML = '';
-                    const count = snapshot.docs.length;
-                    itemCountSpan.textContent = `${count} ${count === 1 ? 'item' : 'items'}`;
-                    
-                    if (snapshot.empty) {
-                        listingsContainer.innerHTML = '<div class="no-listings-message"><h3>No listings found.</h3><p>Try checking back later!</p></div>';
-                    } else {
-                        snapshot.forEach(doc => {
-                            listingsContainer.appendChild(renderListing(doc));
-                        });
-                    }
-                }, error => {
-                    console.error("Error fetching listings:", error);
+                    itemCountSpan.textContent = `${snapshot.size} items`;
+                    snapshot.forEach(doc => listingsContainer.appendChild(renderListing(doc)));
                 });
             }
 
