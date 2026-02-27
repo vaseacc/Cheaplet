@@ -107,7 +107,7 @@ document.head.appendChild(globalStyle);
 
 // --- 4. STATE & LISTENERS ---
 let globalSettings = {};
-let currentUser = null;
+let currentUserData = null; // Changed to store full DB object
 
 const path = window.location.pathname;
 if (path.includes('messages.html')) document.body.classList.add('page-messages');
@@ -121,13 +121,29 @@ onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
 });
 
 onAuthStateChanged(auth, (user) => {
-    currentUser = (user && user.emailVerified) ? user : null;
-    refreshUI();
+    if (user && user.emailVerified) {
+        // --- ADDED: Listen to DATABASE for the profile picture ---
+        onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+            if (docSnap.exists()) {
+                currentUserData = docSnap.data();
+                if (currentUserData.role === 'banned') {
+                    signOut(auth).then(() => {
+                        alert("Account Banned.");
+                        window.location.href = '/LoginInToCheaplet.html';
+                    });
+                }
+                refreshUI(); // Update header with DB info
+            }
+        });
+    } else {
+        currentUserData = null;
+        refreshUI();
+    }
 });
 
 function refreshUI() {
     if (globalSettings.enableGlobalHeader === false) return;
-    if (currentUser) updateHeaderToLoggedIn(currentUser);
+    if (currentUserData) updateHeaderToLoggedIn(currentUserData);
     else updateHeaderToLoggedOut();
 
     const savedLang = localStorage.getItem('preferred_language') || 'en';
@@ -135,7 +151,7 @@ function refreshUI() {
 }
 
 // --- 5. UI BUILDERS ---
-function updateHeaderToLoggedIn(user) {
+function updateHeaderToLoggedIn(userData) {
     const navUl = document.querySelector('nav ul');
     if (navUl) {
         navUl.innerHTML = `
@@ -146,12 +162,13 @@ function updateHeaderToLoggedIn(user) {
     }
 
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
-    if (!container || container.querySelector('#globalProfileMenu')) return;
+    if (!container) return;
 
-    const name = user.displayName || 'User';
+    // Use userData (from Firestore) for the photo
+    const name = userData.displayName || 'User';
     const initial = name.charAt(0).toUpperCase();
-    const photoStyle = user.photoURL ? `background-image: url('${user.photoURL}');` : '';
-    const avatarContent = user.photoURL ? '' : initial;
+    const photoStyle = userData.photoURL ? `background-image: url('${userData.photoURL}');` : '';
+    const avatarContent = userData.photoURL ? '' : initial;
 
     container.innerHTML = `
         <button class="btn" id="globalListBtn" style="margin-right: 12px;" data-i18n="btn_list">List an Item</button>
