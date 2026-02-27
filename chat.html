@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat - Cheaplet</title>
+    <!-- GLOBAL BRAIN (Connects Profile Circle, Ban Check, Language) -->
+    <script type="module" src="global.js"></script>
     <style>
         * {
             margin: 0;
@@ -27,10 +29,10 @@
 
         /* Header Styles */
         header {
-            background-color: #4CAF50;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
             color: white;
             padding: 15px 0;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); /* Updated shadow to match global style */
             position: sticky;
             top: 0;
             z-index: 100;
@@ -49,6 +51,8 @@
             display: flex;
             align-items: center;
             cursor: pointer;
+            color: white; /* Ensure text is white */
+            text-decoration: none; /* Remove underline */
         }
 
         .logo span {
@@ -76,20 +80,21 @@
         }
 
         .btn {
-            background-color: #FFD700;
+            background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); /* Updated gradient */
             color: #333;
             border: none;
             padding: 10px 20px;
-            border-radius: 4px;
+            border-radius: 6px;
             font-weight: bold;
             cursor: pointer;
             transition: background-color 0.3s;
-        }
-
-        .btn:hover {
-            background-color: #FFC400;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Added shadow */
         }
         
+        .btn:hover {
+            transform: translateY(-2px); /* Added hover effect */
+        }
+
         /* --- STYLES FOR CHAT INTERFACE --- */
         .chat-container {
             max-width: 800px;
@@ -160,6 +165,11 @@
             border-radius: 20px;
             padding: 10px 15px;
             margin-right: 10px;
+            outline: none; /* Removed default outline */
+        }
+        
+        #message-input:focus {
+            border-color: #4CAF50; /* Added focus color */
         }
         
         #send-btn {
@@ -171,6 +181,8 @@
             align-items: center;
             justify-content: center;
             font-size: 1.2rem;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); /* Match theme */
+            color: white; /* White arrow */
         }
 
         .info-message {
@@ -180,29 +192,11 @@
             color: #777;
         }
 
-        /* Header buttons */
-        .header-auth-buttons {
+        /* Header Right (Placeholder for Global.js) */
+        .header-right {
             display: flex;
-            gap: 10px;
+            gap: 15px;
             align-items: center;
-            width: 100%;
-            justify-content: center;
-            margin-top: 10px;
-        }
-        #userEmailDisplay {
-            color: white;
-            font-weight: 500;
-            order: -1;
-            width: 100%;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-        #logoutBtn {
-            background-color: #f44336;
-            color: white;
-        }
-        #logoutBtn:hover {
-            background-color: #d32f2f;
         }
 
         /* ====== MEDIA QUERIES ====== */
@@ -210,8 +204,6 @@
             .container { padding: 0 20px; }
             .header-content { flex-wrap: nowrap; }
             nav { display: block; }
-            .header-auth-buttons { width: auto; margin-top: 0; }
-            #userEmailDisplay { width: auto; text-align: right; margin-bottom: 0; margin-right: 10px; order: 0; }
         }
         
         @media (max-width: 767px) {
@@ -222,21 +214,17 @@
 <body>
     <header>
         <div class="container header-content">
-            <div class="logo" id="logo-link">
-                Cheap<span>let</span>
-            </div>
+            <a href="/index.html" class="logo" id="logo-link">Cheap<span>let</span></a>
             <nav>
                 <ul>
-                    <li><a href="/index.html">Home</a></li>
+                    <li><a href="/index.html" data-i18n="nav_home">Home</a></li>
                     <li><a href="/search.html">Browse</a></li>
-                    <li><a href="/my-listings.html">My Listings</a></li>
-                    <li><a href="/messages.html">Messages</a></li>
+                    <li><a href="/my-listings.html" data-i18n="nav_listings">My Listings</a></li>
+                    <li><a href="/messages.html" data-i18n="nav_messages">Messages</a></li>
                 </ul>
             </nav>
-            <div class="header-auth-buttons">
-                <span id="userEmailDisplay" style="display: none;"></span>
-                <button class="btn" id="logoutBtn" style="display: none;">Logout</button>
-            </div>
+            <!-- Global.js will inject Profile Circle here -->
+            <div class="header-right"></div> 
         </div>
     </header>
 
@@ -261,7 +249,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
@@ -273,8 +261,6 @@
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            const userEmailDisplay = document.getElementById('userEmailDisplay');
-            const logoutBtn = document.getElementById('logoutBtn');
             const logoLink = document.getElementById('logo-link');
             const infoContainer = document.getElementById('info-container');
             const chatContainer = document.getElementById('chat-container');
@@ -284,25 +270,28 @@
             const chatHeader = document.getElementById('chat-header');
             
             logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
-            logoutBtn.addEventListener('click', () => signOut(auth));
+            
+            // Note: Logout button logic is now handled by global.js
 
             let unsubscribe;
 
+            // Chat Initialization Logic
             onAuthStateChanged(auth, user => {
                 if (user && user.emailVerified) {
-                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome!`;
-                    userEmailDisplay.style.display = 'block';
-                    logoutBtn.style.display = 'inline-block';
-                    
                     const params = new URLSearchParams(window.location.search);
-                    const chatId = params.get('id');
-                    if (chatId) {
-                        initializeChat(chatId, user);
+                    const chatId = params.get('id'); // Note: Make sure URL uses ?id=... (messages.html usually sends chatId=...)
+                    // If your messages.html sends ?chatId=..., change this line to: const chatId = params.get('chatId');
+                    
+                    // Fallback to check both common params
+                    const finalChatId = chatId || params.get('chatId');
+
+                    if (finalChatId) {
+                        initializeChat(finalChatId, user);
                     } else {
                         infoContainer.innerHTML = `<p class="info-message"><a href="/messages.html">Go to your messages</a> to select a conversation.</p>`;
                     }
                 } else {
-                    infoContainer.innerHTML = `<p class="info-message">You must be logged in to view your messages. <a href="/index.html">Go home to log in.</a></p>`;
+                    infoContainer.innerHTML = `<p class="info-message">You must be logged in to view your messages. <a href="/LoginInToCheaplet.html">Log in here.</a></p>`;
                     chatContainer.style.display = 'none';
                     if (unsubscribe) unsubscribe();
                 }
@@ -313,7 +302,15 @@
                     const chatRef = doc(db, 'chats', chatId);
                     const chatSnap = await getDoc(chatRef);
 
-                    if (!chatSnap.exists() || !chatSnap.data().participants.includes(currentUser.uid)) {
+                    if (!chatSnap.exists()) {
+                         // This might happen if the chat ID is invalid or just created.
+                         // But we also need to check permissions if it DOES exist.
+                        infoContainer.innerHTML = `<p class="info-message">Chat not found.</p>`;
+                        return;
+                    }
+                    
+                    // Check if user is a participant
+                    if (!chatSnap.data().participants.includes(currentUser.uid)) {
                         infoContainer.innerHTML = `<p class="info-message">Error: You do not have permission to view this chat.</p>`;
                         return;
                     }
@@ -395,9 +392,11 @@
 
                 const textP = document.createElement('p');
                 textP.textContent = data.text;
-                
+                textP.style.margin = "0"; // Remove default paragraph margin
+
                 const timeSpan = document.createElement('span');
                 timeSpan.classList.add('message-timestamp');
+                timeSpan.style.display = "block"; // Ensure timestamp breaks to new line
                 timeSpan.textContent = formatTimestamp(data.timestamp);
 
                 messageDiv.appendChild(textP);
