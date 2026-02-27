@@ -3,405 +3,395 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>List an Item - Cheaplet</title>
+    <title>Admin Command Center</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
-        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+        body { background-color: #1a1a1a; color: #e0e0e0; min-height: 100vh; }
 
-        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .header-content { display: flex; justify-content: space-between; align-items: center; }
-        .logo { font-size: 24px; font-weight: bold; color: white; text-decoration: none; }
-        .logo span { color: #FFD700; }
-
-        .form-wrapper { max-width: 600px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        h2 { text-align: center; color: #2E7D32; margin-bottom: 25px; }
-
-        input, textarea, select { width: 100%; padding: 12px; margin-bottom: 15px; border: 2px solid #ddd; border-radius: 6px; font-size: 1rem; transition: border-color 0.3s; display: block; }
-        input:focus, textarea:focus, select:focus { outline: none; border-color: #4CAF50; }
-        textarea { resize: vertical; min-height: 100px; }
-        label { font-weight: 600; margin-bottom: 5px; display: block; color: #555; }
-
-        /* TAG SYSTEM STYLES */
-        .tag-container {
-            border: 2px solid #ddd; border-radius: 6px; padding: 10px; margin-bottom: 15px; background: #fff;
-            display: flex; flex-wrap: wrap; gap: 8px; position: relative;
+        /* Security Overlay */
+        #security-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #000; z-index: 9999;
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
+            color: #0f0; font-family: 'Courier New', monospace;
         }
-        .tag-container:focus-within { border-color: #4CAF50; }
-        
-        .tag-chip {
-            background-color: #e8f5e9; color: #2E7D32; padding: 5px 10px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 5px;
+
+        /* Header */
+        header { background-color: #2d2d2d; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #4CAF50; }
+        .logo { font-size: 20px; font-weight: bold; color: #4CAF50; letter-spacing: 1px; }
+        .admin-badge { background: #4CAF50; color: black; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px; }
+        .header-controls { display: flex; gap: 20px; align-items: center; }
+        .nav-btn { color: #ccc; text-decoration: none; font-size: 0.9rem; transition: color 0.2s; cursor: pointer; }
+        .nav-btn:hover { color: white; }
+
+        /* Tabs */
+        .tabs { display: flex; justify-content: center; margin-top: 20px; gap: 10px; }
+        .tab-btn {
+            background-color: #333; color: #aaa; border: 1px solid #444; padding: 10px 20px;
+            cursor: pointer; font-weight: bold; border-radius: 4px; transition: all 0.2s;
         }
-        .tag-close { cursor: pointer; font-weight: bold; font-size: 1.1rem; line-height: 1; }
-        .tag-close:hover { color: #d32f2f; }
+        .tab-btn.active { background-color: #4CAF50; color: black; border-color: #4CAF50; }
 
-        #tag-input { border: none; outline: none; padding: 5px; flex-grow: 1; min-width: 120px; margin-bottom: 0; }
+        /* Dashboard */
+        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+        h1 { margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 10px; font-size: 1.5rem; }
 
-        .suggestions-box {
-            position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto; z-index: 10; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+
+        /* --- CARDS --- */
+        .admin-card, .tag-card, .user-card {
+            background-color: #2d2d2d; border: 1px solid #444; border-radius: 8px; overflow: hidden;
+            display: flex; flex-direction: column;
         }
-        .suggestion-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .suggestion-item:hover { background-color: #f1f8e9; }
-        .suggestion-text { font-weight: 600; color: #333; }
-        .suggestion-count { font-size: 0.8rem; color: #888; background: #f0f0f0; padding: 2px 6px; border-radius: 10px; }
-        
-        /* New Tag Design in Dropdown */
-        .suggestion-new { color: #1565c0; font-style: italic; }
 
-        #image-uploader { margin-bottom: 20px; text-align: center; }
-        .image-preview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; justify-content: center; }
-        .image-preview-wrapper { position: relative; width: 100px; height: 100px; }
-        .image-preview { width: 100%; height: 100%; border-radius: 8px; object-fit: cover; border: 1px solid #ddd; }
-        .remove-image-btn { position: absolute; top: -5px; right: -5px; width: 25px; height: 25px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; cursor: pointer; font-weight: bold; }
-        #add-photo-label { width: 100px; height: 100px; border: 2px dashed #ccc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #777; margin: 0 auto; }
-        #add-photo-label:hover { background: #f8f9fa; border-color: #4CAF50; }
-        #listing-image-input { display: none; }
+        /* Listing Card Specifics */
+        .card-header { padding: 10px; background: #333; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: #aaa; }
+        .user-link { color: #4CAF50; text-decoration: none; font-weight: bold; }
+        .card-body { padding: 15px; flex-grow: 1; display: flex; gap: 10px; }
+        .card-img { width: 80px; height: 80px; background: #000; object-fit: cover; border-radius: 4px; }
+        .card-info { flex: 1; }
+        .card-title { font-weight: bold; margin-bottom: 5px; color: white; font-size: 1.1rem; }
+        .card-price { color: #FFD700; font-weight: bold; }
+        .card-tags { font-size: 0.8rem; color: #888; margin-top: 5px; }
+        .card-actions { padding: 10px; background: #222; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-        .btn-submit { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); color: #333; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; width: 100%; cursor: pointer; font-size: 1.1rem; }
-        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.2); }
-        .btn-submit:disabled { background: #ccc; cursor: not-allowed; transform: none; }
-        .btn-cancel { background: #e0e0e0; color: #333; border: none; padding: 10px; border-radius: 6px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; }
+        /* Tag Card Specifics */
+        .tag-card { padding: 15px; flex-direction: row; justify-content: space-between; align-items: center; }
+        .tag-info h3 { margin: 0; color: #fff; font-size: 1.1rem; }
+        .tag-meta { color: #888; font-size: 0.85rem; margin-top: 5px; }
 
-        .form-field-error { color: red; font-size: 0.85rem; margin-top: -10px; margin-bottom: 10px; display: none; }
-        #page-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; color: #666; }
+        /* User Card Specifics (NEW) */
+        .user-card { padding: 20px; text-align: center; align-items: center; }
+        .user-avatar { width: 60px; height: 60px; border-radius: 50%; background: #444; object-fit: cover; margin-bottom: 10px; border: 2px solid #4CAF50; }
+        .user-name { font-weight: bold; font-size: 1.1rem; color: white; }
+        .user-email { color: #888; font-size: 0.9rem; margin-bottom: 10px; }
+        .role-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; margin-bottom: 15px; font-weight: bold; }
+        .role-admin { background: #FFD700; color: black; }
+        .role-user { background: #444; color: #ccc; }
+        .role-banned { background: #d32f2f; color: white; }
+
+        /* Search Bar for Users */
+        .search-container { display: flex; gap: 10px; margin-bottom: 20px; }
+        .search-input { flex: 1; padding: 10px; background: #333; border: 1px solid #555; color: white; border-radius: 4px; }
+        .search-btn { background: #4CAF50; color: white; border: none; padding: 0 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        /* Buttons */
+        .btn { border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
+        .btn:hover { opacity: 0.9; }
+        .btn-delete { background-color: #ff9800; color: black; } 
+        .btn-ban { background-color: #d32f2f; color: white; } 
+        .btn-tag-delete { background-color: #d32f2f; color: white; font-size: 0.8rem; }
+        .btn-make-admin { background-color: #2196F3; color: white; width: 100%; }
+        .btn-remove-admin { background-color: #555; color: white; width: 100%; }
+
+        /* Views */
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
     </style>
 </head>
 <body>
-    <div id="page-loader">Checking permissions...</div>
 
-    <header>
-        <div class="container header-content">
-            <a href="/index.html" class="logo">Cheap<span>let</span></a>
-        </div>
-    </header>
+    <!-- SECURITY GATE -->
+    <div id="security-screen">
+        <i class="fas fa-shield-alt fa-3x" style="margin-bottom: 20px;"></i>
+        <div>VERIFYING ADMIN CREDENTIALS...</div>
+    </div>
 
-    <main class="container">
-        <div class="form-wrapper">
-            <h2>List a Book</h2>
-            <form id="listing-form">
-                <label>Title</label>
-                <input type="text" id="listing-title" placeholder="e.g., Harry Potter and the Sorcerer's Stone" required>
-                
-                <label>Description</label>
-                <textarea id="listing-description" placeholder="Condition details, summary, or reason for selling..." required></textarea>
-                
-                <label>Price ($)</label>
-                <input type="number" id="listing-price" placeholder="0.00" min="0" step="0.01" required>
-                
-                <!-- Tag Input System -->
-                <label>Tags (e.g., French, Fantasy, Hardcover)</label>
-                <div class="tag-container" id="tag-container">
-                    <div id="selected-tags"></div>
-                    <input type="text" id="tag-input" placeholder="Type and press Enter..." autocomplete="off">
-                    <div class="suggestions-box" id="suggestions-box"></div>
+    <!-- MAIN INTERFACE -->
+    <div id="main-interface" style="display: none;">
+        <header>
+            <div class="logo">CHEAPLET <span class="admin-badge">ADMIN</span></div>
+            <div class="header-controls">
+                <a href="/index.html" class="nav-btn">Back to Site</a>
+                <a href="#" id="logoutBtn" class="nav-btn">Logout</a>
+            </div>
+        </header>
+
+        <div class="container">
+            <!-- TABS -->
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('listings')">Manage Listings</button>
+                <button class="tab-btn" onclick="switchTab('tags')">Manage Tags</button>
+                <!-- NEW BUTTON -->
+                <button class="tab-btn" onclick="switchTab('users')">Manage Users</button>
+            </div>
+
+            <!-- VIEW: LISTINGS -->
+            <div id="view-listings" class="view-section active">
+                <h1>All Listings</h1>
+                <div id="listings-grid" class="dashboard-grid">
+                    <p style="color: #666;">Loading listings...</p>
                 </div>
-                <p id="tags-error" class="form-field-error"></p>
+            </div>
 
-                <label>Condition</label>
-                <select id="listing-condition" required>
-                    <option value="">Select Condition</option>
-                    <option value="New">New</option>
-                    <option value="Like New">Like New</option>
-                    <option value="Good">Good</option>
-                    <option value="Fair">Fair</option>
-                </select>
-
-                <label>Location</label>
-                <input type="text" id="listing-location" placeholder="e.g., Montreal, QC" required>
-
-                <label>Photos (Max 5)</label>
-                <div id="image-uploader">
-                    <div class="image-preview-grid">
-                        <div id="image-preview-container"></div>
-                        <label for="listing-image-input" id="add-photo-label">
-                            <span style="font-size: 24px;">+</span>
-                            <span style="font-size: 12px;">Add Photo</span>
-                        </label>
-                    </div>
-                    <input type="file" id="listing-image-input" accept="image/*">
+            <!-- VIEW: TAGS -->
+            <div id="view-tags" class="view-section">
+                <h1>Global Tags</h1>
+                <div id="tags-grid" class="dashboard-grid">
+                    <p style="color: #666;">Loading tags...</p>
                 </div>
-                <p id="image-error" class="form-field-error" style="display: block; text-align: center;"></p>
+            </div>
 
-                <button type="submit" class="btn-submit" id="postListingBtn">Post Item</button>
-                <button type="button" class="btn-cancel" onclick="window.location.href='/index.html'">Cancel</button>
-            </form>
+            <!-- VIEW: USERS (NEW) -->
+            <div id="view-users" class="view-section">
+                <h1>User Management</h1>
+                <div class="search-container">
+                    <input type="text" id="user-search-input" class="search-input" placeholder="Search by exact email (e.g. user@example.com)">
+                    <button class="search-btn" onclick="window.searchUser()">Search</button>
+                </div>
+                <div id="users-grid" class="dashboard-grid">
+                    <p style="color: #666;">Loading recent users...</p>
+                </div>
+            </div>
         </div>
-    </main>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        // Added 'increment' for the counter feature
-        import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, setDoc, increment } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, getDocs, collection, query, orderBy, deleteDoc, where, updateDoc, limit } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
-            const CLOUDINARY_CLOUD_NAME = config.cloudinary.cloudName;
-            const CLOUDINARY_UPLOAD_PRESET = config.cloudinary.uploadPreset;
-            const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-
+            
             const app = initializeApp(config.firebaseConfig);
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            let currentUser = null;
-            let selectedFiles = [];
-            const maxFiles = 5;
-            const pageLoader = document.getElementById('page-loader');
+            const securityScreen = document.getElementById('security-screen');
+            const mainInterface = document.getElementById('main-interface');
+            const listingsGrid = document.getElementById('listings-grid');
+            const tagsGrid = document.getElementById('tags-grid');
+            const usersGrid = document.getElementById('users-grid');
 
-            let tags = [];
-            const tagInput = document.getElementById('tag-input');
-            const selectedTagsContainer = document.getElementById('selected-tags');
-            const suggestionsBox = document.getElementById('suggestions-box');
-
-            // --- AUTH CHECK ---
+            // --- 1. SECURITY CHECK ---
             onAuthStateChanged(auth, async (user) => {
-                if (user && user.emailVerified) {
+                if (user) {
                     try {
                         const userDoc = await getDoc(doc(db, "users", user.uid));
-                        if (userDoc.exists() && userDoc.data().role === 'banned') {
-                            await signOut(auth);
-                            alert("You have been banned.");
-                            window.location.href = '/LoginInToCheaplet.html';
-                            return;
+                        if (userDoc.exists() && userDoc.data().role === 'admin') {
+                            securityScreen.style.display = 'none';
+                            mainInterface.style.display = 'block';
+                            loadAllListings();
+                            loadAllTags();
+                            loadRecentUsers(); // NEW
+                        } else {
+                            alert("ACCESS DENIED: Admins only.");
+                            window.location.href = '/index.html';
                         }
-                        currentUser = user;
-                        pageLoader.style.display = 'none';
-                    } catch (e) { 
+                    } catch (e) {
                         console.error(e);
-                        pageLoader.style.display = 'none'; 
+                        window.location.href = '/index.html';
                     }
                 } else {
-                    alert("Please log in to list an item.");
                     window.location.href = '/LoginInToCheaplet.html';
                 }
             });
 
-            // --- HELPER: Format Numbers (e.g. 1200 -> 1.2k) ---
-            function formatCount(num) {
-                if (num >= 1000) {
-                    return (num / 1000).toFixed(1) + 'k';
-                }
-                return num;
-            }
+            // --- 2. LOAD LISTINGS ---
+            async function loadAllListings() {
+                listingsGrid.innerHTML = '';
+                const q = query(collection(db, "listings"), orderBy("timestamp", "desc"));
+                const snapshot = await getDocs(q);
 
-            // --- TAG SYSTEM LOGIC ---
-            function renderTags() {
-                selectedTagsContainer.innerHTML = '';
-                tags.forEach((tag, index) => {
-                    const chip = document.createElement('div');
-                    chip.className = 'tag-chip';
-                    chip.innerHTML = `<span>${tag}</span><span class="tag-close">&times;</span>`;
-                    chip.querySelector('.tag-close').onclick = () => {
-                        tags.splice(index, 1);
-                        renderTags();
-                    };
-                    selectedTagsContainer.appendChild(chip);
+                if (snapshot.empty) {
+                    listingsGrid.innerHTML = '<p>No listings found.</p>';
+                    return;
+                }
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const card = document.createElement('div');
+                    card.className = 'admin-card';
+                    card.id = `listing-${doc.id}`;
+
+                    const imgUrl = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls[0] : '';
+                    const tags = data.tags ? data.tags.join(', ') : 'No tags';
+
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <span>ID: ${doc.id.substring(0, 6)}...</span>
+                            <a href="/user.html?id=${data.posterUid}" target="_blank" class="user-link">
+                                <i class="fas fa-user"></i> ${data.posterDisplayName || 'User'}
+                            </a>
+                        </div>
+                        <div class="card-body">
+                            <img src="${imgUrl}" class="card-img" alt="Item">
+                            <div class="card-info">
+                                <div class="card-title"><a href="/listing.html?id=${doc.id}" style="color:white;" target="_blank">${data.title}</a></div>
+                                <div class="card-price">$${data.price}</div>
+                                <div class="card-tags"><i class="fas fa-tag"></i> ${tags}</div>
+                            </div>
+                        </div>
+                        <div class="card-actions">
+                            <button class="btn btn-delete" onclick="window.deleteListing('${doc.id}')"><i class="fas fa-trash"></i> Delete</button>
+                            <button class="btn btn-ban" onclick="window.banUser('${data.posterUid}')"><i class="fas fa-ban"></i> BAN USER</button>
+                        </div>
+                    `;
+                    listingsGrid.appendChild(card);
                 });
             }
 
-            function addTag(tagName) {
-                const cleanedTag = tagName.trim();
-                // Avoid dupes
-                if (cleanedTag && !tags.some(t => t.toLowerCase() === cleanedTag.toLowerCase())) {
-                    // Proper Case (First letter upper)
-                    const displayTag = cleanedTag.charAt(0).toUpperCase() + cleanedTag.slice(1);
-                    tags.push(displayTag);
-                    renderTags();
-                }
-                tagInput.value = '';
-                suggestionsBox.style.display = 'none';
-                tagInput.focus();
-            }
+            // --- 3. LOAD TAGS ---
+            async function loadAllTags() {
+                tagsGrid.innerHTML = '';
+                const q = query(collection(db, "global_tags"), orderBy("count", "desc"));
+                const snapshot = await getDocs(q);
 
-            // --- AUTOCOMPLETE LOGIC (Facebook Style) ---
-            tagInput.addEventListener('input', async (e) => {
-                const val = e.target.value.trim().toLowerCase();
-                if (val.length < 1) {
-                    suggestionsBox.style.display = 'none';
+                if (snapshot.empty) {
+                    tagsGrid.innerHTML = '<p>No tags found.</p>';
                     return;
                 }
 
-                try {
-                    // Query for tags that start with the user input (Case Insensitive search via 'tag_lowercase' field)
-                    const q = query(
-                        collection(db, "global_tags"), 
-                        where("tag_lowercase", ">=", val),
-                        where("tag_lowercase", "<=", val + '\uf8ff')
-                    );
-                    
-                    const querySnapshot = await getDocs(q);
-                    suggestionsBox.innerHTML = '';
-                    
-                    let exactMatchFound = false;
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const card = document.createElement('div');
+                    card.className = 'tag-card';
+                    card.id = `tag-${doc.id}`;
 
-                    if (!querySnapshot.empty) {
-                        suggestionsBox.style.display = 'block';
-                        querySnapshot.forEach(doc => {
-                            const data = doc.data();
-                            if (data.tag_lowercase === val) exactMatchFound = true;
-
-                            const div = document.createElement('div');
-                            div.className = 'suggestion-item';
-                            div.innerHTML = `
-                                <span class="suggestion-text">${data.tag}</span>
-                                <span class="suggestion-count">${formatCount(data.count || 0)} listings</span>
-                            `;
-                            div.onclick = () => addTag(data.tag);
-                            suggestionsBox.appendChild(div);
-                        });
-                    }
-
-                    // If the exact tag doesn't exist yet, offer to create it
-                    if (!exactMatchFound) {
-                        suggestionsBox.style.display = 'block';
-                        const div = document.createElement('div');
-                        div.className = 'suggestion-item';
-                        div.innerHTML = `
-                            <span class="suggestion-text suggestion-new">Create tag "${e.target.value}"</span>
-                            <span class="suggestion-count">New</span>
-                        `;
-                        div.onclick = () => addTag(e.target.value);
-                        suggestionsBox.appendChild(div);
-                    }
-
-                } catch(err) {
-                    console.error("Error fetching tags:", err);
-                }
-            });
-
-            // Keydown (Enter/Comma/Backspace)
-            tagInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ',') {
-                    e.preventDefault();
-                    if (tagInput.value.trim()) addTag(tagInput.value);
-                }
-                if (e.key === 'Backspace' && tagInput.value === '' && tags.length > 0) {
-                    tags.pop();
-                    renderTags();
-                }
-            });
-
-            document.addEventListener('click', (e) => {
-                if (!e.target.closest('.tag-container')) {
-                    suggestionsBox.style.display = 'none';
-                }
-            });
-
-            // --- IMAGE HANDLING ---
-            const imageInput = document.getElementById('listing-image-input');
-            const previewContainer = document.getElementById('image-preview-container');
-            const addPhotoLabel = document.getElementById('add-photo-label');
-
-            function renderPreviews() {
-                previewContainer.innerHTML = '';
-                selectedFiles.forEach((file, index) => {
-                    const wrapper = document.createElement('div');
-                    wrapper.classList.add('image-preview-wrapper');
-                    const img = document.createElement('img');
-                    img.src = URL.createObjectURL(file);
-                    img.classList.add('image-preview');
-                    const removeBtn = document.createElement('button');
-                    removeBtn.className = 'remove-image-btn';
-                    removeBtn.textContent = 'X';
-                    removeBtn.type = 'button';
-                    removeBtn.onclick = () => { selectedFiles.splice(index, 1); renderPreviews(); };
-                    wrapper.appendChild(img);
-                    wrapper.appendChild(removeBtn);
-                    previewContainer.appendChild(wrapper);
+                    card.innerHTML = `
+                        <div class="tag-info">
+                            <h3>#${data.tag}</h3>
+                            <div class="tag-meta">Used in ${data.count || 0} listings</div>
+                        </div>
+                        <button class="btn btn-tag-delete" onclick="window.deleteTag('${doc.id}')">Delete Tag</button>
+                    `;
+                    tagsGrid.appendChild(card);
                 });
-                addPhotoLabel.style.display = selectedFiles.length < maxFiles ? 'flex' : 'none';
             }
 
-            imageInput.addEventListener('change', (e) => {
-                if (e.target.files[0] && selectedFiles.length < maxFiles) {
-                    selectedFiles.push(e.target.files[0]);
-                    renderPreviews();
-                }
-                e.target.value = '';
-            });
+            // --- 4. LOAD USERS (NEW) ---
+            async function loadRecentUsers() {
+                usersGrid.innerHTML = '';
+                // Since we didn't save timestamp on user creation initially, we just limit to 20
+                const q = query(collection(db, "users"), limit(20));
+                const snapshot = await getDocs(q);
+                renderUserList(snapshot);
+            }
 
-            // --- FORM SUBMISSION ---
-            document.getElementById('listing-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const submitBtn = document.getElementById('postListingBtn');
-                const imageError = document.getElementById('image-error');
-                const tagsError = document.getElementById('tags-error');
+            window.searchUser = async () => {
+                const email = document.getElementById('user-search-input').value.trim();
+                if (!email) return loadRecentUsers();
+
+                usersGrid.innerHTML = '<p>Searching...</p>';
+                const q = query(collection(db, "users"), where("email", "==", email));
+                const snapshot = await getDocs(q);
                 
-                imageError.textContent = '';
-                tagsError.textContent = '';
-                
-                if (selectedFiles.length === 0) {
-                    imageError.style.display = 'block';
-                    imageError.textContent = 'Please upload at least one image.';
-                    return;
+                if (snapshot.empty) {
+                    usersGrid.innerHTML = '<p>No user found with that email.</p>';
+                } else {
+                    renderUserList(snapshot);
                 }
+            };
 
-                if (tags.length === 0) {
-                    tagsError.style.display = 'block';
-                    tagsError.textContent = 'Please add at least one tag.';
-                    return;
-                }
+            function renderUserList(snapshot) {
+                usersGrid.innerHTML = '';
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const card = document.createElement('div');
+                    card.className = 'user-card';
+                    
+                    const role = data.role || 'user';
+                    let badgeClass = 'role-user';
+                    if (role === 'admin') badgeClass = 'role-admin';
+                    if (role === 'banned') badgeClass = 'role-banned';
 
-                submitBtn.disabled = true;
-                submitBtn.textContent = 'Uploading...';
+                    const avatar = data.photoURL || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjYyI+PHBhdGggZD0iTTEyIDEyYzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00LTQgMS43OS00IDQgMS43OSA0IDQgNHptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyaDE2di0yYzAtMi42Ni01LjMzLTQtOC00eiIvPjwvc3ZnPg==';
 
-                try {
-                    // 1. Upload Images
-                    const uploadPromises = selectedFiles.map(file => {
-                        const formData = new FormData();
-                        formData.append('file', file);
-                        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-                        return fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData }).then(res => res.json());
-                    });
-                    const uploadResults = await Promise.all(uploadPromises);
-                    const imageUrls = uploadResults.map(res => res.secure_url);
+                    // Determine button text
+                    const isTargetAdmin = role === 'admin';
+                    const btnClass = isTargetAdmin ? 'btn-remove-admin' : 'btn-make-admin';
+                    const btnText = isTargetAdmin ? 'Remove Admin' : 'Make Admin';
+                    const action = isTargetAdmin ? 'remove' : 'add';
 
-                    submitBtn.textContent = 'Publishing...';
-
-                    // 2. Update Global Tags (Counter Logic)
-                    // We update 'global_tags' so users see it in autocomplete + see the count increment
-                    const tagPromises = tags.map(t => {
-                        // Use a safe ID (lowercase, no spaces/special chars)
-                        const safeId = t.toLowerCase().replace(/[^a-z0-9]/g, "_"); 
+                    card.innerHTML = `
+                        <img src="${avatar}" class="user-avatar" alt="Avatar">
+                        <div class="user-name">${data.displayName || 'Unknown'}</div>
+                        <div class="user-email">${data.email}</div>
+                        <span class="role-badge ${badgeClass}">${role.toUpperCase()}</span>
                         
-                        // Using 'setDoc' with 'merge: true' combined with 'increment'
-                        // If doc exists, count goes up +1. If not, it creates it with count 1.
-                        return setDoc(doc(db, "global_tags", safeId), { 
-                            tag: t, // Display name
-                            tag_lowercase: t.toLowerCase(), // For search
-                            count: increment(1) 
-                        }, { merge: true });
-                    });
-                    await Promise.all(tagPromises);
+                        <div style="width:100%; margin-top:10px; display:flex; gap:10px;">
+                            <button class="btn ${btnClass}" onclick="window.toggleAdmin('${docSnap.id}', '${action}')">${btnText}</button>
+                            <button class="btn btn-ban" onclick="window.banUser('${docSnap.id}')"><i class="fas fa-ban"></i></button>
+                        </div>
+                    `;
+                    usersGrid.appendChild(card);
+                });
+            }
 
-                    // 3. Save Listing
-                    const docRef = await addDoc(collection(db, 'listings'), {
-                        title: document.getElementById('listing-title').value.trim(),
-                        description: document.getElementById('listing-description').value.trim(),
-                        price: parseFloat(document.getElementById('listing-price').value),
-                        tags: tags, // Array of tags
-                        condition: document.getElementById('listing-condition').value,
-                        location: document.getElementById('listing-location').value.trim(),
-                        imageUrls: imageUrls,
-                        posterUid: currentUser.uid,
-                        posterDisplayName: currentUser.displayName,
-                        timestamp: serverTimestamp()
-                    });
-
-                    alert('Item listed successfully!');
-                    window.location.href = `/listing.html?id=${docRef.id}`;
-
-                } catch (error) {
-                    console.error("Error:", error);
-                    imageError.textContent = 'Error creating listing: ' + error.message;
-                    imageError.style.display = 'block';
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = 'Post Item';
+            // --- 5. WINDOW ACTIONS ---
+            
+            // Delete Listing
+            window.deleteListing = async (id) => {
+                if(confirm("Delete this listing?")) {
+                    await deleteDoc(doc(db, "listings", id));
+                    document.getElementById(`listing-${id}`).remove();
                 }
-            });
+            };
+
+            // Ban User
+            window.banUser = async (uid) => {
+                if(confirm("BAN User and Delete ALL their listings?")) {
+                    const q = query(collection(db, "listings"), where("posterUid", "==", uid));
+                    const snap = await getDocs(q);
+                    
+                    const promises = snap.docs.map(d => {
+                        const el = document.getElementById(`listing-${d.id}`);
+                        if(el) el.remove();
+                        return deleteDoc(d.ref);
+                    });
+                    await Promise.all(promises);
+
+                    await updateDoc(doc(db, "users", uid), { role: 'banned' });
+                    alert("User Banned.");
+                    // Refresh user list if visible
+                    if(document.getElementById('view-users').style.display === 'block') loadRecentUsers();
+                }
+            };
+
+            // Delete Tag
+            window.deleteTag = async (tagDocId) => {
+                if(confirm("Delete this tag?")) {
+                    await deleteDoc(doc(db, "global_tags", tagDocId));
+                    document.getElementById(`tag-${tagDocId}`).remove();
+                }
+            };
+
+            // Toggle Admin (NEW)
+            window.toggleAdmin = async (uid, action) => {
+                const newRole = action === 'add' ? 'admin' : 'user';
+                const confirmMsg = action === 'add' 
+                    ? "Are you sure you want to promote this user to ADMIN?\nThey will have full control." 
+                    : "Demote this admin back to user?";
+                
+                if (confirm(confirmMsg)) {
+                    await updateDoc(doc(db, "users", uid), { role: newRole });
+                    alert(`User is now: ${newRole}`);
+                    // Refresh view
+                    if(document.getElementById('user-search-input').value) {
+                        window.searchUser();
+                    } else {
+                        loadRecentUsers();
+                    }
+                }
+            };
+
+            // Tab Switcher
+            window.switchTab = (tabName) => {
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                const clickedBtn = document.querySelector(`.tab-btn[onclick="switchTab('${tabName}')"]`);
+                if(clickedBtn) clickedBtn.classList.add('active');
+
+                document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
+                document.getElementById(`view-${tabName}`).classList.add('active');
+            };
+
+            document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
         }
+
         main();
     </script>
 </body>
