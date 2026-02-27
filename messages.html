@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Messages - Cheaplet</title>
+    <!-- GLOBAL BRAIN -->
+    <script type="module" src="global.js"></script>
     <style>
         * {
             margin: 0;
@@ -27,7 +29,7 @@
 
         /* Header Styles */
         header {
-            background-color: #4CAF50;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
             color: white;
             padding: 15px 0;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
@@ -40,7 +42,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
         }
 
         .logo {
@@ -49,6 +56,8 @@
             display: flex;
             align-items: center;
             cursor: pointer;
+            color: white;
+            text-decoration: none;
         }
 
         .logo span {
@@ -58,10 +67,9 @@
         nav ul {
             display: flex;
             list-style: none;
-        }
-
-        nav ul li {
-            margin-left: 20px;
+            margin: 0;
+            padding: 0;
+            gap: 20px;
         }
 
         nav ul li a {
@@ -76,18 +84,18 @@
         }
 
         .btn {
-            background-color: #FFD700;
+            background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%);
             color: #333;
             border: none;
             padding: 10px 20px;
-            border-radius: 4px;
+            border-radius: 6px;
             font-weight: bold;
             cursor: pointer;
             transition: background-color 0.3s;
         }
 
         .btn:hover {
-            background-color: #FFC400;
+            transform: translateY(-2px);
         }
         
         /* --- STYLES FOR INBOX --- */
@@ -167,38 +175,17 @@
             color: #777;
         }
         
-        /* Header buttons */
-        .header-auth-buttons {
+        /* Header buttons placeholder */
+        .header-right {
             display: flex;
-            gap: 10px;
             align-items: center;
-            width: 100%;
-            justify-content: center;
-            margin-top: 10px;
-        }
-        #userEmailDisplay {
-            color: white;
-            font-weight: 500;
-            order: -1;
-            width: 100%;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-        #logoutBtn {
-            background-color: #f44336;
-            color: white;
-        }
-        #logoutBtn:hover {
-            background-color: #d32f2f;
+            gap: 15px;
         }
 
         /* Media Queries */
         @media (min-width: 768px) {
             .container { padding: 0 20px; }
-            .header-content { flex-wrap: nowrap; }
             nav { display: block; }
-            .header-auth-buttons { width: auto; margin-top: 0; }
-            #userEmailDisplay { width: auto; text-align: right; margin-bottom: 0; margin-right: 10px; order: 0; }
         }
         @media (max-width: 767px) {
             nav { display: none; }
@@ -208,23 +195,19 @@
 <body>
     <header>
         <div class="container header-content">
-            <div class="logo" id="logo-link">
-                Cheap<span>let</span>
+            <div class="header-left">
+                <a href="/index.html" class="logo" id="logo-link">Cheap<span>let</span></a>
+                <nav>
+                    <ul>
+                        <li><a href="/index.html">Home</a></li>
+                        <li><a href="/search.html">Browse</a></li>
+                        <li><a href="/my-listings.html">My Listings</a></li>
+                        <li><a href="/messages.html">Messages</a></li>
+                    </ul>
+                </nav>
             </div>
-            <nav>
-                <ul>
-                    <li><a href="/index.html">Home</a></li>
-                    <li><a href="/search.html">Browse</a></li>
-                    <li><a href="/my-listings.html">My Listings</a></li>
-                    <li><a href="/messages.html">Messages</a></li>
-                </ul>
-            </nav>
-            <div class="header-auth-buttons">
-                <span id="userEmailDisplay" style="display: none;"></span>
-                <button class="btn" id="listAnItemBtn">List an Item</button>
-                <button class="btn" id="loginRegisterBtn">Login / Register</button>
-                <button class="btn" id="logoutBtn" style="display: none;">Logout</button>
-            </div>
+            <!-- Global.js will inject Profile Circle here -->
+            <div class="header-right"></div>
         </div>
     </header>
 
@@ -256,38 +239,24 @@
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            const userEmailDisplay = document.getElementById('userEmailDisplay');
-            const loginRegisterBtn = document.getElementById('loginRegisterBtn');
-            const logoutBtn = document.getElementById('logoutBtn');
-            const listAnItemBtn = document.getElementById('listAnItemBtn');
             const logoLink = document.getElementById('logo-link');
             const infoContainer = document.getElementById('info-container');
             const inboxContainer = document.getElementById('inbox-container');
 
             logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
-            loginRegisterBtn.addEventListener('click', () => { window.location.href = '/index.html'; });
-            listAnItemBtn.addEventListener('click', () => { window.location.href = '/index.html'; });
-            logoutBtn.addEventListener('click', () => signOut(auth));
+            
+            // Note: Logout and other header buttons are handled by global.js
 
             let unsubscribe;
 
             onAuthStateChanged(auth, user => {
                 if (user && user.emailVerified) {
-                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome!`;
-                    userEmailDisplay.style.display = 'block';
-                    loginRegisterBtn.style.display = 'none';
-                    logoutBtn.style.display = 'inline-block';
-                    listAnItemBtn.style.display = 'inline-block';
-                    
+                    // Global.js handles header UI
                     fetchConversations(user);
                 } else {
-                    userEmailDisplay.style.display = 'none';
-                    loginRegisterBtn.style.display = 'inline-block';
-                    logoutBtn.style.display = 'none';
-                    listAnItemBtn.style.display = 'none';
                     if (unsubscribe) unsubscribe();
                     inboxContainer.innerHTML = '';
-                    infoContainer.innerHTML = `<p class="info-message">You must be logged in to view your messages. <a href="/index.html">Go home to log in.</a></p>`;
+                    infoContainer.innerHTML = `<p class="info-message">You must be logged in to view your messages. <a href="/LoginInToCheaplet.html">Log in here.</a></p>`;
                 }
             });
 
@@ -300,12 +269,12 @@
                 unsubscribe = onSnapshot(q, (querySnapshot) => {
                     if (querySnapshot.empty) {
                         infoContainer.innerHTML = `<p class="info-message">You have no messages yet.</p>`;
-                        inboxContainer.innerHTML = ''; // Clear any old results
+                        inboxContainer.innerHTML = ''; 
                     } else {
-                        infoContainer.innerHTML = ''; // Hide the loading message
+                        infoContainer.innerHTML = ''; 
                     }
                     
-                    inboxContainer.innerHTML = ''; // Clear the container before re-rendering
+                    inboxContainer.innerHTML = ''; 
                     querySnapshot.forEach((doc) => {
                         inboxContainer.appendChild(renderConversation(doc, currentUser));
                     });
@@ -315,16 +284,12 @@
                 });
             }
 
-            // --- CORRECTED FUNCTION ---
             function renderConversation(doc, currentUser) {
                 const chatData = doc.data();
                 const chatId = doc.id;
                 
                 const otherParticipantId = chatData.participants.find(p => p !== currentUser.uid);
                 
-                // --- THIS IS THE FIX ---
-                // Get the other user's name from the participantInfo object.
-                // Fallback to "User" if the info doesn't exist for some reason.
                 const displayName = chatData.participantInfo ? chatData.participantInfo[otherParticipantId] || 'User' : 'User';
 
                 const conversationLink = document.createElement('a');
