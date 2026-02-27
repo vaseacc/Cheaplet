@@ -16,6 +16,10 @@
         .header-left { display: flex; align-items: center; gap: 15px; }
         .logo { font-size: 24px; font-weight: bold; cursor: pointer; text-decoration: none; color: white; }
         .logo span { color: #FFD700; }
+        
+        /* FIX: Align buttons side-by-side and prevent overlapping */
+        .header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
         .btn-back { background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; transition: background 0.3s; }
         .btn-back:hover { background: rgba(255, 255, 255, 0.3); }
         .auth-wrapper { display: flex; justify-content: center; align-items: center; min-height: 80vh; padding: 20px; }
@@ -52,7 +56,7 @@
                 </button>
                 <a href="/index.html" class="logo">Cheap<span>let</span></a>
             </div>
-            <!-- Global.js will use this to manage background tasks/language -->
+            <!-- Global.js target -->
             <div class="header-right"></div>
         </div>
     </header>
@@ -86,14 +90,14 @@
     </main>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendEmailVerification, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
-            const app = initializeApp(config.firebaseConfig);
+            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
             const googleProvider = new GoogleAuthProvider();
@@ -135,10 +139,9 @@
                     if (userDoc.exists()) {
                         const userData = userDoc.data();
                         if (userData.role === 'banned') {
-                            console.warn("User is banned. Signing out.");
                             await signOut(auth);
                             loadingOverlay.style.display = 'none';
-                            alert("This account has been banned for violating our terms of service.");
+                            alert("This account has been banned.");
                             window.location.reload(); 
                             return; 
                         }
@@ -157,22 +160,10 @@
                     
                     const urlParams = new URLSearchParams(window.location.search);
                     const redirectTarget = urlParams.get('redirect');
-
-                    if (redirectTarget) {
-                        window.location.href = redirectTarget;
-                    } else {
-                        window.location.href = '/index.html';
-                    }
+                    window.location.href = redirectTarget || '/index.html';
 
                 } catch (e) {
-                    console.error("Error during login verification:", e);
-                    if (e.code === 'permission-denied') {
-                         await signOut(auth);
-                         alert("Access denied. Your account may be banned.");
-                         loadingOverlay.style.display = 'none';
-                    } else {
-                        window.location.href = '/index.html';
-                    }
+                    window.location.href = '/index.html';
                 }
             }
 
@@ -193,35 +184,24 @@
                     registerFields.style.display = 'none';
                     submitBtn.textContent = 'Log In';
                     toggleLink.textContent = 'New to Cheaplet? Create an account.';
-                    firstNameInput.removeAttribute('required');
-                    lastNameInput.removeAttribute('required');
                 } else {
                     formTitle.textContent = 'Join Cheaplet';
                     formSubtitle.textContent = 'Create an account to start listing items.';
                     registerFields.style.display = 'block';
                     submitBtn.textContent = 'Register';
                     toggleLink.textContent = 'Already have an account? Log in.';
-                    firstNameInput.setAttribute('required', 'true');
-                    lastNameInput.setAttribute('required', 'true');
                 }
             });
 
             googleBtn.addEventListener('click', async () => {
-                authError.style.display = 'none';
-                try {
-                    await signInWithPopup(auth, googleProvider);
-                } catch (error) {
-                    console.error("Google Auth Error:", error);
-                    authError.textContent = "Google Sign-In failed. " + error.message;
-                    authError.style.display = 'block';
-                }
+                try { await signInWithPopup(auth, googleProvider); } 
+                catch (error) { authError.textContent = error.message; authError.style.display = 'block'; }
             });
 
             authForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 authError.style.display = 'none';
                 submitBtn.disabled = true;
-                submitBtn.textContent = 'Processing...';
                 const email = emailInput.value;
                 const password = passwordInput.value;
 
@@ -230,38 +210,23 @@
                         const userCredential = await signInWithEmailAndPassword(auth, email, password);
                         if (!userCredential.user.emailVerified) {
                             await signOut(auth);
-                            throw new Error('Please verify your email address before logging in. Check your inbox.');
+                            throw new Error('Please verify your email address.');
                         }
                     } else {
-                        if (password.length < 6) { throw new Error('Password must be at least 6 characters long.'); }
-                        const firstName = firstNameInput.value.trim();
-                        const lastName = lastNameInput.value.trim();
                         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                        const displayName = `${firstName} ${lastName}`;
+                        const displayName = `${firstNameInput.value.trim()} ${lastNameInput.value.trim()}`;
                         await updateProfile(userCredential.user, { displayName: displayName });
                         await sendEmailVerification(userCredential.user);
-                        try {
-                            await setDoc(doc(db, "users", userCredential.user.uid), {
-                                uid: userCredential.user.uid,
-                                displayName: displayName,
-                                email: email,
-                                role: 'user'
-                            });
-                        } catch (dbError) { console.error("Database error:", dbError); }
+                        await setDoc(doc(db, "users", userCredential.user.uid), { uid: userCredential.user.uid, displayName, email, role: 'user' });
                         await signOut(auth);
-                        alert("Registration successful! Verification email sent. Please check inbox/spam, then log in.");
-                        isLoginMode = true;
-                        toggleLink.click(); 
+                        alert("Verification email sent!");
+                        isLoginMode = true; toggleLink.click(); 
                     }
                 } catch (error) {
-                    console.error("Auth Error:", error);
-                    let msg = error.message.replace('Firebase: ', '');
-                    if (msg.includes('auth/email-already-in-use')) msg = 'That email is already registered. Please log in.';
-                    authError.textContent = msg;
+                    authError.textContent = error.message;
                     authError.style.display = 'block';
                 } finally {
                     submitBtn.disabled = false;
-                    submitBtn.textContent = isLoginMode ? 'Log In' : 'Register';
                 }
             });
         }
