@@ -26,40 +26,6 @@
 
         .header-right { display: flex; align-items: center; gap: 15px; }
 
-        .btn { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); color: #333; border: none; padding: 8px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; transition: transform 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-size: 0.9rem; }
-        .btn:hover { transform: translateY(-2px); }
-
-        /* --- NEW PROFILE DROPDOWN STYLES --- */
-        .profile-menu-container { position: relative; }
-        
-        .profile-avatar {
-            width: 40px; height: 40px; border-radius: 50%; 
-            background-color: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.8);
-            color: white; display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 1.2rem; cursor: pointer; 
-            background-size: cover; background-position: center;
-            transition: transform 0.2s, border-color 0.2s;
-        }
-        .profile-avatar:hover { transform: scale(1.05); border-color: #FFD700; }
-
-        .dropdown-menu {
-            position: absolute; top: 50px; right: 0; width: 200px;
-            background: white; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            display: none; flex-direction: column; overflow: hidden; animation: fadeIn 0.2s ease;
-            color: #333;
-        }
-        .dropdown-menu.show { display: flex; }
-        
-        .dropdown-header { padding: 15px; border-bottom: 1px solid #eee; background: #f9f9f9; font-weight: bold; color: #2E7D32; font-size: 0.9rem; }
-        
-        .dropdown-item {
-            padding: 12px 15px; text-decoration: none; color: #333; display: flex; align-items: center; gap: 10px; transition: background 0.2s;
-        }
-        .dropdown-item:hover { background-color: #f1f8e9; color: #2E7D32; }
-        .dropdown-item i { width: 20px; text-align: center; }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-
         /* Hero */
         .hero { background: linear-gradient(rgba(76,175,80,0.9), rgba(56,142,60,0.9)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%234CAF50"/></svg>'); background-size: cover; color: white; text-align: center; padding: 40px 20px; }
         .hero h1 { font-size: 2rem; margin-bottom: 15px; }
@@ -104,7 +70,7 @@
         .footer-column ul li a { color: #ddd; text-decoration: none; transition: color 0.3s; }
         .footer-column ul li a:hover { color: white; }
         .copyright { text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem; color: #ccc; }
-        
+
         @media (min-width: 768px) {
             .hero h1 { font-size: 2.5rem; }
             .filter-options { flex-direction: row; }
@@ -119,29 +85,9 @@
         <div class="container header-content">
             <div class="header-left">
                 <div class="logo" id="logo-link">Cheap<span>let</span></div>
-                <nav>
-                    <ul>
-                        <li><a href="/index.html" data-i18n="nav_home">Home</a></li>
-                        <li><a href="/my-listings.html" data-i18n="nav_listings">My Listings</a></li>
-                        <li><a href="/messages.html" data-i18n="nav_messages">Messages</a></li>
-                    </ul>
-                </nav>
+                <nav><ul></ul></nav>
             </div>
-            
-            <div class="header-right">
-                <button class="btn" id="listAnItemBtn" data-i18n="btn_list">List an Item</button>
-                <button class="btn" id="loginRegisterBtn" data-i18n="btn_login">Login / Register</button>
-
-                <!-- NEW: PROFILE DROPDOWN MENU -->
-                <div class="profile-menu-container" id="profileMenuContainer" style="display: none;">
-                    <div class="profile-avatar" id="profileAvatar"></div>
-                    <div class="dropdown-menu" id="dropdownMenu">
-                        <div class="dropdown-header" id="dropdownName">User</div>
-                        <a href="/profile.html" class="dropdown-item"><i class="fas fa-user"></i> My Profile</a>
-                        <a href="#" class="dropdown-item" id="dropdownLogout"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
-                    </div>
-                </div>
-            </div>
+            <div class="header-right"></div>
         </div>
     </header>
 
@@ -156,7 +102,7 @@
     <section class="tags-section container">
         <h2 class="section-title" data-i18n="title_tags">Popular Tags</h2>
         <div class="tags-grid" id="tags-grid-container">
-            <p style="color:#777;" data-i18n="loading_tags">Loading popular tags...</p>
+            <p style="color:#777;">Loading popular tags...</p>
         </div>
     </section>
 
@@ -173,9 +119,6 @@
                 <div class="filter-group" style="flex-grow: 1;">
                     <input type="text" data-i18n-placeholder="search_placeholder" placeholder="Search listings..." id="search-input">
                 </div>
-            </div>
-            <div id="active-tag-display" style="margin-top: 10px; color: #4CAF50; font-weight: bold; display: none;">
-                Filtered by tag: <span id="current-tag-name"></span> <button id="clear-tag-btn" style="border:none; background:none; color:#666; cursor:pointer;">(Clear)</button>
             </div>
         </section>
 
@@ -239,20 +182,8 @@
         async function main() {
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
-            
-            // FIX: Don't initialize twice
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
-            const auth = getAuth(app);
             const db = getFirestore(app);
-
-            // DOM Elements
-            const loginRegisterBtn = document.getElementById('loginRegisterBtn');
-            const listAnItemBtn = document.getElementById('listAnItemBtn');
-            const profileMenuContainer = document.getElementById('profileMenuContainer');
-            const profileAvatar = document.getElementById('profileAvatar');
-            const dropdownMenu = document.getElementById('dropdownMenu');
-            const dropdownName = document.getElementById('dropdownName');
-            const dropdownLogout = document.getElementById('dropdownLogout');
 
             const listingsContainer = document.getElementById('listings-container');
             const itemCountSpan = document.getElementById('itemCount');
@@ -262,66 +193,9 @@
 
             let unsubscribeListings = null;
 
-            // FIX: Use Null Checks to prevent crashing if global.js replaced the header
-            onAuthStateChanged(auth, user => {
-                if (user && user.emailVerified) {
-                    if(loginRegisterBtn) loginRegisterBtn.style.display = 'none';
-                    if(profileMenuContainer) profileMenuContainer.style.display = 'block';
-                    if(listAnItemBtn) listAnItemBtn.style.display = 'inline-block';
-                    if(dropdownName) dropdownName.textContent = user.displayName || 'User';
-                    
-                    if (profileAvatar) {
-                        if (user.photoURL) {
-                            profileAvatar.style.backgroundImage = `url('${user.photoURL}')`;
-                            profileAvatar.textContent = '';
-                        } else {
-                            profileAvatar.style.backgroundImage = 'none';
-                            profileAvatar.textContent = user.displayName ? user.displayName.charAt(0).toUpperCase() : 'U';
-                        }
-                    }
-                } else {
-                    if(loginRegisterBtn) loginRegisterBtn.style.display = 'inline-block';
-                    if(profileMenuContainer) profileMenuContainer.style.display = 'none';
-                }
-            });
-
-            if(profileAvatar) {
-                profileAvatar.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if(dropdownMenu) dropdownMenu.classList.toggle('show');
-                });
-            }
-
-            document.addEventListener('click', (e) => {
-                if (profileMenuContainer && !profileMenuContainer.contains(e.target)) {
-                    if(dropdownMenu) dropdownMenu.classList.remove('show');
-                }
-            });
-
-            if(dropdownLogout) {
-                dropdownLogout.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    signOut(auth);
-                });
-            }
-
             // NAVIGATION
             const logoLink = document.getElementById('logo-link');
             if(logoLink) logoLink.addEventListener('click', () => window.location.href = '/index.html');
-            
-            if(loginRegisterBtn) loginRegisterBtn.addEventListener('click', () => { window.location.href = '/LoginInToCheaplet.html'; });
-            
-            if(listAnItemBtn) {
-                listAnItemBtn.addEventListener('click', () => { 
-                    if (auth.currentUser && auth.currentUser.emailVerified) {
-                        window.location.href = '/listanitem.html'; 
-                    } else {
-                        alert('Please log in to list an item.');
-                        window.location.href = '/LoginInToCheaplet.html';
-                    } 
-                });
-            }
-
             const browseBtn = document.getElementById('startBrowsingBtn');
             if(browseBtn) browseBtn.addEventListener('click', () => document.querySelector('.filters').scrollIntoView({ behavior: 'smooth' }));
 
