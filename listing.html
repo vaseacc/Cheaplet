@@ -4,171 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Listing Details - Cheaplet</title>
-    <!-- GLOBAL BRAIN (Header, Auth, Ban Check) -->
+    <!-- GLOBAL BRAIN (Header, Auth, Ban Check, Translation) -->
     <script type="module" src="global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f8f9fa; color: #333; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        /* --- Header --- */
         header { 
             background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); 
-            color: white; 
-            height: 60px; 
-            padding: 0 20px; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-            display: flex; 
-            align-items: center; 
-            justify-content: space-between; 
-            z-index: 100; 
-            flex-shrink: 0; 
+            color: white; height: 60px; padding: 0 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
+            display: flex; align-items: center; justify-content: space-between; 
+            z-index: 100; flex-shrink: 0; 
         }
-
         .header-left { display: flex; align-items: center; gap: 20px; }
         .logo { font-size: 24px; font-weight: bold; color: white; text-decoration: none; display: flex; align-items: center; }
         .logo span { color: #FFD700; }
-        
         nav ul { display: flex; list-style: none; margin: 0; padding: 0; gap: 20px; }
-        nav ul li a { 
-            color: white; 
-            text-decoration: none; 
-            font-weight: 500; 
-            font-size: 1rem;
-            opacity: 0.95; 
-            transition: opacity 0.2s; 
-        }
-        nav ul li a:hover { opacity: 1; text-decoration: underline; }
-
         .header-right { display: flex; align-items: center; gap: 15px; }
 
-        /* --- Split Layout --- */
         .main-wrapper { display: flex; flex: 1; height: calc(100vh - 60px); overflow: hidden; }
-        
-        /* --- LEFT: Image Stage --- */
-        .image-stage {
-            flex: 1; 
-            background-color: #000; 
-            position: relative; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center;
-            overflow: hidden;
-        }
-
-        .blurred-bg {
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            filter: blur(40px) brightness(0.5); 
-            z-index: 1;
-            transition: background-image 0.3s ease-in-out;
-            transform: scale(1.1);
-        }
-
-        .main-image-container {
-            position: relative;
-            z-index: 2; 
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-        }
-        
-        .main-image {
-            display: block;
-            max-width: 100%;
-            max-height: 100%;
-            width: auto;
-            height: auto;
-            object-fit: contain;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-        }
-
-        .nav-arrow {
-            position: absolute; top: 50%; transform: translateY(-50%);
-            width: 50px; height: 50px; border-radius: 50%; 
-            background-color: rgba(60, 60, 60, 0.6);
-            color: white; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: 20px; border: none; transition: background 0.2s; z-index: 10;
-        }
-        .nav-arrow:hover { background-color: rgba(60, 60, 60, 0.9); }
-        .nav-prev { left: 20px; }
-        .nav-next { right: 20px; }
-
-        .thumbnails-overlay {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 10px; z-index: 10;
-            padding: 5px;
-        }
-        .thumb { 
-            width: 50px; height: 50px; border-radius: 6px; object-fit: cover; cursor: pointer; 
-            opacity: 0.6; border: 2px solid white; transition: all 0.2s; 
-            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-        }
+        .image-stage { flex: 1; background-color: #000; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+        .blurred-bg { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-size: cover; background-position: center; filter: blur(40px) brightness(0.5); z-index: 1; transition: background-image 0.3s ease-in-out; transform: scale(1.1); }
+        .main-image-container { position: relative; z-index: 2; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 40px; }
+        .main-image { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+        .nav-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; border-radius: 50%; background-color: rgba(60, 60, 60, 0.6); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; border: none; z-index: 10; }
+        .nav-prev { left: 20px; } .nav-next { right: 20px; }
+        .thumbnails-overlay { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 10; padding: 5px; }
+        .thumb { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; cursor: pointer; opacity: 0.6; border: 2px solid white; transition: all 0.2s; }
         .thumb.active { opacity: 1; border-color: #FFD700; transform: scale(1.15); }
 
-        /* --- RIGHT: Details Panel --- */
-        .details-panel {
-            width: 420px; background-color: white; border-left: 1px solid #ddd; overflow-y: auto; display: flex; flex-direction: column;
-            padding: 25px; flex-shrink: 0;
-        }
-
-        h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 5px; color: #050505; line-height: 1.2; }
+        .details-panel { width: 420px; background-color: white; border-left: 1px solid #ddd; overflow-y: auto; display: flex; flex-direction: column; padding: 25px; flex-shrink: 0; }
+        h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 5px; color: #050505; }
         .price { font-size: 1.5rem; font-weight: 700; color: #2E7D32; margin-bottom: 10px; }
         .meta-info { font-size: 0.85rem; color: #65676b; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
-        
         .action-buttons { display: flex; gap: 10px; margin-bottom: 25px; }
-        .btn-primary {
-            flex: 1; background-color: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: 600;
-            padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-            transition: background 0.2s; font-size: 1rem;
-        }
-        .btn-primary:hover { background-color: #43a047; }
-        
-        .btn-icon {
-            width: 45px; height: 42px; background-color: #f0f0f0; border-radius: 6px; border: none; color: #050505;
-            display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; transition: background 0.2s;
-        }
-        .btn-icon:hover { background-color: #d8dadf; }
-
+        .btn-primary { flex: 1; background-color: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: 600; padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 1rem; }
+        .btn-icon { width: 45px; height: 42px; background-color: #f0f0f0; border-radius: 6px; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
         .section-header { font-weight: 700; font-size: 1.1rem; margin-top: 15px; margin-bottom: 10px; color: #050505; }
         .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; }
         .info-label { font-weight: 600; color: #555; }
-        .info-value { color: #333; }
-        
         .description-text { font-size: 0.95rem; line-height: 1.6; color: #444; white-space: pre-wrap; margin-bottom: 20px; }
-
         .seller-section { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 10px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; }
         #seller-avatar-small { width: 45px; height: 45px; border-radius: 50%; background: #ddd; background-size: cover; background-position: center; border: 1px solid #eee; }
-        .seller-name { font-weight: 600; color: #050505; text-decoration: none; font-size: 1.05rem; }
-        
+        .seller-name { font-weight: 600; color: #050505; text-decoration: none; }
         .quick-message-container { margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
         .quick-msg-label { font-weight: 600; margin-bottom: 10px; color: #4CAF50; font-size: 0.9rem; }
-        .quick-msg-input {
-            width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 12px; font-size: 0.95rem; resize: none; margin-bottom: 10px; outline: none; background: #fff;
-        }
-        .quick-msg-input:focus { border-color: #4CAF50; box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1); }
-        .btn-send {
-            background-color: #4CAF50; color: white; width: 100%; border: none; border-radius: 6px; height: 40px; font-weight: 600; cursor: pointer; transition: background 0.2s;
-        }
-        .btn-send:hover { background-color: #43a047; }
+        .quick-msg-input { width: 100%; border: 1px solid #ddd; border-radius: 8px; padding: 12px; font-size: 0.95rem; resize: none; margin-bottom: 10px; outline: none; }
+        .btn-send { background-color: #4CAF50; color: white; width: 100%; border: none; border-radius: 6px; height: 40px; font-weight: 600; cursor: pointer; }
 
-        .admin-controls { margin-top: 20px; border-top: 2px solid #d32f2f; padding-top: 15px; display: none; background: #fff5f5; padding: 15px; border-radius: 8px; }
-        .btn-delete { background-color: #d32f2f; color: white; width: 100%; border: none; padding: 10px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        .btn-delete:hover { background-color: #b71c1c; }
-
-        @media (max-width: 900px) {
-            .main-wrapper { flex-direction: column; overflow-y: auto; height: auto; }
-            .image-stage { height: 350px; flex: none; }
-            .details-panel { width: 100%; border-left: none; overflow: visible; height: auto; padding-bottom: 50px; }
-            nav { display: none; } 
-        }
+        @media (max-width: 900px) { .main-wrapper { flex-direction: column; overflow-y: auto; height: auto; } .image-stage { height: 350px; flex: none; } .details-panel { width: 100%; border-left: none; height: auto; padding-bottom: 50px; } nav { display: none; } }
     </style>
 </head>
 <body>
@@ -176,28 +61,22 @@
     <header>
         <div class="header-left">
             <a href="/index.html" class="logo">Cheap<span>let</span></a>
-            <nav>
-                <ul></ul>
-            </nav>
+            <nav><ul></ul></nav>
         </div>
         <div class="header-right"></div>
     </header>
 
     <div class="main-wrapper">
-        <!-- LEFT: Image Stage -->
         <div class="image-stage">
             <div class="blurred-bg" id="blur-bg"></div>
-
             <div class="main-image-container">
                 <button class="nav-arrow nav-prev" id="prev-img-btn"><i class="fas fa-chevron-left"></i></button>
                 <img src="" alt="Listing Item" class="main-image" id="main-image">
                 <button class="nav-arrow nav-next" id="next-img-btn"><i class="fas fa-chevron-right"></i></button>
             </div>
-            
             <div class="thumbnails-overlay" id="thumbnail-container"></div>
         </div>
 
-        <!-- RIGHT: Details Panel -->
         <div class="details-panel" id="details-container">
             <h1 id="listing-title">Loading...</h1>
             <div class="price" id="listing-price"></div>
@@ -205,35 +84,30 @@
 
             <div class="action-buttons">
                 <button class="btn-primary" id="btn-message-seller">
-                    <i class="fas fa-paper-plane"></i> &nbsp; Message
+                    <i class="fas fa-paper-plane"></i> &nbsp; <span data-i18n="btn_message">Message</span>
                 </button>
-                <button class="btn-icon" title="Save" id="btn-save"><i class="far fa-bookmark"></i></button>
-                <button class="btn-icon" title="Share" id="btn-share"><i class="fas fa-share-alt"></i></button>
+                <button class="btn-icon" id="btn-save"><i class="far fa-bookmark"></i></button>
+                <button class="btn-icon" id="btn-share"><i class="fas fa-share-alt"></i></button>
             </div>
 
-            <div class="section-header">Details</div>
+            <div class="section-header" data-i18n="details_title">Details</div>
             <div class="info-row">
-                <span class="info-label">Condition</span>
+                <span class="info-label" data-i18n="condition_label">Condition</span>
                 <span class="info-value" id="listing-condition"></span>
             </div>
-            <!-- ADDED: DIGITAL ACCESS CODE DISPLAY -->
             <div class="info-row">
-                <span class="info-label">Access Code</span>
+                <span class="info-label" data-i18n="access_code_label">Access Code</span>
                 <span class="info-value" id="listing-digital-code"></span>
             </div>
             <div class="info-row">
-                <span class="info-label">Category</span>
-                <span class="info-value" id="listing-category"></span>
-            </div>
-            <div class="info-row">
-                <span class="info-label">Location</span>
+                <span class="info-label" data-i18n="location_label">Location</span>
                 <span class="info-value" id="location-text"></span>
             </div>
 
-            <div class="section-header">Description</div>
+            <div class="section-header" data-i18n="description_title">Description</div>
             <p class="description-text" id="listing-description"></p>
 
-            <div class="section-header">Seller Information</div>
+            <div class="section-header" data-i18n="seller_title">Seller Information</div>
             <div class="seller-section">
                 <div id="seller-avatar-small"></div>
                 <div>
@@ -243,12 +117,12 @@
             </div>
 
             <div class="quick-message-container">
-                <div class="quick-msg-label">Send a quick message</div>
+                <div class="quick-msg-label" data-i18n="quick_msg_label">Send a quick message</div>
                 <textarea class="quick-msg-input" id="quick-msg-text">Hi, is this available?</textarea>
-                <button class="btn-send" id="btn-quick-send">Send</button>
+                <button class="btn-send" id="btn-quick-send" data-i18n="btn_send">Send</button>
             </div>
 
-            <div class="admin-controls" id="admin-controls">
+            <div class="admin-controls" id="admin-controls" style="display:none;">
                 <p style="color: #d32f2f; font-weight: bold; font-size: 0.9rem; margin-bottom: 5px;">Admin Zone</p>
                 <button class="btn-delete" id="delete-listing-btn">Delete Listing</button>
             </div>
@@ -263,7 +137,6 @@
         async function main() {
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
-            
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
@@ -271,10 +144,7 @@
             const mainImage = document.getElementById('main-image');
             const blurBg = document.getElementById('blur-bg'); 
             const thumbnailContainer = document.getElementById('thumbnail-container');
-            const prevBtn = document.getElementById('prev-img-btn');
-            const nextBtn = document.getElementById('next-img-btn');
             const saveBtn = document.getElementById('btn-save');
-            const shareBtn = document.getElementById('btn-share');
             
             let currentUser = null;
             let currentListingData = null;
@@ -303,17 +173,18 @@
 
                     document.getElementById('listing-title').textContent = data.title;
                     document.getElementById('listing-price').textContent = `$${data.price.toFixed(2)}`;
-                    const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : 'Recently';
-                    document.getElementById('listing-meta').textContent = `Listed ${date} • ${data.location}`;
-                    document.getElementById('location-text').textContent = data.location;
-                    document.getElementById('listing-condition').textContent = data.condition || "Used";
-                    document.getElementById('listing-category').textContent = data.category || "General";
-                    document.getElementById('listing-description').textContent = data.description;
                     
-                    // FETCHING THE NEW DIGITAL CODE VALUE
+                    // --- TRANSLATED DATE STRING ---
+                    const savedLang = localStorage.getItem('preferred_language') || 'en';
+                    const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : '';
+                    const metaPrefix = savedLang === 'fr' ? 'Publié le' : 'Listed';
+                    document.getElementById('listing-meta').textContent = `${metaPrefix} ${date} • ${data.location}`;
+                    
+                    document.getElementById('location-text').textContent = data.location;
+                    document.getElementById('listing-condition').textContent = data.condition;
                     document.getElementById('listing-digital-code').textContent = data.digitalCode || "N/A";
-
-                    document.getElementById('seller-name-link').textContent = data.posterDisplayName || "A User";
+                    document.getElementById('listing-description').textContent = data.description;
+                    document.getElementById('seller-name-link').textContent = data.posterDisplayName || "User";
                     document.getElementById('seller-name-link').href = `/user.html?id=${data.posterUid}`;
                     
                     if (data.posterUid) {
@@ -364,14 +235,8 @@
                 });
             }
 
-            prevBtn.onclick = () => { if (imageUrls.length === 0) return; let newIndex = currentImageIndex - 1; if (newIndex < 0) newIndex = imageUrls.length - 1; updateMainImage(newIndex); };
-            nextBtn.onclick = () => { if (imageUrls.length === 0) return; let newIndex = currentImageIndex + 1; if (newIndex >= imageUrls.length) newIndex = 0; updateMainImage(newIndex); };
-
-            function initiateMessage() {
-                if (!currentUser || !currentUser.emailVerified) { window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`; return; }
-                if (currentUser.uid === currentListingData.posterUid) { alert("You cannot message yourself."); return; }
-                createChat(currentListingData.posterUid, currentListingData.posterDisplayName);
-            }
+            document.getElementById('prev-img-btn').onclick = () => { if (imageUrls.length === 0) return; let newIndex = currentImageIndex - 1; if (newIndex < 0) newIndex = imageUrls.length - 1; updateMainImage(newIndex); };
+            document.getElementById('next-img-btn').onclick = () => { if (imageUrls.length === 0) return; let newIndex = currentImageIndex + 1; if (newIndex >= imageUrls.length) newIndex = 0; updateMainImage(newIndex); };
 
             async function createChat(posterUid, posterName) {
                 const uids = [currentUser.uid, posterUid].sort();
@@ -384,8 +249,8 @@
                 } catch (error) { alert("Error starting chat."); }
             }
 
-            document.getElementById('btn-message-seller').onclick = initiateMessage;
-            document.getElementById('btn-quick-send').onclick = initiateMessage;
+            document.getElementById('btn-message-seller').onclick = () => createChat(currentListingData.posterUid, currentListingData.posterDisplayName);
+            document.getElementById('btn-quick-send').onclick = () => createChat(currentListingData.posterUid, currentListingData.posterDisplayName);
 
             function updateSaveIcon() {
                 const icon = saveBtn.querySelector('i');
@@ -401,7 +266,6 @@
                 updateSaveIcon();
             };
 
-            shareBtn.onclick = () => { const url = window.location.href; if (navigator.share) navigator.share({ title: currentListingData.title, url: url }); else { navigator.clipboard.writeText(url); alert("Link copied!"); } };
             async function deleteListing(docId, isAdmin) { if (confirm("Delete listing?")) { await deleteDoc(doc(db, 'listings', docId)); window.location.href = '/index.html'; } }
         }
         main();
