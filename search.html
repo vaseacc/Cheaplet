@@ -4,418 +4,120 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Search Results - Cheaplet</title>
+    <!-- GLOBAL BRAIN (Connects Profile Circle, Ban Check, Language) -->
+    <script type="module" src="global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
+        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
 
-        body {
-            background-color: #f8f9fa;
-            color: #333;
-            line-height: 1.6;
+        /* Header Styles - Centralized look */
+        header { 
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); 
+            color: white; 
+            padding: 15px 0; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+            position: sticky; 
+            top: 0; 
+            z-index: 100; 
         }
+        .header-content { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 24px; font-weight: bold; display: flex; align-items: center; cursor: pointer; color: white; text-decoration: none; }
+        .logo span { color: #FFD700; }
+        
+        nav ul { display: flex; list-style: none; }
+        nav ul li { margin-left: 20px; }
+        nav ul li a { color: white; text-decoration: none; font-weight: 500; opacity: 0.9; transition: opacity 0.2s; }
+        nav ul li a:hover { opacity: 1; }
 
-        .container {
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 15px;
-        }
+        /* Container for Global.js injection */
+        .header-right { display: flex; align-items: center; gap: 15px; }
 
-        /* Header Styles */
-        header {
-            background-color: #4CAF50;
-            color: white;
-            padding: 15px 0;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .header-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-        }
-
-        .logo span {
-            color: #FFD700;
-        }
-
-        nav ul {
-            display: flex;
-            list-style: none;
-        }
-
-        nav ul li {
-            margin-left: 20px;
-        }
-
-        nav ul li a {
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            transition: opacity 0.3s;
-        }
-
-        nav ul li a:hover {
-            opacity: 0.8;
-        }
-
-        .btn {
-            background-color: #FFD700;
-            color: #333;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        .btn:hover {
-            background-color: #FFC400;
-        }
-
-        .btn-secondary {
-            background-color: #ccc;
-            color: #333;
-        }
-        .btn-secondary:hover {
-            background-color: #bbb;
-        }
-
-        /* Filters */
+        /* Filters Section */
         .filters {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            margin-bottom: 30px;
-            margin-top: 40px;
+            background-color: white; padding: 25px; border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin: 30px 0;
         }
+        .filter-options { display: flex; flex-direction: column; gap: 15px; }
+        .filter-group { display: flex; align-items: center; gap: 10px; flex: 1; }
+        .filter-group label { font-weight: 600; color: #555; white-space: nowrap; }
 
-        .filter-options {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+        select, #search-input {
+            padding: 12px; border: 2px solid #ddd; border-radius: 8px;
+            font-size: 1rem; width: 100%; outline: none; transition: border-color 0.3s;
         }
-
-        .filter-group {
-            display: flex;
-            align-items: center;
-            width: 100%;
-        }
-
-        .filter-group label {
-            margin-right: 8px;
-            font-weight: 500;
-            white-space: nowrap;
-        }
-
-        select, input[type="text"], input[type="email"], input[type="password"], input[type="number"], textarea {
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            width: 100%;
-            max-width: 100%;
-        }
-        textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
+        select:focus, #search-input:focus { border-color: #4CAF50; }
 
         /* Listings Grid */
-        .listings-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
+        .listings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .listings-header h2 { font-size: 1.5rem; color: #2E7D32; }
+        #itemCount { color: #888; font-weight: 600; }
 
-        .listings-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-            margin-bottom: 40px;
-        }
+        .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-bottom: 50px; }
 
+        /* Modern Card Design */
         .listing-card {
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            transition: transform 0.3s, box-shadow 0.3s;
-            display: block;
-            text-decoration: none;
-            color: inherit;
+            background: white; border-radius: 12px; overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06); transition: transform 0.3s, box-shadow 0.3s;
+            display: flex; flex-direction: column; text-decoration: none; color: inherit;
         }
-
-        .listing-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-        }
+        .listing-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
 
         .listing-image {
-            height: 160px;
-            background-color: #eee;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #777;
-            font-size: 14px;
-            background-size: cover;
-            background-position: center;
+            height: 200px; background-color: #f0f0f0; background-size: cover; background-position: center;
+            display: flex; align-items: center; justify-content: center; color: #ccc;
         }
 
-        .listing-details {
-            padding: 12px;
-        }
-
-        .listing-price {
-            color: #4CAF50;
-            font-weight: bold;
-            font-size: 1.1rem;
-            margin-bottom: 6px;
-        }
-
-        .listing-title {
-            font-weight: 600;
-            font-size: 1rem;
-            line-height: 1.3;
-            height: 2.6em;
-            overflow: hidden;
-            margin-bottom: 6px;
-        }
-
-        .listing-location {
-            color: #777;
-            font-size: 0.85rem;
-            margin-bottom: 10px;
-        }
+        .listing-details { padding: 15px; flex-grow: 1; }
+        .listing-price { color: #4CAF50; font-weight: 800; font-size: 1.25rem; margin-bottom: 5px; }
+        .listing-title { font-weight: 600; font-size: 1.05rem; line-height: 1.4; margin-bottom: 8px; color: #333; }
+        .listing-location { color: #777; font-size: 0.9rem; margin-bottom: 12px; display: flex; align-items: center; gap: 5px; }
 
         .listing-meta {
-            display: flex;
-            justify-content: space-between;
-            color: #999;
-            font-size: 0.8rem;
-            border-top: 1px solid #eee;
-            padding-top: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-top: 1px solid #eee; padding-top: 10px; font-size: 0.8rem; color: #aaa;
         }
         
-        .no-listings-message {
-            grid-column: 1 / -1;
-            text-align: center;
-            padding: 40px;
-            color: #777;
-        }
-
-        .form-field-error {
-            color: red;
-            font-size: 0.85rem;
-            text-align: left;
-            margin: -5px auto 10px;
-            max-width: 350px;
-        }
-
-        #password-feedback {
-            font-size: 0.85rem;
-            margin-top: 5px;
-            height: 15px;
-        }
+        .no-listings-message { grid-column: 1 / -1; text-align: center; padding: 60px; color: #999; }
 
         /* Footer */
-        footer {
-            background-color: #2E7D32;
-            color: white;
-            padding: 40px 0 20px;
-        }
+        footer { background: linear-gradient(135deg, #2E7D32 0%, #1b5e20 100%); color: white; padding: 40px 0 20px; margin-top: 40px; }
+        .footer-content { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 30px; margin-bottom: 30px; }
+        .footer-column h3 { margin-bottom: 15px; font-size: 1.1rem; color: #FFD700; }
+        .footer-column ul { list-style: none; }
+        .footer-column ul li { margin-bottom: 8px; }
+        .footer-column ul li a { color: #ddd; text-decoration: none; font-size: 0.9rem; }
+        .footer-column ul li a:hover { color: white; }
+        .copyright { text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.85rem; color: #ccc; }
 
-        .footer-content {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        .footer-column h3 {
-            margin-bottom: 15px;
-            font-size: 1.2rem;
-        }
-
-        .footer-column ul {
-            list-style: none;
-        }
-
-        .footer-column ul li {
-            margin-bottom: 10px;
-        }
-
-        .footer-column ul li a {
-            color: #ddd;
-            text-decoration: none;
-            transition: color 0.3s;
-        }
-
-        .footer-column ul li a:hover {
-            color: white;
-        }
-
-        .copyright {
-            text-align: center;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            font-size: 0.9rem;
-            color: #ccc;
-        }
-
-        /* Firebase forms */
-        .firebase-form-section {
-            background-color: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            margin: 30px auto;
-            max-width: 500px;
-            text-align: center;
-        }
-
-        .firebase-form-section h2 {
-            margin-bottom: 25px;
-            color: #333;
-        }
-
-        .firebase-form-section input,
-        .firebase-form-section textarea,
-        .firebase-form-section select {
-            display: block;
-            margin: 10px auto;
-            width: 100%;
-            max-width: 350px;
-        }
-
-        .firebase-form-section .btn {
-            margin-top: 15px;
-            width: auto;
-            min-width: 120px;
-        }
-
-        .form-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .firebase-form-section #auth-error {
-             margin-top: 15px;
-             font-weight: 500;
-             color: red;
-        }
-
-        /* Header buttons */
-        .header-auth-buttons {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            width: 100%;
-            justify-content: center;
-            margin-top: 10px;
-        }
-        #userEmailDisplay {
-            color: white;
-            font-weight: 500;
-            order: -1;
-            width: 100%;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-        #logoutBtn {
-            background-color: #f44336;
-            color: white;
-        }
-        #logoutBtn:hover {
-            background-color: #d32f2f;
-        }
-
-        /* Styles for prominent search */
-        .search-group {
-            flex-grow: 1;
-        }
-        #search-input {
-            padding: 12px 15px;
-            font-size: 1rem;
-            border: 2px solid #ddd;
-            transition: border-color 0.3s, box-shadow 0.3s;
-        }
-        #search-input:focus {
-            border-color: #4CAF50;
-            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
-            outline: none;
-        }
-
-        /* ====== MEDIA QUERIES ====== */
         @media (min-width: 768px) {
-            .container { padding: 0 20px; }
-            .header-content { flex-wrap: nowrap; }
-            nav { display: block; }
-            .header-auth-buttons { width: auto; margin-top: 0; }
-            #userEmailDisplay { width: auto; text-align: right; margin-bottom: 0; margin-right: 10px; order: 0; }
-            .filter-options { flex-direction: row; align-items: center; }
-            .listings-grid { grid-template-columns: repeat(3, 1fr); }
-            .footer-content { grid-template-columns: repeat(3, 1fr); text-align: left; }
-        }
-        @media (min-width: 1024px) {
-            .listings-grid { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); }
-        }
-        @media (max-width: 767px) {
-            nav { display: none; }
+            .filter-options { flex-direction: row; }
+            .search-group { flex: 2; }
         }
     </style>
 </head>
 <body>
     <header>
         <div class="container header-content">
-            <div class="logo" id="logo-link">
-                Cheap<span>let</span>
-            </div>
+            <a href="/index.html" class="logo">Cheap<span>let</span></a>
             <nav>
                 <ul>
                     <li><a href="/index.html">Home</a></li>
                     <li><a href="/search.html">Browse</a></li>
                     <li><a href="/my-listings.html">My Listings</a></li>
-                    <li><a href="#">About</a></li>
                 </ul>
             </nav>
-            <div class="header-auth-buttons">
-                <span id="userEmailDisplay" style="display: none;"></span>
-                <button class="btn" id="listAnItemBtn">List an Item</button>
-                <button class="btn" id="loginRegisterBtn">Login / Register</button>
-                <button class="btn" id="logoutBtn" style="display: none;">Logout</button>
-            </div>
+            <!-- Global.js will inject Profile or Login/Register here -->
+            <div class="header-right"></div>
         </div>
     </header>
 
     <main class="container">
-        <!-- Forms are omitted from the search page HTML for simplicity -->
         <section class="filters">
             <div class="filter-options">
                 <div class="filter-group">
-                    <label for="category">Category:</label>
+                    <label>Category</label>
                     <select id="category-filter">
                         <option value="all">All Categories</option>
                         <option value="furniture">Furniture</option>
@@ -427,7 +129,7 @@
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label for="sort">Sort by:</label>
+                    <label>Sort</label>
                     <select id="sort-filter">
                         <option value="newest">Newest First</option>
                         <option value="price-low">Price: Low to High</option>
@@ -435,7 +137,7 @@
                     </select>
                 </div>
                 <div class="filter-group search-group">
-                    <input type="text" placeholder="Search listings..." id="search-input">
+                    <input type="text" placeholder="What are you looking for?" id="search-input">
                 </div>
             </div>
         </section>
@@ -443,10 +145,10 @@
         <section class="listings">
             <div class="listings-header">
                 <h2>Search Results</h2>
-                <span id="itemCount">Loading...</span>
+                <span id="itemCount">Loading listings...</span>
             </div>
             <div class="listings-grid" id="listings-container">
-                <!-- Listings will be dynamically inserted here -->
+                <!-- Listings inserted here -->
             </div>
         </section>
     </main>
@@ -456,48 +158,29 @@
             <div class="footer-content">
                 <div class="footer-column">
                     <h3>Cheaplet</h3>
-                    <ul>
-                        <li><a href="#">About Us</a></li>
-                        <li><a href="#">Careers</a></li>
-                        <li><a href="#">Press</a></li>
-                        <li><a href="#">Blog</a></li>
-                    </ul>
+                    <ul><li><a href="#">About Us</a></li><li><a href="#">Safety Tips</a></li></ul>
                 </div>
                 <div class="footer-column">
                     <h3>Help</h3>
-                    <ul>
-                        <li><a href="#">FAQ</a></li>
-                        <li><a href="#">Safety Tips</a></li>
-                        <li><a href="#">Contact Support</a></li>
-                    </ul>
+                    <ul><li><a href="#">FAQ</a></li><li><a href="#">Contact Support</a></li></ul>
                 </div>
                 <div class="footer-column">
-                    <h3>Policies</h3>
-                    <ul>
-                        <li><a href="#">Terms of Service</a></li>
-                        <li><a href="#">Privacy Policy</a></li>
-                        <li><a href="#">Cookie Policy</a></li>
-                    </ul>
+                    <h3>Legal</h3>
+                    <ul><li><a href="#">Terms of Service</a></li><li><a href="#">Privacy Policy</a></li></ul>
                 </div>
             </div>
-            <div class="copyright">
-                &copy; 2025 Cheaplet. All rights reserved.
-            </div>
+            <div class="copyright">© 2025 Cheaplet. All rights reserved.</div>
         </div>
     </footer>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, collection, query, orderBy, onSnapshot, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
-            const firebaseConfig = config.firebaseConfig;
-
-            const app = initializeApp(firebaseConfig);
-            const auth = getAuth(app);
+            const app = initializeApp(config.firebaseConfig);
             const db = getFirestore(app);
 
             const searchInput = document.getElementById('search-input');
@@ -505,106 +188,71 @@
             const itemCountSpan = document.getElementById('itemCount');
             const categoryFilter = document.getElementById('category-filter');
             const sortFilter = document.getElementById('sort-filter');
-            const logoLink = document.getElementById('logo-link');
-            const userEmailDisplay = document.getElementById('userEmailDisplay');
-            const loginRegisterBtn = document.getElementById('loginRegisterBtn');
-            const logoutBtn = document.getElementById('logoutBtn');
-            const listAnItemBtn = document.getElementById('listAnItemBtn');
 
-            logoLink.addEventListener('click', () => { window.location.href = '/index.html'; });
-            loginRegisterBtn.addEventListener('click', () => { window.location.href = '/index.html'; });
-            listAnItemBtn.addEventListener('click', () => { window.location.href = '/index.html'; });
-            logoutBtn.addEventListener('click', () => signOut(auth));
-            
-            function getQueryFromURL() {
-                const params = new URLSearchParams(window.location.search);
-                return params.get('q') || '';
-            }
-            searchInput.value = getQueryFromURL();
+            // Handle URL Search Params
+            const params = new URLSearchParams(window.location.search);
+            searchInput.value = params.get('q') || '';
 
-            // BUG FIX: This function now correctly handles both old and new data structures
-            function renderListing(listingDoc) {
-                const data = listingDoc.data();
-                const listingLink = document.createElement('a');
-                listingLink.className = 'listing-card';
-                listingLink.href = `/listing.html?id=${listingDoc.id}`;
+            function renderListing(doc) {
+                const data = doc.data();
+                const card = document.createElement('a');
+                card.className = 'listing-card';
+                card.href = `/listing.html?id=${doc.id}`;
 
-                // Check for new 'imageUrls' array first, then fall back to old 'imageUrl' string
                 const firstImage = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls[0] : data.imageUrl;
-                
                 const imageStyle = firstImage ? `background-image: url('${firstImage}')` : '';
-                const imageContent = firstImage ? '' : 'No Image';
 
-                listingLink.innerHTML = `
-                    <div class="listing-image" style="${imageStyle}">${imageContent}</div>
+                card.innerHTML = `
+                    <div class="listing-image" style="${imageStyle}">${firstImage ? '' : '<i class="fas fa-camera fa-2x"></i>'}</div>
                     <div class="listing-details">
                         <div class="listing-price">$${data.price ? data.price.toFixed(2) : '0.00'}</div>
                         <h3 class="listing-title">${data.title}</h3>
-                        <div class="listing-location">${data.location}</div>
+                        <div class="listing-location"><i class="fas fa-map-marker-alt"></i> ${data.location || 'Local'}</div>
                         <div class="listing-meta">
                             <span>${data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : ''}</span>
-                            <span>${data.category}</span>
+                            <span>${data.category || 'General'}</span>
                         </div>
                     </div>`;
-                return listingLink;
+                return card;
             }
             
             let unsubscribe;
-            function fetchAndRenderListings() {
+            function fetchListings() {
                 if (unsubscribe) unsubscribe();
+                
                 let q = collection(db, 'listings');
                 const constraints = [];
-                const category = categoryFilter.value;
-                if (category !== 'all') constraints.push(where('category', '==', category));
-                const sortBy = sortFilter.value;
-                if (sortBy === 'price-low') constraints.push(orderBy('price', 'asc'));
-                else if (sortBy === 'price-high') constraints.push(orderBy('price', 'desc'));
+                
+                if (categoryFilter.value !== 'all') {
+                    constraints.push(where('category', '==', categoryFilter.value));
+                }
+                
+                if (sortFilter.value === 'price-low') constraints.push(orderBy('price', 'asc'));
+                else if (sortFilter.value === 'price-high') constraints.push(orderBy('price', 'desc'));
                 else constraints.push(orderBy('timestamp', 'desc'));
+
                 const finalQuery = query(q, ...constraints);
 
                 unsubscribe = onSnapshot(finalQuery, snapshot => {
                     listingsContainer.innerHTML = '';
-                    const searchTerm = searchInput.value.toLowerCase();
-                    const filteredDocs = snapshot.docs.filter(doc => (doc.data().title || '').toLowerCase().includes(searchTerm));
-                    itemCountSpan.textContent = `${filteredDocs.length} items found`;
+                    const term = searchInput.value.toLowerCase();
+                    const filtered = snapshot.docs.filter(doc => (doc.data().title || '').toLowerCase().includes(term));
+                    
+                    itemCountSpan.textContent = `${filtered.length} items found`;
 
-                    if (filteredDocs.length === 0) {
-                        const safeSearchTerm = searchTerm.replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                        listingsContainer.innerHTML = `<div class="no-listings-message"><h3>No items found for "${safeSearchTerm}".</h3><p>Try a different search or adjust filters.</p></div>`;
+                    if (filtered.length === 0) {
+                        listingsContainer.innerHTML = `<div class="no-listings-message"><h3>No items found.</h3><p>Try searching for something else!</p></div>`;
                     } else {
-                        filteredDocs.forEach(doc => listingsContainer.appendChild(renderListing(doc)));
+                        filtered.forEach(doc => listingsContainer.appendChild(renderListing(doc)));
                     }
-                }, error => {
-                    console.error("Error fetching listings:", error);
-                    itemCountSpan.textContent = `Error loading items.`;
                 });
             }
             
-            searchInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    window.location.href = `/search.html?q=${encodeURIComponent(searchInput.value.trim())}`;
-                }
-            });
+            searchInput.addEventListener('input', fetchListings); // Live search as they type
+            categoryFilter.addEventListener('change', fetchListings);
+            sortFilter.addEventListener('change', fetchListings);
 
-            categoryFilter.addEventListener('change', fetchAndRenderListings);
-            sortFilter.addEventListener('change', fetchAndRenderListings);
-            
-            onAuthStateChanged(auth, user => {
-                if (user) {
-                    userEmailDisplay.textContent = user.displayName ? `Welcome, ${user.displayName}!` : `Welcome, ${user.email}!`;
-                    userEmailDisplay.style.display = 'block';
-                    loginRegisterBtn.style.display = 'none';
-                    logoutBtn.style.display = 'inline-block';
-                    listAnItemBtn.style.display = 'inline-block';
-                } else {
-                    userEmailDisplay.style.display = 'none';
-                    loginRegisterBtn.style.display = 'inline-block';
-                    logoutBtn.style.display = 'none';
-                    listAnItemBtn.style.display = 'none';
-                }
-            });
-
-            fetchAndRenderListings();
+            fetchListings();
         }
         main();
     </script>
