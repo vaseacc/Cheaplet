@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Cheaplet</title>
-    <!-- GLOBAL BRAIN (Connects Profile Circle, Ban Check, Language) -->
+    <!-- GLOBAL BRAIN -->
     <script type="module" src="global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
@@ -12,13 +12,16 @@
         body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
         .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
         header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        
+        /* FIX: Added space-between to push buttons to the right */
         .header-content { display: flex; justify-content: space-between; align-items: center; }
+        
         .header-left { display: flex; align-items: center; gap: 15px; }
         .logo { font-size: 24px; font-weight: bold; cursor: pointer; text-decoration: none; color: white; }
         .logo span { color: #FFD700; }
         
-        /* FIX: Align buttons side-by-side and prevent overlapping */
-        .header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+        /* FIX: Container for global.js buttons */
+        .header-right { display: flex; align-items: center; gap: 10px; }
 
         .btn-back { background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 0.9rem; display: flex; align-items: center; gap: 5px; transition: background 0.3s; }
         .btn-back:hover { background: rgba(255, 255, 255, 0.3); }
@@ -56,7 +59,7 @@
                 </button>
                 <a href="/index.html" class="logo">Cheap<span>let</span></a>
             </div>
-            <!-- Global.js target -->
+            <!-- FIX: Added this placeholder for global.js -->
             <div class="header-right"></div>
         </div>
     </header>
@@ -97,6 +100,8 @@
         async function main() {
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
+            
+            // Safety Check
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
@@ -194,8 +199,11 @@
             });
 
             googleBtn.addEventListener('click', async () => {
-                try { await signInWithPopup(auth, googleProvider); } 
-                catch (error) { authError.textContent = error.message; authError.style.display = 'block'; }
+                try {
+                    await signInWithPopup(auth, googleProvider);
+                } catch (error) {
+                    console.error(error);
+                }
             });
 
             authForm.addEventListener('submit', async (e) => {
