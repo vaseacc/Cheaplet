@@ -1,358 +1,197 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Login - Cheaplet</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Login - Cheaplet</title>
+    <!-- GLOBAL BRAIN -->
+    <script type="module" src="global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f8f9fa; color: #333; line-height: 1.6; overflow-x: hidden; }
+        
+        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 10px; }
+        
+        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 12px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 100%; }
+        
+        /* RESPONSIVE HEADER FIX */
+        .header-content { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            gap: 10px;
+        }
+        
+        .header-left { display: flex; align-items: center; gap: 10px; flex-shrink: 1; }
+        .logo { font-size: clamp(18px, 4vw, 24px); font-weight: bold; cursor: pointer; text-decoration: none; color: white; white-space: nowrap; }
+        .logo span { color: #FFD700; }
+        
+        /* Push buttons to the edge and keep them side-by-side */
+        .header-right { 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            flex-shrink: 0; 
+        }
 
-<script type="module" src="global.js"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+        .btn-back { background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; gap: 4px; transition: background 0.3s; white-space: nowrap; }
 
-<style>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
+        /* AUTH CARD RESPONSIVENESS */
+        .auth-wrapper { display: flex; justify-content: center; align-items: center; min-height: 85vh; padding: 15px; }
+        .auth-card { background: white; padding: clamp(20px, 5vw, 40px); border-radius: 12px; box-shadow: 0 4px 25px rgba(0,0,0,0.1); width: 100%; max-width: 420px; text-align: center; }
+        
+        .auth-card h2 { color: #2E7D32; margin-bottom: 10px; font-size: 1.7rem; }
+        .auth-card p { color: #666; margin-bottom: 25px; font-size: 0.95rem; }
+        
+        input[type="text"], input[type="email"], input[type="password"] { width: 100%; padding: 12px; margin-bottom: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; }
+        input:focus { outline: none; border-color: #4CAF50; }
+        
+        .btn-submit { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); color: #333; border: none; padding: 14px; width: 100%; border-radius: 8px; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: 5px; }
+        
+        .separator { display: flex; align-items: center; text-align: center; margin: 20px 0; color: #888; font-size: 0.85rem; }
+        .separator::before, .separator::after { content: ''; flex: 1; border-bottom: 1px solid #eee; }
+        .separator::before { margin-right: 10px; }
+        .separator::after { margin-left: 10px; }
+        
+        .btn-google { background-color: white; color: #555; border: 1px solid #ddd; padding: 10px; width: 100%; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; }
+        .btn-google img { width: 18px; }
+        
+        .toggle-link { display: block; margin-top: 20px; color: #4CAF50; text-decoration: none; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
+        .error-message { color: #d32f2f; background-color: #ffebee; padding: 10px; border-radius: 6px; margin-bottom: 20px; display: none; font-size: 0.85rem; }
+        
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 9999; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #4CAF50; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-body {
-    background: linear-gradient(135deg, #191265 0%, #241c8c 100%);
-    color: #EBEBDF;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
-/* HEADER */
-header {
-    padding: 20px 40px;
-}
-
-.header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.logo {
-    font-size: 22px;
-    font-weight: bold;
-    text-decoration: none;
-    color: #EBEBDF;
-}
-
-.logo span {
-    color: #FFD700;
-}
-
-.btn-back {
-    background: rgba(255, 215, 0, 0.15);
-    color: #FFD700;
-    border: 1px solid rgba(255, 215, 0, 0.4);
-    padding: 8px 14px;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    transition: 0.3s;
-}
-
-.btn-back:hover {
-    background: #FFD700;
-    color: #191265;
-}
-
-/* MAIN LAYOUT */
-.auth-wrapper {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-}
-
-.auth-container {
-    width: 1100px;
-    max-width: 95%;
-    height: 650px;
-    background: #1f1a7a;
-    border-radius: 20px;
-    display: flex;
-    overflow: hidden;
-    box-shadow: 0 25px 60px rgba(0,0,0,0.5);
-}
-
-/* LEFT PANEL */
-.left-panel {
-    flex: 1;
-    background: linear-gradient(145deg, #191265, #2b22a3);
-    padding: 60px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    color: #EBEBDF;
-}
-
-.left-panel h1 {
-    font-size: 40px;
-    font-weight: 600;
-    line-height: 1.3;
-}
-
-.left-panel span {
-    color: #FFD700;
-}
-
-.dots {
-    display: flex;
-    gap: 10px;
-}
-
-.dots div {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: rgba(255,255,255,0.3);
-}
-
-.dots div.active {
-    background: #FFD700;
-}
-
-/* RIGHT PANEL */
-.right-panel {
-    flex: 1;
-    background: #191265;
-    padding: 60px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.auth-card {
-    width: 100%;
-}
-
-.auth-card h2 {
-    font-size: 32px;
-    color: #FFD700;
-    margin-bottom: 10px;
-}
-
-.auth-card p {
-    font-size: 14px;
-    margin-bottom: 30px;
-    opacity: 0.8;
-}
-
-/* INPUTS */
-input[type="text"],
-input[type="email"],
-input[type="password"] {
-    width: 100%;
-    padding: 14px;
-    margin-bottom: 18px;
-    background: transparent;
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 10px;
-    color: #EBEBDF;
-    font-size: 14px;
-    transition: 0.3s;
-}
-
-input::placeholder {
-    color: rgba(235,235,223,0.6);
-}
-
-input:focus {
-    outline: none;
-    border-color: #FFD700;
-    box-shadow: 0 0 12px rgba(255,215,0,0.4);
-}
-
-/* BUTTON */
-.btn-submit {
-    width: 100%;
-    padding: 14px;
-    background: #FFD700;
-    color: #191265;
-    border: none;
-    border-radius: 12px;
-    font-weight: bold;
-    font-size: 15px;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.btn-submit:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(255,215,0,0.5);
-}
-
-/* SEPARATOR */
-.separator {
-    text-align: center;
-    margin: 25px 0;
-    font-size: 13px;
-    color: rgba(235,235,223,0.6);
-    position: relative;
-}
-
-.separator::before,
-.separator::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    width: 35%;
-    height: 1px;
-    background: rgba(255,255,255,0.2);
-}
-
-.separator::before { left: 0; }
-.separator::after { right: 0; }
-
-/* GOOGLE */
-.btn-google {
-    width: 100%;
-    padding: 12px;
-    border-radius: 10px;
-    border: 1px solid rgba(255,255,255,0.2);
-    background: transparent;
-    color: #EBEBDF;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    transition: 0.3s;
-}
-
-.btn-google:hover {
-    border-color: #FFD700;
-    color: #FFD700;
-}
-
-.toggle-link {
-    display: block;
-    margin-top: 20px;
-    color: #FFD700;
-    font-size: 14px;
-    cursor: pointer;
-}
-
-/* LOADING */
-#loading-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(25,18,101,0.95);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    color: #FFD700;
-    z-index: 9999;
-}
-
-.spinner {
-    border: 4px solid rgba(255,255,255,0.2);
-    border-top: 4px solid #FFD700;
-    border-radius: 50%;
-    width: 45px;
-    height: 45px;
-    animation: spin 1s linear infinite;
-    margin-bottom: 12px;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* RESPONSIVE */
-@media (max-width: 900px) {
-    .auth-container {
-        flex-direction: column;
-        height: auto;
-    }
-    .left-panel {
-        display: none;
-    }
-}
-</style>
+        @media (max-width: 400px) {
+            .header-left { gap: 5px; }
+            .btn-back span { display: none; } /* Only show arrow on tiny screens */
+        }
+    </style>
 </head>
-
 <body>
-
-<header>
-    <div class="header-content">
-        <button id="smart-back-btn" class="btn-back">
-            <i class="fas fa-arrow-left"></i> Back
-        </button>
-        <a href="/index.html" class="logo">Cheap<span>let</span></a>
-        <div></div>
-    </div>
-</header>
-
-<div id="loading-overlay">
-    <div class="spinner"></div>
-    <div style="font-weight:bold;">Authenticating...</div>
-</div>
-
-<main class="auth-wrapper">
-<div class="auth-container">
-
-    <!-- LEFT PANEL -->
-    <div class="left-panel">
-        <h1>Buy. Sell.<br><span>Save Smart.</span></h1>
-        <div class="dots">
-            <div></div>
-            <div class="active"></div>
-            <div></div>
+    <header>
+        <div class="container header-content">
+            <div class="header-left">
+                <button id="smart-back-btn" class="btn-back">
+                    <i class="fas fa-arrow-left"></i> <span>Back</span>
+                </button>
+                <a href="/index.html" class="logo">Cheap<span>let</span></a>
+            </div>
+            <!-- Global.js target: Buttons will fit here perfectly -->
+            <div class="header-right"></div>
         </div>
+    </header>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div style="font-weight:bold;">Authenticating...</div>
     </div>
 
-    <!-- RIGHT PANEL -->
-    <div class="right-panel">
+    <main class="container auth-wrapper">
         <div class="auth-card">
             <h2 id="form-title">Welcome Back</h2>
             <p id="form-subtitle">Log in to continue shopping and selling.</p>
-
             <div id="auth-error" class="error-message"></div>
-
             <form id="auth-form">
                 <div id="register-fields" style="display:none;">
                     <input type="text" id="firstName" placeholder="First Name">
                     <input type="text" id="lastName" placeholder="Last Name">
                 </div>
-
                 <input type="email" id="email" placeholder="Email Address" required>
                 <input type="password" id="password" placeholder="Password" required>
-
                 <button type="submit" class="btn-submit" id="submit-btn">Log In</button>
             </form>
-
             <div class="separator">OR</div>
-
             <button type="button" class="btn-google" id="google-btn">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
                 Sign in with Google
             </button>
-
-            <a class="toggle-link" id="toggle-auth">
-                New to Cheaplet? Create an account.
-            </a>
+            <a class="toggle-link" id="toggle-auth">New to Cheaplet? Create an account.</a>
         </div>
-    </div>
+    </main>
 
-</div>
-</main>
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendEmailVerification, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
-<!-- YOUR ORIGINAL SCRIPT (UNCHANGED) -->
-<script type="module">
-/* YOUR ORIGINAL JS REMAINS EXACTLY THE SAME */
-</script>
+        async function main() {
+            const response = await fetch('/.netlify/functions/config');
+            const config = await response.json();
+            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+            const googleProvider = new GoogleAuthProvider();
 
+            const formTitle = document.getElementById('form-title');
+            const toggleLink = document.getElementById('toggle-auth');
+            const authForm = document.getElementById('auth-form');
+            const submitBtn = document.getElementById('submit-btn');
+            const loadingOverlay = document.getElementById('loading-overlay');
+
+            let isLoginMode = true;
+
+            // Handle Login Redirects and User Creation
+            async function handleLoginSuccess(user) {
+                loadingOverlay.style.display = 'flex';
+                try {
+                    const userDocRef = doc(db, "users", user.uid);
+                    const userDoc = await getDoc(userDocRef);
+
+                    if (userDoc.exists() && userDoc.data().role === 'banned') {
+                        await signOut(auth);
+                        alert("This account has been banned.");
+                        window.location.reload();
+                        return;
+                    }
+                    if (!userDoc.exists()) {
+                        await setDoc(userDocRef, { uid: user.uid, displayName: user.displayName, email: user.email, role: 'user' });
+                    }
+                    const urlParams = new URLSearchParams(window.location.search);
+                    window.location.href = urlParams.get('redirect') || '/index.html';
+                } catch (e) { window.location.href = '/index.html'; }
+            }
+
+            onAuthStateChanged(auth, (user) => { if (user && user.emailVerified) handleLoginSuccess(user); });
+
+            toggleLink.onclick = () => {
+                isLoginMode = !isLoginMode;
+                document.getElementById('register-fields').style.display = isLoginMode ? 'none' : 'block';
+                formTitle.textContent = isLoginMode ? 'Welcome Back' : 'Join Cheaplet';
+                submitBtn.textContent = isLoginMode ? 'Log In' : 'Register';
+                toggleLink.textContent = isLoginMode ? 'New to Cheaplet? Create an account.' : 'Already have an account? Log in.';
+            };
+
+            document.getElementById('google-btn').onclick = async () => { await signInWithPopup(auth, googleProvider); };
+
+            authForm.onsubmit = async (e) => {
+                e.preventDefault();
+                submitBtn.disabled = true;
+                const email = document.getElementById('email').value;
+                const pass = document.getElementById('password').value;
+                try {
+                    if (isLoginMode) {
+                        const cred = await signInWithEmailAndPassword(auth, email, pass);
+                        if (!cred.user.emailVerified) { await signOut(auth); alert("Please verify your email."); }
+                    } else {
+                        const cred = await createUserWithEmailAndPassword(auth, email, pass);
+                        const name = `${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`;
+                        await updateProfile(cred.user, { displayName: name });
+                        await sendEmailVerification(cred.user);
+                        await setDoc(doc(db, "users", cred.user.uid), { uid: cred.user.uid, displayName: name, email, role: 'user' });
+                        await signOut(auth);
+                        alert("Verification email sent!");
+                        location.reload();
+                    }
+                } catch (err) { alert(err.message); }
+                submitBtn.disabled = false;
+            };
+
+            document.getElementById('smart-back-btn').onclick = () => window.history.back();
+        }
+        main();
+    </script>
 </body>
 </html>
