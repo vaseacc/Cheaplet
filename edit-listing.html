@@ -6,6 +6,7 @@
     <title>Edit Listing - Cheaplet</title>
     <!-- GLOBAL BRAIN -->
     <script type="module" src="global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
@@ -19,49 +20,38 @@
         nav ul { display: flex; list-style: none; }
         nav ul li { margin-left: 20px; }
         nav ul li a { color: white; text-decoration: none; font-weight: 500; opacity: 0.9; }
-        nav ul li a:hover { opacity: 1; }
 
-        .btn { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); color: #333; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: transform 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .btn:hover { transform: translateY(-2px); }
-        .btn-secondary { background: #e0e0e0; color: #333; }
-        .btn-secondary:hover { background: #d0d0d0; }
+        .header-auth-buttons { display: flex; gap: 10px; align-items: center; }
         
         /* Form Styles */
-        .firebase-form-section { background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin: 30px auto; max-width: 600px; text-align: left; }
+        .firebase-form-section { background-color: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin: 30px auto; max-width: 600px; text-align: left; }
         .firebase-form-section h2 { text-align: center; margin-bottom: 25px; color: #333; }
         .form-field { margin-bottom: 15px; }
         .form-field label { display: block; margin-bottom: 5px; font-weight: 600; color: #333; }
         input, textarea, select { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 1rem; display: block; }
         input:focus, textarea:focus, select:focus { outline: none; border-color: #4CAF50; }
-        .form-buttons { display: flex; justify-content: center; gap: 10px; margin-top: 15px; }
-        .form-field-error { color: red; font-size: 0.85rem; text-align: left; margin-top: 5px; }
+        
+        /* FIX: BUTTON CONTAINER TO PREVENT OVERLAP */
+        .form-buttons { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+        .form-buttons .btn { flex: 1; min-width: 120px; }
         
         /* TAG SYSTEM STYLES */
         .tag-container { border: 2px solid #ddd; border-radius: 6px; padding: 10px; background: #fff; display: flex; flex-wrap: wrap; gap: 8px; position: relative; }
         .tag-container:focus-within { border-color: #4CAF50; }
         .tag-chip { background-color: #e8f5e9; color: #2E7D32; padding: 5px 10px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 5px; }
-        .tag-close { cursor: pointer; font-weight: bold; font-size: 1.1rem; line-height: 1; }
-        .tag-close:hover { color: #d32f2f; }
+        .tag-close { cursor: pointer; font-weight: bold; }
         #tag-input { border: none; outline: none; padding: 5px; flex-grow: 1; min-width: 120px; }
+        .suggestions-box { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ddd; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .suggestion-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
 
         /* Image Uploader */
-        #image-uploader { margin: 10px auto; max-width: 100%; }
         .image-preview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
         .image-preview-wrapper { position: relative; width: 80px; height: 80px; }
         .image-preview { width: 100%; height: 100%; border-radius: 8px; object-fit: cover; border: 1px solid #ddd; }
         .remove-image-btn { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; background-color: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; }
         #add-photo-label { width: 80px; height: 80px; border: 2px dashed #ccc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #777; }
-        #add-photo-label:hover { background-color: #f8f9fa; border-color: #4CAF50; }
-        #listing-image-input { display: none; }
 
-        .header-auth-buttons { display: flex; gap: 10px; align-items: center; }
         .info-message { text-align: center; padding: 50px; font-size: 1.2rem; color: #777; }
-
-        @media (min-width: 768px) {
-            .container { padding: 0 20px; }
-            .header-content { flex-wrap: nowrap; }
-            nav { display: block; }
-        }
         @media (max-width: 767px) { nav { display: none; } }
     </style>
 </head>
@@ -69,14 +59,7 @@
     <header>
         <div class="container header-content">
             <a href="/index.html" class="logo" id="logo-link">Cheap<span>let</span></a>
-            <nav>
-                <ul>
-                    <li><a href="/index.html">Home</a></li>
-                    <li><a href="/my-listings.html">My Listings</a></li>
-                    <li><a href="/messages.html">Messages</a></li>
-                </ul>
-            </nav>
-            <!-- Global.js injects profile here -->
+            <nav><ul></ul></nav>
             <div class="header-auth-buttons"></div>
         </div>
     </header>
@@ -87,320 +70,241 @@
         </div>
 
         <section id="edit-form-container" class="firebase-form-section" style="display: none;">
-            <h2>Edit Your Listing</h2>
+            <h2 data-i18n="edit_listing_title">Edit Your Listing</h2>
             
             <div class="form-field">
-                <label>Title</label>
+                <label data-i18n="label_title">Title</label>
                 <input type="text" id="listing-title" required>
             </div>
 
             <div class="form-field">
-                <label>Description</label>
+                <label data-i18n="label_description">Description</label>
                 <textarea id="listing-description" required></textarea>
             </div>
 
             <div class="form-field">
-                <label>Price</label>
-                <input type="number" id="listing-price" min="0" step="0.01" required>
+                <label data-i18n="label_price">Price ($) - Max $1200</label>
+                <input type="number" id="listing-price" min="0" max="1200" step="0.01" required>
             </div>
 
-            <!-- REPLACED CATEGORY WITH TAGS & CONDITION -->
             <div class="form-field">
-                <label>Condition</label>
+                <label data-i18n="label_condition">Condition</label>
                 <select id="listing-condition" required>
-                    <option value="">Select Condition</option>
-                    <option value="New">New</option>
-                    <option value="Like New">Like New</option>
-                    <option value="Good">Good</option>
-                    <option value="Fair">Fair</option>
+                    <option value="" data-i18n="opt_select">Select Condition</option>
+                    <option value="New" data-i18n="opt_new">New</option>
+                    <option value="Like New" data-i18n="opt_like_new">Like New</option>
+                    <option value="Good" data-i18n="opt_good">Good</option>
+                    <option value="Fair" data-i18n="opt_fair">Fair</option>
+                </select>
+            </div>
+
+            <!-- ADDED: DIGITAL ACCESS CODE -->
+            <div class="form-field">
+                <label data-i18n="label_digital_code">Digital Access Code</label>
+                <select id="listing-digital-code">
+                    <option value="Not applicable" data-i18n="opt_na">Not applicable</option>
+                    <option value="Available / Unused" data-i18n="opt_available">Available / Unused</option>
+                    <option value="Already used" data-i18n="opt_used">Already used</option>
                 </select>
             </div>
 
             <div class="form-field">
-                <label>Tags</label>
+                <label data-i18n="label_tags">Tags</label>
                 <div class="tag-container" id="tag-container">
-                    <div id="selected-tags"></div>
-                    <input type="text" id="tag-input" placeholder="Type and press Enter...">
+                    <div id="selected-tags" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                    <input type="text" id="tag-input" autocomplete="off" placeholder="Type and press Enter...">
+                    <div class="suggestions-box" id="suggestions-box"></div>
                 </div>
             </div>
 
+            <!-- UPDATED: RESTRICTED LOCATION SELECT -->
             <div class="form-field">
-                <label>Location</label>
-                <input type="text" id="listing-location" required>
+                <label data-i18n="label_location">Campus Location (Montreal Only)</label>
+                <select id="listing-location" required>
+                    <option value="" data-i18n="opt_select_campus">Select a Campus</option>
+                    <optgroup label="Cégeps" data-i18n="opt_cegeps">
+                        <option value="Dawson College">Dawson College</option>
+                        <option value="Vanier College">Vanier College</option>
+                        <option value="John Abbott College">John Abbott College</option>
+                        <option value="Cégep de Maisonneuve">Cégep de Maisonneuve</option>
+                        <option value="Cégep du Vieux Montréal">Cégep du Vieux Montréal</option>
+                        <option value="Cégep Ahuntsic">Cégep Ahuntsic</option>
+                    </optgroup>
+                    <optgroup label="Universities" data-i18n="opt_universities">
+                        <option value="Concordia University">Concordia University</option>
+                        <option value="McGill University">McGill University</option>
+                        <option value="Université de Montréal">Université de Montréal</option>
+                    </optgroup>
+                </select>
             </div>
             
             <div class="form-field">
-                <label>Images (1-5 Required)</label>
+                <label data-i18n="label_photos">Images (1-5 Required)</label>
                 <div id="image-uploader">
-                    <div class="image-preview-grid">
-                        <div id="image-preview-container"></div>
-                        <label for="listing-image-input" id="add-photo-label">
-                            <span style="font-size: 24px;">+</span><span style="font-size: 10px;">Add</span>
-                        </label>
-                    </div>
+                    <div class="image-preview-grid" id="image-preview-container"></div>
+                    <label for="listing-image-input" id="add-photo-label" style="margin-top:10px;">
+                        <i class="fas fa-camera"></i>
+                        <span style="font-size: 10px;" data-i18n="btn_add_photo">Add Photo</span>
+                    </label>
                     <input type="file" id="listing-image-input" accept="image/*" style="display:none;">
                 </div>
-                <p id="image-error" class="form-field-error"></p>
             </div>
             
             <div class="form-buttons">
-                <button class="btn" id="updateListingBtn">Save Changes</button>
-                <button class="btn btn-secondary" id="cancelEditBtn">Cancel</button>
+                <button class="btn" id="updateListingBtn" data-i18n="btn_save_changes">Save Changes</button>
+                <button class="btn btn-secondary" id="cancelEditBtn" data-i18n="btn_cancel">Cancel</button>
             </div>
         </section>
     </main>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, updateDoc, setDoc, increment } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc, setDoc, increment, query, where, collection, getDocs, limit } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
-            const CLOUDINARY_CLOUD_NAME = config.cloudinary.cloudName;
-            const CLOUDINARY_UPLOAD_PRESET = config.cloudinary.uploadPreset;
-            const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`;
-
-            const app = initializeApp(config.firebaseConfig);
+            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            // UI Elements
+            const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`;
+            const UPLOAD_PRESET = config.cloudinary.uploadPreset;
+
             const infoContainer = document.getElementById('info-container');
             const editFormContainer = document.getElementById('edit-form-container');
-            const listingTitleInput = document.getElementById('listing-title');
-            const listingDescriptionInput = document.getElementById('listing-description');
-            const listingPriceInput = document.getElementById('listing-price');
-            const listingConditionSelect = document.getElementById('listing-condition');
-            const listingLocationInput = document.getElementById('listing-location');
-            const listingImageInput = document.getElementById('listing-image-input');
-            const imagePreviewContainer = document.getElementById('image-preview-container');
-            const addPhotoLabel = document.getElementById('add-photo-label');
-            const updateListingBtn = document.getElementById('updateListingBtn');
-            const cancelEditBtn = document.getElementById('cancelEditBtn');
             const tagInput = document.getElementById('tag-input');
             const selectedTagsContainer = document.getElementById('selected-tags');
+            const suggestionsBox = document.getElementById('suggestions-box');
+            const previewContainer = document.getElementById('image-preview-container');
 
             let existingImageUrls = [];
             let newImageFiles = [];
             let tags = [];
-            const maxFiles = 5;
 
-            // Nav
-            document.getElementById('logo-link').addEventListener('click', () => { window.location.href = '/index.html'; });
-            cancelEditBtn.addEventListener('click', () => { window.location.href = '/my-listings.html'; });
-
-            // --- TAGS LOGIC ---
+            // --- TAG SYSTEM LOGIC ---
             function renderTags() {
                 selectedTagsContainer.innerHTML = '';
                 tags.forEach((tag, index) => {
                     const chip = document.createElement('div');
                     chip.className = 'tag-chip';
-                    chip.innerHTML = `<span>${tag}</span><span class="tag-close">&times;</span>`;
-                    chip.querySelector('.tag-close').onclick = () => {
-                        tags.splice(index, 1);
-                        renderTags();
-                    };
+                    chip.innerHTML = `${tag} <span class="tag-close">&times;</span>`;
+                    chip.querySelector('.tag-close').onclick = () => { tags.splice(index, 1); renderTags(); };
                     selectedTagsContainer.appendChild(chip);
                 });
             }
-            
+
             function addTag(tagName) {
-                const cleanedTag = tagName.trim();
-                if (cleanedTag && !tags.some(t => t.toLowerCase() === cleanedTag.toLowerCase())) {
-                    const displayTag = cleanedTag.charAt(0).toUpperCase() + cleanedTag.slice(1);
-                    tags.push(displayTag);
-                    renderTags();
-                }
-                tagInput.value = '';
+                const cleaned = tagName.trim();
+                if (cleaned && !tags.includes(cleaned)) { tags.push(cleaned); renderTags(); }
+                tagInput.value = ''; suggestionsBox.style.display = 'none';
             }
 
-            tagInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ',') {
-                    e.preventDefault();
-                    addTag(tagInput.value);
+            tagInput.oninput = async (e) => {
+                const val = e.target.value.trim().toLowerCase();
+                if (val.length < 1) { suggestionsBox.style.display = 'none'; return; }
+                const q = query(collection(db, "global_tags"), where("tag_lowercase", ">=", val), where("tag_lowercase", "<=", val + "\uf8ff"), limit(5));
+                const snap = await getDocs(q);
+                suggestionsBox.innerHTML = '';
+                if (!snap.empty) {
+                    suggestionsBox.style.display = 'block';
+                    snap.forEach(doc => {
+                        const d = doc.data();
+                        const div = document.createElement('div');
+                        div.className = 'suggestion-item';
+                        div.innerHTML = `<span>${d.tag}</span><span class="suggestion-count">${d.count || 0}</span>`;
+                        div.onclick = () => addTag(d.tag);
+                        suggestionsBox.appendChild(div);
+                    });
+                } else {
+                    suggestionsBox.style.display = 'block';
+                    suggestionsBox.innerHTML = `<div class="suggestion-item" onclick="addTag('${tagInput.value}')">Create: "${tagInput.value}"</div>`;
                 }
-            });
+            };
 
             // --- IMAGE LOGIC ---
             function renderPreviews() {
-                imagePreviewContainer.innerHTML = '';
-                const allImages = [...existingImageUrls, ...newImageFiles];
-                
-                allImages.forEach((image, index) => {
+                previewContainer.innerHTML = '';
+                const all = [...existingImageUrls, ...newImageFiles];
+                all.forEach((img, index) => {
                     const wrapper = document.createElement('div');
-                    wrapper.classList.add('image-preview-wrapper');
-                    const img = document.createElement('img');
-                    img.classList.add('image-preview');
-
-                    if (typeof image === 'string') {
-                        img.src = image;
-                    } else {
-                        img.src = URL.createObjectURL(image);
-                    }
-                    
-                    const removeBtn = document.createElement('button');
-                    removeBtn.classList.add('remove-image-btn');
-                    removeBtn.textContent = 'X';
-                    removeBtn.type = 'button';
-                    removeBtn.onclick = () => removeImage(index);
-                    
-                    wrapper.appendChild(img);
-                    wrapper.appendChild(removeBtn);
-                    imagePreviewContainer.appendChild(wrapper);
-                });
-                
-                addPhotoLabel.style.display = allImages.length < maxFiles ? 'flex' : 'none';
-            }
-
-            function removeImage(index) {
-                const allImages = [...existingImageUrls, ...newImageFiles];
-                const itemToRemove = allImages[index];
-                
-                if (typeof itemToRemove === 'string') {
-                    existingImageUrls = existingImageUrls.filter(url => url !== itemToRemove);
-                } else {
-                    newImageFiles = newImageFiles.filter(file => file !== itemToRemove);
-                }
-                renderPreviews();
-            }
-
-            listingImageInput.addEventListener('change', (e) => {
-                const newFile = e.target.files[0];
-                const totalImages = existingImageUrls.length + newImageFiles.length;
-                if (newFile && totalImages < maxFiles) {
-                    newImageFiles.push(newFile);
-                    renderPreviews();
-                }
-                e.target.value = '';
-            });
-
-            // --- LOAD DATA ---
-            async function fetchAndPopulateListing(listingId, userId) {
-                try {
-                    const docRef = doc(db, 'listings', listingId);
-                    const docSnap = await getDoc(docRef);
-
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        
-                        if (data.posterUid !== userId) {
-                            // Check if Admin? Global.js logic usually handles Auth, but here we check ownership
-                            // We can let admins pass if we fetch the role, but for now stick to owner.
-                            // If you want admin edit, we'd need to fetch user role here.
-                            infoContainer.innerHTML = `<p class="info-message">Error: You do not have permission to edit this listing.</p>`;
-                            return;
-                        }
-
-                        // Populate Fields
-                        listingTitleInput.value = data.title;
-                        listingDescriptionInput.value = data.description;
-                        listingPriceInput.value = data.price;
-                        listingLocationInput.value = data.location;
-                        if(data.condition) listingConditionSelect.value = data.condition;
-                        
-                        // Populate Tags
-                        if (data.tags && Array.isArray(data.tags)) {
-                            tags = data.tags;
-                            renderTags();
-                        }
-
-                        // Populate Images
-                        existingImageUrls = data.imageUrls || (data.imageUrl ? [data.imageUrl] : []);
+                    wrapper.className = 'image-preview-wrapper';
+                    const el = document.createElement('img');
+                    el.className = 'image-preview';
+                    el.src = (typeof img === 'string') ? img : URL.createObjectURL(img);
+                    const btn = document.createElement('button');
+                    btn.className = 'remove-image-btn';
+                    btn.innerHTML = '&times;';
+                    btn.onclick = () => {
+                        if (typeof img === 'string') existingImageUrls.splice(existingImageUrls.indexOf(img), 1);
+                        else newImageFiles.splice(newImageFiles.indexOf(img), 1);
                         renderPreviews();
+                    };
+                    wrapper.appendChild(el); wrapper.appendChild(btn);
+                    previewContainer.appendChild(wrapper);
+                });
+                document.getElementById('add-photo-label').style.display = all.length < 5 ? 'flex' : 'none';
+            }
 
-                        infoContainer.style.display = 'none';
-                        editFormContainer.style.display = 'block';
-                    } else {
-                        infoContainer.innerHTML = `<p class="info-message">Sorry, this listing could not be found.</p>`;
-                    }
-                } catch (error) {
-                    console.error("Error fetching listing for edit:", error);
-                    infoContainer.innerHTML = `<p class="info-message">An error occurred while loading the listing.</p>`;
+            document.getElementById('listing-image-input').onchange = (e) => {
+                if (e.target.files[0]) { newImageFiles.push(e.target.files[0]); renderPreviews(); }
+            };
+
+            // --- DATA LOAD ---
+            async function fetchAndPopulate(listingId, userId) {
+                const snap = await getDoc(doc(db, 'listings', listingId));
+                if (snap.exists()) {
+                    const d = snap.data();
+                    if (d.posterUid !== userId) { infoContainer.innerHTML = "<p>Unauthorized</p>"; return; }
+                    document.getElementById('listing-title').value = d.title;
+                    document.getElementById('listing-description').value = d.description;
+                    document.getElementById('listing-price').value = d.price;
+                    document.getElementById('listing-condition').value = d.condition || "";
+                    document.getElementById('listing-digital-code').value = d.digitalCode || "Not applicable";
+                    document.getElementById('listing-location').value = d.location || "";
+                    tags = d.tags || [];
+                    existingImageUrls = d.imageUrls || [];
+                    renderTags(); renderPreviews();
+                    infoContainer.style.display = 'none'; editFormContainer.style.display = 'block';
                 }
             }
-            
-            // --- SAVE CHANGES ---
-            updateListingBtn.addEventListener('click', async () => {
-                const totalImages = existingImageUrls.length + newImageFiles.length;
-                if (totalImages === 0) {
-                    document.getElementById('image-error').textContent = 'At least one image is required.';
-                    return;
-                }
-
-                const params = new URLSearchParams(window.location.search);
-                const listingId = params.get('id');
-                if (!listingId) return;
-
-                updateListingBtn.disabled = true;
-                updateListingBtn.textContent = "Saving...";
-
-                try {
-                    // Upload New Images
-                    const uploadPromises = newImageFiles.map(file => {
-                        const formData = new FormData();
-                        formData.append('file', file);
-                        formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
-                        return fetch(CLOUDINARY_UPLOAD_URL, { method: 'POST', body: formData }).then(res => res.json());
-                    });
-
-                    const uploadedResults = await Promise.all(uploadPromises);
-                    const newImageUrls = uploadedResults.map(result => result.secure_url);
-                    const finalImageUrls = [...existingImageUrls, ...newImageUrls];
-
-                    // Update Global Tags Collection (Crowdsourcing new tags)
-                    const tagPromises = tags.map(t => {
-                        const safeId = t.toLowerCase().replace(/[^a-z0-9]/g, "_"); 
-                        // Update global tags, incrementing count if they exist, or creating if not
-                        // Note: To perfectly sync counts on *edits* (removing tags) is complex.
-                        // Here we just ensure any *new* tags added are registered in global list.
-                        return setDoc(doc(db, "global_tags", safeId), { 
-                            tag: t, 
-                            tag_lowercase: t.toLowerCase(),
-                            count: increment(1) // Simple increment, acceptable for MVP
-                        }, { merge: true });
-                    });
-                    await Promise.all(tagPromises);
-
-                    // Update Listing Document
-                    const docRef = doc(db, 'listings', listingId);
-                    await updateDoc(docRef, {
-                        title: listingTitleInput.value.trim(),
-                        description: listingDescriptionInput.value.trim(),
-                        price: parseFloat(listingPriceInput.value),
-                        condition: listingConditionSelect.value,
-                        tags: tags,
-                        location: listingLocationInput.value.trim(),
-                        imageUrls: finalImageUrls
-                    });
-
-                    alert("Listing updated successfully!");
-                    window.location.href = `/listing.html?id=${listingId}`;
-
-                } catch (error) {
-                    console.error("Error updating listing:", error);
-                    alert("Failed to update listing. Please try again.");
-                } finally {
-                    updateListingBtn.disabled = false;
-                    updateListingBtn.textContent = "Save Changes";
-                }
-            });
 
             onAuthStateChanged(auth, user => {
-                if (user && user.emailVerified) {
-                    const params = new URLSearchParams(window.location.search);
-                    const listingId = params.get('id');
-                    if (listingId) {
-                        fetchAndPopulateListing(listingId, user.uid);
-                    } else {
-                        infoContainer.innerHTML = `<p class="info-message">No listing specified to edit.</p>`;
-                    }
-                } else {
-                    // Not logged in? Global.js handles header, but we need to block content
-                    window.location.href = '/LoginInToCheaplet.html';
-                }
+                const id = new URLSearchParams(window.location.search).get('id');
+                if (user && id) fetchAndPopulate(id, user.uid);
+                else window.location.href = '/LoginInToCheaplet.html';
             });
+
+            // --- SAVE ---
+            document.getElementById('updateListingBtn').onclick = async () => {
+                const price = parseFloat(document.getElementById('listing-price').value);
+                if (price > 1200) { alert("Max price is $1200."); return; }
+                
+                const btn = document.getElementById('updateListingBtn');
+                btn.disabled = true; btn.textContent = "Saving...";
+
+                const uploaded = [];
+                for (const f of newImageFiles) {
+                    const fd = new FormData(); fd.append('file', f); fd.append('upload_preset', UPLOAD_PRESET);
+                    const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd }).then(r => r.json());
+                    uploaded.push(res.secure_url);
+                }
+
+                await updateDoc(doc(db, 'listings', new URLSearchParams(window.location.search).get('id')), {
+                    title: document.getElementById('listing-title').value.trim(),
+                    description: document.getElementById('listing-description').value.trim(),
+                    price: price,
+                    condition: document.getElementById('listing-condition').value,
+                    digitalCode: document.getElementById('listing-digital-code').value,
+                    location: document.getElementById('listing-location').value,
+                    tags: tags,
+                    imageUrls: [...existingImageUrls, ...uploaded]
+                });
+
+                alert("Updated!");
+                window.location.href = `/listing.html?id=${new URLSearchParams(window.location.search).get('id')}`;
+            };
         }
         main();
     </script>
