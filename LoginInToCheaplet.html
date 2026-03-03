@@ -25,18 +25,19 @@
         input[type="text"], input[type="email"], input[type="password"] { width: 100%; padding: 12px; margin-bottom: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; }
         input:focus { outline: none; border-color: #4CAF50; }
         .btn-submit { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); color: #333; border: none; padding: 14px; width: 100%; border-radius: 8px; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: 5px; }
-        .separator { display: flex; align-items: center; text-align: center; margin: 20px 0; color: #888; font-size: 0.85rem; }
+        .separator { display: flex; align-items: center; text-align: center; margin: 15px 0; color: #888; font-size: 0.85rem; }
         .separator::before, .separator::after { content: ''; flex: 1; border-bottom: 1px solid #eee; }
         .separator::before { margin-right: 10px; }
         .separator::after { margin-left: 10px; }
-        .btn-google { background-color: white; color: #555; border: 1px solid #ddd; padding: 10px; width: 100%; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; }
-        .btn-google img { width: 18px; }
+        
+        .btn-google, .btn-microsoft { background-color: white; color: #555; border: 1px solid #ddd; padding: 10px; width: 100%; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; margin-bottom: 10px; }
+        .btn-google img, .btn-microsoft img { width: 18px; }
+        
         .toggle-link { display: block; margin-top: 20px; color: #4CAF50; text-decoration: none; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
-        .error-message { color: #d32f2f; background-color: #ffebee; padding: 10px; border-radius: 4px; margin-bottom: 20px; display: none; font-size: 0.85rem; }
+        .error-message { color: #d32f2f; background-color: #ffebee; padding: 10px; border-radius: 6px; margin-bottom: 20px; display: none; font-size: 0.85rem; }
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 9999; }
         .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #4CAF50; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 10px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        @media (max-width: 400px) { .header-left { gap: 5px; } .btn-back span { display: none; } }
     </style>
 </head>
 <body>
@@ -72,17 +73,24 @@
                 <button type="submit" class="btn-submit" id="submit-btn">Log In</button>
             </form>
             <div class="separator">OR</div>
+            
             <button type="button" class="btn-google" id="google-btn">
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
-                Sign in with Google
+                Continue with Google
             </button>
+
+            <button type="button" class="btn-microsoft" id="microsoft-btn">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="MS">
+                Continue with Microsoft
+            </button>
+
             <a class="toggle-link" id="toggle-auth">New to Cheaplet? Create an account.</a>
         </div>
     </main>
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendEmailVerification, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendEmailVerification, onAuthStateChanged, GoogleAuthProvider, OAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
@@ -91,7 +99,9 @@
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
+            
             const googleProvider = new GoogleAuthProvider();
+            const msProvider = new OAuthProvider('microsoft.com');
 
             const formTitle = document.getElementById('form-title');
             const toggleLink = document.getElementById('toggle-auth');
@@ -100,15 +110,35 @@
             const loadingOverlay = document.getElementById('loading-overlay');
 
             let isLoginMode = true;
-            let isRegistering = false; // --- NEW FLAG ---
+            let isRegistering = false;
 
-            const schoolDomains = ["@dawsoncollege.qc.ca", "@vaniercollege.qc.ca", "@johnabbott.qc.ca", "@cegepmontpetit.ca", "@cegep-ste-foy.qc.ca", "@cvm.qc.ca", "@concordia.ca", "@mcgill.ca", "@umontreal.ca", "@uqam.ca", "@hec.ca", "@polymtl.ca"];
+            const schoolDomains = [
+                "@cegepbc.ca", "@cegepba.qc.ca", "@bdeb.qc.ca", "@crcmail.net", "@cegep-chicoutimi.qc.ca",
+                "@cegepdrummond.ca", "@cegepmontpetit.ca", "@cegepstfe.ca", "@cegep-ste-foy.qc.ca",
+                "@cegepgarneau.ca", "@cegepgim.ca", "@cgodin.qc.ca", "@cegepgranby.qc.ca",
+                "@cegep-heritage.qc.ca", "@cegepsth.qc.ca", "@cstjean.qc.ca", "@cstj.qc.ca",
+                "@johnabbott.qc.ca", "@cegepjonquiere.ca", "@cegep-lanaudiere.qc.ca",
+                "@cegeplapocatiere.qc.ca", "@cegepsl.qc.ca", "@cll.qc.ca", "@cegeplimoilou.ca",
+                "@clg.qc.ca", "@cmaisonneuve.qc.ca", "@collegemv.qc.ca", "@cegep-matane.qc.ca",
+                "@cmontmorency.qc.ca", "@cegepoutaouais.qc.ca", "@cegep-rimouski.qc.ca",
+                "@cegeprdl.ca", "@crosemont.qc.ca", "@cegep-sept-iles.qc.ca", "@cegepshawinigan.qc.ca",
+                "@cegepsherbrooke.qc.ca", "@cegepthetford.ca", "@cegeptr.qc.ca", "@colval.qc.ca",
+                "@vaniercollege.qc.ca", "@cegepvicto.ca", "@cvm.qc.ca", "@dawsoncollege.qc.ca",
+                "@concordia.ca", "@mcgill.ca", "@umontreal.ca", "@uqam.ca"
+            ];
 
             async function handleLoginSuccess(user) {
                 loadingOverlay.style.display = 'flex';
                 try {
                     const userDocRef = doc(db, "users", user.uid);
                     const userDoc = await getDoc(userDocRef);
+
+                    if (userDoc.exists() && userDoc.data().role === 'banned') {
+                        await signOut(auth);
+                        alert("Account banned.");
+                        window.location.reload();
+                        return;
+                    }
 
                     if (!userDoc.exists()) {
                         const email = user.email.toLowerCase();
@@ -120,13 +150,9 @@
             }
 
             onAuthStateChanged(auth, async (user) => { 
-                if (user && !isRegistering) { // --- ONLY RUN IF NOT REGISTERING ---
-                    if (user.emailVerified) {
-                        handleLoginSuccess(user);
-                    } else {
-                        await signOut(auth);
-                        loadingOverlay.style.display = 'none';
-                    }
+                if (user && !isRegistering) {
+                    if (user.emailVerified) handleLoginSuccess(user);
+                    else { await signOut(auth); loadingOverlay.style.display = 'none'; }
                 }
             });
 
@@ -135,10 +161,10 @@
                 document.getElementById('register-fields').style.display = isLoginMode ? 'none' : 'block';
                 formTitle.textContent = isLoginMode ? 'Welcome Back' : 'Join Cheaplet';
                 submitBtn.textContent = isLoginMode ? 'Log In' : 'Register';
-                toggleLink.textContent = isLoginMode ? 'New to Cheaplet? Create an account.' : 'Already have an account? Log in.';
             };
 
-            document.getElementById('google-btn').onclick = async () => { await signInWithPopup(auth, googleProvider); };
+            document.getElementById('google-btn').onclick = async () => { try { await signInWithPopup(auth, googleProvider); } catch (e) { alert(e.message); } };
+            document.getElementById('microsoft-btn').onclick = async () => { try { await signInWithPopup(auth, msProvider); } catch (e) { alert(e.message); } };
 
             authForm.onsubmit = async (e) => {
                 e.preventDefault();
@@ -149,39 +175,21 @@
                 try {
                     if (isLoginMode) {
                         const cred = await signInWithEmailAndPassword(auth, email, pass);
-                        if (!cred.user.emailVerified) {
-                            await signOut(auth); 
-                            alert("Please verify your email address.");
-                        }
+                        if (!cred.user.emailVerified) { await signOut(auth); alert("Verify your email first!"); }
                     } else {
-                        isRegistering = true; // --- SET FLAG TO PREVENT SIGN OUT ---
-                        
+                        isRegistering = true;
                         const cred = await createUserWithEmailAndPassword(auth, email, pass);
                         const name = `${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`;
                         const isStudent = schoolDomains.some(domain => email.endsWith(domain));
-
                         await updateProfile(cred.user, { displayName: name });
-                        
-                        // Create User Doc while still logged in
-                        await setDoc(doc(db, "users", cred.user.uid), { 
-                            uid: cred.user.uid, 
-                            displayName: name, 
-                            email: email, 
-                            role: 'user', 
-                            isStudent: isStudent 
-                        });
-
+                        await setDoc(doc(db, "users", cred.user.uid), { uid: cred.user.uid, displayName: name, email: email, role: 'user', isStudent: isStudent });
                         await sendEmailVerification(cred.user);
                         await signOut(auth);
-                        
-                        isRegistering = false; // --- RESET FLAG ---
-                        alert("Verification email sent! Check your inbox.");
+                        isRegistering = false;
+                        alert("Verification email sent! (Check Spam)");
                         location.reload();
                     }
-                } catch (err) { 
-                    alert(err.message); 
-                    isRegistering = false; 
-                }
+                } catch (err) { alert(err.message); isRegistering = false; }
                 submitBtn.disabled = false;
             };
 
