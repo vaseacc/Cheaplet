@@ -54,7 +54,7 @@
 
     <div id="loading-overlay">
         <div class="spinner"></div>
-        <div style="font-weight:bold;">Authenticating...</div>
+        <div style="font-weight:bold;">Verifying...</div>
     </div>
 
     <main class="container auth-wrapper">
@@ -108,6 +108,7 @@
                 try {
                     const userDocRef = doc(db, "users", user.uid);
                     const userDoc = await getDoc(userDocRef);
+
                     if (!userDoc.exists()) {
                         const email = user.email.toLowerCase();
                         const isStudent = schoolDomains.some(domain => email.endsWith(domain));
@@ -117,7 +118,18 @@
                 } catch (e) { window.location.href = '/index.html'; }
             }
 
-            onAuthStateChanged(auth, (user) => { if (user && user.emailVerified) handleLoginSuccess(user); });
+            // --- STRICT VERIFICATION LISTENER ---
+            onAuthStateChanged(auth, async (user) => { 
+                if (user) {
+                    if (user.emailVerified) {
+                        handleLoginSuccess(user);
+                    } else {
+                        // KICK THEM OUT if they slip through the sign-in logic
+                        await signOut(auth);
+                        loadingOverlay.style.display = 'none';
+                    }
+                }
+            });
 
             toggleLink.onclick = () => {
                 isLoginMode = !isLoginMode;
@@ -138,27 +150,20 @@
                 try {
                     if (isLoginMode) {
                         const cred = await signInWithEmailAndPassword(auth, email, pass);
+                        // --- ENFORCEMENT ON SIGN IN ---
                         if (!cred.user.emailVerified) {
-                            await sendEmailVerification(cred.user); // Re-send if they try to log in unverified
                             await signOut(auth); 
-                            alert("Your email is not verified. We just sent a new link to your inbox. Please verify it before logging in.");
+                            alert("Please verify your email address before logging in. Check your inbox.");
                         }
                     } else {
-                        // REGISTRATION BLOCK
                         const cred = await createUserWithEmailAndPassword(auth, email, pass);
                         const name = `${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`;
                         const isStudent = schoolDomains.some(domain => email.endsWith(domain));
-
                         await updateProfile(cred.user, { displayName: name });
-                        
-                        // ENSURE THIS FINISHES BEFORE SIGN OUT
                         await sendEmailVerification(cred.user);
-                        console.log("Verification email triggered.");
-
                         await setDoc(doc(db, "users", cred.user.uid), { uid: cred.user.uid, displayName: name, email: email, role: 'user', isStudent: isStudent });
-
                         await signOut(auth);
-                        alert("Account created! A verification email has been sent to " + email + ". Please check your inbox and Spam folder.");
+                        alert("Verification email sent! Verify it then log in.");
                         location.reload();
                     }
                 } catch (err) { alert(err.message); }
