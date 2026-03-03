@@ -27,19 +27,22 @@
         .form-buttons { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
         .form-buttons .btn { flex: 1; min-width: 120px; }
 
-        /* TAG SYSTEM */
+        /* TAG SYSTEM STYLES */
         .tag-container { border: 2px solid #ddd; border-radius: 6px; padding: 10px; margin-bottom: 15px; background: #fff; display: flex; flex-wrap: wrap; gap: 8px; position: relative; }
+        .tag-container:focus-within { border-color: #4CAF50; }
         .tag-chip { background-color: #e8f5e9; color: #2E7D32; padding: 5px 10px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 5px; }
         .tag-close { cursor: pointer; font-weight: bold; }
         #tag-input { border: none; outline: none; padding: 5px; flex-grow: 1; min-width: 120px; margin-bottom: 0; }
-        .suggestions-box { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ddd; border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto; z-index: 10; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .suggestion-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        
+        .suggestions-box { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ddd; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .suggestion-item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
+        .suggestion-item:hover { background: #f1f8e9; }
+        .suggestion-count { font-size: 0.75rem; color: #888; background: #f0f0f0; padding: 2px 6px; border-radius: 10px; }
 
-        /* IMAGE PREVIEW FIX */
         .image-preview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; justify-content: flex-start; }
         .image-preview-wrapper { position: relative; width: 80px; height: 80px; }
         .image-preview { width: 100%; height: 100%; border-radius: 8px; object-fit: cover; border: 1px solid #ddd; }
-        .remove-image-btn { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+        .remove-image-btn { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         #add-photo-label { width: 80px; height: 80px; border: 2px dashed #ccc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #777; }
 
         #page-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: flex; justify-content: center; align-items: center; }
@@ -72,10 +75,11 @@
                 <label>Price ($) - Max $1200</label>
                 <input type="number" id="listing-price" min="0" max="1200" step="0.01" required>
                 
-                <label>Tags</label>
+                <!-- UPDATED TAG SYSTEM UI -->
+                <label>Tags (Search or Create)</label>
                 <div class="tag-container" id="tag-container">
-                    <div id="selected-tags"></div>
-                    <input type="text" id="tag-input" autocomplete="off">
+                    <div id="selected-tags" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                    <input type="text" id="tag-input" autocomplete="off" placeholder="Type and press Enter...">
                     <div class="suggestions-box" id="suggestions-box"></div>
                 </div>
 
@@ -115,9 +119,7 @@
 
                 <label>Photos (Max 5)</label>
                 <div id="image-uploader">
-                    <div class="image-preview-grid" id="image-preview-container">
-                        <!-- Previews will appear here -->
-                    </div>
+                    <div class="image-preview-grid" id="image-preview-container"></div>
                     <label for="listing-image-input" id="add-photo-label" style="margin-top:10px;">
                         <i class="fas fa-camera"></i>
                         <span style="font-size: 12px;">Add Photo</span>
@@ -136,7 +138,7 @@
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, getDoc, doc, setDoc, increment, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, setDoc, increment, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -150,17 +152,67 @@
 
             let currentUser = null;
             let selectedFiles = [];
+            let tags = [];
 
             onAuthStateChanged(auth, async (user) => {
-                if (user && user.emailVerified) {
-                    currentUser = user;
-                    document.getElementById('page-loader').style.display = 'none';
-                } else {
-                    window.location.href = '/LoginInToCheaplet.html';
-                }
+                if (user && user.emailVerified) { currentUser = user; document.getElementById('page-loader').style.display = 'none'; }
+                else { window.location.href = '/LoginInToCheaplet.html'; }
             });
 
-            // --- IMAGE PREVIEW LOGIC (FIXED) ---
+            // --- TAGS LOGIC ---
+            const tagInput = document.getElementById('tag-input');
+            const selectedTagsContainer = document.getElementById('selected-tags');
+            const suggestionsBox = document.getElementById('suggestions-box');
+
+            function renderTags() {
+                selectedTagsContainer.innerHTML = '';
+                tags.forEach((tag, index) => {
+                    const chip = document.createElement('div');
+                    chip.className = 'tag-chip';
+                    chip.innerHTML = `${tag} <span class="tag-close" onclick="removeTag(${index})">&times;</span>`;
+                    selectedTagsContainer.appendChild(chip);
+                });
+            }
+
+            window.removeTag = (index) => { tags.splice(index, 1); renderTags(); };
+
+            function addTag(tagName) {
+                const cleaned = tagName.trim();
+                if (cleaned && !tags.includes(cleaned)) {
+                    tags.push(cleaned);
+                    renderTags();
+                }
+                tagInput.value = '';
+                suggestionsBox.style.display = 'none';
+            }
+
+            tagInput.oninput = async (e) => {
+                const val = e.target.value.trim().toLowerCase();
+                if (val.length < 1) { suggestionsBox.style.display = 'none'; return; }
+
+                const q = query(collection(db, "global_tags"), where("tag_lowercase", ">=", val), where("tag_lowercase", "<=", val + "\uf8ff"), limit(5));
+                const snap = await getDocs(q);
+                suggestionsBox.innerHTML = '';
+                
+                if (!snap.empty) {
+                    suggestionsBox.style.display = 'block';
+                    snap.forEach(doc => {
+                        const data = doc.data();
+                        const div = document.createElement('div');
+                        div.className = 'suggestion-item';
+                        div.innerHTML = `<span>${data.tag}</span><span class="suggestion-count">${data.count || 0}</span>`;
+                        div.onclick = () => addTag(data.tag);
+                        suggestionsBox.appendChild(div);
+                    });
+                } else {
+                    suggestionsBox.style.display = 'block';
+                    suggestionsBox.innerHTML = `<div class="suggestion-item" onclick="addTag('${tagInput.value}')">Create new tag: "${tagInput.value}"</div>`;
+                }
+            };
+
+            tagInput.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ',') { e.preventDefault(); addTag(tagInput.value); } };
+
+            // --- IMAGE PREVIEW LOGIC ---
             const imageInput = document.getElementById('listing-image-input');
             const previewContainer = document.getElementById('image-preview-container');
 
@@ -169,22 +221,14 @@
                 selectedFiles.forEach((file, index) => {
                     const wrapper = document.createElement('div');
                     wrapper.className = 'image-preview-wrapper';
-                    
                     const img = document.createElement('img');
                     img.src = URL.createObjectURL(file);
                     img.className = 'image-preview';
-                    
                     const removeBtn = document.createElement('button');
                     removeBtn.className = 'remove-image-btn';
-                    removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-                    removeBtn.onclick = (e) => {
-                        e.preventDefault();
-                        selectedFiles.splice(index, 1);
-                        renderPreviews();
-                    };
-
-                    wrapper.appendChild(img);
-                    wrapper.appendChild(removeBtn);
+                    removeBtn.innerHTML = '&times;';
+                    removeBtn.onclick = () => { selectedFiles.splice(index, 1); renderPreviews(); };
+                    wrapper.appendChild(img); wrapper.appendChild(removeBtn);
                     previewContainer.appendChild(wrapper);
                 });
                 document.getElementById('add-photo-label').style.display = selectedFiles.length < 5 ? 'flex' : 'none';
@@ -195,22 +239,18 @@
                     selectedFiles.push(e.target.files[0]);
                     renderPreviews();
                 }
-                e.target.value = ""; // Reset input so same file can be picked again
             };
 
-            // --- FORM SUBMISSION (RESTORED FULL UPLOAD LOGIC) ---
+            // --- SUBMISSION ---
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
-                const price = parseFloat(document.getElementById('listing-price').value);
-                if (price > 1200) { alert("Max price is $1200."); return; }
-                if (selectedFiles.length === 0) { alert("Please add at least one photo."); return; }
+                if (selectedFiles.length === 0) { alert("Add a photo."); return; }
 
                 const submitBtn = document.getElementById('postListingBtn');
                 submitBtn.disabled = true;
-                submitBtn.textContent = "Uploading Images...";
+                submitBtn.textContent = "Processing...";
 
                 try {
-                    // 1. Upload to Cloudinary
                     const imageUrls = [];
                     for (const file of selectedFiles) {
                         const formData = new FormData();
@@ -221,31 +261,28 @@
                         imageUrls.push(data.secure_url);
                     }
 
-                    submitBtn.textContent = "Publishing...";
+                    // Update Global Tag usage stats
+                    for (const t of tags) {
+                        const tagId = t.toLowerCase().replace(/[^a-z0-9]/g, "_");
+                        await setDoc(doc(db, "global_tags", tagId), { tag: t, tag_lowercase: t.toLowerCase(), count: increment(1) }, { merge: true });
+                    }
 
-                    // 2. Save to Firestore
                     const docRef = await addDoc(collection(db, 'listings'), {
                         title: document.getElementById('listing-title').value.trim(),
                         description: document.getElementById('listing-description').value.trim(),
-                        price: price,
+                        price: parseFloat(document.getElementById('listing-price').value),
                         condition: document.getElementById('listing-condition').value,
                         digitalCode: document.getElementById('listing-digital-code').value,
                         location: document.getElementById('listing-location').value,
+                        tags: tags,
                         imageUrls: imageUrls,
                         posterUid: currentUser.uid,
                         posterDisplayName: currentUser.displayName,
                         timestamp: serverTimestamp()
                     });
 
-                    alert("Listing successful!");
                     window.location.href = `/listing.html?id=${docRef.id}`;
-
-                } catch (err) {
-                    console.error(err);
-                    alert("Error: " + err.message);
-                    submitBtn.disabled = false;
-                    submitBtn.textContent = "Post Item";
-                }
+                } catch (err) { console.error(err); submitBtn.disabled = false; }
             };
         }
         main();
