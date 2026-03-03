@@ -10,64 +10,33 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f8f9fa; color: #333; line-height: 1.6; overflow-x: hidden; }
-        
         .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 10px; }
-        
         header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 12px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 100%; }
-        
-        /* RESPONSIVE HEADER FIX */
-        .header-content { 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center; 
-            gap: 10px;
-        }
-        
-        .header-left { display: flex; align-items: center; gap: 10px; flex-shrink: 1; }
+        .header-content { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .header-left { display: flex; align-items: center; gap: 10px; flex-shrink: 1; min-width: 0; }
         .logo { font-size: clamp(18px, 4vw, 24px); font-weight: bold; cursor: pointer; text-decoration: none; color: white; white-space: nowrap; }
         .logo span { color: #FFD700; }
-        
-        /* Push buttons to the edge and keep them side-by-side */
-        .header-right { 
-            display: flex; 
-            align-items: center; 
-            gap: 8px; 
-            flex-shrink: 0; 
-        }
-
+        .header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
         .btn-back { background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; gap: 4px; transition: background 0.3s; white-space: nowrap; }
-
-        /* AUTH CARD RESPONSIVENESS */
         .auth-wrapper { display: flex; justify-content: center; align-items: center; min-height: 85vh; padding: 15px; }
         .auth-card { background: white; padding: clamp(20px, 5vw, 40px); border-radius: 12px; box-shadow: 0 4px 25px rgba(0,0,0,0.1); width: 100%; max-width: 420px; text-align: center; }
-        
         .auth-card h2 { color: #2E7D32; margin-bottom: 10px; font-size: 1.7rem; }
         .auth-card p { color: #666; margin-bottom: 25px; font-size: 0.95rem; }
-        
         input[type="text"], input[type="email"], input[type="password"] { width: 100%; padding: 12px; margin-bottom: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; }
         input:focus { outline: none; border-color: #4CAF50; }
-        
         .btn-submit { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); color: #333; border: none; padding: 14px; width: 100%; border-radius: 8px; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: 5px; }
-        
         .separator { display: flex; align-items: center; text-align: center; margin: 20px 0; color: #888; font-size: 0.85rem; }
         .separator::before, .separator::after { content: ''; flex: 1; border-bottom: 1px solid #eee; }
         .separator::before { margin-right: 10px; }
         .separator::after { margin-left: 10px; }
-        
         .btn-google { background-color: white; color: #555; border: 1px solid #ddd; padding: 10px; width: 100%; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; }
         .btn-google img { width: 18px; }
-        
         .toggle-link { display: block; margin-top: 20px; color: #4CAF50; text-decoration: none; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
         .error-message { color: #d32f2f; background-color: #ffebee; padding: 10px; border-radius: 6px; margin-bottom: 20px; display: none; font-size: 0.85rem; }
-        
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 9999; }
         .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #4CAF50; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 10px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
-        @media (max-width: 400px) {
-            .header-left { gap: 5px; }
-            .btn-back span { display: none; } /* Only show arrow on tiny screens */
-        }
+        @media (max-width: 400px) { .header-left { gap: 5px; } .btn-back span { display: none; } }
     </style>
 </head>
 <body>
@@ -79,7 +48,6 @@
                 </button>
                 <a href="/index.html" class="logo">Cheap<span>let</span></a>
             </div>
-            <!-- Global.js target: Buttons will fit here perfectly -->
             <div class="header-right"></div>
         </div>
     </header>
@@ -133,24 +101,32 @@
 
             let isLoginMode = true;
 
-            // Handle Login Redirects and User Creation
+            // --- SCHOOL DOMAIN CHECKER ---
+            const schoolDomains = [
+                "@dawsoncollege.qc.ca", "@vaniercollege.qc.ca", "@johnabbott.qc.ca", 
+                "@cegepmontpetit.ca", "@cegep-ste-foy.qc.ca", "@cvm.qc.ca",
+                "@concordia.ca", "@mcgill.ca", "@umontreal.ca", "@uqam.ca", "@hec.ca", "@polymtl.ca"
+            ];
+
             async function handleLoginSuccess(user) {
                 loadingOverlay.style.display = 'flex';
                 try {
                     const userDocRef = doc(db, "users", user.uid);
                     const userDoc = await getDoc(userDocRef);
 
-                    if (userDoc.exists() && userDoc.data().role === 'banned') {
-                        await signOut(auth);
-                        alert("This account has been banned.");
-                        window.location.reload();
-                        return;
-                    }
+                    // If user exists, just redirect. If not, create them (Google login scenario)
                     if (!userDoc.exists()) {
-                        await setDoc(userDocRef, { uid: user.uid, displayName: user.displayName, email: user.email, role: 'user' });
+                        const email = user.email.toLowerCase();
+                        const isStudent = schoolDomains.some(domain => email.endsWith(domain));
+                        await setDoc(userDocRef, { 
+                            uid: user.uid, 
+                            displayName: user.displayName, 
+                            email: user.email, 
+                            role: 'user', 
+                            isStudent: isStudent 
+                        });
                     }
-                    const urlParams = new URLSearchParams(window.location.search);
-                    window.location.href = urlParams.get('redirect') || '/index.html';
+                    window.location.href = new URLSearchParams(window.location.search).get('redirect') || '/index.html';
                 } catch (e) { window.location.href = '/index.html'; }
             }
 
@@ -169,20 +145,34 @@
             authForm.onsubmit = async (e) => {
                 e.preventDefault();
                 submitBtn.disabled = true;
-                const email = document.getElementById('email').value;
+                const email = document.getElementById('email').value.toLowerCase();
                 const pass = document.getElementById('password').value;
+
                 try {
                     if (isLoginMode) {
                         const cred = await signInWithEmailAndPassword(auth, email, pass);
-                        if (!cred.user.emailVerified) { await signOut(auth); alert("Please verify your email."); }
+                        if (!cred.user.emailVerified) { await signOut(auth); alert("Check your email to verify your account!"); }
                     } else {
+                        // Registration logic
                         const cred = await createUserWithEmailAndPassword(auth, email, pass);
                         const name = `${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`;
+                        
+                        // NEW STUDENT LOGIC
+                        const isStudent = schoolDomains.some(domain => email.endsWith(domain));
+
                         await updateProfile(cred.user, { displayName: name });
                         await sendEmailVerification(cred.user);
-                        await setDoc(doc(db, "users", cred.user.uid), { uid: cred.user.uid, displayName: name, email, role: 'user' });
+                        
+                        await setDoc(doc(db, "users", cred.user.uid), { 
+                            uid: cred.user.uid, 
+                            displayName: name, 
+                            email: email, 
+                            role: 'user', 
+                            isStudent: isStudent // Saved to database
+                        });
+
                         await signOut(auth);
-                        alert("Verification email sent!");
+                        alert("Verification email sent! Please verify before logging in.");
                         location.reload();
                     }
                 } catch (err) { alert(err.message); }
