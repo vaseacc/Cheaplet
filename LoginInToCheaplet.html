@@ -101,30 +101,17 @@
 
             let isLoginMode = true;
 
-            // --- SCHOOL DOMAIN CHECKER ---
-            const schoolDomains = [
-                "@dawsoncollege.qc.ca", "@vaniercollege.qc.ca", "@johnabbott.qc.ca", 
-                "@cegepmontpetit.ca", "@cegep-ste-foy.qc.ca", "@cvm.qc.ca",
-                "@concordia.ca", "@mcgill.ca", "@umontreal.ca", "@uqam.ca", "@hec.ca", "@polymtl.ca"
-            ];
+            const schoolDomains = ["@dawsoncollege.qc.ca", "@vaniercollege.qc.ca", "@johnabbott.qc.ca", "@cegepmontpetit.ca", "@cegep-ste-foy.qc.ca", "@cvm.qc.ca", "@concordia.ca", "@mcgill.ca", "@umontreal.ca", "@uqam.ca", "@hec.ca", "@polymtl.ca"];
 
             async function handleLoginSuccess(user) {
                 loadingOverlay.style.display = 'flex';
                 try {
                     const userDocRef = doc(db, "users", user.uid);
                     const userDoc = await getDoc(userDocRef);
-
-                    // If user exists, just redirect. If not, create them (Google login scenario)
                     if (!userDoc.exists()) {
                         const email = user.email.toLowerCase();
                         const isStudent = schoolDomains.some(domain => email.endsWith(domain));
-                        await setDoc(userDocRef, { 
-                            uid: user.uid, 
-                            displayName: user.displayName, 
-                            email: user.email, 
-                            role: 'user', 
-                            isStudent: isStudent 
-                        });
+                        await setDoc(userDocRef, { uid: user.uid, displayName: user.displayName, email: user.email, role: 'user', isStudent: isStudent });
                     }
                     window.location.href = new URLSearchParams(window.location.search).get('redirect') || '/index.html';
                 } catch (e) { window.location.href = '/index.html'; }
@@ -151,28 +138,27 @@
                 try {
                     if (isLoginMode) {
                         const cred = await signInWithEmailAndPassword(auth, email, pass);
-                        if (!cred.user.emailVerified) { await signOut(auth); alert("Check your email to verify your account!"); }
+                        if (!cred.user.emailVerified) {
+                            await sendEmailVerification(cred.user); // Re-send if they try to log in unverified
+                            await signOut(auth); 
+                            alert("Your email is not verified. We just sent a new link to your inbox. Please verify it before logging in.");
+                        }
                     } else {
-                        // Registration logic
+                        // REGISTRATION BLOCK
                         const cred = await createUserWithEmailAndPassword(auth, email, pass);
                         const name = `${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`;
-                        
-                        // NEW STUDENT LOGIC
                         const isStudent = schoolDomains.some(domain => email.endsWith(domain));
 
                         await updateProfile(cred.user, { displayName: name });
-                        await sendEmailVerification(cred.user);
                         
-                        await setDoc(doc(db, "users", cred.user.uid), { 
-                            uid: cred.user.uid, 
-                            displayName: name, 
-                            email: email, 
-                            role: 'user', 
-                            isStudent: isStudent // Saved to database
-                        });
+                        // ENSURE THIS FINISHES BEFORE SIGN OUT
+                        await sendEmailVerification(cred.user);
+                        console.log("Verification email triggered.");
+
+                        await setDoc(doc(db, "users", cred.user.uid), { uid: cred.user.uid, displayName: name, email: email, role: 'user', isStudent: isStudent });
 
                         await signOut(auth);
-                        alert("Verification email sent! Please verify before logging in.");
+                        alert("Account created! A verification email has been sent to " + email + ". Please check your inbox and Spam folder.");
                         location.reload();
                     }
                 } catch (err) { alert(err.message); }
