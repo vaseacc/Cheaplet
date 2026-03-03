@@ -32,7 +32,7 @@
         .btn-google { background-color: white; color: #555; border: 1px solid #ddd; padding: 10px; width: 100%; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; }
         .btn-google img { width: 18px; }
         .toggle-link { display: block; margin-top: 20px; color: #4CAF50; text-decoration: none; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
-        .error-message { color: #d32f2f; background-color: #ffebee; padding: 10px; border-radius: 6px; margin-bottom: 20px; display: none; font-size: 0.85rem; }
+        .error-message { color: #d32f2f; background-color: #ffebee; padding: 10px; border-radius: 4px; margin-bottom: 20px; display: none; font-size: 0.85rem; }
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 9999; }
         .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #4CAF50; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 10px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -100,6 +100,7 @@
             const loadingOverlay = document.getElementById('loading-overlay');
 
             let isLoginMode = true;
+            let isRegistering = false; // --- NEW FLAG ---
 
             const schoolDomains = ["@dawsoncollege.qc.ca", "@vaniercollege.qc.ca", "@johnabbott.qc.ca", "@cegepmontpetit.ca", "@cegep-ste-foy.qc.ca", "@cvm.qc.ca", "@concordia.ca", "@mcgill.ca", "@umontreal.ca", "@uqam.ca", "@hec.ca", "@polymtl.ca"];
 
@@ -118,13 +119,11 @@
                 } catch (e) { window.location.href = '/index.html'; }
             }
 
-            // --- STRICT VERIFICATION LISTENER ---
             onAuthStateChanged(auth, async (user) => { 
-                if (user) {
+                if (user && !isRegistering) { // --- ONLY RUN IF NOT REGISTERING ---
                     if (user.emailVerified) {
                         handleLoginSuccess(user);
                     } else {
-                        // KICK THEM OUT if they slip through the sign-in logic
                         await signOut(auth);
                         loadingOverlay.style.display = 'none';
                     }
@@ -150,23 +149,39 @@
                 try {
                     if (isLoginMode) {
                         const cred = await signInWithEmailAndPassword(auth, email, pass);
-                        // --- ENFORCEMENT ON SIGN IN ---
                         if (!cred.user.emailVerified) {
                             await signOut(auth); 
-                            alert("Please verify your email address before logging in. Check your inbox.");
+                            alert("Please verify your email address.");
                         }
                     } else {
+                        isRegistering = true; // --- SET FLAG TO PREVENT SIGN OUT ---
+                        
                         const cred = await createUserWithEmailAndPassword(auth, email, pass);
                         const name = `${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`;
                         const isStudent = schoolDomains.some(domain => email.endsWith(domain));
+
                         await updateProfile(cred.user, { displayName: name });
+                        
+                        // Create User Doc while still logged in
+                        await setDoc(doc(db, "users", cred.user.uid), { 
+                            uid: cred.user.uid, 
+                            displayName: name, 
+                            email: email, 
+                            role: 'user', 
+                            isStudent: isStudent 
+                        });
+
                         await sendEmailVerification(cred.user);
-                        await setDoc(doc(db, "users", cred.user.uid), { uid: cred.user.uid, displayName: name, email: email, role: 'user', isStudent: isStudent });
                         await signOut(auth);
-                        alert("Verification email sent! Verify it then log in.");
+                        
+                        isRegistering = false; // --- RESET FLAG ---
+                        alert("Verification email sent! Check your inbox.");
                         location.reload();
                     }
-                } catch (err) { alert(err.message); }
+                } catch (err) { 
+                    alert(err.message); 
+                    isRegistering = false; 
+                }
                 submitBtn.disabled = false;
             };
 
