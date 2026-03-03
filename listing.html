@@ -222,6 +222,7 @@
             <div class="section-header" data-i18n="description_title">Description</div>
             <p class="description-text" id="listing-description"></p>
 
+            <!-- TRANSLATED SELLER HEADER -->
             <div class="section-header" data-i18n="seller_title">Seller Information</div>
             <div class="seller-section">
                 <div id="seller-avatar-small"></div>
@@ -231,6 +232,7 @@
                 </div>
             </div>
 
+            <!-- TRANSLATED MESSAGE SECTION -->
             <div class="quick-message-container">
                 <div class="quick-msg-label" data-i18n="quick_msg_label">Send a quick message</div>
                 <textarea class="quick-msg-input" id="quick-msg-text">Hi, is this available?</textarea>
@@ -268,7 +270,7 @@
             let imageUrls = [];
             let isSaved = false; 
 
-            // --- DATA DICTIONARY (Translates DB words to French UI) ---
+            // --- DATA DICTIONARY ---
             const dataTranslations = {
                 fr: {
                     "New": "Neuf", "Like New": "Comme neuf", "Good": "Bon état", "Fair": "État correct",
@@ -279,14 +281,19 @@
 
             function translateData(value) {
                 const lang = localStorage.getItem('preferred_language') || 'en';
-                if (lang === 'fr' && dataTranslations.fr[value]) {
-                    return dataTranslations.fr[value];
-                }
+                if (lang === 'fr' && dataTranslations.fr[value]) return dataTranslations.fr[value];
                 return value;
             }
 
             onAuthStateChanged(auth, user => {
                 currentUser = user;
+                
+                // --- FIX: TRANSLATE TEXTAREA DEFAULT VALUE ON LOAD ---
+                const lang = localStorage.getItem('preferred_language') || 'en';
+                if (lang === 'fr') {
+                    document.getElementById('quick-msg-text').value = "Bonjour, est-ce disponible ?";
+                }
+                
                 fetchAndDisplayListing();
             });
 
@@ -310,16 +317,13 @@
                     const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : '';
                     const metaPrefix = savedLang === 'fr' ? 'Publié le' : 'Listed';
                     
-                    // Translated Location and Meta
                     document.getElementById('listing-meta').textContent = `${metaPrefix} ${date} • ${translateData(data.location)}`;
                     document.getElementById('location-text').textContent = translateData(data.location);
-
-                    // --- TRANSLATED CONDITION AND DIGITAL CODE ---
                     document.getElementById('listing-condition').textContent = translateData(data.condition || "Used");
                     document.getElementById('listing-digital-code').textContent = translateData(data.digitalCode || "N/A");
-
                     document.getElementById('listing-description').textContent = data.description;
-                    document.getElementById('seller-name-link').textContent = data.posterDisplayName || "User";
+
+                    document.getElementById('seller-name-link').textContent = data.posterDisplayName || "A User";
                     document.getElementById('seller-name-link').href = `/user.html?id=${data.posterUid}`;
                     
                     if (data.posterUid) {
