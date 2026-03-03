@@ -19,49 +19,19 @@ const db = getFirestore(app);
 
 // --- 2. TRANSLATION DICTIONARY ---
 const translations = {
-    "en": {
-        "nav_browse": "Browse",
-        "nav_listings": "My Listings",
-        "nav_messages": "Messages",
-        "nav_profile": "My Profile",
-        "btn_login": "Login / Register",
-        "btn_list": "List an Item",
-        "btn_browse": "Start Browsing",
-        "btn_signout": "Sign Out",
-        "search_placeholder": "What are you looking for?",
-        "hero_title": "Great Finds, Unbeatable Prices.",
+    "en": { 
+        "nav_browse": "Browse", "nav_listings": "My Listings", "nav_messages": "Messages", "nav_profile": "My Profile", 
+        "btn_login": "Login / Register", "btn_list": "List an Item", "btn_browse": "Start Browsing", "btn_signout": "Sign Out", 
+        "search_placeholder": "What are you looking for?", "hero_title": "Great Finds, Unbeatable Prices.", 
         "hero_sub": "Cheaplet is the online marketplace for smart savings.",
-        "footer_about": "About Cheaplet",
-        "footer_support": "Support",
-        "footer_legal": "Legal",
-        "how_title": "How It Works",
-        "step_1_title": "Create an Account",
-        "step_2_title": "Post Your Item",
-        "step_3_title": "Connect & Sell",
-        "title_listings": "Featured Listings",
-        "title_tags": "Popular Tags"
+        "verified_student": "Verified Student" // NEW
     },
-    "fr": {
-        "nav_browse": "Parcourir",
-        "nav_listings": "Mes Annonces",
-        "nav_messages": "Messages",
-        "nav_profile": "Mon Profil",
-        "btn_login": "Connexion",
-        "btn_list": "Vendre un article",
-        "btn_browse": "Commencer à naviguer",
-        "btn_signout": "Déconnexion",
-        "search_placeholder": "Que cherchez-vous ?",
-        "hero_title": "Super trouvailles, prix imbattables.",
+    "fr": { 
+        "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", 
+        "btn_login": "Connexion", "btn_list": "Vendre un article", "btn_browse": "Commencer à naviguer", "btn_signout": "Déconnexion", 
+        "search_placeholder": "Que cherchez-vous ?", "hero_title": "Super trouvailles, prix imbattables.", 
         "hero_sub": "Cheaplet est le marché en ligne pour des économies intelligentes.",
-        "footer_about": "À propos",
-        "footer_support": "Support",
-        "footer_legal": "Légal",
-        "how_title": "Comment ça marche",
-        "step_1_title": "Créer un compte",
-        "step_2_title": "Publiez un article",
-        "step_3_title": "Vendez",
-        "title_listings": "Annonces en vedette",
-        "title_tags": "Tags populaires"
+        "verified_student": "Étudiant vérifié" // NEW
     }
 };
 
@@ -77,62 +47,52 @@ window.applyLanguage = (lang) => {
     localStorage.setItem('preferred_language', lang);
 };
 
-// --- 3. GLOBAL CSS INJECTION ---
+// --- 3. GLOBAL CSS ---
 const globalStyle = document.createElement('style');
 globalStyle.innerHTML = `
-    .btn {
-        background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%) !important;
-        color: #333 !important; border: none !important; padding: 0 18px !important;
-        height: 38px !important; line-height: 38px !important; border-radius: 20px !important;
-        font-weight: bold !important; cursor: pointer !important; transition: transform 0.2s !important;
-        box-shadow: 0 3px 6px rgba(0,0,0,0.1) !important; font-size: 0.85rem !important;
-        display: inline-flex !important; align-items: center; justify-content: center;
-        text-align: center; white-space: nowrap !important; text-decoration: none !important;
-    }
+    .btn { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%) !important; color: #333 !important; border: none !important; padding: 0 18px !important; height: 38px !important; line-height: 38px !important; border-radius: 20px !important; font-weight: bold !important; cursor: pointer !important; transition: transform 0.2s !important; box-shadow: 0 3px 6px rgba(0,0,0,0.1) !important; font-size: 0.85rem !important; display: inline-flex !important; align-items: center; justify-content: center; text-align: center; white-space: nowrap !important; text-decoration: none !important; }
     .profile-menu-container { position: relative; display: flex; align-items: center; }
     .profile-avatar { width: 38px; height: 38px; border-radius: 50%; background-color: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.8); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; background-size: cover; background-position: center; }
-    .dropdown-menu { position: absolute; top: 50px; right: 0; width: 200px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: none; flex-direction: column; overflow: hidden; color: #333; z-index: 1000; }
+    .dropdown-menu { position: absolute; top: 50px; right: 0; width: 220px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: none; flex-direction: column; overflow: hidden; color: #333; z-index: 1000; }
     .dropdown-menu.show { display: flex; }
-    .dropdown-header { padding: 12px 15px; border-bottom: 1px solid #eee; background: #f9f9f9; font-weight: bold; color: #2E7D32; font-size: 0.85rem; }
+    .dropdown-header { padding: 12px 15px; border-bottom: 1px solid #eee; background: #f9f9f9; font-weight: bold; color: #2E7D32; font-size: 0.85rem; display: flex; flex-direction: column; gap: 4px; }
+    
+    /* STUDENT BADGE STYLE */
+    .student-badge { 
+        display: inline-flex; align-items: center; gap: 5px; background: #E8F5E9; color: #2E7D32; 
+        font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; width: fit-content; 
+        border: 1px solid #C8E6C9; margin-top: 2px;
+    }
+
     .dropdown-item { padding: 12px 15px; text-decoration: none; color: #333; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.9rem; }
     .dropdown-item:hover { background-color: #f1f8e9; }
     .msg-btn-mobile { background-color: #FFD700; color: #333; width: 36px; height: 36px; border-radius: 50%; display: none; align-items: center; justify-content: center; text-decoration: none; margin-right: 12px; font-size: 1rem; }
     body.page-messages .msg-btn-mobile, body.page-chat .msg-btn-mobile { display: none !important; }
-    @media (max-width: 767px) {
-        nav { display: none !important; } .msg-btn-mobile { display: flex; } .mobile-link { display: flex; }
-        .btn { font-size: 0.75rem !important; padding: 0 12px !important; height: 34px !important; }
-    }
+    @media (max-width: 767px) { nav { display: none !important; } .msg-btn-mobile { display: flex; } .mobile-link { display: flex; } .btn { font-size: 0.75rem !important; padding: 0 12px !important; height: 34px !important; } }
 `;
 document.head.appendChild(globalStyle);
 
 // --- 4. STATE & LISTENERS ---
 let globalSettings = {};
-let currentUserData = null; // Changed to store full DB object
+let currentUserData = null;
 
 const path = window.location.pathname;
 if (path.includes('messages.html')) document.body.classList.add('page-messages');
 if (path.includes('chat.html')) document.body.classList.add('page-chat');
 
 onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
-    if (docSnap.exists()) {
-        globalSettings = docSnap.data();
-        refreshUI();
-    }
+    if (docSnap.exists()) { globalSettings = docSnap.data(); refreshUI(); }
 });
 
 onAuthStateChanged(auth, (user) => {
     if (user && user.emailVerified) {
-        // --- ADDED: Listen to DATABASE for the profile picture ---
         onSnapshot(doc(db, "users", user.uid), (docSnap) => {
             if (docSnap.exists()) {
                 currentUserData = docSnap.data();
                 if (currentUserData.role === 'banned') {
-                    signOut(auth).then(() => {
-                        alert("Account Banned.");
-                        window.location.href = '/LoginInToCheaplet.html';
-                    });
+                    signOut(auth).then(() => { alert("Account Banned."); window.location.href = '/LoginInToCheaplet.html'; });
                 }
-                refreshUI(); // Update header with DB info
+                refreshUI();
             }
         });
     } else {
@@ -164,11 +124,15 @@ function updateHeaderToLoggedIn(userData) {
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
     if (!container) return;
 
-    // Use userData (from Firestore) for the photo
     const name = userData.displayName || 'User';
     const initial = name.charAt(0).toUpperCase();
     const photoStyle = userData.photoURL ? `background-image: url('${userData.photoURL}');` : '';
     const avatarContent = userData.photoURL ? '' : initial;
+
+    // --- LOGIC: CREATE STUDENT BADGE ---
+    const studentBadgeHTML = userData.isStudent 
+        ? `<div class="student-badge"><i class="fas fa-graduation-cap"></i> <span data-i18n="verified_student">Verified Student</span></div>` 
+        : '';
 
     container.innerHTML = `
         <button class="btn" id="globalListBtn" style="margin-right: 12px;" data-i18n="btn_list">List an Item</button>
@@ -176,7 +140,10 @@ function updateHeaderToLoggedIn(userData) {
         <div class="profile-menu-container" id="globalProfileMenu">
             <div class="profile-avatar" style="${photoStyle}">${avatarContent}</div>
             <div class="dropdown-menu" id="globalDropdown">
-                <div class="dropdown-header">${name}</div>
+                <div class="dropdown-header">
+                    <span>${name}</span>
+                    ${studentBadgeHTML}
+                </div>
                 <a href="/profile.html" class="dropdown-item" data-i18n="nav_profile"><i class="fas fa-user"></i> My Profile</a>
                 <a href="/search.html" class="dropdown-item mobile-link" data-i18n="nav_browse"><i class="fas fa-search"></i> Browse</a>
                 <a href="/my-listings.html" class="dropdown-item mobile-link" data-i18n="nav_listings"><i class="fas fa-list"></i> My Listings</a>
@@ -198,15 +165,12 @@ function updateHeaderToLoggedIn(userData) {
 function updateHeaderToLoggedOut() {
     const navUl = document.querySelector('nav ul');
     if (navUl) navUl.innerHTML = `<li><a href="/search.html" data-i18n="nav_browse">Browse</a></li>`;
-
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
-    if (!container || container.querySelector('#globalLoginBtn')) return;
-
+    if (!container) return;
     container.innerHTML = `
         <button class="btn" id="globalListBtn" data-i18n="btn_list">List an Item</button>
         <button class="btn" id="globalLoginBtn" style="margin-left: 10px;" data-i18n="btn_login">Login / Register</button>
     `;
-
     document.getElementById('globalListBtn').onclick = () => window.location.href = '/LoginInToCheaplet.html';
     document.getElementById('globalLoginBtn').onclick = () => window.location.href = '/LoginInToCheaplet.html';
 }
