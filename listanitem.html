@@ -24,32 +24,30 @@
         input, textarea, select { width: 100%; padding: 12px; margin-bottom: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; display: block; }
         label { font-weight: 600; margin-bottom: 5px; display: block; color: #555; }
 
-        /* FIX: BUTTON CONTAINER TO PREVENT OVERLAP */
-        .form-buttons { 
-            display: flex; 
-            gap: 12px; 
-            margin-top: 20px; 
-            flex-wrap: wrap; /* Stacks buttons on tiny screens instead of overlapping */
-        }
-        .form-buttons .btn { 
-            flex: 1; 
-            min-width: 120px; 
-        }
+        .form-buttons { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+        .form-buttons .btn { flex: 1; min-width: 120px; }
 
+        /* TAG SYSTEM */
         .tag-container { border: 2px solid #ddd; border-radius: 6px; padding: 10px; margin-bottom: 15px; background: #fff; display: flex; flex-wrap: wrap; gap: 8px; position: relative; }
-        .tag-chip { background-color: #e8f5e9; color: #2E7D32; padding: 5px 10px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; }
+        .tag-chip { background-color: #e8f5e9; color: #2E7D32; padding: 5px 10px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+        .tag-close { cursor: pointer; font-weight: bold; }
         #tag-input { border: none; outline: none; padding: 5px; flex-grow: 1; min-width: 120px; margin-bottom: 0; }
         .suggestions-box { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ddd; border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto; z-index: 10; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .suggestion-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
 
-        .image-preview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; justify-content: center; }
-        #add-photo-label { width: 100px; height: 100px; border: 2px dashed #ccc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #777; margin: 0 auto; }
+        /* IMAGE PREVIEW FIX */
+        .image-preview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; justify-content: flex-start; }
+        .image-preview-wrapper { position: relative; width: 80px; height: 80px; }
+        .image-preview { width: 100%; height: 100%; border-radius: 8px; object-fit: cover; border: 1px solid #ddd; }
+        .remove-image-btn { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+        #add-photo-label { width: 80px; height: 80px; border: 2px dashed #ccc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #777; }
 
         #page-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: flex; justify-content: center; align-items: center; }
         @media (max-width: 767px) { nav { display: none; } }
     </style>
 </head>
 <body>
-    <div id="page-loader">...</div>
+    <div id="page-loader">Loading...</div>
 
     <header>
         <div class="container header-content">
@@ -63,44 +61,44 @@
 
     <main class="container">
         <div class="form-wrapper">
-            <h2 data-i18n="btn_list">List a Book</h2>
+            <h2>List a Book</h2>
             <form id="listing-form">
-                <label data-i18n="label_title">Title</label>
+                <label>Title</label>
                 <input type="text" id="listing-title" required>
                 
-                <label data-i18n="label_description">Description</label>
+                <label>Description</label>
                 <textarea id="listing-description" required></textarea>
                 
-                <label data-i18n="label_price">Price ($) - Max $1200</label>
+                <label>Price ($) - Max $1200</label>
                 <input type="number" id="listing-price" min="0" max="1200" step="0.01" required>
                 
-                <label data-i18n="label_tags">Tags</label>
+                <label>Tags</label>
                 <div class="tag-container" id="tag-container">
                     <div id="selected-tags"></div>
                     <input type="text" id="tag-input" autocomplete="off">
                     <div class="suggestions-box" id="suggestions-box"></div>
                 </div>
 
-                <label data-i18n="label_condition">Condition</label>
+                <label>Condition</label>
                 <select id="listing-condition" required>
-                    <option value="" data-i18n="opt_select">Select Condition</option>
-                    <option value="New" data-i18n="opt_new">New</option>
-                    <option value="Like New" data-i18n="opt_like_new">Like New</option>
-                    <option value="Good" data-i18n="opt_good">Good</option>
-                    <option value="Fair" data-i18n="opt_fair">Fair</option>
+                    <option value="">Select Condition</option>
+                    <option value="New">New</option>
+                    <option value="Like New">Like New</option>
+                    <option value="Good">Good</option>
+                    <option value="Fair">Fair</option>
                 </select>
 
-                <label data-i18n="label_digital_code">Digital Access Code</label>
+                <label>Digital Access Code</label>
                 <select id="listing-digital-code">
-                    <option value="Not applicable" data-i18n="opt_na">Not applicable</option>
-                    <option value="Available / Unused" data-i18n="opt_available">Available / Unused</option>
-                    <option value="Already used" data-i18n="opt_used">Already used</option>
+                    <option value="Not applicable">Not applicable</option>
+                    <option value="Available / Unused">Available / Unused</option>
+                    <option value="Already used">Already used</option>
                 </select>
 
-                <label data-i18n="label_location">Campus Location (Montreal Only)</label>
+                <label>Campus Location (Montreal Only)</label>
                 <select id="listing-location" required>
-                    <option value="" data-i18n="opt_select_campus">Select a Campus</option>
-                    <optgroup label="Cégeps" data-i18n="opt_cegeps">
+                    <option value="">Select a Campus</option>
+                    <optgroup label="Cégeps">
                         <option value="Dawson College">Dawson College</option>
                         <option value="Vanier College">Vanier College</option>
                         <option value="John Abbott College">John Abbott College</option>
@@ -108,29 +106,28 @@
                         <option value="Cégep du Vieux Montréal">Cégep du Vieux Montréal</option>
                         <option value="Cégep Ahuntsic">Cégep Ahuntsic</option>
                     </optgroup>
-                    <optgroup label="Universities" data-i18n="opt_universities">
+                    <optgroup label="Universities">
                         <option value="Concordia University">Concordia University</option>
                         <option value="McGill University">McGill University</option>
                         <option value="Université de Montréal">Université de Montréal</option>
                     </optgroup>
                 </select>
 
-                <label data-i18n="label_photos">Photos (Max 5)</label>
+                <label>Photos (Max 5)</label>
                 <div id="image-uploader">
-                    <div class="image-preview-grid">
-                        <div id="image-preview-container"></div>
-                        <label for="listing-image-input" id="add-photo-label">
-                            <span style="font-size: 24px;">+</span>
-                            <span style="font-size: 12px;" data-i18n="btn_add_photo">Add Photo</span>
-                        </label>
+                    <div class="image-preview-grid" id="image-preview-container">
+                        <!-- Previews will appear here -->
                     </div>
+                    <label for="listing-image-input" id="add-photo-label" style="margin-top:10px;">
+                        <i class="fas fa-camera"></i>
+                        <span style="font-size: 12px;">Add Photo</span>
+                    </label>
                     <input type="file" id="listing-image-input" accept="image/*" style="display:none;">
                 </div>
 
-                <!-- UPDATED BUTTON CONTAINER -->
                 <div class="form-buttons">
-                    <button type="submit" class="btn" id="postListingBtn" data-i18n="btn_list">Post Item</button>
-                    <button type="button" class="btn btn-secondary" onclick="window.location.href='/index.html'" data-i18n="btn_cancel">Cancel</button>
+                    <button type="submit" class="btn" id="postListingBtn">Post Item</button>
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='/index.html'">Cancel</button>
                 </div>
             </form>
         </div>
@@ -139,7 +136,7 @@
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, getDoc, doc, setDoc, increment } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, getDoc, doc, setDoc, increment, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -148,13 +145,12 @@
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            const lang = localStorage.getItem('preferred_language') || 'en';
-            const strings = {
-                en: { priceErr: "Price cannot exceed $1200.", imgErr: "Upload at least one image.", uploading: "Uploading..." },
-                fr: { priceErr: "Le prix ne peut pas dépasser 1200$.", imgErr: "Téléchargez au moins une image.", uploading: "Téléchargement..." }
-            };
+            const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`;
+            const UPLOAD_PRESET = config.cloudinary.uploadPreset;
 
             let currentUser = null;
+            let selectedFiles = [];
+
             onAuthStateChanged(auth, async (user) => {
                 if (user && user.emailVerified) {
                     currentUser = user;
@@ -164,18 +160,92 @@
                 }
             });
 
-            // (Keeping existing tag and image logic same as before...)
+            // --- IMAGE PREVIEW LOGIC (FIXED) ---
+            const imageInput = document.getElementById('listing-image-input');
+            const previewContainer = document.getElementById('image-preview-container');
 
+            function renderPreviews() {
+                previewContainer.innerHTML = '';
+                selectedFiles.forEach((file, index) => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'image-preview-wrapper';
+                    
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(file);
+                    img.className = 'image-preview';
+                    
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-image-btn';
+                    removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+                    removeBtn.onclick = (e) => {
+                        e.preventDefault();
+                        selectedFiles.splice(index, 1);
+                        renderPreviews();
+                    };
+
+                    wrapper.appendChild(img);
+                    wrapper.appendChild(removeBtn);
+                    previewContainer.appendChild(wrapper);
+                });
+                document.getElementById('add-photo-label').style.display = selectedFiles.length < 5 ? 'flex' : 'none';
+            }
+
+            imageInput.onchange = (e) => {
+                if (e.target.files[0] && selectedFiles.length < 5) {
+                    selectedFiles.push(e.target.files[0]);
+                    renderPreviews();
+                }
+                e.target.value = ""; // Reset input so same file can be picked again
+            };
+
+            // --- FORM SUBMISSION (RESTORED FULL UPLOAD LOGIC) ---
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
                 const price = parseFloat(document.getElementById('listing-price').value);
-                if (price > 1200) { alert(strings[lang].priceErr); return; }
-                
+                if (price > 1200) { alert("Max price is $1200."); return; }
+                if (selectedFiles.length === 0) { alert("Please add at least one photo."); return; }
+
                 const submitBtn = document.getElementById('postListingBtn');
                 submitBtn.disabled = true;
-                submitBtn.textContent = strings[lang].uploading;
+                submitBtn.textContent = "Uploading Images...";
 
-                // Rest of Firebase submission logic...
+                try {
+                    // 1. Upload to Cloudinary
+                    const imageUrls = [];
+                    for (const file of selectedFiles) {
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('upload_preset', UPLOAD_PRESET);
+                        const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
+                        const data = await res.json();
+                        imageUrls.push(data.secure_url);
+                    }
+
+                    submitBtn.textContent = "Publishing...";
+
+                    // 2. Save to Firestore
+                    const docRef = await addDoc(collection(db, 'listings'), {
+                        title: document.getElementById('listing-title').value.trim(),
+                        description: document.getElementById('listing-description').value.trim(),
+                        price: price,
+                        condition: document.getElementById('listing-condition').value,
+                        digitalCode: document.getElementById('listing-digital-code').value,
+                        location: document.getElementById('listing-location').value,
+                        imageUrls: imageUrls,
+                        posterUid: currentUser.uid,
+                        posterDisplayName: currentUser.displayName,
+                        timestamp: serverTimestamp()
+                    });
+
+                    alert("Listing successful!");
+                    window.location.href = `/listing.html?id=${docRef.id}`;
+
+                } catch (err) {
+                    console.error(err);
+                    alert("Error: " + err.message);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = "Post Item";
+                }
             };
         }
         main();
