@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
 // --- 0. AUTO-IMPORT ICONS ---
 if (!document.querySelector('link[href*="font-awesome"]')) {
@@ -19,22 +19,8 @@ const db = getFirestore(app);
 
 // --- 2. TRANSLATION DICTIONARY ---
 const translations = {
-    "en": { 
-        "nav_browse": "Browse", "nav_listings": "My Listings", "nav_messages": "Messages", "nav_profile": "My Profile", 
-        "btn_login": "Login / Register", "btn_list": "List an Item", "btn_browse": "Start Browsing", "btn_signout": "Sign Out", 
-        "search_placeholder": "What are you looking for?", "hero_title": "Great Finds, Unbeatable Prices.", 
-        "hero_sub": "Cheaplet is the online marketplace for smart savings.",
-        "verified_student": "Verified Student",
-        "ban_message": "Your account has been banned for violating our terms of service."
-    },
-    "fr": { 
-        "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", 
-        "btn_login": "Connexion", "btn_list": "Vendre un article", "btn_browse": "Commencer à naviguer", "btn_signout": "Déconnexion", 
-        "search_placeholder": "Que cherchez-vous ?", "hero_title": "Super trouvailles, prix imbattables.", 
-        "hero_sub": "Cheaplet est le marché en ligne pour des économies intelligentes.",
-        "verified_student": "Étudiant vérifié",
-        "ban_message": "Votre compte a été banni pour violation de nos conditions d'utilisation."
-    }
+    "en": { "nav_browse": "Browse", "nav_listings": "My Listings", "nav_messages": "Messages", "nav_profile": "My Profile", "btn_login": "Login / Register", "btn_list": "List an Item", "btn_browse": "Start Browsing", "btn_signout": "Sign Out", "search_placeholder": "What are you looking for?", "hero_title": "Great Finds, Unbeatable Prices.", "hero_sub": "Cheaplet is the online marketplace for smart savings.", "verified_student": "Verified Student", "ban_message": "ACCESS DENIED: Your account has been banned." },
+    "fr": { "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", "btn_login": "Connexion", "btn_list": "Vendre un article", "btn_browse": "Commencer à naviguer", "btn_signout": "Déconnexion", "search_placeholder": "Que cherchez-vous ?", "hero_title": "Super trouvailles, prix imbattables.", "hero_sub": "Cheaplet est le marché en ligne pour des économies intelligentes.", "verified_student": "Étudiant vérifié", "ban_message": "ACCÈS REFUSÉ : Votre compte a été banni." }
 };
 
 window.applyLanguage = (lang) => {
@@ -49,7 +35,7 @@ window.applyLanguage = (lang) => {
     localStorage.setItem('preferred_language', lang);
 };
 
-// --- 3. GLOBAL CSS ---
+// --- 3. GLOBAL CSS (Added Ban Overlay) ---
 const globalStyle = document.createElement('style');
 globalStyle.innerHTML = `
     .btn { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%) !important; color: #333 !important; border: none !important; padding: 0 18px !important; height: 38px !important; line-height: 38px !important; border-radius: 20px !important; font-weight: bold !important; cursor: pointer !important; transition: transform 0.2s !important; box-shadow: 0 3px 6px rgba(0,0,0,0.1) !important; font-size: 0.85rem !important; display: inline-flex !important; align-items: center; justify-content: center; text-align: center; white-space: nowrap !important; text-decoration: none !important; }
@@ -63,10 +49,10 @@ globalStyle.innerHTML = `
     .dropdown-item:hover { background-color: #f1f8e9; }
     .msg-btn-mobile { background-color: #FFD700; color: #333; width: 36px; height: 36px; border-radius: 50%; display: none; align-items: center; justify-content: center; text-decoration: none; margin-right: 12px; font-size: 1rem; }
     body.page-messages .msg-btn-mobile, body.page-chat .msg-btn-mobile { display: none !important; }
-    .lang-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; justify-content: center; align-items: center; }
+    .lang-modal-overlay, #ban-blocker { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 100000; display: flex; justify-content: center; align-items: center; }
     .lang-modal { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     .lang-btn { display: block; width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; background: white; font-weight: bold; cursor: pointer; font-size: 1rem; transition: 0.2s; }
-    .lang-btn:hover { border-color: #4CAF50; background: #e8f5e9; color: #2E7D32; }
+    #ban-blocker { background: #000; color: #ff3b30; flex-direction: column; font-weight: bold; font-size: 1.5rem; text-align: center; padding: 20px; }
     @media (max-width: 767px) { nav { display: none !important; } .msg-btn-mobile { display: flex; } .mobile-link { display: flex; } .btn { font-size: 0.75rem !important; padding: 0 12px !important; height: 34px !important; } }
 `;
 document.head.appendChild(globalStyle);
@@ -85,20 +71,17 @@ onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
 
 onAuthStateChanged(auth, (user) => {
     if (user && user.emailVerified) {
-        // --- UPDATED BAN CHECK: ENFORCED INSTANTLY ---
         onSnapshot(doc(db, "users", user.uid), (docSnap) => {
             if (docSnap.exists()) {
                 currentUserData = docSnap.data();
                 
-                // ACTION: If status changed to banned, kick out now.
+                // --- INSTANT LOCKDOWN LOGIC ---
                 if (currentUserData.role === 'banned') {
-                    const lang = localStorage.getItem('preferred_language') || 'en';
-                    alert(translations[lang].ban_message);
-                    
-                    signOut(auth).then(() => { 
-                        window.location.href = '/LoginInToCheaplet.html'; 
-                    });
-                    return; 
+                    showBanBlocker();
+                    setTimeout(() => {
+                        signOut(auth).then(() => { window.location.href = '/LoginInToCheaplet.html'; });
+                    }, 2000);
+                    return;
                 }
                 
                 if (currentUserData.language) localStorage.setItem('preferred_language', currentUserData.language);
@@ -111,18 +94,24 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
+function showBanBlocker() {
+    if (document.getElementById('ban-blocker')) return;
+    const blocker = document.createElement('div');
+    blocker.id = 'ban-blocker';
+    const lang = localStorage.getItem('preferred_language') || 'en';
+    blocker.innerHTML = `<i class="fas fa-user-slash fa-3x" style="margin-bottom:20px;"></i><div>${translations[lang].ban_message}</div>`;
+    document.body.appendChild(blocker);
+}
+
 function refreshUI() {
     if (globalSettings.enableGlobalHeader === false) return;
-    
-    if (currentUserData) {
-        updateHeaderToLoggedIn(currentUserData);
-    } else {
+    if (currentUserData) updateHeaderToLoggedIn(currentUserData);
+    else {
         updateHeaderToLoggedOut();
         if (globalSettings.enableLanguagePrompt && !sessionStorage.getItem('lang_picked_this_session')) {
             showLanguagePopup();
         }
     }
-
     const savedLang = localStorage.getItem('preferred_language') || 'en';
     window.applyLanguage(savedLang);
 }
