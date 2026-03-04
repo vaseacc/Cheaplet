@@ -19,50 +19,34 @@
         nav ul { display: flex; list-style: none; gap: 20px; }
         .header-right { display: flex; align-items: center; gap: 15px; }
 
-        /* --- SPLIT LAYOUT WRAPPER --- */
-        .chat-main-wrapper {
-            display: flex;
-            height: calc(100vh - 65px);
-            max-width: 1300px;
-            margin: 0 auto;
-            background: white;
-            border-left: 1px solid #eee;
-            border-right: 1px solid #eee;
-        }
+        .chat-main-wrapper { display: flex; height: calc(100vh - 65px); max-width: 1300px; margin: 0 auto; background: white; border-left: 1px solid #eee; border-right: 1px solid #eee; }
 
-        /* --- LEFT SIDEBAR (Inbox List) --- */
-        .chat-sidebar {
-            width: 320px;
-            border-right: 1px solid #eee;
-            display: flex;
-            flex-direction: column;
-            background: #fdfdfd;
-            flex-shrink: 0;
-        }
+        /* --- SIDEBAR --- */
+        .chat-sidebar { width: 320px; border-right: 1px solid #eee; display: flex; flex-direction: column; background: #fdfdfd; flex-shrink: 0; transition: 0.3s ease; }
         .sidebar-header { padding: 20px; font-weight: 800; font-size: 1.2rem; border-bottom: 1px solid #eee; color: #2E7D32; }
         #sidebar-list { flex-grow: 1; overflow-y: auto; }
         
-        .side-conv-item {
-            display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f9f9f9;
-            text-decoration: none; color: inherit; transition: background 0.2s;
-        }
+        .side-conv-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f9f9f9; text-decoration: none; color: inherit; position: relative; }
         .side-conv-item:hover { background: #f1f8e9; }
         .side-conv-item.active { background: #e8f5e9; border-left: 4px solid #4CAF50; }
         .side-avatar { width: 40px; height: 40px; border-radius: 50%; background: #4CAF50; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px; flex-shrink: 0; }
-        .side-info { overflow: hidden; }
+        .side-info { overflow: hidden; flex-grow: 1; }
         .side-name { font-weight: 600; font-size: 0.95rem; }
         .side-msg { font-size: 0.8rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* --- RIGHT CONTENT (Active Chat) --- */
-        .chat-window {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            background: white;
-        }
-        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: 700; color: #2E7D32; background: #fff; }
+        /* RED DOT FOR NEW MESSAGE */
+        .unread-dot { width: 10px; height: 10px; background-color: #f44336; border-radius: 50%; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); display: none; }
+        .side-conv-item.is-new .unread-dot { display: block; }
+        .side-conv-item.is-new .side-name { color: #000; font-weight: 800; }
+
+        /* --- CHAT WINDOW --- */
+        .chat-window { flex-grow: 1; display: flex; flex-direction: column; background: white; }
+        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: 700; color: #2E7D32; background: #fff; display: flex; align-items: center; gap: 15px; }
         
-        #messages-list { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; background: #fcfcfc; }
+        /* MENU TOGGLE BUTTON (MOBILE ONLY) */
+        #mobile-menu-btn { display: none; background: none; border: none; font-size: 1.2rem; color: #4CAF50; cursor: pointer; }
+
+        #messages-list { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; background-color: #fcfcfc; }
         .message-bubble { max-width: 75%; padding: 10px 15px; border-radius: 18px; margin-bottom: 12px; word-wrap: break-word; position: relative; }
         .message-bubble.sent { background-color: #4CAF50; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
         .message-bubble.received { background-color: #f1f0f0; color: #333; align-self: flex-start; border-bottom-left-radius: 4px; }
@@ -78,8 +62,11 @@
 
         .info-message { text-align: center; padding: 100px 0; font-size: 1.2rem; color: #999; }
 
+        /* MOBILE RESPONSIVE FIX */
         @media (max-width: 767px) {
-            .chat-sidebar { display: none; } /* On small mobile, keep it single view */
+            #mobile-menu-btn { display: block; }
+            .chat-sidebar { position: fixed; left: -100%; top: 60px; height: calc(100vh - 60px); z-index: 1000; width: 85%; box-shadow: 10px 0 20px rgba(0,0,0,0.1); }
+            .chat-sidebar.open { left: 0; }
             nav { display: none; }
         }
     </style>
@@ -94,22 +81,21 @@
     </header>
 
     <div class="chat-main-wrapper">
-        <!-- SIDEBAR -->
-        <aside class="chat-sidebar">
+        <aside class="chat-sidebar" id="chat-sidebar">
             <div class="sidebar-header" data-i18n="nav_messages">Messages</div>
-            <div id="sidebar-list">
-                <!-- Injected via JS -->
-            </div>
+            <div id="sidebar-list"></div>
         </aside>
 
-        <!-- MAIN CHAT WINDOW -->
         <main class="chat-window">
             <div id="info-container">
                 <p class="info-message" data-i18n="loading_chat">Loading chat...</p>
             </div>
 
             <div id="chat-active-ui" style="display: none; flex-direction: column; height: 100%;">
-                <div class="chat-header" id="chat-header">Chat</div>
+                <div class="chat-header">
+                    <button id="mobile-menu-btn"><i class="fas fa-bars"></i></button>
+                    <span id="chat-header-name">Chat</span>
+                </div>
                 <div id="messages-list"></div>
                 
                 <form id="message-form" class="message-form">
@@ -137,31 +123,34 @@
             const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`;
             const UPLOAD_PRESET = config.cloudinary.uploadPreset;
 
+            const sidebar = document.getElementById('chat-sidebar');
             const sidebarList = document.getElementById('sidebar-list');
-            const infoContainer = document.getElementById('info-container');
             const chatActiveUI = document.getElementById('chat-active-ui');
             const messagesList = document.getElementById('messages-list');
             const messageForm = document.getElementById('message-form');
             const messageInput = document.getElementById('message-input');
-            const chatHeader = document.getElementById('chat-header');
-            const fileInput = document.getElementById('hidden-file-input');
-            const imgBtn = document.getElementById('img-upload-btn');
+            const chatHeaderName = document.getElementById('chat-header-name');
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = { en: { chatWith: "Chat with", imageSent: "Sent a photo" }, fr: { chatWith: "Discussion avec", imageSent: "A envoyé une photo" } };
+
+            // MOBILE TOGGLE LOGIC
+            mobileMenuBtn.onclick = () => sidebar.classList.toggle('open');
+            document.addEventListener('click', (e) => {
+                if (window.innerWidth < 768 && !sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+                    sidebar.classList.remove('open');
+                }
+            });
 
             onAuthStateChanged(auth, user => {
                 if (user && user.emailVerified) {
                     loadSidebar(user);
                     const chatId = new URLSearchParams(window.location.search).get('id');
                     if (chatId) initializeChat(chatId, user);
-                    else infoContainer.innerHTML = `<p class="info-message">Select a conversation to start chatting.</p>`;
-                } else {
-                    window.location.href = '/LoginInToCheaplet.html';
-                }
+                } else { window.location.href = '/LoginInToCheaplet.html'; }
             });
 
-            // --- LOAD SIDEBAR (INBOX) ---
             function loadSidebar(currentUser) {
                 const q = query(collection(db, "chats"), where("participants", "array-contains", currentUser.uid), orderBy("lastUpdate", "desc"));
                 onSnapshot(q, (snapshot) => {
@@ -173,33 +162,40 @@
                         const otherId = d.participants.find(p => p !== currentUser.uid);
                         const otherName = d.participantInfo ? d.participantInfo[otherId] : 'User';
                         
+                        // NEW MESSAGE LOGIC: If last sender was NOT me, show dot
+                        const isNew = d.lastSenderId && d.lastSenderId !== currentUser.uid;
+
                         const item = document.createElement('a');
-                        item.className = `side-conv-item ${docSnap.id === activeChatId ? 'active' : ''}`;
+                        item.className = `side-conv-item ${docSnap.id === activeChatId ? 'active' : ''} ${isNew ? 'is-new' : ''}`;
                         item.href = `?id=${docSnap.id}`;
                         item.innerHTML = `
                             <div class="side-avatar">${otherName.charAt(0).toUpperCase()}</div>
                             <div class="side-info">
                                 <div class="side-name">${otherName}</div>
                                 <div class="side-msg">${d.lastMessage || '...'}</div>
-                            </div>`;
+                            </div>
+                            <div class="unread-dot"></div>`;
                         sidebarList.appendChild(item);
                     });
                 });
             }
 
-            // --- LOAD ACTIVE CONVERSATION ---
             async function initializeChat(chatId, currentUser) {
                 const chatRef = doc(db, 'chats', chatId);
                 const chatSnap = await getDoc(chatRef);
-
                 if (!chatSnap.exists() || !chatSnap.data().participants.includes(currentUser.uid)) return;
                 
-                infoContainer.style.display = 'none';
+                document.getElementById('info-container').style.display = 'none';
                 chatActiveUI.style.display = 'flex';
                 
                 const otherId = chatSnap.data().participants.find(p => p !== currentUser.uid);
                 const otherName = chatSnap.data().participantInfo ? chatSnap.data().participantInfo[otherId] : 'User';
-                chatHeader.textContent = `${strings[lang].chatWith} ${otherName}`;
+                chatHeaderName.textContent = `${strings[lang].chatWith} ${otherName}`;
+
+                // Mark as read logic: Clear unread status when opening
+                if (chatSnap.data().lastSenderId !== currentUser.uid) {
+                    await updateDoc(chatRef, { lastSenderId: currentUser.uid }); // This effectively hides the dot
+                }
 
                 onSnapshot(query(collection(db, 'chats', chatId, 'messages'), orderBy("timestamp", "asc")), (snapshot) => {
                     messagesList.innerHTML = '';
@@ -213,20 +209,19 @@
                     if (!text) return;
                     messageInput.value = '';
                     await addDoc(collection(db, 'chats', chatId, 'messages'), { text, senderId: currentUser.uid, timestamp: serverTimestamp() });
-                    await updateDoc(chatRef, { lastMessage: text, lastUpdate: serverTimestamp() });
+                    await updateDoc(chatRef, { lastMessage: text, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
                 };
 
-                imgBtn.onclick = () => fileInput.click();
-                fileInput.onchange = async (e) => {
+                document.getElementById('img-upload-btn').onclick = () => document.getElementById('hidden-file-input').click();
+                document.getElementById('hidden-file-input').onchange = async (e) => {
                     const file = e.target.files[0];
                     if (!file) return;
                     const formData = new FormData();
                     formData.append('file', file);
                     formData.append('upload_preset', UPLOAD_PRESET);
-                    const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
-                    const data = await res.json();
-                    await addDoc(collection(db, 'chats', chatId, 'messages'), { imageUrl: data.secure_url, senderId: currentUser.uid, timestamp: serverTimestamp() });
-                    await updateDoc(chatRef, { lastMessage: `📷 ${strings[lang].imageSent}`, lastUpdate: serverTimestamp() });
+                    const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData }).then(r => r.json());
+                    await addDoc(collection(db, 'chats', chatId, 'messages'), { imageUrl: res.secure_url, senderId: currentUser.uid, timestamp: serverTimestamp() });
+                    await updateDoc(chatRef, { lastMessage: `📷 ${strings[lang].imageSent}`, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
                 };
             }
 
