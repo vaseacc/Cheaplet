@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
 // --- 0. AUTO-IMPORT ICONS ---
 if (!document.querySelector('link[href*="font-awesome"]')) {
@@ -61,13 +61,10 @@ globalStyle.innerHTML = `
     .dropdown-item:hover { background-color: #f1f8e9; }
     .msg-btn-mobile { background-color: #FFD700; color: #333; width: 36px; height: 36px; border-radius: 50%; display: none; align-items: center; justify-content: center; text-decoration: none; margin-right: 12px; font-size: 1rem; }
     body.page-messages .msg-btn-mobile, body.page-chat .msg-btn-mobile { display: none !important; }
-
-    /* LANGUAGE MODAL */
     .lang-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; justify-content: center; align-items: center; }
     .lang-modal { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     .lang-btn { display: block; width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; background: white; font-weight: bold; cursor: pointer; font-size: 1rem; transition: 0.2s; }
     .lang-btn:hover { border-color: #4CAF50; background: #e8f5e9; color: #2E7D32; }
-
     @media (max-width: 767px) { nav { display: none !important; } .msg-btn-mobile { display: flex; } .mobile-link { display: flex; } .btn { font-size: 0.75rem !important; padding: 0 12px !important; height: 34px !important; } }
 `;
 document.head.appendChild(globalStyle);
@@ -80,17 +77,8 @@ const path = window.location.pathname;
 if (path.includes('messages.html')) document.body.classList.add('page-messages');
 if (path.includes('chat.html')) document.body.classList.add('page-chat');
 
-// Listen for Site Settings
 onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
-    if (docSnap.exists()) { 
-        globalSettings = docSnap.data(); 
-        
-        // CHECK: If admin enabled prompt AND user hasn't picked a language yet
-        if (globalSettings.enableLanguagePrompt === true && !localStorage.getItem('preferred_language')) {
-            showLanguagePopup();
-        }
-        refreshUI(); 
-    }
+    if (docSnap.exists()) { globalSettings = docSnap.data(); refreshUI(); }
 });
 
 onAuthStateChanged(auth, (user) => {
@@ -101,6 +89,8 @@ onAuthStateChanged(auth, (user) => {
                 if (currentUserData.role === 'banned') {
                     signOut(auth).then(() => { alert("Account Banned."); window.location.href = '/LoginInToCheaplet.html'; });
                 }
+                // If user has a language in DB, ensure it's the one we use
+                if (currentUserData.language) localStorage.setItem('preferred_language', currentUserData.language);
                 refreshUI();
             }
         });
@@ -112,8 +102,16 @@ onAuthStateChanged(auth, (user) => {
 
 function refreshUI() {
     if (globalSettings.enableGlobalHeader === false) return;
-    if (currentUserData) updateHeaderToLoggedIn(currentUserData);
-    else updateHeaderToLoggedOut();
+    
+    if (currentUserData) {
+        updateHeaderToLoggedIn(currentUserData);
+    } else {
+        updateHeaderToLoggedOut();
+        // RULE: If guest and prompt enabled and haven't picked THIS SESSION
+        if (globalSettings.enableLanguagePrompt && !sessionStorage.getItem('lang_picked_this_session')) {
+            showLanguagePopup();
+        }
+    }
 
     const savedLang = localStorage.getItem('preferred_language') || 'en';
     window.applyLanguage(savedLang);
@@ -162,7 +160,10 @@ function updateHeaderToLoggedIn(userData) {
     if(avatar) avatar.onclick = (e) => { e.stopPropagation(); menu.classList.toggle('show'); };
     document.addEventListener('click', () => { if(menu) menu.classList.remove('show'); });
     const logout = document.getElementById('globalLogout');
-    if(logout) logout.onclick = () => signOut(auth).then(() => window.location.href = '/index.html');
+    if(logout) logout.onclick = () => signOut(auth).then(() => { 
+        sessionStorage.clear(); // Clear so it asks again on next return
+        window.location.href = '/index.html'; 
+    });
 }
 
 function updateHeaderToLoggedOut() {
@@ -179,31 +180,32 @@ function updateHeaderToLoggedOut() {
 }
 
 function showLanguagePopup() {
-    // Check if modal already exists to prevent duplicates
     if (document.getElementById('lang-modal')) return;
-
-    // Use a small interval to wait until document.body is ready
     const checkBody = setInterval(() => {
         if (document.body) {
             clearInterval(checkBody);
-            
             const modal = document.createElement('div');
             modal.id = 'lang-modal';
             modal.className = 'lang-modal-overlay';
             modal.innerHTML = `
                 <div class="lang-modal">
                     <h2 style="color:#2E7D32; margin-bottom:10px;">Welcome / Bienvenue</h2>
-                    <p style="color:#666; margin-bottom:20px;">Please select your language.<br>Veuillez choisir votre langue.</p>
+                    <p style="color:#666; margin-bottom:20px;">Please select your language.</p>
                     <button class="lang-btn" id="btn-en">English</button>
                     <button class="lang-btn" id="btn-fr">Français</button>
                 </div>
             `;
             document.body.appendChild(modal);
-
-            document.getElementById('btn-en').onclick = () => { window.applyLanguage('en'); modal.remove(); };
-            document.getElementById('btn-fr').onclick = () => { window.applyLanguage('fr'); modal.remove(); };
+            document.getElementById('btn-en').onclick = () => selectLang('en', modal);
+            document.getElementById('btn-fr').onclick = () => selectLang('fr', modal);
         }
     }, 100);
+}
+
+function selectLang(l, modal) {
+    window.applyLanguage(l);
+    sessionStorage.setItem('lang_picked_this_session', 'true'); // Hide for this tab session
+    modal.remove();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
