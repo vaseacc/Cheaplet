@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
@@ -13,7 +13,7 @@ if (!document.querySelector('link[href*="font-awesome"]')) {
 // --- 1. INITIALIZE CONFIG ---
 const response = await fetch('/.netlify/functions/config');
 const config = await response.json();
-const app = initializeApp(config.firebaseConfig);
+const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
 
@@ -61,9 +61,13 @@ globalStyle.innerHTML = `
     .dropdown-item:hover { background-color: #f1f8e9; }
     .msg-btn-mobile { background-color: #FFD700; color: #333; width: 36px; height: 36px; border-radius: 50%; display: none; align-items: center; justify-content: center; text-decoration: none; margin-right: 12px; font-size: 1rem; }
     body.page-messages .msg-btn-mobile, body.page-chat .msg-btn-mobile { display: none !important; }
+
+    /* LANGUAGE MODAL */
     .lang-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; justify-content: center; align-items: center; }
-    .lang-modal { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; width: 90%; }
-    .lang-btn { display: block; width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; background: white; font-weight: bold; cursor: pointer; }
+    .lang-modal { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .lang-btn { display: block; width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; background: white; font-weight: bold; cursor: pointer; font-size: 1rem; transition: 0.2s; }
+    .lang-btn:hover { border-color: #4CAF50; background: #e8f5e9; color: #2E7D32; }
+
     @media (max-width: 767px) { nav { display: none !important; } .msg-btn-mobile { display: flex; } .mobile-link { display: flex; } .btn { font-size: 0.75rem !important; padding: 0 12px !important; height: 34px !important; } }
 `;
 document.head.appendChild(globalStyle);
@@ -76,9 +80,15 @@ const path = window.location.pathname;
 if (path.includes('messages.html')) document.body.classList.add('page-messages');
 if (path.includes('chat.html')) document.body.classList.add('page-chat');
 
+// Listen for Site Settings
 onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
     if (docSnap.exists()) { 
         globalSettings = docSnap.data(); 
+        
+        // CHECK: If admin enabled prompt AND user hasn't picked a language yet
+        if (globalSettings.enableLanguagePrompt === true && !localStorage.getItem('preferred_language')) {
+            showLanguagePopup();
+        }
         refreshUI(); 
     }
 });
@@ -104,11 +114,6 @@ function refreshUI() {
     if (globalSettings.enableGlobalHeader === false) return;
     if (currentUserData) updateHeaderToLoggedIn(currentUserData);
     else updateHeaderToLoggedOut();
-
-    // TRIGGER POPUP CHECK
-    if (globalSettings.enableLanguagePrompt === true && !localStorage.getItem('preferred_language')) {
-        showLanguagePopup();
-    }
 
     const savedLang = localStorage.getItem('preferred_language') || 'en';
     window.applyLanguage(savedLang);
@@ -154,9 +159,10 @@ function updateHeaderToLoggedIn(userData) {
     document.getElementById('globalListBtn').onclick = () => window.location.href = '/listanitem.html';
     const avatar = container.querySelector('.profile-avatar');
     const menu = document.getElementById('globalDropdown');
-    avatar.onclick = (e) => { e.stopPropagation(); menu.classList.toggle('show'); };
-    document.addEventListener('click', () => menu.classList.remove('show'));
-    document.getElementById('globalLogout').onclick = () => signOut(auth).then(() => window.location.href = '/index.html');
+    if(avatar) avatar.onclick = (e) => { e.stopPropagation(); menu.classList.toggle('show'); };
+    document.addEventListener('click', () => { if(menu) menu.classList.remove('show'); });
+    const logout = document.getElementById('globalLogout');
+    if(logout) logout.onclick = () => signOut(auth).then(() => window.location.href = '/index.html');
 }
 
 function updateHeaderToLoggedOut() {
@@ -173,24 +179,31 @@ function updateHeaderToLoggedOut() {
 }
 
 function showLanguagePopup() {
-    // Check body readiness
-    if (!document.body || document.getElementById('lang-modal')) return;
+    // Check if modal already exists to prevent duplicates
+    if (document.getElementById('lang-modal')) return;
 
-    const modal = document.createElement('div');
-    modal.id = 'lang-modal';
-    modal.className = 'lang-modal-overlay';
-    modal.innerHTML = `
-        <div class="lang-modal">
-            <h2 style="color:#2E7D32; margin-bottom:10px;">Welcome / Bienvenue</h2>
-            <p style="color:#666; margin-bottom:20px;">Please select your language.<br>Veuillez choisir votre langue.</p>
-            <button class="lang-btn" id="btn-en">English</button>
-            <button class="lang-btn" id="btn-fr">Français</button>
-        </div>
-    `;
-    document.body.appendChild(modal);
+    // Use a small interval to wait until document.body is ready
+    const checkBody = setInterval(() => {
+        if (document.body) {
+            clearInterval(checkBody);
+            
+            const modal = document.createElement('div');
+            modal.id = 'lang-modal';
+            modal.className = 'lang-modal-overlay';
+            modal.innerHTML = `
+                <div class="lang-modal">
+                    <h2 style="color:#2E7D32; margin-bottom:10px;">Welcome / Bienvenue</h2>
+                    <p style="color:#666; margin-bottom:20px;">Please select your language.<br>Veuillez choisir votre langue.</p>
+                    <button class="lang-btn" id="btn-en">English</button>
+                    <button class="lang-btn" id="btn-fr">Français</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
 
-    document.getElementById('btn-en').onclick = () => { window.applyLanguage('en'); modal.remove(); };
-    document.getElementById('btn-fr').onclick = () => { window.applyLanguage('fr'); modal.remove(); };
+            document.getElementById('btn-en').onclick = () => { window.applyLanguage('en'); modal.remove(); };
+            document.getElementById('btn-fr').onclick = () => { window.applyLanguage('fr'); modal.remove(); };
+        }
+    }, 100);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
