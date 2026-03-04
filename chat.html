@@ -9,48 +9,79 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
-        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+        body { background-color: #f8f9fa; color: #333; height: 100vh; overflow: hidden; }
+        .container { width: 100%; max-width: 1300px; margin: 0 auto; padding: 0 15px; height: 100%; }
 
-        header { 
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); 
-            color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
-            position: sticky; top: 0; z-index: 100; 
-        }
+        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 100; flex-shrink: 0; }
         .header-content { display: flex; justify-content: space-between; align-items: center; }
         .logo { font-size: 24px; font-weight: bold; color: white; text-decoration: none; }
         .logo span { color: #FFD700; }
         nav ul { display: flex; list-style: none; gap: 20px; }
         .header-right { display: flex; align-items: center; gap: 15px; }
 
-        .chat-container { max-width: 800px; margin: 30px auto; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; height: calc(100vh - 150px); border: 1px solid #eee; overflow: hidden; }
-        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: 700; background: #fff; color: #2E7D32; font-size: 1.1rem; }
+        /* --- SPLIT LAYOUT WRAPPER --- */
+        .chat-main-wrapper {
+            display: flex;
+            height: calc(100vh - 65px);
+            max-width: 1300px;
+            margin: 0 auto;
+            background: white;
+            border-left: 1px solid #eee;
+            border-right: 1px solid #eee;
+        }
+
+        /* --- LEFT SIDEBAR (Inbox List) --- */
+        .chat-sidebar {
+            width: 320px;
+            border-right: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
+            background: #fdfdfd;
+            flex-shrink: 0;
+        }
+        .sidebar-header { padding: 20px; font-weight: 800; font-size: 1.2rem; border-bottom: 1px solid #eee; color: #2E7D32; }
+        #sidebar-list { flex-grow: 1; overflow-y: auto; }
         
-        #messages-list { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; background-color: #fcfcfc; }
+        .side-conv-item {
+            display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f9f9f9;
+            text-decoration: none; color: inherit; transition: background 0.2s;
+        }
+        .side-conv-item:hover { background: #f1f8e9; }
+        .side-conv-item.active { background: #e8f5e9; border-left: 4px solid #4CAF50; }
+        .side-avatar { width: 40px; height: 40px; border-radius: 50%; background: #4CAF50; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px; flex-shrink: 0; }
+        .side-info { overflow: hidden; }
+        .side-name { font-weight: 600; font-size: 0.95rem; }
+        .side-msg { font-size: 0.8rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* --- RIGHT CONTENT (Active Chat) --- */
+        .chat-window {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: 700; color: #2E7D32; background: #fff; }
+        
+        #messages-list { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; background: #fcfcfc; }
         .message-bubble { max-width: 75%; padding: 10px 15px; border-radius: 18px; margin-bottom: 12px; word-wrap: break-word; position: relative; }
         .message-bubble.sent { background-color: #4CAF50; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
         .message-bubble.received { background-color: #f1f0f0; color: #333; align-self: flex-start; border-bottom-left-radius: 4px; }
         
-        /* IMAGE MESSAGE STYLES */
-        .message-img { max-width: 100%; border-radius: 12px; display: block; margin-bottom: 5px; cursor: pointer; border: 1px solid rgba(0,0,0,0.05); }
-
+        .message-img { max-width: 100%; border-radius: 12px; display: block; margin-bottom: 5px; cursor: pointer; }
         .message-timestamp { font-size: 0.7rem; color: rgba(255,255,255,0.7); margin-top: 4px; text-align: right; }
         .message-bubble.received .message-timestamp { color: #888; }
 
         .message-form { display: flex; align-items: center; padding: 15px; border-top: 1px solid #eee; background: white; gap: 10px; }
-        
-        /* IMAGE UPLOAD ICON BUTTON */
-        #img-upload-btn { background: #f0f0f0; color: #555; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: background 0.2s; }
-        #img-upload-btn:hover { background: #e0e0e0; color: #2E7D32; }
-
-        #message-input { flex-grow: 1; border: 1px solid #ddd; border-radius: 25px; padding: 10px 20px; outline: none; transition: border-color 0.2s; font-size: 0.95rem; }
-        #message-input:focus { border-color: #4CAF50; }
-        
-        #send-btn { border-radius: 50%; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; background: #FFD700; color: #333; border: none; cursor: pointer; font-size: 1.1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        #send-btn:active { transform: scale(0.9); }
+        #img-upload-btn { background: #f0f0f0; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+        #message-input { flex-grow: 1; border: 1px solid #ddd; border-radius: 25px; padding: 10px 20px; outline: none; }
+        #send-btn { border-radius: 50%; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; background: #FFD700; color: #333; border: none; cursor: pointer; font-size: 1.1rem; }
 
         .info-message { text-align: center; padding: 100px 0; font-size: 1.2rem; color: #999; }
-        @media (max-width: 767px) { nav { display: none; } .chat-container { height: calc(100vh - 80px); margin: 10px; } }
+
+        @media (max-width: 767px) {
+            .chat-sidebar { display: none; } /* On small mobile, keep it single view */
+            nav { display: none; }
+        }
     </style>
 </head>
 <body>
@@ -62,32 +93,39 @@
         </div>
     </header>
 
-    <main class="container">
-        <div id="info-container">
-            <p class="info-message" data-i18n="loading_chat">Loading chat...</p>
-        </div>
+    <div class="chat-main-wrapper">
+        <!-- SIDEBAR -->
+        <aside class="chat-sidebar">
+            <div class="sidebar-header" data-i18n="nav_messages">Messages</div>
+            <div id="sidebar-list">
+                <!-- Injected via JS -->
+            </div>
+        </aside>
 
-        <div class="chat-container" id="chat-container" style="display: none;">
-            <div class="chat-header" id="chat-header">Chat</div>
-            <div id="messages-list"></div>
-            
-            <form id="message-form" class="message-form">
-                <!-- HIDDEN FILE INPUT -->
-                <input type="file" id="hidden-file-input" accept="image/*" style="display: none;">
-                <button type="button" id="img-upload-btn" title="Send a picture">
-                    <i class="fas fa-camera"></i>
-                </button>
+        <!-- MAIN CHAT WINDOW -->
+        <main class="chat-window">
+            <div id="info-container">
+                <p class="info-message" data-i18n="loading_chat">Loading chat...</p>
+            </div>
+
+            <div id="chat-active-ui" style="display: none; flex-direction: column; height: 100%;">
+                <div class="chat-header" id="chat-header">Chat</div>
+                <div id="messages-list"></div>
                 
-                <input type="text" id="message-input" data-i18n-placeholder="search_placeholder" placeholder="Type a message..." autocomplete="off">
-                <button type="submit" id="send-btn" class="btn">&#10148;</button>
-            </form>
-        </div>
-    </main>
+                <form id="message-form" class="message-form">
+                    <input type="file" id="hidden-file-input" accept="image/*" style="display: none;">
+                    <button type="button" id="img-upload-btn"><i class="fas fa-camera"></i></button>
+                    <input type="text" id="message-input" data-i18n-placeholder="search_placeholder" placeholder="Type a message..." autocomplete="off">
+                    <button type="submit" id="send-btn">&#10148;</button>
+                </form>
+            </div>
+        </main>
+    </div>
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -96,12 +134,12 @@
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            // Cloudinary Config
             const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`;
             const UPLOAD_PRESET = config.cloudinary.uploadPreset;
 
+            const sidebarList = document.getElementById('sidebar-list');
             const infoContainer = document.getElementById('info-container');
-            const chatContainer = document.getElementById('chat-container');
+            const chatActiveUI = document.getElementById('chat-active-ui');
             const messagesList = document.getElementById('messages-list');
             const messageForm = document.getElementById('message-form');
             const messageInput = document.getElementById('message-input');
@@ -110,44 +148,65 @@
             const imgBtn = document.getElementById('img-upload-btn');
 
             const lang = localStorage.getItem('preferred_language') || 'en';
-            const strings = {
-                en: { notFound: "Chat not found.", chatWith: "Chat with", login: "Please log in to chat.", imageSent: "Sent a photo" },
-                fr: { notFound: "Chat introuvable.", chatWith: "Discussion avec", login: "Veuillez vous connecter.", imageSent: "A envoyé une photo" }
-            };
+            const strings = { en: { chatWith: "Chat with", imageSent: "Sent a photo" }, fr: { chatWith: "Discussion avec", imageSent: "A envoyé une photo" } };
 
             onAuthStateChanged(auth, user => {
                 if (user && user.emailVerified) {
+                    loadSidebar(user);
                     const chatId = new URLSearchParams(window.location.search).get('id');
                     if (chatId) initializeChat(chatId, user);
+                    else infoContainer.innerHTML = `<p class="info-message">Select a conversation to start chatting.</p>`;
                 } else {
-                    infoContainer.innerHTML = `<p class="info-message">${strings[lang].login}</p>`;
+                    window.location.href = '/LoginInToCheaplet.html';
                 }
             });
 
+            // --- LOAD SIDEBAR (INBOX) ---
+            function loadSidebar(currentUser) {
+                const q = query(collection(db, "chats"), where("participants", "array-contains", currentUser.uid), orderBy("lastUpdate", "desc"));
+                onSnapshot(q, (snapshot) => {
+                    sidebarList.innerHTML = '';
+                    const activeChatId = new URLSearchParams(window.location.search).get('id');
+                    
+                    snapshot.forEach(docSnap => {
+                        const d = docSnap.data();
+                        const otherId = d.participants.find(p => p !== currentUser.uid);
+                        const otherName = d.participantInfo ? d.participantInfo[otherId] : 'User';
+                        
+                        const item = document.createElement('a');
+                        item.className = `side-conv-item ${docSnap.id === activeChatId ? 'active' : ''}`;
+                        item.href = `?id=${docSnap.id}`;
+                        item.innerHTML = `
+                            <div class="side-avatar">${otherName.charAt(0).toUpperCase()}</div>
+                            <div class="side-info">
+                                <div class="side-name">${otherName}</div>
+                                <div class="side-msg">${d.lastMessage || '...'}</div>
+                            </div>`;
+                        sidebarList.appendChild(item);
+                    });
+                });
+            }
+
+            // --- LOAD ACTIVE CONVERSATION ---
             async function initializeChat(chatId, currentUser) {
                 const chatRef = doc(db, 'chats', chatId);
                 const chatSnap = await getDoc(chatRef);
 
-                if (!chatSnap.exists() || !chatSnap.data().participants.includes(currentUser.uid)) {
-                    infoContainer.innerHTML = `<p class="info-message">${strings[lang].notFound}</p>`;
-                    return;
-                }
+                if (!chatSnap.exists() || !chatSnap.data().participants.includes(currentUser.uid)) return;
                 
                 infoContainer.style.display = 'none';
-                chatContainer.style.display = 'flex';
+                chatActiveUI.style.display = 'flex';
                 
                 const otherId = chatSnap.data().participants.find(p => p !== currentUser.uid);
                 const otherName = chatSnap.data().participantInfo ? chatSnap.data().participantInfo[otherId] : 'User';
                 chatHeader.textContent = `${strings[lang].chatWith} ${otherName}`;
 
-                const q = query(collection(db, 'chats', chatId, 'messages'), orderBy("timestamp", "asc"));
-                onSnapshot(q, (snapshot) => {
+                onSnapshot(query(collection(db, 'chats', chatId, 'messages'), orderBy("timestamp", "asc")), (snapshot) => {
                     messagesList.innerHTML = '';
                     snapshot.forEach(doc => renderMessage(doc.data(), currentUser.uid));
                     messagesList.scrollTop = messagesList.scrollHeight;
                 });
 
-                // TEXT MESSAGE SUBMISSION
                 messageForm.onsubmit = async (e) => {
                     e.preventDefault();
                     const text = messageInput.value.trim();
@@ -157,62 +216,25 @@
                     await updateDoc(chatRef, { lastMessage: text, lastUpdate: serverTimestamp() });
                 };
 
-                // IMAGE UPLOAD LOGIC
                 imgBtn.onclick = () => fileInput.click();
-
                 fileInput.onchange = async (e) => {
                     const file = e.target.files[0];
                     if (!file) return;
-
-                    imgBtn.disabled = true;
-                    imgBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-
-                    try {
-                        const formData = new FormData();
-                        formData.append('file', file);
-                        formData.append('upload_preset', UPLOAD_PRESET);
-                        
-                        const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
-                        const data = await res.json();
-                        const imageUrl = data.secure_url;
-
-                        // Send message with image URL
-                        await addDoc(collection(db, 'chats', chatId, 'messages'), { 
-                            imageUrl: imageUrl, 
-                            senderId: currentUser.uid, 
-                            timestamp: serverTimestamp() 
-                        });
-
-                        await updateDoc(chatRef, { 
-                            lastMessage: `📷 ${strings[lang].imageSent}`, 
-                            lastUpdate: serverTimestamp() 
-                        });
-
-                    } catch (err) {
-                        console.error(err);
-                        alert("Failed to send image.");
-                    } finally {
-                        imgBtn.disabled = false;
-                        imgBtn.innerHTML = '<i class="fas fa-camera"></i>';
-                        fileInput.value = '';
-                    }
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('upload_preset', UPLOAD_PRESET);
+                    const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
+                    const data = await res.json();
+                    await addDoc(collection(db, 'chats', chatId, 'messages'), { imageUrl: data.secure_url, senderId: currentUser.uid, timestamp: serverTimestamp() });
+                    await updateDoc(chatRef, { lastMessage: `📷 ${strings[lang].imageSent}`, lastUpdate: serverTimestamp() });
                 };
             }
 
             function renderMessage(data, currentUserId) {
                 const div = document.createElement('div');
                 div.className = `message-bubble ${data.senderId === currentUserId ? 'sent' : 'received'}`;
-                
-                let content = '';
-                // Check if message is an image
-                if (data.imageUrl) {
-                    content += `<img src="${data.imageUrl}" class="message-img" onclick="window.open('${data.imageUrl}', '_blank')">`;
-                }
-                // Check if message also has text
-                if (data.text) {
-                    content += `<p>${data.text}</p>`;
-                }
-
+                let content = data.imageUrl ? `<img src="${data.imageUrl}" class="message-img" onclick="window.open('${data.imageUrl}', '_blank')">` : '';
+                content += data.text ? `<p>${data.text}</p>` : '';
                 const time = data.timestamp ? data.timestamp.toDate().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
                 div.innerHTML = `${content}<span class="message-timestamp">${time}</span>`;
                 messagesList.appendChild(div);
