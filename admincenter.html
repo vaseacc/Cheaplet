@@ -40,10 +40,18 @@
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
 
         /* --- CARDS --- */
-        .admin-card, .tag-card, .user-card, .report-card {
+        .admin-card, .tag-card, .user-card, .report-card, .investigation-card {
             background-color: #2d2d2d; border: 1px solid #444; border-radius: 8px; overflow: hidden;
             display: flex; flex-direction: column;
         }
+
+        /* Investigation Styles */
+        .investigation-card { padding: 20px; margin-bottom: 20px; border-left: 5px solid #2196F3; }
+        .investigation-sub-title { color: #2196F3; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; font-size: 0.8rem; }
+        .chat-log-box { background: #111; padding: 15px; border-radius: 6px; max-height: 300px; overflow-y: auto; margin-bottom: 10px; font-size: 0.85rem; border: 1px solid #333; }
+        .msg-line { margin-bottom: 5px; padding: 5px; border-radius: 4px; }
+        .msg-line.target { background: #2c1a1a; border-left: 3px solid #ff4d4d; }
+        .msg-line.other { background: #1a2c1a; border-left: 3px solid #4CAF50; text-align: right; }
 
         /* Report Card Specifics */
         .report-card { border-left: 5px solid #f44336; padding: 15px; gap: 10px; }
@@ -53,7 +61,7 @@
 
         /* Listing Card Specifics */
         .card-header { padding: 10px; background: #333; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: #aaa; }
-        .user-link { color: #4CAF50; text-decoration: none; font-weight: bold; }
+        .user-link { color: #4CAF50; text-decoration: none; font-weight: bold; cursor: pointer; }
         .card-body { padding: 15px; flex-grow: 1; display: flex; gap: 10px; }
         .card-img { width: 80px; height: 80px; background: #000; object-fit: cover; border-radius: 4px; }
         .card-info { flex: 1; }
@@ -61,11 +69,6 @@
         .card-price { color: #FFD700; font-weight: bold; }
         .card-tags { font-size: 0.8rem; color: #888; margin-top: 5px; }
         .card-actions { padding: 10px; background: #222; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-        /* Tag Card Specifics */
-        .tag-card { padding: 15px; flex-direction: row; justify-content: space-between; align-items: center; }
-        .tag-info h3 { margin: 0; color: #fff; font-size: 1.1rem; }
-        .tag-meta { color: #888; font-size: 0.85rem; margin-top: 5px; }
 
         /* User Card Specifics */
         .user-card { padding: 20px; text-align: center; align-items: center; }
@@ -92,11 +95,10 @@
         .btn-remove-admin { background-color: #555; color: white; width: 100%; }
         .btn-dismiss { background-color: #444; color: white; }
 
-        /* --- SETTINGS SWITCH STYLE --- */
+        /* Settings Style */
         .setting-row { background: #2d2d2d; padding: 20px; border-radius: 8px; border: 1px solid #444; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .setting-info h3 { color: white; margin: 0 0 5px 0; font-size: 1.1rem; }
         .setting-info p { color: #888; font-size: 0.9rem; margin: 0; }
-        
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
@@ -136,48 +138,52 @@
                 <button class="tab-btn" onclick="switchTab('users')">Manage Users</button>
                 <button class="tab-btn" onclick="switchTab('reports')">Manage Reports</button>
                 <button class="tab-btn" onclick="switchTab('settings')">Site Settings</button>
+                <button class="tab-btn" id="tab-investigation" style="display:none;" onclick="switchTab('investigation')">Investigation</button>
             </div>
 
             <!-- VIEW: LISTINGS -->
             <div id="view-listings" class="view-section active">
                 <h1>All Listings</h1>
-                <div id="listings-grid" class="dashboard-grid">
-                    <p style="color: #666;">Loading listings...</p>
-                </div>
+                <div id="listings-grid" class="dashboard-grid"></div>
             </div>
 
             <!-- VIEW: TAGS -->
             <div id="view-tags" class="view-section">
                 <h1>Global Tags</h1>
-                <div id="tags-grid" class="dashboard-grid">
-                    <p style="color: #666;">Loading tags...</p>
-                </div>
+                <div id="tags-grid" class="dashboard-grid"></div>
             </div>
 
             <!-- VIEW: USERS -->
             <div id="view-users" class="view-section">
                 <h1>User Management</h1>
                 <div class="search-container">
-                    <input type="text" id="user-search-input" class="search-input" placeholder="Search by exact email (e.g. user@example.com)">
+                    <input type="text" id="user-search-input" class="search-input" placeholder="Search by email">
                     <button class="search-btn" onclick="window.searchUser()">Search</button>
                 </div>
-                <div id="users-grid" class="dashboard-grid">
-                    <p style="color: #666;">Loading recent users...</p>
-                </div>
+                <div id="users-grid" class="dashboard-grid"></div>
             </div>
 
-            <!-- VIEW: REPORTS (NEW) -->
+            <!-- VIEW: REPORTS -->
             <div id="view-reports" class="view-section">
                 <h1>User Reports</h1>
-                <div id="reports-grid" class="dashboard-grid">
-                    <p style="color: #666;">Loading reports...</p>
-                </div>
+                <div id="reports-grid" class="dashboard-grid"></div>
+            </div>
+
+            <!-- VIEW: INVESTIGATION (NEW) -->
+            <div id="view-investigation" class="view-section">
+                <h1 id="investigation-title">User Investigation</h1>
+                <div id="investigation-profile" class="investigation-card"></div>
+                
+                <h2 style="margin: 20px 0 10px;">Post History</h2>
+                <div id="investigation-listings" class="dashboard-grid"></div>
+
+                <h2 style="margin: 30px 0 10px;">Private Chat History</h2>
+                <div id="investigation-chats"></div>
             </div>
 
             <!-- VIEW: SETTINGS -->
             <div id="view-settings" class="view-section">
                 <h1>Global Configuration</h1>
-                
                 <div class="setting-row">
                     <div class="setting-info">
                         <h3>Language Selection Popup</h3>
@@ -188,11 +194,10 @@
                         <span class="slider"></span>
                     </label>
                 </div>
-
                 <div class="setting-row">
                     <div class="setting-info">
                         <h3>Global Header Injection</h3>
-                        <p>If enabled, `global.js` will automatically replace the login buttons with the Profile Circle on all pages.</p>
+                        <p>If enabled, `global.js` will automatically replace the login buttons with the Profile Circle.</p>
                     </div>
                     <label class="switch">
                         <input type="checkbox" id="toggle-global-header" onchange="window.toggleSetting('enableGlobalHeader', this.checked)">
@@ -200,7 +205,6 @@
                     </label>
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -212,7 +216,6 @@
         async function main() {
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
-            
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
@@ -224,165 +227,103 @@
             const usersGrid = document.getElementById('users-grid');
             const reportsGrid = document.getElementById('reports-grid');
 
-            // --- 1. SECURITY CHECK ---
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    try {
-                        const userDoc = await getDoc(doc(db, "users", user.uid));
-                        if (userDoc.exists() && userDoc.data().role === 'admin') {
-                            securityScreen.style.display = 'none';
-                            mainInterface.style.display = 'block';
-                            loadAllListings();
-                            loadAllTags();
-                            loadRecentUsers();
-                            loadAllReports();
-                            loadSettings();
-                        } else {
-                            alert("ACCESS DENIED: Admins only.");
-                            window.location.href = '/index.html';
-                        }
-                    } catch (e) {
-                        console.error(e);
-                        window.location.href = '/index.html';
-                    }
-                } else {
-                    window.location.href = '/LoginInToCheaplet.html';
-                }
+                    const userDoc = await getDoc(doc(db, "users", user.uid));
+                    if (userDoc.exists() && userDoc.data().role === 'admin') {
+                        securityScreen.style.display = 'none';
+                        mainInterface.style.display = 'block';
+                        loadAllListings(); loadAllTags(); loadRecentUsers(); loadAllReports(); loadSettings();
+                    } else { window.location.href = '/index.html'; }
+                } else { window.location.href = '/LoginInToCheaplet.html'; }
             });
 
-            // --- 2. SETTINGS LOGIC ---
             async function loadSettings() {
-                try {
-                    const docSnap = await getDoc(doc(db, "site_settings", "config"));
-                    if (docSnap.exists()) {
-                        const data = docSnap.data();
-                        document.getElementById('toggle-lang-prompt').checked = data.enableLanguagePrompt || false;
-                        document.getElementById('toggle-global-header').checked = data.enableGlobalHeader || false;
-                    }
-                } catch (e) { console.error("Error loading settings:", e); }
+                const docSnap = await getDoc(doc(db, "site_settings", "config"));
+                if (docSnap.exists()) {
+                    const d = docSnap.data();
+                    document.getElementById('toggle-lang-prompt').checked = d.enableLanguagePrompt || false;
+                    document.getElementById('toggle-global-header').checked = d.enableGlobalHeader || false;
+                }
             }
 
-            window.toggleSetting = async (key, value) => {
-                try {
-                    const settingRef = doc(db, "site_settings", "config");
-                    await setDoc(settingRef, { [key]: value }, { merge: true });
-                } catch (e) { alert("Error updating settings: " + e.message); }
-            };
+            window.toggleSetting = async (key, val) => { await setDoc(doc(db, "site_settings", "config"), { [key]: val }, { merge: true }); };
 
-            // --- 3. LISTINGS ---
-            async function loadAllListings() {
-                listingsGrid.innerHTML = '<p style="color: #666;">Loading listings...</p>';
-                const q = query(collection(db, "listings"), orderBy("timestamp", "desc"));
-                const snapshot = await getDocs(q);
-                listingsGrid.innerHTML = '';
-                if (snapshot.empty) { listingsGrid.innerHTML = '<p>No listings found.</p>'; return; }
-                snapshot.forEach(doc => {
-                    const data = doc.data();
-                    const card = document.createElement('div');
-                    card.className = 'admin-card';
-                    card.id = `listing-${doc.id}`;
-                    const imgUrl = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls[0] : '';
-                    card.innerHTML = `
-                        <div class="card-header">
-                            <span>ID: ${doc.id.substring(0, 6)}...</span>
-                            <a href="/user.html?id=${data.posterUid}" target="_blank" class="user-link">
-                                <i class="fas fa-user"></i> ${data.posterDisplayName || 'User'}
-                            </a>
-                        </div>
-                        <div class="card-body">
-                            <img src="${imgUrl}" class="card-img" alt="Item">
-                            <div class="card-info">
-                                <div class="card-title"><a href="/listing.html?id=${doc.id}" style="color:white;" target="_blank">${data.title}</a></div>
-                                <div class="card-price">$${data.price}</div>
+            // --- INVESTIGATION LOGIC (NEW) ---
+            window.investigateUser = async (uid) => {
+                document.getElementById('tab-investigation').style.display = 'block';
+                switchTab('investigation');
+                
+                const profileContainer = document.getElementById('investigation-profile');
+                const listingsContainer = document.getElementById('investigation-listings');
+                const chatsContainer = document.getElementById('investigation-chats');
+                
+                profileContainer.innerHTML = 'Loading user data...';
+                listingsContainer.innerHTML = '';
+                chatsContainer.innerHTML = '';
+
+                // 1. Load User Profile
+                const uDoc = await getDoc(doc(db, "users", uid));
+                if(uDoc.exists()) {
+                    const d = uDoc.data();
+                    profileContainer.innerHTML = `
+                        <div style="display:flex; align-items:center; gap:20px;">
+                            <img src="${d.photoURL || ''}" style="width:80px; height:80px; border-radius:50%; border:2px solid #2196F3;">
+                            <div>
+                                <h2 style="color:white;">${d.displayName}</h2>
+                                <p>${d.email}</p>
+                                <p style="font-size:0.8rem; color:#888;">UID: ${uid}</p>
+                                <button class="btn btn-ban" style="margin-top:10px;" onclick="window.banUser('${uid}')">BAN ACCOUNT</button>
                             </div>
                         </div>
-                        <div class="card-actions">
-                            <button class="btn btn-delete" onclick="window.deleteListing('${doc.id}')">Delete</button>
-                            <button class="btn btn-ban" onclick="window.banUser('${data.posterUid}')">BAN USER</button>
-                        </div>
                     `;
-                    listingsGrid.appendChild(card);
-                });
-            }
+                }
 
-            // --- 4. TAGS ---
-            async function loadAllTags() {
-                tagsGrid.innerHTML = '';
-                const q = query(collection(db, "global_tags"), orderBy("count", "desc"));
-                const snapshot = await getDocs(q);
-                if (snapshot.empty) { tagsGrid.innerHTML = '<p>No tags found.</p>'; return; }
-                snapshot.forEach(doc => {
-                    const data = doc.data();
+                // 2. Load Listings
+                const lSnap = await getDocs(query(collection(db, "listings"), where("posterUid", "==", uid)));
+                lSnap.forEach(ldoc => {
+                    const data = ldoc.data();
                     const card = document.createElement('div');
-                    card.className = 'tag-card';
-                    card.id = `tag-${doc.id}`;
-                    card.innerHTML = `
-                        <div class="tag-info"><h3>#${data.tag}</h3><div class="tag-meta">Used in ${data.count || 0} listings</div></div>
-                        <button class="btn btn-tag-delete" onclick="window.deleteTag('${doc.id}')">Delete</button>
-                    `;
-                    tagsGrid.appendChild(card);
+                    card.className = 'admin-card';
+                    card.innerHTML = `<div class="card-body"><div class="card-info"><div class="card-title">${data.title}</div><div class="card-price">$${data.price}</div></div></div>`;
+                    listingsContainer.appendChild(card);
                 });
-            }
 
-            // --- 5. USERS ---
-            async function loadRecentUsers() {
-                usersGrid.innerHTML = '';
-                const q = query(collection(db, "users"), limit(20));
-                const snapshot = await getDocs(q);
-                renderUserList(snapshot);
-            }
+                // 3. Load Chats & Messages
+                const cSnap = await getDocs(query(collection(db, "chats"), where("participants", "array-contains", uid)));
+                cSnap.forEach(async (cdoc) => {
+                    const chatData = cdoc.data();
+                    const otherId = chatData.participants.find(p => p !== uid);
+                    const chatCard = document.createElement('div');
+                    chatCard.className = 'investigation-card';
+                    chatCard.innerHTML = `<div class="investigation-sub-title">Chat with ${chatData.participantInfo?.[otherId] || otherId}</div><div class="chat-log-box" id="log-${cdoc.id}">Loading messages...</div>`;
+                    chatsContainer.appendChild(chatCard);
 
-            window.searchUser = async () => {
-                const email = document.getElementById('user-search-input').value.trim();
-                if (!email) return loadRecentUsers();
-                const q = query(collection(db, "users"), where("email", "==", email));
-                const snapshot = await getDocs(q);
-                if (snapshot.empty) { usersGrid.innerHTML = '<p>No user found.</p>'; } else { renderUserList(snapshot); }
+                    const mSnap = await getDocs(query(collection(db, "chats", cdoc.id, "messages"), orderBy("timestamp", "asc")));
+                    const logBox = document.getElementById(`log-${cdoc.id}`);
+                    logBox.innerHTML = '';
+                    mSnap.forEach(mdoc => {
+                        const m = mdoc.data();
+                        const isTarget = m.senderId === uid;
+                        logBox.innerHTML += `<div class="msg-line ${isTarget ? 'target' : 'other'}"><strong>${isTarget ? 'USER' : 'OTHER'}:</strong> ${m.text || '[Image]'}</div>`;
+                    });
+                });
             };
 
-            function renderUserList(snapshot) {
-                usersGrid.innerHTML = '';
-                snapshot.forEach(docSnap => {
-                    const data = docSnap.data();
-                    const card = document.createElement('div');
-                    card.className = 'user-card';
-                    const role = data.role || 'user';
-                    const avatar = data.photoURL || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjYyI+PHBhdGggZD0iTTEyIDEyYzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00LTQgMS43OS00IDQgMS43OSA0IDQgNHptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyaDE2di0yYzAtMi42Ni01LjMzLTQtOC00eiIvPjwvc3ZnPg==';
-                    card.innerHTML = `
-                        <img src="${avatar}" class="user-avatar" alt="Avatar">
-                        <div class="user-name">${data.displayName || 'Unknown'}</div>
-                        <div class="user-email">${data.email}</div>
-                        <span class="role-badge role-${role}">${role.toUpperCase()}</span>
-                        <div style="width:100%; margin-top:10px; display:flex; gap:10px;">
-                            <button class="btn btn-make-admin" onclick="window.toggleAdmin('${docSnap.id}', '${role === 'admin' ? 'remove' : 'add'}')">${role === 'admin' ? 'Remove Admin' : 'Make Admin'}</button>
-                            <button class="btn btn-ban" onclick="window.banUser('${docSnap.id}')"><i class="fas fa-ban"></i></button>
-                        </div>
-                    `;
-                    usersGrid.appendChild(card);
-                });
-            }
-
-            // --- 6. REPORTS (NEW) ---
+            // --- REPORTS ---
             async function loadAllReports() {
-                reportsGrid.innerHTML = '<p style="color: #666;">Loading reports...</p>';
-                const q = query(collection(db, "reports"), orderBy("timestamp", "desc"));
-                const snapshot = await getDocs(q);
-                reportsGrid.innerHTML = '';
-                if (snapshot.empty) { reportsGrid.innerHTML = '<p>No active reports.</p>'; return; }
+                const snapshot = await getDocs(query(collection(db, "reports"), orderBy("timestamp", "desc")));
+                reportsGrid.innerHTML = snapshot.empty ? '<p>No reports.</p>' : '';
                 snapshot.forEach(docSnap => {
                     const data = docSnap.data();
                     const card = document.createElement('div');
                     card.className = 'report-card';
                     card.id = `report-${docSnap.id}`;
                     card.innerHTML = `
-                        <div class="report-header">
-                            <span>From: ${data.reporterName || 'Unknown'}</span>
-                            <span>Date: ${data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : 'N/A'}</span>
-                        </div>
+                        <div class="report-header"><span>From: ${data.reporterName}</span></div>
                         <div class="report-reason">Reason: ${data.reason}</div>
-                        <div class="report-details">Target: ${data.targetUserName} (${data.targetUid})<br><br>${data.details || 'No additional details.'}</div>
+                        <div class="report-details">Target: <span class="user-link" onclick="window.investigateUser('${data.targetUid}')">${data.targetUserName}</span></div>
                         <div style="display:flex; gap:10px; margin-top:10px;">
-                            <button class="btn btn-ban" onclick="window.banUser('${data.targetUid}')">BAN TARGET</button>
                             <button class="btn btn-dismiss" onclick="window.dismissReport('${docSnap.id}')">Dismiss</button>
                         </div>
                     `;
@@ -390,55 +331,64 @@
                 });
             }
 
-            window.dismissReport = async (reportId) => {
-                if(confirm("Dismiss this report?")) {
-                    await deleteDoc(doc(db, "reports", reportId));
-                    document.getElementById(`report-${reportId}`).remove();
-                }
-            };
+            window.dismissReport = async (id) => { await deleteDoc(doc(db, "reports", id)); document.getElementById(`report-${id}`).remove(); };
 
-            // --- ACTIONS ---
-            window.deleteListing = async (id) => {
-                if(confirm("Delete this listing?")) {
-                    await deleteDoc(doc(db, "listings", id));
-                    document.getElementById(`listing-${id}`).remove();
-                }
-            };
+            // --- LISTINGS ---
+            async function loadAllListings() {
+                const snapshot = await getDocs(query(collection(db, "listings"), orderBy("timestamp", "desc")));
+                listingsGrid.innerHTML = '';
+                snapshot.forEach(ldoc => {
+                    const data = ldoc.data();
+                    const card = document.createElement('div');
+                    card.className = 'admin-card';
+                    card.id = `listing-${ldoc.id}`;
+                    card.innerHTML = `
+                        <div class="card-header"><span class="user-link" onclick="window.investigateUser('${data.posterUid}')">${data.posterDisplayName}</span></div>
+                        <div class="card-body"><div class="card-info"><div class="card-title">${data.title}</div><div class="card-price">$${data.price}</div></div></div>
+                        <div class="card-actions"><button class="btn btn-delete" onclick="window.deleteListing('${ldoc.id}')">Delete</button></div>
+                    `;
+                    listingsGrid.appendChild(card);
+                });
+            }
+
+            window.deleteListing = async (id) => { if(confirm("Delete?")) { await deleteDoc(doc(db, "listings", id)); document.getElementById(`listing-${id}`).remove(); } };
+
+            // --- USERS ---
+            async function loadRecentUsers() {
+                const snapshot = await getDocs(query(collection(db, "users"), limit(20)));
+                usersGrid.innerHTML = '';
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const card = document.createElement('div');
+                    card.className = 'user-card';
+                    card.innerHTML = `
+                        <img src="${data.photoURL || ''}" class="user-avatar">
+                        <div class="user-name" style="cursor:pointer; color:#4CAF50;" onclick="window.investigateUser('${docSnap.id}')">${data.displayName}</div>
+                        <div class="user-email">${data.email}</div>
+                        <span class="role-badge role-${data.role || 'user'}">${(data.role || 'user').toUpperCase()}</span>
+                    `;
+                    usersGrid.appendChild(card);
+                });
+            }
 
             window.banUser = async (uid) => {
-                if(confirm("BAN User and Delete ALL content?")) {
-                    const q = query(collection(db, "listings"), where("posterUid", "==", uid));
-                    const snap = await getDocs(q);
+                if(confirm("BAN everything?")) {
+                    const snap = await getDocs(query(collection(db, "listings"), where("posterUid", "==", uid)));
                     snap.docs.forEach(async (d) => { await deleteDoc(d.ref); });
                     await updateDoc(doc(db, "users", uid), { role: 'banned' });
-                    alert("User Banned.");
+                    alert("Banned.");
                 }
             };
 
-            window.deleteTag = async (tagDocId) => {
-                if(confirm("Delete this tag?")) {
-                    await deleteDoc(doc(db, "global_tags", tagDocId));
-                    document.getElementById(`tag-${tagDocId}`).remove();
-                }
+            window.switchTab = (name) => {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                const btn = document.querySelector(`.tab-btn[onclick*="${name}"]`) || document.getElementById('tab-investigation');
+                if(btn) btn.classList.add('active');
+                document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+                document.getElementById(`view-${name}`).classList.add('active');
             };
 
-            window.toggleAdmin = async (uid, action) => {
-                const newRole = action === 'add' ? 'admin' : 'user';
-                if (confirm(`Change role to ${newRole}?`)) {
-                    await updateDoc(doc(db, "users", uid), { role: newRole });
-                    window.searchUser();
-                }
-            };
-
-            window.switchTab = (tabName) => {
-                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-                const clickedBtn = document.querySelector(`.tab-btn[onclick="switchTab('${tabName}')"]`);
-                if(clickedBtn) clickedBtn.classList.add('active');
-                document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
-                document.getElementById(`view-${tabName}`).classList.add('active');
-            };
-
-            document.getElementById('logoutBtn').addEventListener('click', () => signOut(auth));
+            document.getElementById('logoutBtn').onclick = () => signOut(auth);
         }
         main();
     </script>
