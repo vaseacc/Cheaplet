@@ -46,12 +46,12 @@
         }
 
         /* Investigation Styles */
-        .investigation-card { padding: 20px; margin-bottom: 20px; border-left: 5px solid #2196F3; }
+        .investigation-card { padding: 20px; margin-bottom: 20px; border-left: 5px solid #2196F3; background: #252525; }
         .investigation-sub-title { color: #2196F3; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; font-size: 0.8rem; }
         .chat-log-box { background: #111; padding: 15px; border-radius: 6px; max-height: 400px; overflow-y: auto; margin-bottom: 10px; font-size: 0.85rem; border: 1px solid #333; }
-        .msg-line { margin-bottom: 5px; padding: 8px; border-radius: 4px; }
-        .msg-line.target { background: #2c1a1a; border-left: 3px solid #ff4d4d; }
-        .msg-line.other { background: #1a2c1a; border-left: 3px solid #4CAF50; text-align: right; }
+        .msg-line { margin-bottom: 5px; padding: 8px; border-radius: 4px; line-height: 1.4; }
+        .msg-line.target { background: #2c1a1a; border-left: 3px solid #ff4d4d; color: #ffcccc; }
+        .msg-line.other { background: #1a2c1a; border-left: 3px solid #4CAF50; text-align: right; color: #ccffcc; }
 
         /* Report Card Specifics */
         .report-card { border-left: 5px solid #f44336; padding: 15px; gap: 10px; }
@@ -67,7 +67,6 @@
         .card-info { flex: 1; }
         .card-title { font-weight: bold; margin-bottom: 5px; color: white; font-size: 1.1rem; }
         .card-price { color: #FFD700; font-weight: bold; }
-        .card-tags { font-size: 0.8rem; color: #888; margin-top: 5px; }
         .card-actions { padding: 10px; background: #222; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
         /* User Card Specifics */
@@ -92,10 +91,9 @@
         .btn-ban { background-color: #d32f2f; color: white; } 
         .btn-tag-delete { background-color: #d32f2f; color: white; font-size: 0.8rem; }
         .btn-make-admin { background-color: #2196F3; color: white; width: 100%; }
-        .btn-remove-admin { background-color: #555; color: white; width: 100%; }
         .btn-dismiss { background-color: #444; color: white; }
 
-        /* Settings Switch Style */
+        /* Settings Style */
         .setting-row { background: #2d2d2d; padding: 20px; border-radius: 8px; border: 1px solid #444; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         .setting-info h3 { color: white; margin: 0 0 5px 0; font-size: 1.1rem; }
         .setting-info p { color: #888; font-size: 0.9rem; margin: 0; }
@@ -166,7 +164,7 @@
                 <div id="investigation-profile" class="investigation-card"></div>
                 <h2 style="margin: 20px 0;">Post History</h2>
                 <div id="investigation-listings" class="dashboard-grid"></div>
-                <h2 style="margin: 30px 0;">Chat History</h2>
+                <h2 style="margin: 30px 0;">Full Chat History (Admin Eyes Only)</h2>
                 <div id="investigation-chats"></div>
             </div>
 
@@ -225,14 +223,14 @@
 
             window.toggleSetting = async (key, val) => { await setDoc(doc(db, "site_settings", "config"), { [key]: val }, { merge: true }); };
 
+            // --- LISTINGS ---
             async function loadAllListings() {
                 const snapshot = await getDocs(query(collection(db, "listings"), orderBy("timestamp", "desc")));
                 listingsGrid.innerHTML = '';
                 snapshot.forEach(ldoc => {
                     const d = ldoc.data();
                     const card = document.createElement('div');
-                    card.className = 'admin-card';
-                    card.id = `listing-${ldoc.id}`;
+                    card.className = 'admin-card'; card.id = `listing-${ldoc.id}`;
                     card.innerHTML = `
                         <div class="card-header"><span class="user-link" onclick="window.investigateUser('${d.posterUid}')">${d.posterDisplayName}</span></div>
                         <div class="card-body"><div class="card-info"><div class="card-title">${d.title}</div><div class="card-price">$${d.price}</div></div></div>
@@ -241,7 +239,8 @@
                 });
             }
 
-            async function loadAllTags() {
+            // --- TAGS (RESTORED MISSING FUNCTION) ---
+            window.loadAllTags = async () => {
                 const snapshot = await getDocs(query(collection(db, "global_tags"), orderBy("count", "desc")));
                 tagsGrid.innerHTML = '';
                 snapshot.forEach(tdoc => {
@@ -253,6 +252,7 @@
                 });
             }
 
+            // --- USERS ---
             async function loadRecentUsers() {
                 const snapshot = await getDocs(query(collection(db, "users"), limit(20)));
                 usersGrid.innerHTML = '';
@@ -275,6 +275,7 @@
                 container.appendChild(card);
             }
 
+            // --- REPORTS ---
             async function loadAllReports() {
                 const snapshot = await getDocs(query(collection(db, "reports"), orderBy("timestamp", "desc")));
                 reportsGrid.innerHTML = '';
@@ -287,7 +288,7 @@
                 });
             }
 
-            // --- FIX: IMPROVED INVESTIGATION LOGIC ---
+            // --- INVESTIGATION (FIXED BUG: FULL DATA LOADING) ---
             window.investigateUser = async (uid) => {
                 document.getElementById('tab-investigation').style.display = 'block';
                 switchTab('investigation');
@@ -296,16 +297,19 @@
                 const chatsBox = document.getElementById('investigation-chats');
                 
                 profileBox.innerHTML = 'Fetching full profile...';
-                listingsBox.innerHTML = '';
-                chatsBox.innerHTML = '';
+                listingsBox.innerHTML = 'Loading listings...';
+                chatsBox.innerHTML = 'Searching all chat history...';
 
                 try {
+                    // 1. Profile
                     const uSnap = await getDoc(doc(db, "users", uid));
                     if(uSnap.exists()) {
                         const d = uSnap.data();
                         profileBox.innerHTML = `<h2>${d.displayName}</h2><p>${d.email}</p><button class="btn btn-ban" onclick="window.banUser('${uid}')">BAN ACCOUNT</button>`;
                     }
 
+                    // 2. Listings
+                    listingsBox.innerHTML = '';
                     const lSnap = await getDocs(query(collection(db, "listings"), where("posterUid", "==", uid)));
                     lSnap.forEach(ldoc => {
                         const card = document.createElement('div'); card.className = 'admin-card';
@@ -313,9 +317,12 @@
                         listingsBox.appendChild(card);
                     });
 
+                    // 3. FULL CHATS (Using for...of loop for perfect sequential loading)
+                    chatsBox.innerHTML = '';
                     const cSnap = await getDocs(query(collection(db, "chats"), where("participants", "array-contains", uid)));
                     
-                    // FIXED: Using for...of loop to ensure all messages are loaded sequentially and completely
+                    if (cSnap.empty) { chatsBox.innerHTML = '<p>No chats found.</p>'; }
+
                     for (const cdoc of cSnap.docs) {
                         const d = cdoc.data();
                         const otherId = d.participants.find(p => p !== uid);
@@ -327,15 +334,13 @@
                         const log = document.getElementById(`log-${cdoc.id}`);
                         mSnap.forEach(m => {
                             const isT = m.data().senderId === uid;
-                            log.innerHTML += `<div class="msg-line ${isT?'target':'other'}">${m.data().text || '[Image]'}</div>`;
+                            log.innerHTML += `<div class="msg-line ${isT?'target':'other'}"><strong>${isT?'USER':'OTHER'}:</strong> ${m.data().text || '[Image]'}</div>`;
                         });
                     }
-                } catch (err) {
-                    console.error("Investigation Error:", err);
-                    alert("Query requires an index. Please check your browser console for the link.");
-                }
+                } catch (err) { console.error(err); alert("Query Error: Check console for missing index link."); }
             };
 
+            // --- ACTIONS ---
             window.deleteListing = async (id) => { if(confirm("Delete?")) { await deleteDoc(doc(db, "listings", id)); document.getElementById(`listing-${id}`).remove(); } };
             window.deleteTag = async (id) => { if(confirm("Delete?")) { await deleteDoc(doc(db, "global_tags", id)); document.getElementById(`tag-${id}`).remove(); } };
             window.dismissReport = async (id) => { await deleteDoc(doc(db, "reports", id)); document.getElementById(`report-${id}`).remove(); };
@@ -347,11 +352,13 @@
                 const btn = document.querySelector(`.tab-btn[onclick*="${name}"]`) || document.getElementById('tab-investigation');
                 if(btn) btn.classList.add('active');
                 document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
-                document.getElementById(`view-${name}`).classList.add('active');
+                const view = document.getElementById(`view-${name}`);
+                if(view) view.classList.add('active');
             };
 
             document.getElementById('logoutBtn').onclick = () => signOut(auth);
         }
+        function loadAllTags() { window.loadAllTags(); } // Global helper
         main();
     </script>
 </body>
