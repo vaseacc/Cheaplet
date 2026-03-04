@@ -24,14 +24,16 @@ const translations = {
         "btn_login": "Login / Register", "btn_list": "List an Item", "btn_browse": "Start Browsing", "btn_signout": "Sign Out", 
         "search_placeholder": "What are you looking for?", "hero_title": "Great Finds, Unbeatable Prices.", 
         "hero_sub": "Cheaplet is the online marketplace for smart savings.",
-        "verified_student": "Verified Student"
+        "verified_student": "Verified Student",
+        "ban_message": "Your account has been banned for violating our terms of service."
     },
     "fr": { 
         "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", 
         "btn_login": "Connexion", "btn_list": "Vendre un article", "btn_browse": "Commencer à naviguer", "btn_signout": "Déconnexion", 
         "search_placeholder": "Que cherchez-vous ?", "hero_title": "Super trouvailles, prix imbattables.", 
         "hero_sub": "Cheaplet est le marché en ligne pour des économies intelligentes.",
-        "verified_student": "Étudiant vérifié"
+        "verified_student": "Étudiant vérifié",
+        "ban_message": "Votre compte a été banni pour violation de nos conditions d'utilisation."
     }
 };
 
@@ -83,13 +85,22 @@ onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
 
 onAuthStateChanged(auth, (user) => {
     if (user && user.emailVerified) {
+        // --- UPDATED BAN CHECK: ENFORCED INSTANTLY ---
         onSnapshot(doc(db, "users", user.uid), (docSnap) => {
             if (docSnap.exists()) {
                 currentUserData = docSnap.data();
+                
+                // ACTION: If status changed to banned, kick out now.
                 if (currentUserData.role === 'banned') {
-                    signOut(auth).then(() => { alert("Account Banned."); window.location.href = '/LoginInToCheaplet.html'; });
+                    const lang = localStorage.getItem('preferred_language') || 'en';
+                    alert(translations[lang].ban_message);
+                    
+                    signOut(auth).then(() => { 
+                        window.location.href = '/LoginInToCheaplet.html'; 
+                    });
+                    return; 
                 }
-                // If user has a language in DB, ensure it's the one we use
+                
                 if (currentUserData.language) localStorage.setItem('preferred_language', currentUserData.language);
                 refreshUI();
             }
@@ -107,7 +118,6 @@ function refreshUI() {
         updateHeaderToLoggedIn(currentUserData);
     } else {
         updateHeaderToLoggedOut();
-        // RULE: If guest and prompt enabled and haven't picked THIS SESSION
         if (globalSettings.enableLanguagePrompt && !sessionStorage.getItem('lang_picked_this_session')) {
             showLanguagePopup();
         }
@@ -161,7 +171,7 @@ function updateHeaderToLoggedIn(userData) {
     document.addEventListener('click', () => { if(menu) menu.classList.remove('show'); });
     const logout = document.getElementById('globalLogout');
     if(logout) logout.onclick = () => signOut(auth).then(() => { 
-        sessionStorage.clear(); // Clear so it asks again on next return
+        sessionStorage.clear(); 
         window.location.href = '/index.html'; 
     });
 }
@@ -204,7 +214,7 @@ function showLanguagePopup() {
 
 function selectLang(l, modal) {
     window.applyLanguage(l);
-    sessionStorage.setItem('lang_picked_this_session', 'true'); // Hide for this tab session
+    sessionStorage.setItem('lang_picked_this_session', 'true'); 
     modal.remove();
 }
 
