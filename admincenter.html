@@ -158,7 +158,7 @@
                 </div>
             </div>
 
-            <!-- VIEW: SETTINGS (NEW) -->
+            <!-- VIEW: SETTINGS -->
             <div id="view-settings" class="view-section">
                 <h1>Global Configuration</h1>
                 
@@ -173,7 +173,6 @@
                     </label>
                 </div>
 
-                <!-- NEW: GLOBAL HEADER SWITCH -->
                 <div class="setting-row">
                     <div class="setting-info">
                         <h3>Global Header Injection</h3>
@@ -190,7 +189,7 @@
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, getDocs, collection, query, orderBy, deleteDoc, where, updateDoc, limit, setDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
@@ -198,7 +197,7 @@
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
             
-            const app = initializeApp(config.firebaseConfig);
+            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
 
@@ -240,7 +239,7 @@
                     if (docSnap.exists()) {
                         const data = docSnap.data();
                         document.getElementById('toggle-lang-prompt').checked = data.enableLanguagePrompt || false;
-                        document.getElementById('toggle-global-header').checked = data.enableGlobalHeader || false; // NEW
+                        document.getElementById('toggle-global-header').checked = data.enableGlobalHeader || false;
                     }
                 } catch (e) { console.error("Error loading settings:", e); }
             }
@@ -257,10 +256,11 @@
 
             // --- 3. LISTINGS ---
             async function loadAllListings() {
-                listingsGrid.innerHTML = '';
+                listingsGrid.innerHTML = '<p style="color: #666;">Loading listings...</p>';
                 const q = query(collection(db, "listings"), orderBy("timestamp", "desc"));
                 const snapshot = await getDocs(q);
 
+                listingsGrid.innerHTML = '';
                 if (snapshot.empty) {
                     listingsGrid.innerHTML = '<p>No listings found.</p>';
                     return;
@@ -271,7 +271,6 @@
                     const card = document.createElement('div');
                     card.className = 'admin-card';
                     card.id = `listing-${doc.id}`;
-
                     const imgUrl = (data.imageUrls && data.imageUrls.length > 0) ? data.imageUrls[0] : '';
                     const tags = data.tags ? data.tags.join(', ') : 'No tags';
 
@@ -304,18 +303,15 @@
                 tagsGrid.innerHTML = '';
                 const q = query(collection(db, "global_tags"), orderBy("count", "desc"));
                 const snapshot = await getDocs(q);
-
                 if (snapshot.empty) {
                     tagsGrid.innerHTML = '<p>No tags found.</p>';
                     return;
                 }
-
                 snapshot.forEach(doc => {
                     const data = doc.data();
                     const card = document.createElement('div');
                     card.className = 'tag-card';
                     card.id = `tag-${doc.id}`;
-
                     card.innerHTML = `
                         <div class="tag-info">
                             <h3>#${data.tag}</h3>
@@ -338,11 +334,9 @@
             window.searchUser = async () => {
                 const email = document.getElementById('user-search-input').value.trim();
                 if (!email) return loadRecentUsers();
-
                 usersGrid.innerHTML = '<p>Searching...</p>';
                 const q = query(collection(db, "users"), where("email", "==", email));
                 const snapshot = await getDocs(q);
-                
                 if (snapshot.empty) {
                     usersGrid.innerHTML = '<p>No user found with that email.</p>';
                 } else {
@@ -356,14 +350,11 @@
                     const data = docSnap.data();
                     const card = document.createElement('div');
                     card.className = 'user-card';
-                    
                     const role = data.role || 'user';
                     let badgeClass = 'role-user';
                     if (role === 'admin') badgeClass = 'role-admin';
                     if (role === 'banned') badgeClass = 'role-banned';
-
                     const avatar = data.photoURL || 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2NjYyI+PHBhdGggZD0iTTEyIDEyYzIuMjEgMCA0LTEuNzkgNC00cy0xLjc5LTQtNC00LTQgMS43OS00IDQgMS43OSA0IDQgNHptMCAyYy0yLjY3IDAtOCAxLjM0LTggNHYyaDE2di0yYzAtMi42Ni01LjMzLTQtOC00eiIvPjwvc3ZnPg==';
-
                     const isTargetAdmin = role === 'admin';
                     const btnClass = isTargetAdmin ? 'btn-remove-admin' : 'btn-make-admin';
                     const btnText = isTargetAdmin ? 'Remove Admin' : 'Make Admin';
@@ -374,7 +365,6 @@
                         <div class="user-name">${data.displayName || 'Unknown'}</div>
                         <div class="user-email">${data.email}</div>
                         <span class="role-badge ${badgeClass}">${role.toUpperCase()}</span>
-                        
                         <div style="width:100%; margin-top:10px; display:flex; gap:10px;">
                             <button class="btn ${btnClass}" onclick="window.toggleAdmin('${docSnap.id}', '${action}')">${btnText}</button>
                             <button class="btn btn-ban" onclick="window.banUser('${docSnap.id}')"><i class="fas fa-ban"></i></button>
@@ -385,7 +375,6 @@
             }
 
             // --- ACTIONS ---
-            
             window.deleteListing = async (id) => {
                 if(confirm("Delete this listing?")) {
                     await deleteDoc(doc(db, "listings", id));
@@ -397,24 +386,22 @@
                 if(confirm("BAN User and Delete ALL their listings?")) {
                     const q = query(collection(db, "listings"), where("posterUid", "==", uid));
                     const snap = await getDocs(q);
-                    
-                    const promises = snap.docs.map(d => {
+                    snap.docs.forEach(async (d) => {
                         const el = document.getElementById(`listing-${d.id}`);
                         if(el) el.remove();
-                        return deleteDoc(d.ref);
+                        await deleteDoc(d.ref);
                     });
-                    await Promise.all(promises);
-
                     await updateDoc(doc(db, "users", uid), { role: 'banned' });
                     alert("User Banned.");
-                    if(document.getElementById('view-users').style.display === 'block') loadRecentUsers();
+                    if(document.getElementById('view-users').classList.contains('active')) loadRecentUsers();
                 }
             };
 
             window.deleteTag = async (tagDocId) => {
                 if(confirm("Delete this tag?")) {
                     await deleteDoc(doc(db, "global_tags", tagDocId));
-                    document.getElementById(`tag-${tagDocId}`).remove();
+                    const el = document.getElementById(`tag-${tagDocId}`);
+                    if(el) el.remove();
                 }
             };
 
@@ -422,7 +409,7 @@
                 const newRole = action === 'add' ? 'admin' : 'user';
                 if (confirm(`Change role to ${newRole}?`)) {
                     await updateDoc(doc(db, "users", uid), { role: newRole });
-                    if(document.getElementById('user-search-input').value) { window.searchUser(); } else { loadRecentUsers(); }
+                    window.searchUser();
                 }
             };
 
@@ -430,7 +417,6 @@
                 document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
                 const clickedBtn = document.querySelector(`.tab-btn[onclick="switchTab('${tabName}')"]`);
                 if(clickedBtn) clickedBtn.classList.add('active');
-
                 document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active'));
                 document.getElementById(`view-${tabName}`).classList.add('active');
             };
