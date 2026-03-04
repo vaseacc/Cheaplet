@@ -12,18 +12,13 @@
         body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
         .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
 
-        /* Header */
         header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
         .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
         .logo { font-size: 24px; font-weight: bold; display: flex; align-items: center; cursor: pointer; color: white; text-decoration: none; }
         .logo span { color: #FFD700; }
-        nav ul { display: flex; list-style: none; }
-        nav ul li { margin-left: 20px; }
-        nav ul li a { color: white; text-decoration: none; font-weight: 500; opacity: 0.9; }
-
+        nav ul { display: flex; list-style: none; gap: 20px; }
         .header-auth-buttons { display: flex; gap: 10px; align-items: center; }
         
-        /* Form Styles */
         .firebase-form-section { background-color: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin: 30px auto; max-width: 600px; text-align: left; }
         .firebase-form-section h2 { text-align: center; margin-bottom: 25px; color: #333; }
         .form-field { margin-bottom: 15px; }
@@ -31,24 +26,25 @@
         input, textarea, select { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 1rem; display: block; }
         input:focus, textarea:focus, select:focus { outline: none; border-color: #4CAF50; }
         
-        /* FIX: BUTTON CONTAINER TO PREVENT OVERLAP */
         .form-buttons { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
         .form-buttons .btn { flex: 1; min-width: 120px; }
         
-        /* TAG SYSTEM STYLES */
         .tag-container { border: 2px solid #ddd; border-radius: 6px; padding: 10px; background: #fff; display: flex; flex-wrap: wrap; gap: 8px; position: relative; }
         .tag-container:focus-within { border-color: #4CAF50; }
-        .tag-chip { background-color: #e8f5e9; color: #2E7D32; padding: 5px 10px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 5px; }
-        .tag-close { cursor: pointer; font-weight: bold; }
+        .tag-chip { background-color: #e8f5e9; color: #2E7D32; padding: 5px 10px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; }
         #tag-input { border: none; outline: none; padding: 5px; flex-grow: 1; min-width: 120px; }
         .suggestions-box { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ddd; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
         .suggestion-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
 
-        /* Image Uploader */
+        /* CHECKBOX GROUP */
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; background: #fdfdfd; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
+        .checkbox-item { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.9rem; cursor: pointer; color: #444; }
+        .checkbox-item input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
+
         .image-preview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
         .image-preview-wrapper { position: relative; width: 80px; height: 80px; }
         .image-preview { width: 100%; height: 100%; border-radius: 8px; object-fit: cover; border: 1px solid #ddd; }
-        .remove-image-btn { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; background-color: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .remove-image-btn { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; background-color: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; }
         #add-photo-label { width: 80px; height: 80px; border: 2px dashed #ccc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #777; }
 
         .info-message { text-align: center; padding: 50px; font-size: 1.2rem; color: #777; }
@@ -58,7 +54,7 @@
 <body>
     <header>
         <div class="container header-content">
-            <a href="/index.html" class="logo" id="logo-link">Cheap<span>let</span></a>
+            <a href="/index.html" class="logo">Cheap<span>let</span></a>
             <nav><ul></ul></nav>
             <div class="header-auth-buttons"></div>
         </div>
@@ -66,7 +62,7 @@
 
     <main class="container">
         <div id="info-container">
-            <p class="info-message">Loading listing for editing...</p>
+            <p class="info-message">Loading listing...</p>
         </div>
 
         <section id="edit-form-container" class="firebase-form-section" style="display: none;">
@@ -82,9 +78,15 @@
                 <textarea id="listing-description" required></textarea>
             </div>
 
-            <div class="form-field">
-                <label data-i18n="label_price">Price ($) - Max $1200</label>
-                <input type="number" id="listing-price" min="0" max="1200" step="0.01" required>
+            <div style="display: flex; gap: 15px;">
+                <div style="flex: 1;" class="form-field">
+                    <label data-i18n="label_price">Sale Price ($)</label>
+                    <input type="number" id="listing-price" min="0" max="1200" step="0.01" required>
+                </div>
+                <div style="flex: 1;" class="form-field">
+                    <label data-i18n="label_original_price">Original Price ($)</label>
+                    <input type="number" id="listing-original-price" min="0" step="0.01">
+                </div>
             </div>
 
             <div class="form-field">
@@ -98,7 +100,15 @@
                 </select>
             </div>
 
-            <!-- ADDED: DIGITAL ACCESS CODE -->
+            <div class="form-field">
+                <label data-i18n="label_additional_details">Additional Details</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="checkbox" id="cond-writing"> <span data-i18n="label_writing">Writing inside</span></label>
+                    <label class="checkbox-item"><input type="checkbox" id="cond-water"> <span data-i18n="label_water">Water damage</span></label>
+                    <label class="checkbox-item"><input type="checkbox" id="cond-missing"> <span data-i18n="label_missing">Missing pages</span></label>
+                </div>
+            </div>
+
             <div class="form-field">
                 <label data-i18n="label_digital_code">Digital Access Code</label>
                 <select id="listing-digital-code">
@@ -117,9 +127,8 @@
                 </div>
             </div>
 
-            <!-- UPDATED: RESTRICTED LOCATION SELECT -->
             <div class="form-field">
-                <label data-i18n="label_location">Campus Location (Montreal Only)</label>
+                <label data-i18n="label_location">Campus Location</label>
                 <select id="listing-location" required>
                     <option value="" data-i18n="opt_select_campus">Select a Campus</option>
                     <optgroup label="Cégeps" data-i18n="opt_cegeps">
@@ -137,9 +146,14 @@
                     </optgroup>
                 </select>
             </div>
+
+            <div class="form-field">
+                <label data-i18n="label_meeting_point">Meeting Point</label>
+                <input type="text" id="listing-meeting-point">
+            </div>
             
             <div class="form-field">
-                <label data-i18n="label_photos">Images (1-5 Required)</label>
+                <label data-i18n="label_photos">Photos (1-5 Required)</label>
                 <div id="image-uploader">
                     <div class="image-preview-grid" id="image-preview-container"></div>
                     <label for="listing-image-input" id="add-photo-label" style="margin-top:10px;">
@@ -189,18 +203,16 @@
                 tags.forEach((tag, index) => {
                     const chip = document.createElement('div');
                     chip.className = 'tag-chip';
-                    chip.innerHTML = `${tag} <span class="tag-close">&times;</span>`;
-                    chip.querySelector('.tag-close').onclick = () => { tags.splice(index, 1); renderTags(); };
+                    chip.innerHTML = `${tag} <span style="cursor:pointer; margin-left:5px;" onclick="window.removeTag(${index})">&times;</span>`;
                     selectedTagsContainer.appendChild(chip);
                 });
             }
-
+            window.removeTag = (index) => { tags.splice(index, 1); renderTags(); };
             function addTag(tagName) {
                 const cleaned = tagName.trim();
                 if (cleaned && !tags.includes(cleaned)) { tags.push(cleaned); renderTags(); }
                 tagInput.value = ''; suggestionsBox.style.display = 'none';
             }
-
             tagInput.oninput = async (e) => {
                 const val = e.target.value.trim().toLowerCase();
                 if (val.length < 1) { suggestionsBox.style.display = 'none'; return; }
@@ -219,9 +231,11 @@
                     });
                 } else {
                     suggestionsBox.style.display = 'block';
-                    suggestionsBox.innerHTML = `<div class="suggestion-item" onclick="addTag('${tagInput.value}')">Create: "${tagInput.value}"</div>`;
+                    suggestionsBox.innerHTML = `<div class="suggestion-item" onclick="window.addTagManual()">Create: "${tagInput.value}"</div>`;
                 }
             };
+            window.addTagManual = () => addTag(tagInput.value);
+            tagInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput.value); } };
 
             // --- IMAGE LOGIC ---
             function renderPreviews() {
@@ -246,7 +260,6 @@
                 });
                 document.getElementById('add-photo-label').style.display = all.length < 5 ? 'flex' : 'none';
             }
-
             document.getElementById('listing-image-input').onchange = (e) => {
                 if (e.target.files[0]) { newImageFiles.push(e.target.files[0]); renderPreviews(); }
             };
@@ -260,9 +273,14 @@
                     document.getElementById('listing-title').value = d.title;
                     document.getElementById('listing-description').value = d.description;
                     document.getElementById('listing-price').value = d.price;
+                    document.getElementById('listing-original-price').value = d.originalPrice || "";
                     document.getElementById('listing-condition').value = d.condition || "";
                     document.getElementById('listing-digital-code').value = d.digitalCode || "Not applicable";
                     document.getElementById('listing-location').value = d.location || "";
+                    document.getElementById('listing-meeting-point').value = d.meetingPoint || "";
+                    document.getElementById('cond-writing').checked = d.hasWriting || false;
+                    document.getElementById('cond-water').checked = d.hasWaterDamage || false;
+                    document.getElementById('cond-missing').checked = d.hasMissingPages || false;
                     tags = d.tags || [];
                     existingImageUrls = d.imageUrls || [];
                     renderTags(); renderPreviews();
@@ -273,7 +291,7 @@
             onAuthStateChanged(auth, user => {
                 const id = new URLSearchParams(window.location.search).get('id');
                 if (user && id) fetchAndPopulate(id, user.uid);
-                else window.location.href = '/LoginInToCheaplet.html';
+                else if (!user) window.location.href = '/LoginInToCheaplet.html';
             });
 
             // --- SAVE ---
@@ -284,27 +302,36 @@
                 const btn = document.getElementById('updateListingBtn');
                 btn.disabled = true; btn.textContent = "Saving...";
 
-                const uploaded = [];
-                for (const f of newImageFiles) {
-                    const fd = new FormData(); fd.append('file', f); fd.append('upload_preset', UPLOAD_PRESET);
-                    const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd }).then(r => r.json());
-                    uploaded.push(res.secure_url);
-                }
+                try {
+                    const uploaded = [];
+                    for (const f of newImageFiles) {
+                        const fd = new FormData(); fd.append('file', f); fd.append('upload_preset', UPLOAD_PRESET);
+                        const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd }).then(r => r.json());
+                        uploaded.push(res.secure_url);
+                    }
 
-                await updateDoc(doc(db, 'listings', new URLSearchParams(window.location.search).get('id')), {
-                    title: document.getElementById('listing-title').value.trim(),
-                    description: document.getElementById('listing-description').value.trim(),
-                    price: price,
-                    condition: document.getElementById('listing-condition').value,
-                    digitalCode: document.getElementById('listing-digital-code').value,
-                    location: document.getElementById('listing-location').value,
-                    tags: tags,
-                    imageUrls: [...existingImageUrls, ...uploaded]
-                });
+                    await updateDoc(doc(db, 'listings', new URLSearchParams(window.location.search).get('id')), {
+                        title: document.getElementById('listing-title').value.trim(),
+                        description: document.getElementById('listing-description').value.trim(),
+                        price: price,
+                        originalPrice: parseFloat(document.getElementById('listing-original-price').value) || null,
+                        condition: document.getElementById('listing-condition').value,
+                        digitalCode: document.getElementById('listing-digital-code').value,
+                        location: document.getElementById('listing-location').value,
+                        meetingPoint: document.getElementById('listing-meeting-point').value.trim(),
+                        hasWriting: document.getElementById('cond-writing').checked,
+                        hasWaterDamage: document.getElementById('cond-water').checked,
+                        hasMissingPages: document.getElementById('cond-missing').checked,
+                        tags: tags,
+                        imageUrls: [...existingImageUrls, ...uploaded]
+                    });
 
-                alert("Updated!");
-                window.location.href = `/listing.html?id=${new URLSearchParams(window.location.search).get('id')}`;
+                    alert("Updated!");
+                    window.location.href = `/listing.html?id=${new URLSearchParams(window.location.search).get('id')}`;
+                } catch (e) { alert(e.message); btn.disabled = false; btn.textContent = "Save Changes"; }
             };
+
+            document.getElementById('cancelEditBtn').onclick = () => window.history.back();
         }
         main();
     </script>
