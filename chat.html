@@ -23,19 +23,34 @@
         nav ul { display: flex; list-style: none; gap: 20px; }
         .header-right { display: flex; align-items: center; gap: 15px; }
 
-        .chat-container { max-width: 800px; margin: 30px auto; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; height: calc(100vh - 150px); }
-        .chat-header { padding: 15px; border-bottom: 1px solid #eee; font-weight: 600; }
-        #messages-list { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; }
-        .message-bubble { max-width: 70%; padding: 10px 15px; border-radius: 18px; margin-bottom: 10px; word-wrap: break-word; }
+        .chat-container { max-width: 800px; margin: 30px auto; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; height: calc(100vh - 150px); border: 1px solid #eee; overflow: hidden; }
+        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: 700; background: #fff; color: #2E7D32; font-size: 1.1rem; }
+        
+        #messages-list { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; background-color: #fcfcfc; }
+        .message-bubble { max-width: 75%; padding: 10px 15px; border-radius: 18px; margin-bottom: 12px; word-wrap: break-word; position: relative; }
         .message-bubble.sent { background-color: #4CAF50; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
         .message-bubble.received { background-color: #f1f0f0; color: #333; align-self: flex-start; border-bottom-left-radius: 4px; }
-        .message-timestamp { font-size: 0.75rem; color: #b3e6b5; margin-top: 5px; text-align: right; }
-        .message-bubble.received .message-timestamp { color: #777; }
-        .message-form { display: flex; padding: 15px; border-top: 1px solid #eee; }
-        #message-input { flex-grow: 1; border: 1px solid #ddd; border-radius: 20px; padding: 10px 15px; margin-right: 10px; outline: none; }
-        #send-btn { border-radius: 50%; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; background: #FFD700; color: #333; border: none; cursor: pointer; }
-        .info-message { text-align: center; padding: 100px 0; font-size: 1.2rem; color: #777; }
-        @media (max-width: 767px) { nav { display: none; } }
+        
+        /* IMAGE MESSAGE STYLES */
+        .message-img { max-width: 100%; border-radius: 12px; display: block; margin-bottom: 5px; cursor: pointer; border: 1px solid rgba(0,0,0,0.05); }
+
+        .message-timestamp { font-size: 0.7rem; color: rgba(255,255,255,0.7); margin-top: 4px; text-align: right; }
+        .message-bubble.received .message-timestamp { color: #888; }
+
+        .message-form { display: flex; align-items: center; padding: 15px; border-top: 1px solid #eee; background: white; gap: 10px; }
+        
+        /* IMAGE UPLOAD ICON BUTTON */
+        #img-upload-btn { background: #f0f0f0; color: #555; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; transition: background 0.2s; }
+        #img-upload-btn:hover { background: #e0e0e0; color: #2E7D32; }
+
+        #message-input { flex-grow: 1; border: 1px solid #ddd; border-radius: 25px; padding: 10px 20px; outline: none; transition: border-color 0.2s; font-size: 0.95rem; }
+        #message-input:focus { border-color: #4CAF50; }
+        
+        #send-btn { border-radius: 50%; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; background: #FFD700; color: #333; border: none; cursor: pointer; font-size: 1.1rem; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        #send-btn:active { transform: scale(0.9); }
+
+        .info-message { text-align: center; padding: 100px 0; font-size: 1.2rem; color: #999; }
+        @media (max-width: 767px) { nav { display: none; } .chat-container { height: calc(100vh - 80px); margin: 10px; } }
     </style>
 </head>
 <body>
@@ -55,7 +70,14 @@
         <div class="chat-container" id="chat-container" style="display: none;">
             <div class="chat-header" id="chat-header">Chat</div>
             <div id="messages-list"></div>
+            
             <form id="message-form" class="message-form">
+                <!-- HIDDEN FILE INPUT -->
+                <input type="file" id="hidden-file-input" accept="image/*" style="display: none;">
+                <button type="button" id="img-upload-btn" title="Send a picture">
+                    <i class="fas fa-camera"></i>
+                </button>
+                
                 <input type="text" id="message-input" data-i18n-placeholder="search_placeholder" placeholder="Type a message..." autocomplete="off">
                 <button type="submit" id="send-btn" class="btn">&#10148;</button>
             </form>
@@ -74,18 +96,23 @@
             const auth = getAuth(app);
             const db = getFirestore(app);
 
+            // Cloudinary Config
+            const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`;
+            const UPLOAD_PRESET = config.cloudinary.uploadPreset;
+
             const infoContainer = document.getElementById('info-container');
             const chatContainer = document.getElementById('chat-container');
             const messagesList = document.getElementById('messages-list');
             const messageForm = document.getElementById('message-form');
             const messageInput = document.getElementById('message-input');
             const chatHeader = document.getElementById('chat-header');
+            const fileInput = document.getElementById('hidden-file-input');
+            const imgBtn = document.getElementById('img-upload-btn');
 
-            // --- LOCAL TRANSLATION LOGIC ---
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = {
-                en: { notFound: "Chat not found.", denied: "You do not have permission to view this chat.", chatWith: "Chat with", error: "Error loading messages.", login: "Please log in to chat." },
-                fr: { notFound: "Chat introuvable.", denied: "Vous n'avez pas la permission de voir ce chat.", chatWith: "Discussion avec", error: "Erreur de chargement.", login: "Veuillez vous connecter." }
+                en: { notFound: "Chat not found.", chatWith: "Chat with", login: "Please log in to chat.", imageSent: "Sent a photo" },
+                fr: { notFound: "Chat introuvable.", chatWith: "Discussion avec", login: "Veuillez vous connecter.", imageSent: "A envoyé une photo" }
             };
 
             onAuthStateChanged(auth, user => {
@@ -101,22 +128,16 @@
                 const chatRef = doc(db, 'chats', chatId);
                 const chatSnap = await getDoc(chatRef);
 
-                if (!chatSnap.exists()) {
+                if (!chatSnap.exists() || !chatSnap.data().participants.includes(currentUser.uid)) {
                     infoContainer.innerHTML = `<p class="info-message">${strings[lang].notFound}</p>`;
-                    return;
-                }
-                
-                const chatData = chatSnap.data();
-                if (!chatData.participants.includes(currentUser.uid)) {
-                    infoContainer.innerHTML = `<p class="info-message">${strings[lang].denied}</p>`;
                     return;
                 }
                 
                 infoContainer.style.display = 'none';
                 chatContainer.style.display = 'flex';
                 
-                const otherId = chatData.participants.find(p => p !== currentUser.uid);
-                const otherName = chatData.participantInfo ? chatData.participantInfo[otherId] : 'User';
+                const otherId = chatSnap.data().participants.find(p => p !== currentUser.uid);
+                const otherName = chatSnap.data().participantInfo ? chatSnap.data().participantInfo[otherId] : 'User';
                 chatHeader.textContent = `${strings[lang].chatWith} ${otherName}`;
 
                 const q = query(collection(db, 'chats', chatId, 'messages'), orderBy("timestamp", "asc"));
@@ -126,6 +147,7 @@
                     messagesList.scrollTop = messagesList.scrollHeight;
                 });
 
+                // TEXT MESSAGE SUBMISSION
                 messageForm.onsubmit = async (e) => {
                     e.preventDefault();
                     const text = messageInput.value.trim();
@@ -134,13 +156,65 @@
                     await addDoc(collection(db, 'chats', chatId, 'messages'), { text, senderId: currentUser.uid, timestamp: serverTimestamp() });
                     await updateDoc(chatRef, { lastMessage: text, lastUpdate: serverTimestamp() });
                 };
+
+                // IMAGE UPLOAD LOGIC
+                imgBtn.onclick = () => fileInput.click();
+
+                fileInput.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    imgBtn.disabled = true;
+                    imgBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                    try {
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('upload_preset', UPLOAD_PRESET);
+                        
+                        const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
+                        const data = await res.json();
+                        const imageUrl = data.secure_url;
+
+                        // Send message with image URL
+                        await addDoc(collection(db, 'chats', chatId, 'messages'), { 
+                            imageUrl: imageUrl, 
+                            senderId: currentUser.uid, 
+                            timestamp: serverTimestamp() 
+                        });
+
+                        await updateDoc(chatRef, { 
+                            lastMessage: `📷 ${strings[lang].imageSent}`, 
+                            lastUpdate: serverTimestamp() 
+                        });
+
+                    } catch (err) {
+                        console.error(err);
+                        alert("Failed to send image.");
+                    } finally {
+                        imgBtn.disabled = false;
+                        imgBtn.innerHTML = '<i class="fas fa-camera"></i>';
+                        fileInput.value = '';
+                    }
+                };
             }
 
             function renderMessage(data, currentUserId) {
                 const div = document.createElement('div');
                 div.className = `message-bubble ${data.senderId === currentUserId ? 'sent' : 'received'}`;
+                
+                let content = '';
+                // Check if message is an image
+                if (data.imageUrl) {
+                    content += `<img src="${data.imageUrl}" class="message-img" onclick="window.open('${data.imageUrl}', '_blank')">`;
+                }
+                // Check if message also has text
+                if (data.text) {
+                    content += `<p>${data.text}</p>`;
+                }
+
                 const time = data.timestamp ? data.timestamp.toDate().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
-                div.innerHTML = `<p>${data.text}</p><span class="message-timestamp">${time}</span>`;
+                div.innerHTML = `${content}<span class="message-timestamp">${time}</span>`;
                 messagesList.appendChild(div);
             }
         }
