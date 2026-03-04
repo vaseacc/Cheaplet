@@ -80,11 +80,6 @@
         .role-user { background: #444; color: #ccc; }
         .role-banned { background: #d32f2f; color: white; }
 
-        /* Tag Card Specifics */
-        .tag-card { padding: 15px; flex-direction: row; justify-content: space-between; align-items: center; }
-        .tag-info h3 { margin: 0; color: #fff; font-size: 1.1rem; }
-        .tag-meta { color: #888; font-size: 0.85rem; margin-top: 5px; }
-
         /* Search Bar for Users */
         .search-container { display: flex; gap: 10px; margin-bottom: 20px; }
         .search-input { flex: 1; padding: 10px; background: #333; border: 1px solid #555; color: white; border-radius: 4px; }
@@ -292,6 +287,7 @@
                 });
             }
 
+            // --- FIX: IMPROVED INVESTIGATION LOGIC ---
             window.investigateUser = async (uid) => {
                 document.getElementById('tab-investigation').style.display = 'block';
                 switchTab('investigation');
@@ -299,35 +295,45 @@
                 const listingsBox = document.getElementById('investigation-listings');
                 const chatsBox = document.getElementById('investigation-chats');
                 
-                const uSnap = await getDoc(doc(db, "users", uid));
-                if(uSnap.exists()) {
-                    const d = uSnap.data();
-                    profileBox.innerHTML = `<h2>${d.displayName}</h2><p>${d.email}</p><button class="btn btn-ban" onclick="window.banUser('${uid}')">BAN ACCOUNT</button>`;
-                }
-
+                profileBox.innerHTML = 'Fetching full profile...';
                 listingsBox.innerHTML = '';
-                const lSnap = await getDocs(query(collection(db, "listings"), where("posterUid", "==", uid)));
-                lSnap.forEach(ldoc => {
-                    const card = document.createElement('div'); card.className = 'admin-card';
-                    card.innerHTML = `<div class="card-body"><strong>${ldoc.data().title}</strong></div>`;
-                    listingsBox.appendChild(card);
-                });
-
                 chatsBox.innerHTML = '';
-                const cSnap = await getDocs(query(collection(db, "chats"), where("participants", "array-contains", uid)));
-                cSnap.forEach(async cdoc => {
-                    const d = cdoc.data();
-                    const otherId = d.participants.find(p => p !== uid);
-                    const chatCard = document.createElement('div'); chatCard.className = 'investigation-card';
-                    chatCard.innerHTML = `<div class="investigation-sub-title">Chat with ${d.participantInfo?.[otherId] || 'User'}</div><div class="chat-log-box" id="log-${cdoc.id}"></div>`;
-                    chatsBox.appendChild(chatCard);
-                    const mSnap = await getDocs(query(collection(db, "chats", cdoc.id, "messages"), orderBy("timestamp", "asc")));
-                    const log = document.getElementById(`log-${cdoc.id}`);
-                    mSnap.forEach(m => {
-                        const isT = m.data().senderId === uid;
-                        log.innerHTML += `<div class="msg-line ${isT?'target':'other'}">${m.data().text || '[Image]'}</div>`;
+
+                try {
+                    const uSnap = await getDoc(doc(db, "users", uid));
+                    if(uSnap.exists()) {
+                        const d = uSnap.data();
+                        profileBox.innerHTML = `<h2>${d.displayName}</h2><p>${d.email}</p><button class="btn btn-ban" onclick="window.banUser('${uid}')">BAN ACCOUNT</button>`;
+                    }
+
+                    const lSnap = await getDocs(query(collection(db, "listings"), where("posterUid", "==", uid)));
+                    lSnap.forEach(ldoc => {
+                        const card = document.createElement('div'); card.className = 'admin-card';
+                        card.innerHTML = `<div class="card-body"><strong>${ldoc.data().title}</strong></div>`;
+                        listingsBox.appendChild(card);
                     });
-                });
+
+                    const cSnap = await getDocs(query(collection(db, "chats"), where("participants", "array-contains", uid)));
+                    
+                    // FIXED: Using for...of loop to ensure all messages are loaded sequentially and completely
+                    for (const cdoc of cSnap.docs) {
+                        const d = cdoc.data();
+                        const otherId = d.participants.find(p => p !== uid);
+                        const chatCard = document.createElement('div'); chatCard.className = 'investigation-card';
+                        chatCard.innerHTML = `<div class="investigation-sub-title">Chat with ${d.participantInfo?.[otherId] || 'User'}</div><div class="chat-log-box" id="log-${cdoc.id}"></div>`;
+                        chatsBox.appendChild(chatCard);
+
+                        const mSnap = await getDocs(query(collection(db, "chats", cdoc.id, "messages"), orderBy("timestamp", "asc")));
+                        const log = document.getElementById(`log-${cdoc.id}`);
+                        mSnap.forEach(m => {
+                            const isT = m.data().senderId === uid;
+                            log.innerHTML += `<div class="msg-line ${isT?'target':'other'}">${m.data().text || '[Image]'}</div>`;
+                        });
+                    }
+                } catch (err) {
+                    console.error("Investigation Error:", err);
+                    alert("Query requires an index. Please check your browser console for the link.");
+                }
             };
 
             window.deleteListing = async (id) => { if(confirm("Delete?")) { await deleteDoc(doc(db, "listings", id)); document.getElementById(`listing-${id}`).remove(); } };
