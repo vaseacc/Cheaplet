@@ -24,14 +24,14 @@ const translations = {
         "btn_login": "Login / Register", "btn_list": "List an Item", "btn_browse": "Start Browsing", "btn_signout": "Sign Out", 
         "search_placeholder": "What are you looking for?", "hero_title": "Great Finds, Unbeatable Prices.", 
         "hero_sub": "Cheaplet is the online marketplace for smart savings.",
-        "verified_student": "Verified Student" // NEW
+        "verified_student": "Verified Student"
     },
     "fr": { 
         "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", 
         "btn_login": "Connexion", "btn_list": "Vendre un article", "btn_browse": "Commencer à naviguer", "btn_signout": "Déconnexion", 
         "search_placeholder": "Que cherchez-vous ?", "hero_title": "Super trouvailles, prix imbattables.", 
         "hero_sub": "Cheaplet est le marché en ligne pour des économies intelligentes.",
-        "verified_student": "Étudiant vérifié" // NEW
+        "verified_student": "Étudiant vérifié"
     }
 };
 
@@ -47,7 +47,7 @@ window.applyLanguage = (lang) => {
     localStorage.setItem('preferred_language', lang);
 };
 
-// --- 3. GLOBAL CSS ---
+// --- 3. GLOBAL CSS (Includes Language Modal Styles) ---
 const globalStyle = document.createElement('style');
 globalStyle.innerHTML = `
     .btn { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%) !important; color: #333 !important; border: none !important; padding: 0 18px !important; height: 38px !important; line-height: 38px !important; border-radius: 20px !important; font-weight: bold !important; cursor: pointer !important; transition: transform 0.2s !important; box-shadow: 0 3px 6px rgba(0,0,0,0.1) !important; font-size: 0.85rem !important; display: inline-flex !important; align-items: center; justify-content: center; text-align: center; white-space: nowrap !important; text-decoration: none !important; }
@@ -56,18 +56,18 @@ globalStyle.innerHTML = `
     .dropdown-menu { position: absolute; top: 50px; right: 0; width: 220px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: none; flex-direction: column; overflow: hidden; color: #333; z-index: 1000; }
     .dropdown-menu.show { display: flex; }
     .dropdown-header { padding: 12px 15px; border-bottom: 1px solid #eee; background: #f9f9f9; font-weight: bold; color: #2E7D32; font-size: 0.85rem; display: flex; flex-direction: column; gap: 4px; }
-    
-    /* STUDENT BADGE STYLE */
-    .student-badge { 
-        display: inline-flex; align-items: center; gap: 5px; background: #E8F5E9; color: #2E7D32; 
-        font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; width: fit-content; 
-        border: 1px solid #C8E6C9; margin-top: 2px;
-    }
-
+    .student-badge { display: inline-flex; align-items: center; gap: 5px; background: #E8F5E9; color: #2E7D32; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; width: fit-content; border: 1px solid #C8E6C9; margin-top: 2px; }
     .dropdown-item { padding: 12px 15px; text-decoration: none; color: #333; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.9rem; }
     .dropdown-item:hover { background-color: #f1f8e9; }
     .msg-btn-mobile { background-color: #FFD700; color: #333; width: 36px; height: 36px; border-radius: 50%; display: none; align-items: center; justify-content: center; text-decoration: none; margin-right: 12px; font-size: 1rem; }
     body.page-messages .msg-btn-mobile, body.page-chat .msg-btn-mobile { display: none !important; }
+
+    /* LANGUAGE MODAL RESTORED */
+    .lang-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; justify-content: center; align-items: center; }
+    .lang-modal { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; width: 90%; }
+    .lang-btn { display: block; width: 100%; padding: 12px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; background: white; font-weight: bold; cursor: pointer; font-size: 1rem; transition: 0.2s; }
+    .lang-btn:hover { border-color: #4CAF50; background: #e8f5e9; color: #2E7D32; }
+
     @media (max-width: 767px) { nav { display: none !important; } .msg-btn-mobile { display: flex; } .mobile-link { display: flex; } .btn { font-size: 0.75rem !important; padding: 0 12px !important; height: 34px !important; } }
 `;
 document.head.appendChild(globalStyle);
@@ -81,7 +81,14 @@ if (path.includes('messages.html')) document.body.classList.add('page-messages')
 if (path.includes('chat.html')) document.body.classList.add('page-chat');
 
 onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
-    if (docSnap.exists()) { globalSettings = docSnap.data(); refreshUI(); }
+    if (docSnap.exists()) { 
+        globalSettings = docSnap.data(); 
+        // RESTORED: Trigger Popup if enabled and no choice made
+        if (globalSettings.enableLanguagePrompt && !localStorage.getItem('preferred_language')) {
+            showLanguagePopup();
+        }
+        refreshUI(); 
+    }
 });
 
 onAuthStateChanged(auth, (user) => {
@@ -128,11 +135,7 @@ function updateHeaderToLoggedIn(userData) {
     const initial = name.charAt(0).toUpperCase();
     const photoStyle = userData.photoURL ? `background-image: url('${userData.photoURL}');` : '';
     const avatarContent = userData.photoURL ? '' : initial;
-
-    // --- LOGIC: CREATE STUDENT BADGE ---
-    const studentBadgeHTML = userData.isStudent 
-        ? `<div class="student-badge"><i class="fas fa-graduation-cap"></i> <span data-i18n="verified_student">Verified Student</span></div>` 
-        : '';
+    const studentBadgeHTML = userData.isStudent ? `<div class="student-badge"><i class="fas fa-graduation-cap"></i> <span data-i18n="verified_student">Verified Student</span></div>` : '';
 
     container.innerHTML = `
         <button class="btn" id="globalListBtn" style="margin-right: 12px;" data-i18n="btn_list">List an Item</button>
@@ -140,10 +143,7 @@ function updateHeaderToLoggedIn(userData) {
         <div class="profile-menu-container" id="globalProfileMenu">
             <div class="profile-avatar" style="${photoStyle}">${avatarContent}</div>
             <div class="dropdown-menu" id="globalDropdown">
-                <div class="dropdown-header">
-                    <span>${name}</span>
-                    ${studentBadgeHTML}
-                </div>
+                <div class="dropdown-header"><span>${name}</span>${studentBadgeHTML}</div>
                 <a href="/profile.html" class="dropdown-item" data-i18n="nav_profile"><i class="fas fa-user"></i> My Profile</a>
                 <a href="/search.html" class="dropdown-item mobile-link" data-i18n="nav_browse"><i class="fas fa-search"></i> Browse</a>
                 <a href="/my-listings.html" class="dropdown-item mobile-link" data-i18n="nav_listings"><i class="fas fa-list"></i> My Listings</a>
@@ -173,6 +173,26 @@ function updateHeaderToLoggedOut() {
     `;
     document.getElementById('globalListBtn').onclick = () => window.location.href = '/LoginInToCheaplet.html';
     document.getElementById('globalLoginBtn').onclick = () => window.location.href = '/LoginInToCheaplet.html';
+}
+
+// RESTORED: LANGUAGE POPUP FUNCTION
+function showLanguagePopup() {
+    if (document.getElementById('lang-modal')) return;
+    const modal = document.createElement('div');
+    modal.id = 'lang-modal';
+    modal.className = 'lang-modal-overlay';
+    modal.innerHTML = `
+        <div class="lang-modal">
+            <h2 style="color:#2E7D32; margin-bottom:10px;">Welcome / Bienvenue</h2>
+            <p style="color:#666; margin-bottom:20px;">Please select your language.<br>Veuillez choisir votre langue.</p>
+            <button class="lang-btn" id="choose-en">English</button>
+            <button class="lang-btn" id="choose-fr">Français</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById('choose-en').onclick = () => { window.applyLanguage('en'); modal.remove(); };
+    document.getElementById('choose-fr').onclick = () => { window.applyLanguage('fr'); modal.remove(); };
 }
 
 document.addEventListener('DOMContentLoaded', () => {
