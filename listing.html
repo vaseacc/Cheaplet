@@ -169,7 +169,6 @@
             const saveBtn = document.getElementById('btn-save');
             const shareBtn = document.getElementById('btn-share');
             
-            // DECLARE VARIABLES TO PREVENT REFERENCE ERROR
             const prevBtn = document.getElementById('prev-img-btn');
             const nextBtn = document.getElementById('next-img-btn');
             
@@ -316,17 +315,24 @@
                 const chatRef = doc(db, 'chats', chatId);
                 try {
                     const chatSnap = await getDoc(chatRef);
+                    
+                    // --- FIX: Add fallback for name to prevent error on new accounts ---
+                    const myName = currentUser.displayName || currentUser.email || "User";
+
                     if (!chatSnap.exists()) {
                         await setDoc(chatRef, { 
                             participants: uids, 
-                            participantInfo: { [currentUser.uid]: currentUser.displayName, [posterUid]: posterName }, 
+                            participantInfo: { [currentUser.uid]: myName, [posterUid]: posterName }, 
                             lastUpdate: serverTimestamp(), 
                             lastMessage: "",
                             listingId: currentListingId 
                         }); 
                     }
                     window.location.href = `/chat.html?id=${chatId}`;
-                } catch (error) { alert("Error starting chat."); }
+                } catch (error) { 
+                    console.error("Chat creation error:", error);
+                    alert("Error starting chat."); 
+                }
             }
 
             document.getElementById('btn-message-seller').onclick = () => createChat(currentListingData.posterUid, currentListingData.posterDisplayName);
