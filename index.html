@@ -30,7 +30,7 @@
         .hero { background: linear-gradient(rgba(76,175,80,0.9), rgba(56,142,60,0.9)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%234CAF50"/></svg>'); background-size: cover; color: white; text-align: center; padding: clamp(40px, 10vw, 80px) 20px; }
         .hero h1 { font-size: clamp(1.8rem, 6vw, 2.5rem); margin-bottom: 15px; }
         
-        /* GRID RESPONSIVENESS (FB Marketplace Style) */
+        /* GRID RESPONSIVENESS */
         .listings-grid { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
@@ -41,12 +41,12 @@
         @media (max-width: 767px) {
             nav { display: none; }
             .listings-grid {
-                grid-template-columns: repeat(2, 1fr); /* 2 Columns on mobile */
-                gap: 10px; /* Tighter gap like FB */
+                grid-template-columns: repeat(2, 1fr); 
+                gap: 10px; 
                 padding: 0;
             }
             .listing-image {
-                height: 160px !important; /* Shorter images for mobile grid */
+                height: 160px !important; 
             }
             .listing-details {
                 padding: 8px !important;
@@ -56,7 +56,7 @@
             }
             .listing-title {
                 font-size: 0.85rem !important;
-                height: 2.6em; /* Keep it to 2 lines */
+                height: 2.6em; 
                 overflow: hidden;
             }
         }
@@ -67,6 +67,9 @@
         .listing-details { padding: 15px; }
         .listing-price { color: #4CAF50; font-weight: 800; font-size: 1.2rem; }
         
+        /* NEW: ORIGINAL PRICE STYLE FOR CARDS */
+        .original-price { font-size: 0.9rem; color: #999; text-decoration: line-through; margin-left: 8px; font-weight: 400; }
+
         /* Section styling */
         .section-title { font-size: 1.8rem; color: #2E7D32; margin-bottom: 25px; text-align: center; font-weight: 600; }
         .tag-pill { background: white; border: 1px solid #ddd; padding: 8px 16px; border-radius: 30px; font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; }
@@ -170,11 +173,9 @@
 
             let unsubscribeListings = null;
 
-            // SCROLL TO CONTENT
             const startBtn = document.getElementById('startBrowsingBtn');
             if(startBtn) startBtn.onclick = () => document.querySelector('main').scrollIntoView({ behavior: 'smooth' });
 
-            // LOAD TAGS
             async function loadGlobalTags() {
                 try {
                     const q = query(collection(db, "global_tags"), orderBy("count", "desc"), limit(12));
@@ -191,18 +192,27 @@
                 } catch (e) { console.error(e); }
             }
 
-            // LISTINGS
+            // MODIFIED LISTING RENDER TO MATCH THE SCREENSHOT STYLE
             function renderListing(doc) {
                 const data = doc.data();
                 const firstImage = data.imageUrls?.[0] || '';
                 const card = document.createElement('a');
                 card.className = 'listing-card';
                 card.href = `/listing.html?id=${doc.id}`;
+                
+                // Show original price if it exists and is different
+                const originalPriceHTML = (data.originalPrice && data.originalPrice > data.price) 
+                    ? `<span class="original-price">$${data.originalPrice.toFixed(2)}</span>` 
+                    : '';
+
                 card.innerHTML = `
                     <div class="listing-image" style="background-image: url('${firstImage}');"></div>
                     <div class="listing-details">
-                        <div class="listing-price">$${data.price.toFixed(2)}</div>
-                        <h3 class="listing-title">${data.title}</h3>
+                        <div style="display:flex; align-items:center; margin-bottom: 5px;">
+                            <span class="listing-price">$${data.price.toFixed(2)}</span>
+                            ${originalPriceHTML}
+                        </div>
+                        <h3 class="listing-title" style="margin-bottom: 8px;">${data.title}</h3>
                         <div style="font-size: 0.85rem; color: #777;"><i class="fas fa-map-marker-alt"></i> ${data.location || 'Montreal'}</div>
                     </div>`;
                 return card;
