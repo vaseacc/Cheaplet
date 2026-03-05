@@ -86,7 +86,7 @@
             </div>
             <div class="meta-info" id="listing-meta"></div>
 
-            <div class="action-buttons">
+            <div class="action-buttons" id="main-action-buttons">
                 <button class="btn-primary" id="btn-message-seller">
                     <i class="fas fa-paper-plane"></i> &nbsp; <span data-i18n="btn_message">Message</span>
                 </button>
@@ -137,7 +137,7 @@
                 </div>
             </div>
 
-            <div class="quick-message-container">
+            <div class="quick-message-container" id="quick-message-area">
                 <div class="quick-msg-label" data-i18n="quick_msg_label">Send a quick message</div>
                 <textarea class="quick-msg-input" id="quick-msg-text">Hi, is this available?</textarea>
                 <button class="btn-send" id="btn-quick-send" data-i18n="btn_send">Send</button>
@@ -211,19 +211,29 @@
 
                     const data = listingSnap.data();
                     currentListingData = data;
+                    const savedLang = localStorage.getItem('preferred_language') || 'en';
 
                     document.getElementById('listing-title').textContent = data.title;
-                    document.getElementById('listing-price').textContent = `$${data.price.toFixed(2)}`;
                     
-                    const origPriceEl = document.getElementById('original-price-display');
-                    if (data.originalPrice) {
-                        origPriceEl.textContent = `$${data.originalPrice.toFixed(2)}`;
-                        origPriceEl.style.display = 'block';
+                    // --- SOLD STATUS LOGIC ---
+                    if (data.status === 'sold') {
+                        const soldText = savedLang === 'fr' ? "VENDU" : "SOLD";
+                        document.getElementById('listing-price').innerHTML = `<span style="color: #d32f2f; font-weight: 800;">${soldText}</span>`;
+                        document.getElementById('original-price-display').style.display = 'none';
+                        document.getElementById('btn-message-seller').style.display = 'none';
+                        document.getElementById('btn-save').style.display = 'none';
+                        document.getElementById('quick-message-area').style.display = 'none';
                     } else {
-                        origPriceEl.style.display = 'none';
+                        document.getElementById('listing-price').textContent = `$${data.price.toFixed(2)}`;
+                        const origPriceEl = document.getElementById('original-price-display');
+                        if (data.originalPrice) {
+                            origPriceEl.textContent = `$${data.originalPrice.toFixed(2)}`;
+                            origPriceEl.style.display = 'block';
+                        } else {
+                            origPriceEl.style.display = 'none';
+                        }
                     }
                     
-                    const savedLang = localStorage.getItem('preferred_language') || 'en';
                     const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : '';
                     const metaPrefix = savedLang === 'fr' ? 'Publié le' : 'Listed';
                     
@@ -337,25 +347,14 @@
                 updateSaveIcon();
             };
 
-            // --- FIXED SHARE BUTTON LOGIC ---
             shareBtn.onclick = async () => {
                 const url = window.location.href;
                 const title = currentListingData ? currentListingData.title : 'Cheaplet Listing';
                 const lang = localStorage.getItem('preferred_language') || 'en';
                 const copyMsg = lang === 'fr' ? "Lien copié dans le presse-papier !" : "Link copied to clipboard!";
-
                 if (navigator.share) {
-                    try {
-                        await navigator.share({ title: title, url: url });
-                    } catch (err) {
-                        // Fallback if sharing is canceled or fails
-                        await navigator.clipboard.writeText(url);
-                        alert(copyMsg);
-                    }
-                } else {
-                    await navigator.clipboard.writeText(url);
-                    alert(copyMsg);
-                }
+                    try { await navigator.share({ title: title, url: url }); } catch (err) { await navigator.clipboard.writeText(url); alert(copyMsg); }
+                } else { await navigator.clipboard.writeText(url); alert(copyMsg); }
             };
 
             async function deleteListing(docId, isAdmin) { if (confirm("Delete listing?")) { await deleteDoc(doc(db, 'listings', docId)); window.location.href = '/index.html'; } }
