@@ -103,9 +103,15 @@
                 unsubscribe = onSnapshot(query(q, ...constraints), snapshot => {
                     listingsContainer.innerHTML = '';
                     const term = searchInput.value.toLowerCase();
-                    const filtered = snapshot.docs.filter(doc => (doc.data().title || '').toLowerCase().includes(term));
                     
-                    // --- LANGUAGE TRANSLATION FOR COUNT ---
+                    // --- MODIFIED FILTER: HIDE SOLD ITEMS ---
+                    const filtered = snapshot.docs.filter(doc => {
+                        const data = doc.data();
+                        const matchesSearch = (data.title || '').toLowerCase().includes(term);
+                        const isNotSold = data.status !== 'sold';
+                        return matchesSearch && isNotSold;
+                    });
+                    
                     const savedLang = localStorage.getItem('preferred_language') || 'en';
                     const countText = savedLang === 'fr' ? 'articles trouvés' : 'items found';
                     itemCountSpan.textContent = `${filtered.length} ${countText}`;
