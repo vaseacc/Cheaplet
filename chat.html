@@ -34,16 +34,26 @@
         .side-name { font-weight: 600; font-size: 0.95rem; }
         .side-msg { font-size: 0.8rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-        /* RED DOT FOR NEW MESSAGE */
         .unread-dot { width: 10px; height: 10px; background-color: #f44336; border-radius: 50%; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); display: none; }
         .side-conv-item.is-new .unread-dot { display: block; }
-        .side-conv-item.is-new .side-name { color: #000; font-weight: 800; }
 
         /* --- CHAT WINDOW --- */
-        .chat-window { flex-grow: 1; display: flex; flex-direction: column; background: white; }
-        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: 700; color: #2E7D32; background: #fff; display: flex; align-items: center; gap: 15px; }
+        .chat-window { flex-grow: 1; display: flex; flex-direction: column; background: white; position: relative; }
+        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: 700; color: #2E7D32; background: #fff; display: flex; align-items: center; gap: 15px; z-index: 10; }
         
-        /* MENU TOGGLE BUTTON (MOBILE ONLY) */
+        /* LISTING PREVIEW BANNER (NEW) */
+        .listing-preview-banner {
+            display: flex; align-items: center; padding: 10px 20px; background: #fff;
+            border-bottom: 1px solid #eee; gap: 12px; flex-shrink: 0;
+            text-decoration: none; color: inherit; transition: background 0.2s;
+        }
+        .listing-preview-banner:hover { background: #f9f9f9; }
+        .lp-img { width: 45px; height: 45px; border-radius: 6px; object-fit: cover; background: #eee; }
+        .lp-info { flex-grow: 1; overflow: hidden; }
+        .lp-title { font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+        .lp-price { color: #4CAF50; font-weight: bold; font-size: 0.85rem; }
+        .lp-status { font-size: 0.75rem; color: #d32f2f; font-weight: bold; text-transform: uppercase; }
+
         #mobile-menu-btn { display: none; background: none; border: none; font-size: 1.2rem; color: #4CAF50; cursor: pointer; }
 
         #messages-list { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; background-color: #fcfcfc; }
@@ -62,7 +72,6 @@
 
         .info-message { text-align: center; padding: 100px 0; font-size: 1.2rem; color: #999; }
 
-        /* MOBILE RESPONSIVE FIX */
         @media (max-width: 767px) {
             #mobile-menu-btn { display: block; }
             .chat-sidebar { position: fixed; left: -100%; top: 60px; height: calc(100vh - 60px); z-index: 1000; width: 85%; box-shadow: 10px 0 20px rgba(0,0,0,0.1); }
@@ -96,6 +105,18 @@
                     <button id="mobile-menu-btn"><i class="fas fa-bars"></i></button>
                     <span id="chat-header-name">Chat</span>
                 </div>
+
+                <!-- LISTING PREVIEW BANNER -->
+                <a href="#" id="listing-preview-banner" class="listing-preview-banner" style="display: none;">
+                    <img src="" class="lp-img" id="lp-image">
+                    <div class="lp-info">
+                        <span class="lp-title" id="lp-title">...</span>
+                        <span class="lp-price" id="lp-price"></span>
+                        <span class="lp-status" id="lp-status"></span>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color: #ccc;"></i>
+                </a>
+
                 <div id="messages-list"></div>
                 
                 <form id="message-form" class="message-form">
@@ -132,16 +153,16 @@
             const chatHeaderName = document.getElementById('chat-header-name');
             const mobileMenuBtn = document.getElementById('mobile-menu-btn');
 
-            const lang = localStorage.getItem('preferred_language') || 'en';
-            const strings = { en: { chatWith: "Chat with", imageSent: "Sent a photo" }, fr: { chatWith: "Discussion avec", imageSent: "A envoyé une photo" } };
+            const lpBanner = document.getElementById('listing-preview-banner');
+            const lpImage = document.getElementById('lp-image');
+            const lpTitle = document.getElementById('lp-title');
+            const lpPrice = document.getElementById('lp-price');
+            const lpStatus = document.getElementById('lp-status');
 
-            // MOBILE TOGGLE LOGIC
+            const lang = localStorage.getItem('preferred_language') || 'en';
+            const strings = { en: { chatWith: "Chat with", imageSent: "Sent a photo", sold: "SOLD" }, fr: { chatWith: "Discussion avec", imageSent: "A envoyé une photo", sold: "VENDU" } };
+
             mobileMenuBtn.onclick = () => sidebar.classList.toggle('open');
-            document.addEventListener('click', (e) => {
-                if (window.innerWidth < 768 && !sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
-                    sidebar.classList.remove('open');
-                }
-            });
 
             onAuthStateChanged(auth, user => {
                 if (user && user.emailVerified) {
@@ -155,26 +176,15 @@
                 const q = query(collection(db, "chats"), where("participants", "array-contains", currentUser.uid), orderBy("lastUpdate", "desc"));
                 onSnapshot(q, (snapshot) => {
                     sidebarList.innerHTML = '';
-                    const activeChatId = new URLSearchParams(window.location.search).get('id');
-                    
                     snapshot.forEach(docSnap => {
                         const d = docSnap.data();
                         const otherId = d.participants.find(p => p !== currentUser.uid);
                         const otherName = d.participantInfo ? d.participantInfo[otherId] : 'User';
-                        
-                        // NEW MESSAGE LOGIC: If last sender was NOT me, show dot
                         const isNew = d.lastSenderId && d.lastSenderId !== currentUser.uid;
-
                         const item = document.createElement('a');
-                        item.className = `side-conv-item ${docSnap.id === activeChatId ? 'active' : ''} ${isNew ? 'is-new' : ''}`;
+                        item.className = `side-conv-item ${docSnap.id === new URLSearchParams(window.location.search).get('id') ? 'active' : ''} ${isNew ? 'is-new' : ''}`;
                         item.href = `?id=${docSnap.id}`;
-                        item.innerHTML = `
-                            <div class="side-avatar">${otherName.charAt(0).toUpperCase()}</div>
-                            <div class="side-info">
-                                <div class="side-name">${otherName}</div>
-                                <div class="side-msg">${d.lastMessage || '...'}</div>
-                            </div>
-                            <div class="unread-dot"></div>`;
+                        item.innerHTML = `<div class="side-avatar">${otherName.charAt(0).toUpperCase()}</div><div class="side-info"><div class="side-name">${otherName}</div><div class="side-msg">${d.lastMessage || '...'}</div></div><div class="unread-dot"></div>`;
                         sidebarList.appendChild(item);
                     });
                 });
@@ -188,13 +198,32 @@
                 document.getElementById('info-container').style.display = 'none';
                 chatActiveUI.style.display = 'flex';
                 
-                const otherId = chatSnap.data().participants.find(p => p !== currentUser.uid);
-                const otherName = chatSnap.data().participantInfo ? chatSnap.data().participantInfo[otherId] : 'User';
+                const d = chatSnap.data();
+                const otherId = d.participants.find(p => p !== currentUser.uid);
+                const otherName = d.participantInfo ? d.participantInfo[otherId] : 'User';
                 chatHeaderName.textContent = `${strings[lang].chatWith} ${otherName}`;
 
-                // Mark as read logic: Clear unread status when opening
+                // --- FETCH LISTING INFO FOR BANNER ---
+                if (d.listingId) {
+                    const lSnap = await getDoc(doc(db, 'listings', d.listingId));
+                    if (lSnap.exists()) {
+                        const ld = lSnap.data();
+                        lpBanner.style.display = 'flex';
+                        lpBanner.href = `/listing.html?id=${d.listingId}`;
+                        lpImage.src = ld.imageUrls?.[0] || '';
+                        lpTitle.textContent = ld.title;
+                        if (ld.status === 'sold') {
+                            lpPrice.style.display = 'none';
+                            lpStatus.textContent = strings[lang].sold;
+                        } else {
+                            lpStatus.style.display = 'none';
+                            lpPrice.textContent = `$${ld.price.toFixed(2)}`;
+                        }
+                    }
+                }
+
                 if (chatSnap.data().lastSenderId !== currentUser.uid) {
-                    await updateDoc(chatRef, { lastSenderId: currentUser.uid }); // This effectively hides the dot
+                    await updateDoc(chatRef, { lastSenderId: currentUser.uid });
                 }
 
                 onSnapshot(query(collection(db, 'chats', chatId, 'messages'), orderBy("timestamp", "asc")), (snapshot) => {
