@@ -310,13 +310,18 @@
             nextBtn.onclick = () => { if (imageUrls.length === 0) return; let newIndex = currentImageIndex + 1; if (newIndex >= imageUrls.length) newIndex = 0; updateMainImage(newIndex); };
 
             async function createChat(posterUid, posterName) {
+                // --- FIX: REDIRECT IF NOT LOGGED IN ---
+                if (!currentUser) {
+                    const currentPath = window.location.pathname + window.location.search;
+                    window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(currentPath)}`;
+                    return;
+                }
+
                 const uids = [currentUser.uid, posterUid].sort();
                 const chatId = uids.join('_');
                 const chatRef = doc(db, 'chats', chatId);
                 try {
-                    // Try to get existing chat first
                     const chatSnap = await getDoc(chatRef);
-                    
                     const myName = currentUser.displayName || currentUser.email || "User";
 
                     if (!chatSnap.exists()) {
