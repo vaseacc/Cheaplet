@@ -27,7 +27,7 @@
         .header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
         /* Hero */
-        .hero { background: linear-gradient(rgba(76,175,80,0.9), rgba(56,142,60,0.9)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect width="100" height="100" fill="%234CAF50"/></svg>'); background-size: cover; color: white; text-align: center; padding: clamp(40px, 10vw, 80px) 20px; }
+        .hero { background: linear-gradient(rgba(76,175,80,0.9), rgba(56,142,60,0.9)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%234CAF50"/></svg>'); background-size: cover; color: white; text-align: center; padding: clamp(40px, 10vw, 80px) 20px; }
         .hero h1 { font-size: clamp(1.8rem, 6vw, 2.5rem); margin-bottom: 15px; }
         
         /* Grid Responsiveness */
@@ -194,8 +194,12 @@
 
                 unsubscribeListings = onSnapshot(query(q, ...constraints), snapshot => {
                     listingsContainer.innerHTML = '';
-                    itemCountSpan.textContent = `${snapshot.size} items`;
-                    snapshot.forEach(doc => listingsContainer.appendChild(renderListing(doc)));
+                    
+                    // FIX: Filter out any documents where status is 'sold'
+                    const activeDocs = snapshot.docs.filter(doc => doc.data().status !== 'sold');
+                    
+                    itemCountSpan.textContent = `${activeDocs.length} items`;
+                    activeDocs.forEach(doc => listingsContainer.appendChild(renderListing(doc)));
                 });
             }
 
