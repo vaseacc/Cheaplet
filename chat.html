@@ -41,7 +41,7 @@
         .chat-window { flex-grow: 1; display: flex; flex-direction: column; background: white; position: relative; }
         .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: 700; color: #2E7D32; background: #fff; display: flex; align-items: center; gap: 15px; z-index: 10; }
         
-        /* LISTING PREVIEW BANNER (NEW) */
+        /* LISTING PREVIEW BANNER */
         .listing-preview-banner {
             display: flex; align-items: center; padding: 10px 20px; background: #fff;
             border-bottom: 1px solid #eee; gap: 12px; flex-shrink: 0;
@@ -72,6 +72,7 @@
 
         .info-message { text-align: center; padding: 100px 0; font-size: 1.2rem; color: #999; }
 
+        /* MOBILE RESPONSIVE FIX */
         @media (max-width: 767px) {
             #mobile-menu-btn { display: block; }
             .chat-sidebar { position: fixed; left: -100%; top: 60px; height: calc(100vh - 60px); z-index: 1000; width: 85%; box-shadow: 10px 0 20px rgba(0,0,0,0.1); }
@@ -162,7 +163,20 @@
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = { en: { chatWith: "Chat with", imageSent: "Sent a photo", sold: "SOLD" }, fr: { chatWith: "Discussion avec", imageSent: "A envoyé une photo", sold: "VENDU" } };
 
-            mobileMenuBtn.onclick = () => sidebar.classList.toggle('open');
+            // --- FIXED: MOBILE MENU TOGGLE AND CLICK-AWAY LOGIC ---
+            mobileMenuBtn.onclick = (e) => {
+                e.stopPropagation();
+                sidebar.classList.toggle('open');
+            };
+
+            document.addEventListener('click', (e) => {
+                if (window.innerWidth < 768 && sidebar.classList.contains('open')) {
+                    // If the user clicks anywhere outside the sidebar, close it
+                    if (!sidebar.contains(e.target)) {
+                        sidebar.classList.remove('open');
+                    }
+                }
+            });
 
             onAuthStateChanged(auth, user => {
                 if (user && user.emailVerified) {
@@ -203,7 +217,6 @@
                 const otherName = d.participantInfo ? d.participantInfo[otherId] : 'User';
                 chatHeaderName.textContent = `${strings[lang].chatWith} ${otherName}`;
 
-                // --- FETCH LISTING INFO FOR BANNER ---
                 if (d.listingId) {
                     const lSnap = await getDoc(doc(db, 'listings', d.listingId));
                     if (lSnap.exists()) {
