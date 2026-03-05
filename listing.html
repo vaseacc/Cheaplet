@@ -29,6 +29,7 @@
         .main-image-container { position: relative; z-index: 2; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 40px; }
         .main-image { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
         .nav-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; border-radius: 50%; background-color: rgba(60, 60, 60, 0.6); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; border: none; z-index: 10; }
+        .nav-arrow:hover { background-color: rgba(60, 60, 60, 0.9); }
         .nav-prev { left: 20px; } .nav-next { right: 20px; }
         .thumbnails-overlay { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 10; padding: 5px; }
         .thumb { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; cursor: pointer; opacity: 0.6; border: 2px solid white; transition: all 0.2s; }
@@ -168,6 +169,10 @@
             const saveBtn = document.getElementById('btn-save');
             const shareBtn = document.getElementById('btn-share');
             
+            // DECLARE VARIABLES TO PREVENT REFERENCE ERROR
+            const prevBtn = document.getElementById('prev-img-btn');
+            const nextBtn = document.getElementById('next-img-btn');
+            
             let currentUser = null;
             let currentListingData = null;
             let currentListingId = null;
@@ -179,7 +184,7 @@
                 fr: {
                     "New": "Neuf", "Like New": "Comme neuf", "Good": "Bon état", "Fair": "État correct",
                     "Not applicable": "Non applicable", "Available / Unused": "Disponible / Inutilisé", "Already used": "Déjà utilisé",
-                    "Dawson College": "Collège Dawson", "Vanier College": "Collège Vanier", "John Abbott College": "John Abbott College",
+                    "Dawson College": "Collège Dawson", "Vanier College": "Collège Vanier", "McGill University": "Université McGill",
                     "Yes": "Oui", "No": "Non", "N/A": "N/O"
                 }
             };
@@ -293,14 +298,16 @@
             function updateMainImage(index) {
                 currentImageIndex = index;
                 const url = imageUrls[index];
-                mainImage.src = url;
-                blurBg.style.backgroundImage = `url('${url}')`;
+                if(url) {
+                    mainImage.src = url;
+                    blurBg.style.backgroundImage = `url('${url}')`;
+                }
                 document.querySelectorAll('.thumb').forEach((thumb, i) => {
                     thumb.classList.toggle('active', i === index);
                 });
             }
 
-            document.getElementById('prev-img-btn').onclick = () => { if (imageUrls.length === 0) return; let newIndex = currentImageIndex - 1; if (newIndex < 0) newIndex = imageUrls.length - 1; updateMainImage(newIndex); };
+            prevBtn.onclick = () => { if (imageUrls.length === 0) return; let newIndex = currentImageIndex - 1; if (newIndex < 0) newIndex = imageUrls.length - 1; updateMainImage(newIndex); };
             nextBtn.onclick = () => { if (imageUrls.length === 0) return; let newIndex = currentImageIndex + 1; if (newIndex >= imageUrls.length) newIndex = 0; updateMainImage(newIndex); };
 
             async function createChat(posterUid, posterName) {
@@ -315,7 +322,7 @@
                             participantInfo: { [currentUser.uid]: currentUser.displayName, [posterUid]: posterName }, 
                             lastUpdate: serverTimestamp(), 
                             lastMessage: "",
-                            listingId: currentListingId // ADDED AS REQUESTED
+                            listingId: currentListingId 
                         }); 
                     }
                     window.location.href = `/chat.html?id=${chatId}`;
