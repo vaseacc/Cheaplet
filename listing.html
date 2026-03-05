@@ -179,7 +179,7 @@
                 fr: {
                     "New": "Neuf", "Like New": "Comme neuf", "Good": "Bon état", "Fair": "État correct",
                     "Not applicable": "Non applicable", "Available / Unused": "Disponible / Inutilisé", "Already used": "Déjà utilisé",
-                    "Dawson College": "Collège Dawson", "Vanier College": "Collège Vanier", "McGill University": "Université McGill",
+                    "Dawson College": "Collège Dawson", "Vanier College": "Collège Vanier", "John Abbott College": "John Abbott College",
                     "Yes": "Oui", "No": "Non", "N/A": "N/O"
                 }
             };
@@ -215,7 +215,6 @@
 
                     document.getElementById('listing-title').textContent = data.title;
                     
-                    // --- SOLD STATUS LOGIC ---
                     if (data.status === 'sold') {
                         const soldText = savedLang === 'fr' ? "VENDU" : "SOLD";
                         document.getElementById('listing-price').innerHTML = `<span style="color: #d32f2f; font-weight: 800;">${soldText}</span>`;
@@ -302,7 +301,7 @@
             }
 
             document.getElementById('prev-img-btn').onclick = () => { if (imageUrls.length === 0) return; let newIndex = currentImageIndex - 1; if (newIndex < 0) newIndex = imageUrls.length - 1; updateMainImage(newIndex); };
-            document.getElementById('next-img-btn').onclick = () => { if (imageUrls.length === 0) return; let newIndex = currentImageIndex + 1; if (newIndex >= imageUrls.length) newIndex = 0; updateMainImage(newIndex); };
+            nextBtn.onclick = () => { if (imageUrls.length === 0) return; let newIndex = currentImageIndex + 1; if (newIndex >= imageUrls.length) newIndex = 0; updateMainImage(newIndex); };
 
             async function createChat(posterUid, posterName) {
                 const uids = [currentUser.uid, posterUid].sort();
@@ -310,7 +309,15 @@
                 const chatRef = doc(db, 'chats', chatId);
                 try {
                     const chatSnap = await getDoc(chatRef);
-                    if (!chatSnap.exists()) { await setDoc(chatRef, { participants: uids, participantInfo: { [currentUser.uid]: currentUser.displayName, [posterUid]: posterName }, lastUpdate: serverTimestamp(), lastMessage: "" }); }
+                    if (!chatSnap.exists()) {
+                        await setDoc(chatRef, { 
+                            participants: uids, 
+                            participantInfo: { [currentUser.uid]: currentUser.displayName, [posterUid]: posterName }, 
+                            lastUpdate: serverTimestamp(), 
+                            lastMessage: "",
+                            listingId: currentListingId // ADDED AS REQUESTED
+                        }); 
+                    }
                     window.location.href = `/chat.html?id=${chatId}`;
                 } catch (error) { alert("Error starting chat."); }
             }
@@ -332,7 +339,6 @@
                 }
                 const userRef = doc(db, "users", currentUser.uid);
                 const lang = localStorage.getItem('preferred_language') || 'en';
-
                 if (isSaved) {
                     await updateDoc(userRef, { savedListings: arrayRemove(currentListingId) });
                     isSaved = false;
@@ -351,7 +357,7 @@
                 const url = window.location.href;
                 const title = currentListingData ? currentListingData.title : 'Cheaplet Listing';
                 const lang = localStorage.getItem('preferred_language') || 'en';
-                const copyMsg = lang === 'fr' ? "Lien copié dans le presse-papier !" : "Link copied to clipboard!";
+                const copyMsg = lang === 'fr' ? "Lien copié !" : "Link copied!";
                 if (navigator.share) {
                     try { await navigator.share({ title: title, url: url }); } catch (err) { await navigator.clipboard.writeText(url); alert(copyMsg); }
                 } else { await navigator.clipboard.writeText(url); alert(copyMsg); }
