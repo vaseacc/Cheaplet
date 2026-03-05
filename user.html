@@ -193,30 +193,17 @@
                 const reason = document.getElementById('report-reason').value;
                 const details = document.getElementById('report-details').value.trim();
                 const targetId = new URLSearchParams(window.location.search).get('id');
-
                 if (!reason) return;
-                
                 submitReportBtn.disabled = true;
-                submitReportBtn.textContent = "...";
-
                 try {
                     await addDoc(collection(db, "reports"), {
-                        reporterUid: currentUser.uid,
-                        reporterName: currentUser.displayName,
-                        targetUid: targetId,
-                        targetUserName: targetUserData.displayName,
-                        reason: reason,
-                        details: details,
-                        timestamp: serverTimestamp()
+                        reporterUid: currentUser.uid, reporterName: currentUser.displayName,
+                        targetUid: targetId, targetUserName: targetUserData ? targetUserData.displayName : "User",
+                        reason: reason, details: details, timestamp: serverTimestamp()
                     });
                     alert(strings[lang].reportSuccess);
                     reportModal.style.display = 'none';
-                } catch (e) {
-                    alert("Error: " + e.message);
-                } finally {
-                    submitReportBtn.disabled = false;
-                    submitReportBtn.textContent = strings[lang].reportTitle;
-                }
+                } catch (e) { alert("Error: " + e.message); } finally { submitReportBtn.disabled = false; }
             };
 
             // --- ADMIN BAN ACTION ---
@@ -236,26 +223,36 @@
                 if (!userId) { loader.innerHTML = `<p class="info-message">${strings[lang].notFound}</p>`; return; }
                 adminBanBtn.onclick = () => banUser(userId);
 
+                // --- FIX: SAFE PROFILE FETCH (Allows signed-out users to see listings) ---
                 try {
                     const userSnap = await getDoc(doc(db, "users", userId));
-                    if (!userSnap.exists()) { loader.innerHTML = `<p class="info-message">${strings[lang].notFound}</p>`; return; }
+                    if (userSnap.exists()) {
+                        targetUserData = userSnap.data();
+                        userDisplayName.textContent = targetUserData.displayName || "User";
+                        if (targetUserData.role === 'banned') userDisplayName.innerHTML += ` <span style="color:red; font-size:1rem;">(${strings[lang].banned})</span>`;
+                    } else {
+                        userDisplayName.textContent = "Cheaplet User";
+                    }
+                } catch (e) {
+                    // Fallback for signed-out users (Permissions block user doc read)
+                    userDisplayName.textContent = "Cheaplet User";
+                }
 
-                    targetUserData = userSnap.data();
-                    userDisplayName.textContent = targetUserData.displayName || "User";
-                    if (targetUserData.role === 'banned') userDisplayName.innerHTML += ` <span style="color:red; font-size:1rem;">(${strings[lang].banned})</span>`;
-
-                    const q = query(collection(db, "listings"), where("posterUid", "==", userId), orderBy("timestamp", "desc"));
-                    onSnapshot(q, (snapshot) => {
-                        userListingsGrid.innerHTML = '';
-                        if (snapshot.empty) {
-                            userListingsGrid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color:#999;">No active listings.</p>';
-                        } else {
-                            snapshot.forEach(doc => userListingsGrid.appendChild(renderCard(doc.data(), doc.id)));
-                        }
-                        loader.style.display = 'none';
-                        profileContent.style.display = 'block';
-                    });
-                } catch (e) { console.error(e); }
+                // FETCH LISTINGS (This is public and will always work)
+                const q = query(collection(db, "listings"), where("posterUid", "==", userId), orderBy("timestamp", "desc"));
+                onSnapshot(q, (snapshot) => {
+                    userListingsGrid.innerHTML = '';
+                    if (snapshot.empty) {
+                        userListingsGrid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color:#999;">No active listings.</p>';
+                    } else {
+                        snapshot.forEach(doc => userListingsGrid.appendChild(renderCard(doc.data(), doc.id)));
+                    }
+                    loader.style.display = 'none';
+                    profileContent.style.display = 'block';
+                }, (err) => {
+                    console.error("Listings load error:", err);
+                    loader.innerHTML = `<p class="info-message">Error loading listings.</p>`;
+                });
             }
 
             function renderCard(d, id) {
