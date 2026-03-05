@@ -166,6 +166,7 @@
             const blurBg = document.getElementById('blur-bg'); 
             const thumbnailContainer = document.getElementById('thumbnail-container');
             const saveBtn = document.getElementById('btn-save');
+            const shareBtn = document.getElementById('btn-share');
             
             let currentUser = null;
             let currentListingData = null;
@@ -313,7 +314,6 @@
                 else { icon.classList.replace('fas', 'far'); icon.style.color = '#555'; }
             }
 
-            // --- UPDATED SAVE LOGIC ---
             saveBtn.onclick = async () => {
                 if (!currentUser) {
                     const currentPath = window.location.pathname + window.location.search;
@@ -329,7 +329,6 @@
                 } else {
                     await updateDoc(userRef, { savedListings: arrayUnion(currentListingId) });
                     isSaved = true;
-                    // FIX: Notify user where it is saved
                     const msg = lang === 'fr' 
                         ? "Annonce enregistrée ! Vous pouvez la retrouver dans votre profil." 
                         : "Listing saved! You can find it in your profile.";
@@ -338,7 +337,27 @@
                 updateSaveIcon();
             };
 
-            shareBtn.onclick = () => { const url = window.location.href; if (navigator.share) navigator.share({ title: currentListingData.title, url: url }); else { navigator.clipboard.writeText(url); alert("Link copied!"); } };
+            // --- FIXED SHARE BUTTON LOGIC ---
+            shareBtn.onclick = async () => {
+                const url = window.location.href;
+                const title = currentListingData ? currentListingData.title : 'Cheaplet Listing';
+                const lang = localStorage.getItem('preferred_language') || 'en';
+                const copyMsg = lang === 'fr' ? "Lien copié dans le presse-papier !" : "Link copied to clipboard!";
+
+                if (navigator.share) {
+                    try {
+                        await navigator.share({ title: title, url: url });
+                    } catch (err) {
+                        // Fallback if sharing is canceled or fails
+                        await navigator.clipboard.writeText(url);
+                        alert(copyMsg);
+                    }
+                } else {
+                    await navigator.clipboard.writeText(url);
+                    alert(copyMsg);
+                }
+            };
+
             async function deleteListing(docId, isAdmin) { if (confirm("Delete listing?")) { await deleteDoc(doc(db, 'listings', docId)); window.location.href = '/index.html'; } }
         }
         main();
