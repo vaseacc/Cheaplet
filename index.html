@@ -30,18 +30,42 @@
         .hero { background: linear-gradient(rgba(76,175,80,0.9), rgba(56,142,60,0.9)), url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%234CAF50"/></svg>'); background-size: cover; color: white; text-align: center; padding: clamp(40px, 10vw, 80px) 20px; }
         .hero h1 { font-size: clamp(1.8rem, 6vw, 2.5rem); margin-bottom: 15px; }
         
-        /* Grid Responsiveness */
-        .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-bottom: 40px; }
-        
+        /* GRID RESPONSIVENESS (FB Marketplace Style) */
+        .listings-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
+            gap: 20px; 
+            margin-bottom: 40px; 
+        }
+
         @media (max-width: 767px) {
-            nav { display: none; } /* global.js will move these to the pfp dropdown on mobile */
+            nav { display: none; }
+            .listings-grid {
+                grid-template-columns: repeat(2, 1fr); /* 2 Columns on mobile */
+                gap: 10px; /* Tighter gap like FB */
+                padding: 0;
+            }
+            .listing-image {
+                height: 160px !important; /* Shorter images for mobile grid */
+            }
+            .listing-details {
+                padding: 8px !important;
+            }
+            .listing-price {
+                font-size: 1rem !important;
+            }
+            .listing-title {
+                font-size: 0.85rem !important;
+                height: 2.6em; /* Keep it to 2 lines */
+                overflow: hidden;
+            }
         }
 
         /* Listing Card UI */
         .listing-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: block; text-decoration: none; color: inherit; transition: transform 0.3s; }
         .listing-image { height: 200px; background-color: #eee; background-size: cover; background-position: center; }
         .listing-details { padding: 15px; }
-        .listing-price { color: #4CAF50; font-weight: bold; font-size: 1.2rem; }
+        .listing-price { color: #4CAF50; font-weight: 800; font-size: 1.2rem; }
         
         /* Section styling */
         .section-title { font-size: 1.8rem; color: #2E7D32; margin-bottom: 25px; text-align: center; font-weight: 600; }
@@ -178,7 +202,7 @@
                     <div class="listing-image" style="background-image: url('${firstImage}');"></div>
                     <div class="listing-details">
                         <div class="listing-price">$${data.price.toFixed(2)}</div>
-                        <h3 style="font-size: 1rem; margin: 5px 0;">${data.title}</h3>
+                        <h3 class="listing-title">${data.title}</h3>
                         <div style="font-size: 0.85rem; color: #777;"><i class="fas fa-map-marker-alt"></i> ${data.location || 'Montreal'}</div>
                     </div>`;
                 return card;
@@ -194,10 +218,7 @@
 
                 unsubscribeListings = onSnapshot(query(q, ...constraints), snapshot => {
                     listingsContainer.innerHTML = '';
-                    
-                    // FIX: Filter out any documents where status is 'sold'
                     const activeDocs = snapshot.docs.filter(doc => doc.data().status !== 'sold');
-                    
                     itemCountSpan.textContent = `${activeDocs.length} items`;
                     activeDocs.forEach(doc => listingsContainer.appendChild(renderListing(doc)));
                 });
