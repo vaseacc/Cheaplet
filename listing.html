@@ -9,13 +9,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f8f9fa; color: #333; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { background-color: #f8f9fa; color: #333; min-height: 100vh; display: flex; flex-direction: column; overflow-y: auto; }
         
         header { 
             background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); 
             color: white; height: 60px; padding: 0 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
             display: flex; align-items: center; justify-content: space-between; 
-            z-index: 100; flex-shrink: 0; 
+            z-index: 100; flex-shrink: 0; position: sticky; top: 0;
         }
         .header-left { display: flex; align-items: center; gap: 20px; }
         .logo { font-size: 24px; font-weight: bold; color: white; text-decoration: none; display: flex; align-items: center; }
@@ -23,7 +23,7 @@
         nav ul { display: flex; list-style: none; margin: 0; padding: 0; gap: 20px; }
         .header-right { display: flex; align-items: center; gap: 15px; }
 
-        .main-wrapper { display: flex; flex: 1; height: calc(100vh - 60px); overflow: hidden; }
+        .main-wrapper { display: flex; flex-shrink: 0; height: calc(100vh - 60px); overflow: hidden; }
         .image-stage { flex: 1; background-color: #000; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
         .blurred-bg { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-size: cover; background-position: center; filter: blur(40px) brightness(0.5); z-index: 1; transition: background-image 0.3s ease-in-out; transform: scale(1.1); }
         .main-image-container { position: relative; z-index: 2; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 40px; }
@@ -75,6 +75,8 @@
         .related-img { width: 100%; height: 120px; background-color: #eee; background-size: cover; background-position: center; border-radius: 8px; margin-bottom: 8px; }
         .related-title { font-size: 0.85rem; font-weight: 600; height: 2.4em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.2; color: #050505; }
         .related-price { font-weight: bold; color: #4CAF50; font-size: 0.95rem; margin-top: 4px; }
+
+        .section-title { font-size: 1.8rem; color: #2E7D32; margin-bottom: 25px; text-align: center; font-weight: 600; }
 
         @media (max-width: 900px) { .main-wrapper { flex-direction: column; overflow-y: auto; height: auto; } .image-stage { height: 350px; flex: none; } .details-panel { width: 100%; border-left: none; height: auto; padding-bottom: 50px; } nav { display: none; } }
     </style>
@@ -156,7 +158,28 @@
         </div>
     </div>
 
-    <!-- REPORT MODAL -->
+    <section class="how-it-works" style="padding: 60px 0; background: #fff; border-top: 1px solid #eee;">
+        <div class="container">
+            <h2 class="section-title" data-i18n="how_title">How It Works</h2>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:30px; text-align:center;">
+                <div><i class="fas fa-user-plus" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i><h3 data-i18n="step_1_title" style="font-weight: 700;">Create an Account</h3></div>
+                <div><i class="fas fa-camera-retro" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i><h3 data-i18n="step_2_title" style="font-weight: 700;">Post Your Item</h3></div>
+                <div><i class="fas fa-comments-dollar" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i><h3 data-i18n="step_3_title" style="font-weight: 700;">Connect & Sell</h3></div>
+            </div>
+        </div>
+    </section>
+
+    <footer style="background: #2E7D32; color: white; padding: 40px 0; text-align: center;">
+        <div class="container">
+            <div style="margin-bottom: 20px;">
+                <span data-i18n="footer_about" style="margin: 0 15px; cursor:pointer;">About</span>
+                <span data-i18n="footer_support" style="margin: 0 15px; cursor:pointer;">Support</span>
+                <span data-i18n="footer_legal" style="margin: 0 15px; cursor:pointer;">Legal</span>
+            </div>
+            <div>© 2025 Cheaplet. All rights reserved.</div>
+        </div>
+    </footer>
+
     <div class="modal-overlay" id="report-modal">
         <div class="modal-card">
             <h2 id="modal-title">Report Listing</h2>
@@ -197,8 +220,8 @@
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = {
-                en: { reportTitle: "Report Listing", reportDesc: "Why are you reporting this?", reportPlaceholder: "Details...", reportSuccess: "Reported.", opt1: "Inappropriate Content", opt2: "Scam or Fraud", opt3: "Sold or Unavailable", opt4: "Other", sold: "SOLD" },
-                fr: { reportTitle: "Signaler l'annonce", reportDesc: "Pourquoi signalez-vous cela ?", reportPlaceholder: "Détails...", reportSuccess: "Signalé.", opt1: "Contenu inapproprié", opt2: "Arnaque ou Fraude", opt3: "Vendu ou Indisponible", opt4: "Autre", sold: "VENDU" }
+                en: { reportTitle: "Report Listing", reportDesc: "Why are you reporting this?", reportPlaceholder: "Details...", reportSuccess: "Reported.", opt1: "Inappropriate Content", opt2: "Scam or Fraud", opt3: "Sold or Unavailable", opt4: "Other", sold: "SOLD", seeMore: "See more", seeLess: "See less" },
+                fr: { reportTitle: "Signaler l'annonce", reportDesc: "Pourquoi signalez-vous cela ?", reportPlaceholder: "Détails...", reportSuccess: "Signalé.", opt1: "Contenu inapproprié", opt2: "Arnaque ou Fraude", opt3: "Vendu ou Indisponible", opt4: "Autre", sold: "VENDU", seeMore: "Voir plus", seeLess: "Voir moins" }
             };
 
             const dataTranslations = {
@@ -258,7 +281,38 @@
                     document.getElementById('listing-writing').textContent = translateData(data.hasWriting);
                     document.getElementById('listing-water').textContent = translateData(data.hasWaterDamage);
                     document.getElementById('listing-missing').textContent = translateData(data.hasMissingPages);
-                    document.getElementById('listing-description').textContent = data.description;
+                    
+                    // --- MODIFIED: DESCRIPTION SEE MORE LOGIC ---
+                    const descEl = document.getElementById('listing-description');
+                    const fullDesc = data.description || '';
+                    const charLimit = 300;
+
+                    if (fullDesc.length > charLimit) {
+                        const shortDesc = fullDesc.substring(0, charLimit) + "... ";
+                        descEl.textContent = shortDesc;
+
+                        const seeMoreBtn = document.createElement('span');
+                        seeMoreBtn.style.color = "#4CAF50";
+                        seeMoreBtn.style.cursor = "pointer";
+                        seeMoreBtn.style.fontWeight = "bold";
+                        seeMoreBtn.textContent = strings[lang].seeMore;
+                        
+                        seeMoreBtn.onclick = () => {
+                            if (seeMoreBtn.textContent === strings[lang].seeMore) {
+                                descEl.textContent = fullDesc + " ";
+                                seeMoreBtn.textContent = strings[lang].seeLess;
+                                descEl.appendChild(seeMoreBtn);
+                            } else {
+                                descEl.textContent = shortDesc;
+                                seeMoreBtn.textContent = strings[lang].seeMore;
+                                descEl.appendChild(seeMoreBtn);
+                            }
+                        };
+                        descEl.appendChild(seeMoreBtn);
+                    } else {
+                        descEl.textContent = fullDesc;
+                    }
+
                     document.getElementById('seller-name-link').textContent = data.posterDisplayName || "User";
                     document.getElementById('seller-name-link').href = `/user.html?id=${data.posterUid}`;
                     
