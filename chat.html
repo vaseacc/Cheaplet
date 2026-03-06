@@ -21,7 +21,6 @@
 
         .chat-main-wrapper { display: flex; height: calc(100vh - 65px); max-width: 1300px; margin: 0 auto; background: white; border-left: 1px solid #eee; border-right: 1px solid #eee; }
 
-        /* --- SIDEBAR --- */
         .chat-sidebar { width: 320px; border-right: 1px solid #eee; display: flex; flex-direction: column; background: #fdfdfd; flex-shrink: 0; transition: 0.3s ease; }
         .sidebar-header { padding: 20px; font-weight: 800; font-size: 1.2rem; border-bottom: 1px solid #eee; color: #2E7D32; }
         #sidebar-list { flex-grow: 1; overflow-y: auto; }
@@ -33,14 +32,16 @@
         .side-info { overflow: hidden; flex-grow: 1; }
         .side-name { font-weight: 600; font-size: 0.95rem; }
         .side-msg { font-size: 0.8rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
         .unread-dot { width: 10px; height: 10px; background-color: #f44336; border-radius: 50%; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); display: none; }
         .side-conv-item.is-new .unread-dot { display: block; }
 
-        /* --- CHAT WINDOW --- */
         .chat-window { flex-grow: 1; display: flex; flex-direction: column; background: white; position: relative; }
-        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: 700; color: #050505; background: #fff; display: flex; align-items: center; gap: 15px; z-index: 10; font-size: 1.1rem; }
+        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: 700; color: #050505; background: #fff; display: flex; align-items: center; justify-content: space-between; z-index: 10; font-size: 1.1rem; }
         
+        /* FLAG BUTTON */
+        .btn-report-chat { background: none; border: none; color: #ff5252; cursor: pointer; font-size: 1.2rem; transition: transform 0.2s; padding: 5px; }
+        .btn-report-chat:hover { transform: scale(1.1); }
+
         .listing-preview-banner { display: flex; align-items: center; padding: 10px 20px; background: #fff; border-bottom: 1px solid #ddd; gap: 12px; flex-shrink: 0; text-decoration: none; color: inherit; transition: background 0.2s; }
         .lp-img { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; background: #eee; }
         .lp-info { flex-grow: 1; overflow: hidden; display: flex; flex-direction: column; }
@@ -48,7 +49,6 @@
         .lp-price { color: #65676B; font-size: 0.85rem; }
         .lp-status { font-size: 0.75rem; color: #d32f2f; font-weight: bold; text-transform: uppercase; }
 
-        /* --- MESSAGES LIST --- */
         #messages-list { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; background-color: #fff; }
         .date-divider { text-align: center; margin: 30px 0 15px; font-size: 0.75rem; color: #8e8e8e; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
         .message-row { display: flex; gap: 8px; margin-bottom: 4px; align-items: flex-end; width: 100%; }
@@ -62,7 +62,6 @@
         .message-timestamp { font-size: 0.65rem; color: rgba(0,0,0,0.4); margin-top: 2px; display: block; }
         .sent .message-timestamp { color: rgba(255,255,255,0.7); text-align: right; }
 
-        /* MENU TOGGLE BUTTON - FIXED: Hidden by default for Computer */
         #mobile-menu-btn { display: none; background: none; border: none; font-size: 1.2rem; color: #4CAF50; cursor: pointer; }
 
         .message-form { display: flex; align-items: center; padding: 15px; border-top: 1px solid #eee; background: white; gap: 10px; }
@@ -70,10 +69,20 @@
         #message-input { flex-grow: 1; border: none; background: #F0F2F5; border-radius: 20px; padding: 10px 15px; outline: none; }
         #send-btn { background: none; border: none; color: #0084FF; cursor: pointer; font-size: 1.3rem; }
 
+        /* MODAL STYLES */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: none; justify-content: center; align-items: center; }
+        .modal-card { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .modal-card select, .modal-card textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+        .modal-card textarea { height: 100px; resize: none; }
+        .modal-buttons { display: flex; gap: 10px; }
+        .modal-buttons button { flex: 1; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; }
+        .btn-submit-red { background: #d32f2f; color: white; }
+        .btn-cancel-gray { background: #eee; color: #333; }
+
         .info-message { text-align: center; padding: 100px 0; font-size: 1.2rem; color: #999; }
 
         @media (max-width: 767px) {
-            #mobile-menu-btn { display: block; } /* Show only on phone */
+            #mobile-menu-btn { display: block; }
             .chat-sidebar { position: fixed; left: -100%; top: 60px; height: calc(100vh - 60px); z-index: 1000; width: 85%; box-shadow: 10px 0 20px rgba(0,0,0,0.1); }
             .chat-sidebar.open { left: 0; }
             nav { display: none; }
@@ -102,8 +111,14 @@
 
             <div id="chat-active-ui" style="display: none; flex-direction: column; height: 100%;">
                 <div class="chat-header">
-                    <button id="mobile-menu-btn"><i class="fas fa-bars"></i></button>
-                    <span id="chat-header-name">...</span>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <button id="mobile-menu-btn"><i class="fas fa-bars"></i></button>
+                        <span id="chat-header-name">...</span>
+                    </div>
+                    <!-- REPORT BUTTON -->
+                    <button id="report-chat-btn" class="btn-report-chat" title="Report Chat">
+                        <i class="fas fa-flag"></i>
+                    </button>
                 </div>
 
                 <a href="#" id="listing-preview-banner" class="listing-preview-banner" style="display: none;">
@@ -125,6 +140,25 @@
                 </form>
             </div>
         </main>
+    </div>
+
+    <!-- REPORT MODAL -->
+    <div class="modal-overlay" id="report-modal">
+        <div class="modal-card">
+            <h2 id="modal-title">Report Conversation</h2>
+            <p style="margin-bottom: 15px; font-size: 0.9rem; color: #666;" id="modal-desc">Help us keep Cheaplet safe.</p>
+            <select id="report-reason">
+                <option value="Harassment or Hate Speech">Harassment or Hate Speech</option>
+                <option value="Scam or Fraud">Scam or Fraud</option>
+                <option value="Spam">Spam</option>
+                <option value="Other">Other</option>
+            </select>
+            <textarea id="report-details" placeholder="Tell us more..."></textarea>
+            <div class="modal-buttons">
+                <button class="btn-submit-red" id="submit-report-btn">Submit</button>
+                <button class="btn-cancel-gray" id="close-report-btn">Cancel</button>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -150,6 +184,8 @@
             const messageInput = document.getElementById('message-input');
             const chatHeaderName = document.getElementById('chat-header-name');
             const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const reportBtn = document.getElementById('report-chat-btn');
+            const reportModal = document.getElementById('report-modal');
 
             const lpBanner = document.getElementById('listing-preview-banner');
             const lpImage = document.getElementById('lp-image');
@@ -158,7 +194,10 @@
             const lpStatus = document.getElementById('lp-status');
 
             const lang = localStorage.getItem('preferred_language') || 'en';
-            const strings = { en: { imageSent: "Sent a photo", sold: "SOLD" }, fr: { imageSent: "A envoyé une photo", sold: "VENDU" } };
+            const strings = { 
+                en: { imageSent: "Sent a photo", sold: "SOLD", reportTitle: "Report Conversation", reportDesc: "Why are you reporting this chat?", reportPlaceholder: "Details...", reportSuccess: "Reported successfully.", opt1: "Harassment or Hate Speech", opt2: "Scam or Fraud", opt3: "Spam", opt4: "Other" }, 
+                fr: { imageSent: "A envoyé une photo", sold: "VENDU", reportTitle: "Signaler la discussion", reportDesc: "Pourquoi signalez-vous ce chat ?", reportPlaceholder: "Détails...", reportSuccess: "Signalement envoyé.", opt1: "Harcèlement ou haine", opt2: "Arnaque ou Fraude", opt3: "Spam", opt4: "Autre" } 
+            };
 
             mobileMenuBtn.onclick = (e) => { e.stopPropagation(); sidebar.classList.toggle('open'); };
             document.addEventListener('click', (e) => { if (window.innerWidth < 768 && !sidebar.contains(e.target)) sidebar.classList.remove('open'); });
@@ -202,6 +241,29 @@
                 const otherName = chatData.participantInfo ? chatData.participantInfo[otherId] : 'User';
                 chatHeaderName.textContent = otherName;
 
+                // --- REPORTING LOGIC ---
+                reportBtn.onclick = () => {
+                    document.getElementById('modal-title').textContent = strings[lang].reportTitle;
+                    document.getElementById('modal-desc').textContent = strings[lang].reportDesc;
+                    document.getElementById('report-details').placeholder = strings[lang].reportPlaceholder;
+                    const opts = document.getElementById('report-reason').options;
+                    opts[0].text = strings[lang].opt1; opts[1].text = strings[lang].opt2; opts[2].text = strings[lang].opt3; opts[3].text = strings[lang].opt4;
+                    reportModal.style.display = 'flex';
+                };
+                document.getElementById('close-report-btn').onclick = () => reportModal.style.display = 'none';
+                document.getElementById('submit-report-btn').onclick = async () => {
+                    const reason = document.getElementById('report-reason').value;
+                    const details = document.getElementById('report-details').value.trim();
+                    await addDoc(collection(db, "reports"), {
+                        reporterUid: currentUser.uid, reporterName: currentUser.displayName,
+                        targetUid: otherId, targetUserName: otherName,
+                        reason: "Chat: " + reason, details: `Chat ID: ${chatId}\n\n${details}`,
+                        timestamp: serverTimestamp()
+                    });
+                    alert(strings[lang].reportSuccess);
+                    reportModal.style.display = 'none';
+                };
+
                 if (chatData.listingId) {
                     const lSnap = await getDoc(doc(db, 'listings', chatData.listingId));
                     if (lSnap.exists()) {
@@ -222,13 +284,10 @@
                         const mData = doc.data();
                         const date = mData.timestamp ? mData.timestamp.toDate() : new Date();
                         const dateString = date.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-
                         if (dateString !== lastDateString) {
                             const divider = document.createElement('div');
-                            divider.className = 'date-divider';
-                            divider.textContent = dateString;
-                            messagesList.appendChild(divider);
-                            lastDateString = dateString;
+                            divider.className = 'date-divider'; divider.textContent = dateString;
+                            messagesList.appendChild(divider); lastDateString = dateString;
                         }
                         renderMessage(mData, currentUser.uid, chatData.participantInfo);
                     });
@@ -269,8 +328,7 @@
                 content += data.text ? `<p style="margin:0;">${data.text}</p>` : '';
                 const time = data.timestamp ? data.timestamp.toDate().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
                 bubble.innerHTML = `${content}<span class="message-timestamp">${time}</span>`;
-                row.appendChild(avatar);
-                row.appendChild(bubble);
+                row.appendChild(avatar); row.appendChild(bubble);
                 messagesList.appendChild(row);
             }
         }
