@@ -32,13 +32,23 @@
         .filter-group { display: flex; align-items: center; gap: 10px; flex: 1; }
         select, #search-input { padding: 12px; border: 2px solid #ddd; border-radius: 8px; width: 100%; outline: none; }
 
-        /* Grid */
+        /* Grid - 2 columns on mobile like index.html */
         .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-bottom: 50px; }
+
+        @media (max-width: 767px) {
+            .listings-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0; }
+            .listing-image { height: 160px !important; }
+            .listing-details { padding: 8px !important; }
+            .listing-title { font-size: 0.85rem !important; height: 2.6em; overflow: hidden; }
+        }
+
         .listing-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.06); text-decoration: none; color: inherit; transition: transform 0.3s; }
-        .listing-card:hover { transform: translateY(-5px); box-shadow: 0 8px 20px rgba(0,0,0,0.12); }
+        .listing-card:hover { transform: translateY(-5px); }
         .listing-image { height: 200px; background-color: #f0f0f0; background-size: cover; background-position: center; }
         .listing-details { padding: 15px; }
         .listing-price { color: #4CAF50; font-weight: 800; font-size: 1.2rem; }
+
+        .section-title { font-size: 1.8rem; color: #2E7D32; margin-bottom: 25px; text-align: center; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -73,6 +83,38 @@
         <div class="listings-grid" id="listings-container"></div>
     </main>
 
+    <!-- NEW: HOW IT WORKS SECTION -->
+    <section class="how-it-works" style="padding: 60px 0; background: #fff; border-top: 1px solid #eee;">
+        <div class="container">
+            <h2 class="section-title" data-i18n="how_title">How It Works</h2>
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:30px; text-align:center;">
+                <div>
+                    <i class="fas fa-user-plus" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i>
+                    <h3 data-i18n="step_1_title" style="font-weight: 700;">Create an Account</h3>
+                </div>
+                <div>
+                    <i class="fas fa-camera-retro" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i>
+                    <h3 data-i18n="step_2_title" style="font-weight: 700;">Post Your Item</h3>
+                </div>
+                <div>
+                    <i class="fas fa-comments-dollar" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i>
+                    <h3 data-i18n="step_3_title" style="font-weight: 700;">Connect & Sell</h3>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer style="background: #2E7D32; color: white; padding: 40px 0; text-align: center;">
+        <div class="container">
+            <div style="margin-bottom: 20px;">
+                <span data-i18n="footer_about" style="margin: 0 15px;">About</span>
+                <span data-i18n="footer_support" style="margin: 0 15px;">Support</span>
+                <span data-i18n="footer_legal" style="margin: 0 15px;">Legal</span>
+            </div>
+            <div>© 2025 Cheaplet. All rights reserved.</div>
+        </div>
+    </footer>
+
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getFirestore, collection, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
@@ -104,12 +146,9 @@
                     listingsContainer.innerHTML = '';
                     const term = searchInput.value.toLowerCase();
                     
-                    // --- MODIFIED FILTER: HIDE SOLD ITEMS ---
                     const filtered = snapshot.docs.filter(doc => {
                         const data = doc.data();
-                        const matchesSearch = (data.title || '').toLowerCase().includes(term);
-                        const isNotSold = data.status !== 'sold';
-                        return matchesSearch && isNotSold;
+                        return (data.title || '').toLowerCase().includes(term) && data.status !== 'sold';
                     });
                     
                     const savedLang = localStorage.getItem('preferred_language') || 'en';
