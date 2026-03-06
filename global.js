@@ -51,7 +51,7 @@ window.applyLanguage = (lang) => {
     localStorage.setItem('preferred_language', lang);
 };
 
-// --- 3. GLOBAL CSS ---
+// --- 3. GLOBAL CSS (Updated with Smart Mobile Format) ---
 const globalStyle = document.createElement('style');
 globalStyle.innerHTML = `
     .btn { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%) !important; color: #333 !important; border: none !important; padding: 0 18px !important; height: 38px !important; line-height: 38px !important; border-radius: 20px !important; font-weight: bold !important; cursor: pointer !important; transition: transform 0.2s !important; box-shadow: 0 3px 6px rgba(0,0,0,0.1) !important; font-size: 0.85rem !important; display: inline-flex !important; align-items: center; justify-content: center; text-align: center; white-space: nowrap !important; text-decoration: none !important; }
@@ -68,10 +68,30 @@ globalStyle.innerHTML = `
     .lang-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; justify-content: center; align-items: center; }
     .lang-modal { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     .lang-btn { display: block; width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; background: white; font-weight: bold; cursor: pointer; font-size: 1rem; transition: 0.2s; }
-
-    /* HARD LOCKDOWN CSS */
     #hard-lockdown { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; color: #ff4d4d; z-index: 999999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; font-family: 'Courier New', monospace; padding: 20px; }
-    @media (max-width: 767px) { nav { display: none !important; } .msg-btn-mobile { display: flex; } .mobile-link { display: flex; } .btn { font-size: 0.75rem !important; padding: 0 12px !important; height: 34px !important; } }
+
+    /* SMART MOBILE FORMAT (FB MARKETPLACE STYLE) */
+    @media (max-width: 767px) {
+        nav { display: none !important; }
+        .msg-btn-mobile { display: flex; }
+        .mobile-link { display: flex; }
+        .btn { font-size: 0.75rem !important; padding: 0 12px !important; height: 34px !important; }
+        
+        /* Correcting the listing detail page format */
+        .main-wrapper { display: block !important; height: auto !important; }
+        .image-stage { height: 380px !important; border-radius: 0 !important; }
+        .details-panel { width: 100% !important; padding: 20px !important; border: none !important; }
+        .container { padding: 0 10px !important; }
+        
+        /* Tightening headers and text */
+        h1 { font-size: 1.5rem !important; }
+        .price { font-size: 1.3rem !important; }
+        
+        /* Action buttons alignment (Message, Save, etc) */
+        .action-buttons { gap: 8px !important; }
+        .btn-primary { padding: 8px !important; font-size: 0.9rem !important; }
+        .btn-icon { width: 40px !important; height: 40px !important; }
+    }
 `;
 document.head.appendChild(globalStyle);
 
@@ -87,20 +107,15 @@ onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
     if (docSnap.exists()) { globalSettings = docSnap.data(); refreshUI(); }
 });
 
-// --- ENHANCED AUTH & BAN LISTENER ---
 onAuthStateChanged(auth, (user) => {
     if (user && user.emailVerified) {
-        // Real-time listener on the specific user document
         onSnapshot(doc(db, "users", user.uid), (docSnap) => {
             if (docSnap.exists()) {
                 currentUserData = docSnap.data();
-                
-                // ACTION: IF BANNED, TRIGGER HARD LOCKDOWN
                 if (currentUserData.role === 'banned') {
                     triggerHardLockdown();
                     return;
                 }
-                
                 if (currentUserData.language) localStorage.setItem('preferred_language', currentUserData.language);
                 refreshUI();
             }
@@ -111,21 +126,10 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// --- FUNCTION: HARD LOCKDOWN ---
 function triggerHardLockdown() {
     const lang = localStorage.getItem('preferred_language') || 'en';
-    // 1. Wipe the screen entirely
-    document.body.innerHTML = `
-        <div id="hard-lockdown">
-            <i class="fas fa-user-slash fa-5x" style="margin-bottom:30px;"></i>
-            <h1 style="font-size: 3rem; margin-bottom: 10px;">${translations[lang].ban_title}</h1>
-            <p style="font-size: 1.2rem; max-width: 500px;">${translations[lang].ban_text}</p>
-        </div>
-    `;
-    // 2. Force logout after 3 seconds
-    setTimeout(() => {
-        signOut(auth).then(() => { window.location.href = '/LoginInToCheaplet.html?status=banned'; });
-    }, 3000);
+    document.body.innerHTML = `<div id="hard-lockdown"><i class="fas fa-user-slash fa-5x" style="margin-bottom:30px;"></i><h1>${translations[lang].ban_title}</h1><p>${translations[lang].ban_text}</p></div>`;
+    setTimeout(() => { signOut(auth).then(() => { window.location.href = '/LoginInToCheaplet.html?status=banned'; }); }, 3000);
 }
 
 function refreshUI() {
