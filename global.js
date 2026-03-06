@@ -51,7 +51,7 @@ window.applyLanguage = (lang) => {
     localStorage.setItem('preferred_language', lang);
 };
 
-// --- 3. GLOBAL CSS (Updated with Smart Mobile Format) ---
+// --- 3. GLOBAL CSS ---
 const globalStyle = document.createElement('style');
 globalStyle.innerHTML = `
     .btn { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%) !important; color: #333 !important; border: none !important; padding: 0 18px !important; height: 38px !important; line-height: 38px !important; border-radius: 20px !important; font-weight: bold !important; cursor: pointer !important; transition: transform 0.2s !important; box-shadow: 0 3px 6px rgba(0,0,0,0.1) !important; font-size: 0.85rem !important; display: inline-flex !important; align-items: center; justify-content: center; text-align: center; white-space: nowrap !important; text-decoration: none !important; }
@@ -70,24 +70,17 @@ globalStyle.innerHTML = `
     .lang-btn { display: block; width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; background: white; font-weight: bold; cursor: pointer; font-size: 1rem; transition: 0.2s; }
     #hard-lockdown { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; color: #ff4d4d; z-index: 999999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; font-family: 'Courier New', monospace; padding: 20px; }
 
-    /* SMART MOBILE FORMAT (FB MARKETPLACE STYLE) */
     @media (max-width: 767px) {
         nav { display: none !important; }
         .msg-btn-mobile { display: flex; }
         .mobile-link { display: flex; }
         .btn { font-size: 0.75rem !important; padding: 0 12px !important; height: 34px !important; }
-        
-        /* Correcting the listing detail page format */
         .main-wrapper { display: block !important; height: auto !important; }
         .image-stage { height: 380px !important; border-radius: 0 !important; }
         .details-panel { width: 100% !important; padding: 20px !important; border: none !important; }
         .container { padding: 0 10px !important; }
-        
-        /* Tightening headers and text */
         h1 { font-size: 1.5rem !important; }
         .price { font-size: 1.3rem !important; }
-        
-        /* Action buttons alignment (Message, Save, etc) */
         .action-buttons { gap: 8px !important; }
         .btn-primary { padding: 8px !important; font-size: 0.9rem !important; }
         .btn-icon { width: 40px !important; height: 40px !important; }
@@ -166,12 +159,15 @@ function updateHeaderToLoggedIn(userData) {
     const studentBadgeHTML = userData.isStudent ? `<div class="student-badge"><i class="fas fa-graduation-cap"></i> <span data-i18n="verified_student">Verified Student</span></div>` : '';
 
     container.innerHTML = `
-        <button class="btn" id="globalListBtn" style="margin-right: 12px;" data-i18n="btn_list">List an Item</button>
         <a href="/messages.html" class="msg-btn-mobile"><i class="fas fa-envelope"></i></a>
         <div class="profile-menu-container" id="globalProfileMenu">
             <div class="profile-avatar" style="${photoStyle}">${avatarContent}</div>
             <div class="dropdown-menu" id="globalDropdown">
                 <div class="dropdown-header"><span>${name}</span>${studentBadgeHTML}</div>
+                
+                <!-- MOVED LIST AN ITEM HERE -->
+                <a href="/listanitem.html" class="dropdown-item" data-i18n="btn_list" style="font-weight:bold; color:#2E7D32;"><i class="fas fa-plus-circle"></i> List an Item</a>
+                
                 <a href="/profile.html" class="dropdown-item" data-i18n="nav_profile"><i class="fas fa-user"></i> My Profile</a>
                 <a href="/search.html" class="dropdown-item mobile-link" data-i18n="nav_browse"><i class="fas fa-search"></i> Browse</a>
                 <a href="/my-listings.html" class="dropdown-item mobile-link" data-i18n="nav_listings"><i class="fas fa-list"></i> My Listings</a>
@@ -182,7 +178,6 @@ function updateHeaderToLoggedIn(userData) {
         </div>
     `;
 
-    document.getElementById('globalListBtn').onclick = () => window.location.href = '/listanitem.html';
     const avatar = container.querySelector('.profile-avatar');
     const menu = document.getElementById('globalDropdown');
     if(avatar) avatar.onclick = (e) => { e.stopPropagation(); menu.classList.toggle('show'); };
@@ -197,10 +192,8 @@ function updateHeaderToLoggedOut() {
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
     if (!container) return;
     container.innerHTML = `
-        <button class="btn" id="globalListBtn" data-i18n="btn_list">List an Item</button>
-        <button class="btn" id="globalLoginBtn" style="margin-left: 10px;" data-i18n="btn_login">Login / Register</button>
+        <button class="btn" id="globalLoginBtn" data-i18n="btn_login">Login / Register</button>
     `;
-    document.getElementById('globalListBtn').onclick = () => window.location.href = '/LoginInToCheaplet.html';
     document.getElementById('globalLoginBtn').onclick = () => window.location.href = '/LoginInToCheaplet.html';
 }
 
