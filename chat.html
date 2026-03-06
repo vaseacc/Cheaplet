@@ -38,7 +38,6 @@
         .chat-window { flex-grow: 1; display: flex; flex-direction: column; background: white; position: relative; }
         .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: 700; color: #050505; background: #fff; display: flex; align-items: center; justify-content: space-between; z-index: 10; font-size: 1.1rem; }
         
-        /* FLAG BUTTON */
         .btn-report-chat { background: none; border: none; color: #ff5252; cursor: pointer; font-size: 1.2rem; transition: transform 0.2s; padding: 5px; }
         .btn-report-chat:hover { transform: scale(1.1); }
 
@@ -69,7 +68,6 @@
         #message-input { flex-grow: 1; border: none; background: #F0F2F5; border-radius: 20px; padding: 10px 15px; outline: none; }
         #send-btn { background: none; border: none; color: #0084FF; cursor: pointer; font-size: 1.3rem; }
 
-        /* MODAL STYLES */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: none; justify-content: center; align-items: center; }
         .modal-card { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .modal-card select, .modal-card textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
@@ -115,10 +113,7 @@
                         <button id="mobile-menu-btn"><i class="fas fa-bars"></i></button>
                         <span id="chat-header-name">...</span>
                     </div>
-                    <!-- REPORT BUTTON -->
-                    <button id="report-chat-btn" class="btn-report-chat" title="Report Chat">
-                        <i class="fas fa-flag"></i>
-                    </button>
+                    <button id="report-chat-btn" class="btn-report-chat" title="Report Chat"><i class="fas fa-flag"></i></button>
                 </div>
 
                 <a href="#" id="listing-preview-banner" class="listing-preview-banner" style="display: none;">
@@ -147,24 +142,16 @@
         <div class="modal-card">
             <h2 id="modal-title">Report Conversation</h2>
             <p style="margin-bottom: 15px; font-size: 0.9rem; color: #666;" id="modal-desc">Help us keep Cheaplet safe.</p>
-            <select id="report-reason">
-                <option value="Harassment or Hate Speech">Harassment or Hate Speech</option>
-                <option value="Scam or Fraud">Scam or Fraud</option>
-                <option value="Spam">Spam</option>
-                <option value="Other">Other</option>
-            </select>
+            <select id="report-reason"><option value="Harassment or Hate Speech">Harassment or Hate Speech</option><option value="Scam or Fraud">Scam or Fraud</option><option value="Spam">Spam</option><option value="Other">Other</option></select>
             <textarea id="report-details" placeholder="Tell us more..."></textarea>
-            <div class="modal-buttons">
-                <button class="btn-submit-red" id="submit-report-btn">Submit</button>
-                <button class="btn-cancel-gray" id="close-report-btn">Cancel</button>
-            </div>
+            <div class="modal-buttons"><button class="btn-submit-red" id="submit-report-btn">Submit</button><button class="btn-cancel-gray" id="close-report-btn">Cancel</button></div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, where, setDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -228,55 +215,84 @@
                 });
             }
 
-            async function initializeChat(chatId, currentUser) {
+            // --- FUNCTION TO CREATE CHAT DOC ONLY WHEN NEEDED ---
+            async function ensureChatExists(chatId, currentUser) {
                 const chatRef = doc(db, 'chats', chatId);
                 const chatSnap = await getDoc(chatRef);
-                if (!chatSnap.exists() || !chatSnap.data().participants.includes(currentUser.uid)) return;
                 
-                document.getElementById('info-container').style.display = 'none';
-                chatActiveUI.style.display = 'flex';
-                
-                const chatData = chatSnap.data();
-                const otherId = chatData.participants.find(p => p !== currentUser.uid);
-                const otherName = chatData.participantInfo ? chatData.participantInfo[otherId] : 'User';
-                chatHeaderName.textContent = otherName;
-
-                // --- REPORTING LOGIC ---
-                reportBtn.onclick = () => {
-                    document.getElementById('modal-title').textContent = strings[lang].reportTitle;
-                    document.getElementById('modal-desc').textContent = strings[lang].reportDesc;
-                    document.getElementById('report-details').placeholder = strings[lang].reportPlaceholder;
-                    const opts = document.getElementById('report-reason').options;
-                    opts[0].text = strings[lang].opt1; opts[1].text = strings[lang].opt2; opts[2].text = strings[lang].opt3; opts[3].text = strings[lang].opt4;
-                    reportModal.style.display = 'flex';
-                };
-                document.getElementById('close-report-btn').onclick = () => reportModal.style.display = 'none';
-                document.getElementById('submit-report-btn').onclick = async () => {
-                    const reason = document.getElementById('report-reason').value;
-                    const details = document.getElementById('report-details').value.trim();
-                    await addDoc(collection(db, "reports"), {
-                        reporterUid: currentUser.uid, reporterName: currentUser.displayName,
-                        targetUid: otherId, targetUserName: otherName,
-                        reason: "Chat: " + reason, details: `Chat ID: ${chatId}\n\n${details}`,
-                        timestamp: serverTimestamp()
-                    });
-                    alert(strings[lang].reportSuccess);
-                    reportModal.style.display = 'none';
-                };
-
-                if (chatData.listingId) {
-                    const lSnap = await getDoc(doc(db, 'listings', chatData.listingId));
-                    if (lSnap.exists()) {
-                        const ld = lSnap.data();
-                        lpBanner.style.display = 'flex'; lpBanner.href = `/listing.html?id=${chatData.listingId}`;
-                        lpImage.src = ld.imageUrls?.[0] || ''; lpTitle.textContent = ld.title;
-                        if (ld.status === 'sold') { lpPrice.style.display = 'none'; lpStatus.textContent = strings[lang].sold; } 
-                        else { lpStatus.style.display = 'none'; lpPrice.textContent = `$${ld.price.toFixed(2)}`; }
+                if (!chatSnap.exists()) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const targetId = urlParams.get('target');
+                    const targetName = urlParams.get('name');
+                    const listingId = urlParams.get('listing');
+                    
+                    if (targetId && targetName) {
+                        await setDoc(chatRef, {
+                            participants: [currentUser.uid, targetId].sort(),
+                            participantInfo: { [currentUser.uid]: currentUser.displayName || "User", [targetId]: targetName },
+                            lastUpdate: serverTimestamp(),
+                            lastMessage: "",
+                            listingId: listingId || null
+                        });
+                        return true;
                     }
+                    return false;
+                }
+                return true;
+            }
+
+            async function initializeChat(chatId, currentUser) {
+                const chatRef = doc(db, 'chats', chatId);
+                let chatSnap = await getDoc(chatRef);
+
+                // --- Scenario: Chat doesn't exist yet (Deferred Creation) ---
+                if (!chatSnap.exists()) {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const targetName = urlParams.get('name');
+                    const listingId = urlParams.get('listing');
+                    
+                    if (!targetName) {
+                        document.getElementById('info-container').innerHTML = `<p class="info-message">Chat not found.</p>`;
+                        return;
+                    }
+
+                    document.getElementById('info-container').style.display = 'none';
+                    chatActiveUI.style.display = 'flex';
+                    chatHeaderName.textContent = targetName;
+
+                    // Load dummy listing banner from URL if possible
+                    if (listingId) {
+                        const lSnap = await getDoc(doc(db, 'listings', listingId));
+                        if (lSnap.exists()) {
+                            const ld = lSnap.data();
+                            lpBanner.style.display = 'flex';
+                            lpImage.src = ld.imageUrls?.[0] || '';
+                            lpTitle.textContent = ld.title;
+                            lpPrice.textContent = `$${ld.price.toFixed(2)}`;
+                        }
+                    }
+                } else {
+                    // Scenario: Chat exists normally
+                    if (!chatSnap.data().participants.includes(currentUser.uid)) return;
+                    document.getElementById('info-container').style.display = 'none';
+                    chatActiveUI.style.display = 'flex';
+                    const otherId = chatSnap.data().participants.find(p => p !== currentUser.uid);
+                    chatHeaderName.textContent = chatSnap.data().participantInfo[otherId];
+                    
+                    if (chatSnap.data().listingId) {
+                        const lSnap = await getDoc(doc(db, 'listings', chatSnap.data().listingId));
+                        if (lSnap.exists()) {
+                            const ld = lSnap.data();
+                            lpBanner.style.display = 'flex'; lpBanner.href = `/listing.html?id=${chatSnap.data().listingId}`;
+                            lpImage.src = ld.imageUrls?.[0] || ''; lpTitle.textContent = ld.title;
+                            if (ld.status === 'sold') { lpPrice.style.display = 'none'; lpStatus.textContent = strings[lang].sold; } 
+                            else { lpStatus.style.display = 'none'; lpPrice.textContent = `$${ld.price.toFixed(2)}`; }
+                        }
+                    }
+                    if (chatSnap.data().lastSenderId !== currentUser.uid) await updateDoc(chatRef, { lastSenderId: currentUser.uid });
                 }
 
-                if (chatData.lastSenderId !== currentUser.uid) await updateDoc(chatRef, { lastSenderId: currentUser.uid });
-
+                // Listen for messages (Works even if collection is currently empty)
                 onSnapshot(query(collection(db, 'chats', chatId, 'messages'), orderBy("timestamp", "asc")), (snapshot) => {
                     messagesList.innerHTML = '';
                     let lastDateString = "";
@@ -289,46 +305,52 @@
                             divider.className = 'date-divider'; divider.textContent = dateString;
                             messagesList.appendChild(divider); lastDateString = dateString;
                         }
-                        renderMessage(mData, currentUser.uid, chatData.participantInfo);
+                        renderMessage(mData, currentUser.uid);
                     });
                     messagesList.scrollTop = messagesList.scrollHeight;
                 });
 
+                // SEND TEXT
                 messageForm.onsubmit = async (e) => {
                     e.preventDefault();
                     const text = messageInput.value.trim();
                     if (!text) return;
                     messageInput.value = '';
-                    await addDoc(collection(db, 'chats', chatId, 'messages'), { text, senderId: currentUser.uid, timestamp: serverTimestamp() });
-                    await updateDoc(chatRef, { lastMessage: text, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
+                    
+                    // Ensure chat doc exists first
+                    const exists = await ensureChatExists(chatId, currentUser);
+                    if (exists) {
+                        await addDoc(collection(db, 'chats', chatId, 'messages'), { text, senderId: currentUser.uid, timestamp: serverTimestamp() });
+                        await updateDoc(chatRef, { lastMessage: text, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
+                    }
                 };
 
-                document.getElementById('img-upload-btn').onclick = () => document.getElementById('hidden-file-input').click();
-                document.getElementById('hidden-file-input').onchange = async (e) => {
+                // SEND IMAGE
+                imgBtn.onclick = () => fileInput.click();
+                fileInput.onchange = async (e) => {
                     const file = e.target.files[0];
                     if (!file) return;
-                    const formData = new FormData(); formData.append('file', file); formData.append('upload_preset', UPLOAD_PRESET);
-                    const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData }).then(r => r.json());
-                    await addDoc(collection(db, 'chats', chatId, 'messages'), { imageUrl: res.secure_url, senderId: currentUser.uid, timestamp: serverTimestamp() });
-                    await updateDoc(chatRef, { lastMessage: `📷 ${strings[lang].imageSent}`, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
+                    const exists = await ensureChatExists(chatId, currentUser);
+                    if (exists) {
+                        const formData = new FormData(); formData.append('file', file); formData.append('upload_preset', UPLOAD_PRESET);
+                        const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData }).then(r => r.json());
+                        await addDoc(collection(db, 'chats', chatId, 'messages'), { imageUrl: res.secure_url, senderId: currentUser.uid, timestamp: serverTimestamp() });
+                        await updateDoc(chatRef, { lastMessage: `📷 ${strings[lang].imageSent}`, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
+                    }
                 };
             }
 
-            function renderMessage(data, currentUserId, participantInfo) {
+            function renderMessage(data, currentUserId) {
                 const isMe = data.senderId === currentUserId;
-                const senderName = participantInfo ? participantInfo[data.senderId] || 'User' : 'User';
                 const row = document.createElement('div');
                 row.className = `message-row ${isMe ? 'sent' : 'received'}`;
-                const avatar = document.createElement('div');
-                avatar.className = 'msg-avatar-circle';
-                avatar.textContent = senderName.charAt(0).toUpperCase();
                 const bubble = document.createElement('div');
                 bubble.className = `message-bubble ${isMe ? 'sent' : 'received'}`;
                 let content = data.imageUrl ? `<img src="${data.imageUrl}" class="message-img" onclick="window.open('${data.imageUrl}', '_blank')">` : '';
                 content += data.text ? `<p style="margin:0;">${data.text}</p>` : '';
                 const time = data.timestamp ? data.timestamp.toDate().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
                 bubble.innerHTML = `${content}<span class="message-timestamp">${time}</span>`;
-                row.appendChild(avatar); row.appendChild(bubble);
+                row.appendChild(bubble);
                 messagesList.appendChild(row);
             }
         }
