@@ -45,10 +45,14 @@
         .action-buttons { display: flex; gap: 10px; margin-bottom: 25px; }
         .btn-primary { flex: 1; background-color: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: 600; padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 1rem; }
         .btn-icon { width: 45px; height: 42px; background-color: #f0f0f0; border-radius: 6px; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
+        
+        /* FLAG BUTTON STYLE */
         .btn-report { color: #ff5252; }
 
+        /* MODAL STYLES */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: none; justify-content: center; align-items: center; }
         .modal-card { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .modal-card h2 { margin-bottom: 15px; color: #d32f2f; }
         .modal-card select, .modal-card textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
         .modal-card textarea { height: 100px; resize: none; }
         .modal-buttons { display: flex; gap: 10px; }
@@ -114,6 +118,7 @@
                 </button>
                 <button class="btn-icon" id="btn-save" title="Save"><i class="far fa-bookmark"></i></button>
                 <button class="btn-icon" id="btn-share" title="Share"><i class="fas fa-share-alt"></i></button>
+                <!-- FIXED FLAG BUTTON -->
                 <button class="btn-icon btn-report" id="btn-report-listing" title="Report" style="display: none;"><i class="fas fa-flag"></i></button>
             </div>
 
@@ -156,6 +161,7 @@
         </div>
     </div>
 
+    <!-- REPORT MODAL -->
     <div class="modal-overlay" id="report-modal">
         <div class="modal-card">
             <h2 id="modal-title">Report Listing</h2>
@@ -186,7 +192,8 @@
             const reportBtn = document.getElementById('btn-report-listing');
             const prevBtn = document.getElementById('prev-img-btn');
             const nextBtn = document.getElementById('next-img-btn');
-            
+            const reportModal = document.getElementById('report-modal');
+
             let currentUser = null;
             let currentListingData = null;
             let currentListingId = null;
@@ -337,7 +344,15 @@
                 }
             }
 
-            const reportModal = document.getElementById('report-modal');
+            // FIXED REPORT MODAL TRIGGERS
+            reportBtn.onclick = () => {
+                document.getElementById('modal-title').textContent = strings[lang].reportTitle;
+                document.getElementById('modal-desc').textContent = strings[lang].reportDesc;
+                document.getElementById('report-details').placeholder = strings[lang].reportPlaceholder;
+                const opts = document.getElementById('report-reason').options;
+                opts[0].text = strings[lang].opt1; opts[1].text = strings[lang].opt2; opts[2].text = strings[lang].opt3; opts[3].text = strings[lang].opt4;
+                reportModal.style.display = 'flex';
+            };
             document.getElementById('close-report-btn').onclick = () => reportModal.style.display = 'none';
             document.getElementById('submit-report-btn').onclick = async () => {
                 const reason = document.getElementById('report-reason').value;
@@ -388,9 +403,11 @@
 
             shareBtn.onclick = async () => {
                 const url = window.location.href;
+                const title = currentListingData ? currentListingData.title : 'Cheaplet Listing';
                 const copyMsg = lang === 'fr' ? "Lien copié !" : "Link copied!";
-                if (navigator.share) { try { await navigator.share({ title: currentListingData.title, url: url }); } catch (err) { await navigator.clipboard.writeText(url); alert(copyMsg); } }
-                else { await navigator.clipboard.writeText(url); alert(copyMsg); }
+                if (navigator.share) {
+                    try { await navigator.share({ title: title, url: url }); } catch (err) { await navigator.clipboard.writeText(url); alert(copyMsg); }
+                } else { await navigator.clipboard.writeText(url); alert(copyMsg); }
             };
 
             async function deleteListing(docId, isAdmin) { if (confirm("Delete listing?")) { await deleteDoc(doc(db, 'listings', docId)); window.location.href = '/index.html'; } }
