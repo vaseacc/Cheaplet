@@ -1,304 +1,233 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>List an Item - Cheaplet</title>
-    <!-- GLOBAL CONFIGURATION -->
-    <script type="module" src="global.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
-        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
-        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        .header-content { display: flex; justify-content: space-between; align-items: center; }
-        .header-left { display: flex; align-items: center; gap: 20px; }
-        .logo { font-size: 24px; font-weight: bold; color: white; text-decoration: none; }
-        .logo span { color: #FFD700; }
-        nav ul { display: flex; list-style: none; gap: 20px; }
-        .header-right { display: flex; align-items: center; gap: 15px; }
+import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
-        .form-wrapper { max-width: 600px; margin: 40px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        h2 { text-align: center; color: #2E7D32; margin-bottom: 25px; }
-        input, textarea, select { width: 100%; padding: 12px; margin-bottom: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; display: block; }
-        label { font-weight: 600; margin-bottom: 5px; display: block; color: #555; }
+// --- 0. AUTO-IMPORT ICONS ---
+if (!document.querySelector('link[href*="font-awesome"]')) {
+    const faLink = document.createElement('link');
+    faLink.rel = 'stylesheet';
+    faLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+    document.head.appendChild(faLink);
+}
 
-        .form-buttons { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
-        .form-buttons .btn { flex: 1; min-width: 120px; }
+// --- 1. INITIALIZE CONFIG ---
+const response = await fetch('/.netlify/functions/config');
+const config = await response.json();
+const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-        /* TAG SYSTEM */
-        .tag-container { border: 2px solid #ddd; border-radius: 6px; padding: 10px; margin-bottom: 15px; background: #fff; display: flex; flex-wrap: wrap; gap: 8px; position: relative; }
-        .tag-chip { background-color: #e8f5e9; color: #2E7D32; padding: 5px 10px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; }
-        #tag-input { border: none; outline: none; padding: 5px; flex-grow: 1; min-width: 120px; margin-bottom: 0; }
-        .suggestions-box { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ddd; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+// --- 2. TRANSLATION DICTIONARY ---
+const translations = {
+    "en": { 
+        "nav_browse": "Browse", "nav_listings": "My Listings", "nav_messages": "Messages", "nav_profile": "My Profile", 
+        "btn_login": "Login / Register", "btn_list": "List an Item", "btn_browse": "Start Browsing", "btn_signout": "Sign Out", 
+        "search_placeholder": "What are you looking for?", "hero_title": "Great Finds, Unbeatable Prices.", 
+        "hero_sub": "Cheaplet is the online marketplace for smart savings.",
+        "verified_student": "Verified Student",
+        "ban_title": "ACCESS DENIED",
+        "ban_text": "This account has been permanently banned for violating our terms of service."
+    },
+    "fr": { 
+        "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", 
+        "btn_login": "Connexion", "btn_list": "Vendre un article", "btn_browse": "Commencer à naviguer", "btn_signout": "Déconnexion", 
+        "search_placeholder": "Que cherchez-vous ?", "hero_title": "Super trouvailles, prix imbattables.", 
+        "hero_sub": "Cheaplet est le marché en ligne pour des économies intelligentes.",
+        "verified_student": "Étudiant vérifié",
+        "ban_title": "ACCÈS REFUSÉ",
+        "ban_text": "Ce compte a été définitivement banni pour violation de nos conditions d'utilisation."
+    }
+};
 
-        /* CHECKBOX GROUP */
-        .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; background: #fdfdfd; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
-        .checkbox-item { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.9rem; cursor: pointer; color: #444; }
+window.applyLanguage = (lang) => {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (translations[lang] && translations[lang][key]) el.textContent = translations[lang][key];
+    });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (translations[lang] && translations[lang][key]) el.placeholder = translations[lang][key];
+    });
+    localStorage.setItem('preferred_language', lang);
+};
 
-        .image-preview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-        #add-photo-label { width: 80px; height: 80px; border: 2px dashed #ccc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #777; margin: 0 auto; }
+// --- 3. GLOBAL CSS (Updated with Smart Mobile Format) ---
+const globalStyle = document.createElement('style');
+globalStyle.innerHTML = `
+    .btn { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%) !important; color: #333 !important; border: none !important; padding: 0 18px !important; height: 38px !important; line-height: 38px !important; border-radius: 20px !important; font-weight: bold !important; cursor: pointer !important; transition: transform 0.2s !important; box-shadow: 0 3px 6px rgba(0,0,0,0.1) !important; font-size: 0.85rem !important; display: inline-flex !important; align-items: center; justify-content: center; text-align: center; white-space: nowrap !important; text-decoration: none !important; }
+    .profile-menu-container { position: relative; display: flex; align-items: center; }
+    .profile-avatar { width: 38px; height: 38px; border-radius: 50%; background-color: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.8); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; background-size: cover; background-position: center; }
+    .dropdown-menu { position: absolute; top: 50px; right: 0; width: 220px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: none; flex-direction: column; overflow: hidden; color: #333; z-index: 1000; }
+    .dropdown-menu.show { display: flex; }
+    .dropdown-header { padding: 12px 15px; border-bottom: 1px solid #eee; background: #f9f9f9; font-weight: bold; color: #2E7D32; font-size: 0.85rem; display: flex; flex-direction: column; gap: 4px; }
+    .student-badge { display: inline-flex; align-items: center; gap: 5px; background: #E8F5E9; color: #2E7D32; font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; width: fit-content; border: 1px solid #C8E6C9; margin-top: 2px; }
+    .dropdown-item { padding: 12px 15px; text-decoration: none; color: #333; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.9rem; }
+    .dropdown-item:hover { background-color: #f1f8e9; }
+    .msg-btn-mobile { background-color: #FFD700; color: #333; width: 36px; height: 36px; border-radius: 50%; display: none; align-items: center; justify-content: center; text-decoration: none; margin-right: 12px; font-size: 1rem; }
+    body.page-messages .msg-btn-mobile, body.page-chat .msg-btn-mobile { display: none !important; }
+    .lang-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; justify-content: center; align-items: center; }
+    .lang-modal { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+    .lang-btn { display: block; width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; background: white; font-weight: bold; cursor: pointer; font-size: 1rem; transition: 0.2s; }
+    #hard-lockdown { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; color: #ff4d4d; z-index: 999999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; font-family: 'Courier New', monospace; padding: 20px; }
 
-        #page-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: flex; justify-content: center; align-items: center; }
-        @media (max-width: 767px) { nav { display: none; } }
-    </style>
-</head>
-<body>
-    <div id="page-loader">...</div>
+    /* SMART MOBILE FORMAT (FB MARKETPLACE STYLE) */
+    @media (max-width: 767px) {
+        nav { display: none !important; }
+        .msg-btn-mobile { display: flex; }
+        .mobile-link { display: flex; }
+        .btn { font-size: 0.75rem !important; padding: 0 12px !important; height: 34px !important; }
+        
+        /* Correcting the listing detail page format */
+        .main-wrapper { display: block !important; height: auto !important; }
+        .image-stage { height: 380px !important; border-radius: 0 !important; }
+        .details-panel { width: 100% !important; padding: 20px !important; border: none !important; }
+        .container { padding: 0 10px !important; }
+        
+        /* Tightening headers and text */
+        h1 { font-size: 1.5rem !important; }
+        .price { font-size: 1.3rem !important; }
+        
+        /* Action buttons alignment (Message, Save, etc) */
+        .action-buttons { gap: 8px !important; }
+        .btn-primary { padding: 8px !important; font-size: 0.9rem !important; }
+        .btn-icon { width: 40px !important; height: 40px !important; }
+    }
+`;
+document.head.appendChild(globalStyle);
 
-    <header>
-        <div class="container header-content">
-            <div class="header-left">
-                <a href="/index.html" class="logo">Cheap<span>let</span></a>
-                <nav><ul></ul></nav>
-            </div>
-            <div class="header-right"></div>
-        </div>
-    </header>
+// --- 4. STATE & LISTENERS ---
+let globalSettings = {};
+let currentUserData = null;
 
-    <main class="container">
-        <div class="form-wrapper">
-            <h2 data-i18n="btn_list">List a Book</h2>
-            <form id="listing-form">
-                <!-- ADDED MAXLENGTH 80 -->
-                <label data-i18n="label_title">Title</label>
-                <input type="text" id="listing-title" maxlength="80" required>
-                
-                <!-- ADDED MAXLENGTH 1500 -->
-                <label data-i18n="label_description">Description</label>
-                <textarea id="listing-description" maxlength="1500" required></textarea>
-                
-                <div style="display: flex; gap: 15px;">
-                    <div style="flex: 1;">
-                        <label data-i18n="label_price">Sale Price ($)</label>
-                        <input type="number" id="listing-price" min="0" max="1200" step="0.01" required>
-                    </div>
-                    <div style="flex: 1;">
-                        <label data-i18n="label_original_price">Original Price ($)</label>
-                        <input type="number" id="listing-original-price" min="0" step="0.01">
-                    </div>
-                </div>
-                
-                <label data-i18n="label_tags">Tags</label>
-                <div class="tag-container" id="tag-container">
-                    <div id="selected-tags" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
-                    <input type="text" id="tag-input" autocomplete="off" placeholder="Type and press Enter...">
-                    <div class="suggestions-box" id="suggestions-box"></div>
-                </div>
+const path = window.location.pathname;
+if (path.includes('messages.html')) document.body.classList.add('page-messages');
+if (path.includes('chat.html')) document.body.classList.add('page-chat');
 
-                <label data-i18n="label_condition">Condition</label>
-                <select id="listing-condition" required>
-                    <option value="" data-i18n="opt_select">Select Condition</option>
-                    <option value="New" data-i18n="opt_new">New</option>
-                    <option value="Like New" data-i18n="opt_like_new">Like New</option>
-                    <option value="Good" data-i18n="opt_good">Good</option>
-                    <option value="Fair" data-i18n="opt_fair">Fair</option>
-                </select>
+onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
+    if (docSnap.exists()) { globalSettings = docSnap.data(); refreshUI(); }
+});
 
-                <label data-i18n="label_additional_details">Additional Details</label>
-                <div class="checkbox-group">
-                    <label class="checkbox-item"><input type="checkbox" id="cond-writing"> <span data-i18n="label_writing">Writing inside</span></label>
-                    <label class="checkbox-item"><input type="checkbox" id="cond-water"> <span data-i18n="label_water">Water damage</span></label>
-                    <label class="checkbox-item"><input type="checkbox" id="cond-missing"> <span data-i18n="label_missing">Missing pages</span></label>
-                </div>
-
-                <label data-i18n="label_digital_code">Digital Access Code</label>
-                <select id="listing-digital-code">
-                    <option value="Not applicable" data-i18n="opt_na">Not applicable</option>
-                    <option value="Available / Unused" data-i18n="opt_available">Available / Unused</option>
-                    <option value="Already used" data-i18n="opt_used">Already used</option>
-                </select>
-
-                <label data-i18n="label_location">Campus Location</label>
-                <select id="listing-location" required>
-                    <option value="" data-i18n="opt_select_campus">Select a Campus</option>
-                    <optgroup label="Cégeps" data-i18n="opt_cegeps">
-                        <option value="Dawson College">Dawson College</option>
-                        <option value="Vanier College">Vanier College</option>
-                        <option value="John Abbott College">John Abbott College</option>
-                        <option value="Cégep de Maisonneuve">Cégep de Maisonneuve</option>
-                        <option value="Cégep du Vieux Montréal">Cégep du Vieux Montréal</option>
-                        <option value="Cégep Ahuntsic">Cégep Ahuntsic</option>
-                    </optgroup>
-                    <optgroup label="Universities" data-i18n="opt_universities">
-                        <option value="Concordia University">Concordia University</option>
-                        <option value="McGill University">McGill University</option>
-                        <option value="Université de Montréal">Université de Montréal</option>
-                    </optgroup>
-                </select>
-
-                <!-- ADDED MAXLENGTH 60 -->
-                <label data-i18n="label_meeting_point">Meeting Point</label>
-                <input type="text" id="listing-meeting-point" maxlength="60">
-
-                <label data-i18n="label_photos">Photos (Max 5)</label>
-                <div id="image-uploader">
-                    <div class="image-preview-grid" id="image-preview-container"></div>
-                    <label for="listing-image-input" id="add-photo-label" style="margin-top:10px;">
-                        <i class="fas fa-camera"></i>
-                        <span style="font-size: 12px;" data-i18n="btn_add_photo">Add Photo</span>
-                    </label>
-                    <input type="file" id="listing-image-input" accept="image/*" style="display:none;">
-                </div>
-
-                <div class="form-buttons">
-                    <button type="submit" class="btn" id="postListingBtn" data-i18n="btn_list">Post Item</button>
-                    <button type="button" class="btn btn-secondary" onclick="window.location.href='/index.html'" data-i18n="btn_cancel">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </main>
-
-    <script type="module">
-        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, doc, setDoc, increment, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
-
-        async function main() {
-            const response = await fetch('/.netlify/functions/config');
-            const config = await response.json();
-            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
-            const auth = getAuth(app);
-            const db = getFirestore(app);
-
-            const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`;
-            const UPLOAD_PRESET = config.cloudinary.uploadPreset;
-
-            const lang = localStorage.getItem('preferred_language') || 'en';
-            const strings = {
-                en: { priceErr: "Price cannot exceed $1200.", imgErr: "Add at least one photo.", uploading: "Processing...", tagLimit: "Max 15 tags allowed." },
-                fr: { priceErr: "Le prix ne peut dépasser 1200$.", imgErr: "Ajoutez au moins une photo.", uploading: "Traitement...", tagLimit: "Maximum 15 tags autorisés." }
-            };
-
-            let currentUser = null;
-            let selectedFiles = [];
-            let tags = [];
-
-            onAuthStateChanged(auth, async (user) => {
-                if (user && user.emailVerified) { currentUser = user; document.getElementById('page-loader').style.display = 'none'; }
-                else { window.location.href = '/LoginInToCheaplet.html'; }
-            });
-
-            // --- TAGS LOGIC ---
-            const tagInput = document.getElementById('tag-input');
-            const selectedTagsContainer = document.getElementById('selected-tags');
-            const suggestionsBox = document.getElementById('suggestions-box');
-
-            function renderTags() {
-                selectedTagsContainer.innerHTML = '';
-                tags.forEach((tag, index) => {
-                    const chip = document.createElement('div');
-                    chip.className = 'tag-chip';
-                    chip.innerHTML = `${tag} <span style="cursor:pointer; margin-left:5px;" onclick="window.removeTag(${index})">&times;</span>`;
-                    selectedTagsContainer.appendChild(chip);
-                });
-            }
-            window.removeTag = (index) => { tags.splice(index, 1); renderTags(); };
-            
-            function addTag(tagName) {
-                const cleaned = tagName.trim();
-                // FIXED: LIMIT TO 15 TAGS
-                if (tags.length >= 15) { alert(strings[lang].tagLimit); return; }
-                if (cleaned && !tags.includes(cleaned)) { tags.push(cleaned); renderTags(); }
-                tagInput.value = ''; suggestionsBox.style.display = 'none';
-            }
-
-            tagInput.oninput = async (e) => {
-                const val = e.target.value.trim().toLowerCase();
-                if (val.length < 1) { suggestionsBox.style.display = 'none'; return; }
-                const q = query(collection(db, "global_tags"), where("tag_lowercase", ">=", val), where("tag_lowercase", "<=", val + "\uf8ff"), limit(5));
-                const snap = await getDocs(q);
-                suggestionsBox.innerHTML = '';
-                if (!snap.empty) {
-                    suggestionsBox.style.display = 'block';
-                    snap.forEach(doc => {
-                        const d = doc.data();
-                        const div = document.createElement('div');
-                        div.className = 'suggestion-item';
-                        div.innerHTML = `<span>${d.tag}</span><span class="suggestion-count">${d.count || 0}</span>`;
-                        div.onclick = () => addTag(d.tag);
-                        suggestionsBox.appendChild(div);
-                    });
-                } else {
-                    suggestionsBox.style.display = 'block';
-                    suggestionsBox.innerHTML = `<div class="suggestion-item" onclick="window.addTagManual()">Create: "${tagInput.value}"</div>`;
+onAuthStateChanged(auth, (user) => {
+    if (user && user.emailVerified) {
+        onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+            if (docSnap.exists()) {
+                currentUserData = docSnap.data();
+                if (currentUserData.role === 'banned') {
+                    triggerHardLockdown();
+                    return;
                 }
-            };
-            window.addTagManual = () => addTag(tagInput.value);
-            tagInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput.value); } };
-
-            const imageInput = document.getElementById('listing-image-input');
-            const previewContainer = document.getElementById('image-preview-container');
-            function renderPreviews() {
-                previewContainer.innerHTML = '';
-                selectedFiles.forEach((file, index) => {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'image-preview-wrapper';
-                    const img = document.createElement('img');
-                    img.src = URL.createObjectURL(file);
-                    img.className = 'image-preview';
-                    const removeBtn = document.createElement('button');
-                    removeBtn.className = 'remove-image-btn';
-                    removeBtn.innerHTML = '&times;';
-                    removeBtn.onclick = () => { selectedFiles.splice(index, 1); renderPreviews(); };
-                    wrapper.appendChild(img); wrapper.appendChild(removeBtn);
-                    previewContainer.appendChild(wrapper);
-                });
-                document.getElementById('add-photo-label').style.display = selectedFiles.length < 5 ? 'flex' : 'none';
+                if (currentUserData.language) localStorage.setItem('preferred_language', currentUserData.language);
+                refreshUI();
             }
-            imageInput.onchange = (e) => { if (e.target.files[0]) { selectedFiles.push(e.target.files[0]); renderPreviews(); } };
+        });
+    } else {
+        currentUserData = null;
+        refreshUI();
+    }
+});
 
-            document.getElementById('listing-form').onsubmit = async (e) => {
-                e.preventDefault();
-                const price = parseFloat(document.getElementById('listing-price').value);
-                if (price > 1200) { alert(strings[lang].priceErr); return; }
-                if (selectedFiles.length === 0) { alert(strings[lang].imgErr); return; }
+function triggerHardLockdown() {
+    const lang = localStorage.getItem('preferred_language') || 'en';
+    document.body.innerHTML = `<div id="hard-lockdown"><i class="fas fa-user-slash fa-5x" style="margin-bottom:30px;"></i><h1>${translations[lang].ban_title}</h1><p>${translations[lang].ban_text}</p></div>`;
+    setTimeout(() => { signOut(auth).then(() => { window.location.href = '/LoginInToCheaplet.html?status=banned'; }); }, 3000);
+}
 
-                const submitBtn = document.getElementById('postListingBtn');
-                submitBtn.disabled = true;
-                submitBtn.textContent = strings[lang].uploading;
-
-                try {
-                    const imageUrls = [];
-                    for (const file of selectedFiles) {
-                        const formData = new FormData();
-                        formData.append('file', file);
-                        formData.append('upload_preset', UPLOAD_PRESET);
-                        const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData });
-                        const data = await res.json();
-                        imageUrls.push(data.secure_url);
-                    }
-
-                    for (const t of tags) {
-                        const tagId = t.toLowerCase().replace(/[^a-z0-9]/g, "_");
-                        await setDoc(doc(db, "global_tags", tagId), { tag: t, tag_lowercase: t.toLowerCase(), count: increment(1) }, { merge: true });
-                    }
-
-                    const docRef = await addDoc(collection(db, 'listings'), {
-                        title: document.getElementById('listing-title').value.trim(),
-                        description: document.getElementById('listing-description').value.trim(),
-                        price: price,
-                        originalPrice: parseFloat(document.getElementById('listing-original-price').value) || null,
-                        meetingPoint: document.getElementById('listing-meeting-point').value.trim(),
-                        hasWriting: document.getElementById('cond-writing').checked,
-                        hasWaterDamage: document.getElementById('cond-water').checked,
-                        hasMissingPages: document.getElementById('cond-missing').checked,
-                        condition: document.getElementById('listing-condition').value,
-                        digitalCode: document.getElementById('listing-digital-code').value,
-                        location: document.getElementById('listing-location').value,
-                        tags: tags,
-                        imageUrls: imageUrls,
-                        posterUid: currentUser.uid,
-                        posterDisplayName: currentUser.displayName,
-                        timestamp: serverTimestamp()
-                    });
-
-                    window.location.href = `/listing.html?id=${docRef.id}`;
-                } catch (err) { console.error(err); submitBtn.disabled = false; submitBtn.textContent = "Post Item"; }
-            };
+function refreshUI() {
+    if (globalSettings.enableGlobalHeader === false) return;
+    if (currentUserData) updateHeaderToLoggedIn(currentUserData);
+    else {
+        updateHeaderToLoggedOut();
+        if (globalSettings.enableLanguagePrompt && !sessionStorage.getItem('lang_picked_this_session')) {
+            showLanguagePopup();
         }
-        main();
-    </script>
-</body>
-</html>
+    }
+    const savedLang = localStorage.getItem('preferred_language') || 'en';
+    window.applyLanguage(savedLang);
+}
+
+// --- 5. UI BUILDERS ---
+function updateHeaderToLoggedIn(userData) {
+    const navUl = document.querySelector('nav ul');
+    if (navUl) {
+        navUl.innerHTML = `
+            <li><a href="/search.html" data-i18n="nav_browse">Browse</a></li>
+            <li><a href="/my-listings.html" data-i18n="nav_listings">My Listings</a></li>
+            <li><a href="/messages.html" data-i18n="nav_messages">Messages</a></li>
+        `;
+    }
+
+    const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
+    if (!container) return;
+
+    const name = userData.displayName || 'User';
+    const initial = name.charAt(0).toUpperCase();
+    const photoStyle = userData.photoURL ? `background-image: url('${userData.photoURL}');` : '';
+    const avatarContent = userData.photoURL ? '' : initial;
+    const studentBadgeHTML = userData.isStudent ? `<div class="student-badge"><i class="fas fa-graduation-cap"></i> <span data-i18n="verified_student">Verified Student</span></div>` : '';
+
+    container.innerHTML = `
+        <button class="btn" id="globalListBtn" style="margin-right: 12px;" data-i18n="btn_list">List an Item</button>
+        <a href="/messages.html" class="msg-btn-mobile"><i class="fas fa-envelope"></i></a>
+        <div class="profile-menu-container" id="globalProfileMenu">
+            <div class="profile-avatar" style="${photoStyle}">${avatarContent}</div>
+            <div class="dropdown-menu" id="globalDropdown">
+                <div class="dropdown-header"><span>${name}</span>${studentBadgeHTML}</div>
+                <a href="/profile.html" class="dropdown-item" data-i18n="nav_profile"><i class="fas fa-user"></i> My Profile</a>
+                <a href="/search.html" class="dropdown-item mobile-link" data-i18n="nav_browse"><i class="fas fa-search"></i> Browse</a>
+                <a href="/my-listings.html" class="dropdown-item mobile-link" data-i18n="nav_listings"><i class="fas fa-list"></i> My Listings</a>
+                <a href="#" class="dropdown-item" id="globalLogout" style="color:#d32f2f; border-top: 1px solid #eee;" data-i18n="btn_signout">
+                    <i class="fas fa-sign-out-alt"></i> Sign Out
+                </a>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('globalListBtn').onclick = () => window.location.href = '/listanitem.html';
+    const avatar = container.querySelector('.profile-avatar');
+    const menu = document.getElementById('globalDropdown');
+    if(avatar) avatar.onclick = (e) => { e.stopPropagation(); menu.classList.toggle('show'); };
+    document.addEventListener('click', () => { if(menu) menu.classList.remove('show'); });
+    const logout = document.getElementById('globalLogout');
+    if(logout) logout.onclick = () => signOut(auth).then(() => { sessionStorage.clear(); window.location.href = '/index.html'; });
+}
+
+function updateHeaderToLoggedOut() {
+    const navUl = document.querySelector('nav ul');
+    if (navUl) navUl.innerHTML = `<li><a href="/search.html" data-i18n="nav_browse">Browse</a></li>`;
+    const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
+    if (!container) return;
+    container.innerHTML = `
+        <button class="btn" id="globalListBtn" data-i18n="btn_list">List an Item</button>
+        <button class="btn" id="globalLoginBtn" style="margin-left: 10px;" data-i18n="btn_login">Login / Register</button>
+    `;
+    document.getElementById('globalListBtn').onclick = () => window.location.href = '/LoginInToCheaplet.html';
+    document.getElementById('globalLoginBtn').onclick = () => window.location.href = '/LoginInToCheaplet.html';
+}
+
+function showLanguagePopup() {
+    if (document.getElementById('lang-modal')) return;
+    const checkBody = setInterval(() => {
+        if (document.body) {
+            clearInterval(checkBody);
+            const modal = document.createElement('div');
+            modal.id = 'lang-modal';
+            modal.className = 'lang-modal-overlay';
+            modal.innerHTML = `
+                <div class="lang-modal">
+                    <h2 style="color:#2E7D32; margin-bottom:10px;">Welcome / Bienvenue</h2>
+                    <p style="color:#666; margin-bottom:20px;">Please select your language.</p>
+                    <button class="lang-btn" id="btn-en">English</button>
+                    <button class="lang-btn" id="btn-fr">Français</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            document.getElementById('btn-en').onclick = () => { window.applyLanguage('en'); sessionStorage.setItem('lang_picked_this_session', 'true'); modal.remove(); };
+            document.getElementById('btn-fr').onclick = () => { window.applyLanguage('fr'); sessionStorage.setItem('lang_picked_this_session', 'true'); modal.remove(); };
+        }
+    }, 100);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const logo = document.querySelector('.logo');
+    if (logo) logo.onclick = () => window.location.href = '/index.html';
+});
