@@ -372,16 +372,17 @@
             nextBtn.onclick = () => { if (imageUrls.length === 0) return; let newIndex = currentImageIndex + 1; if (newIndex >= imageUrls.length) newIndex = 0; updateMainImage(newIndex); };
 
             async function createChat(posterUid, posterName) {
-                if (!currentUser) { window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`; return; }
+                if (!currentUser) { 
+                    window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`; 
+                    return; 
+                }
+                
+                // Calculate the ID without saving to DB yet
                 const uids = [currentUser.uid, posterUid].sort();
                 const chatId = uids.join('_');
-                const chatRef = doc(db, 'chats', chatId);
-                try {
-                    const chatSnap = await getDoc(chatRef);
-                    const myName = currentUser.displayName || "User";
-                    if (!chatSnap.exists()) { await setDoc(chatRef, { participants: uids, participantInfo: { [currentUser.uid]: myName, [posterUid]: posterName }, lastUpdate: serverTimestamp(), lastMessage: "", listingId: currentListingId }); }
-                    window.location.href = `/chat.html?id=${chatId}`;
-                } catch (error) { alert("Error starting chat."); }
+                
+                // Redirect and pass the target info in the URL so chat.html knows who we are talking to
+                window.location.href = `/chat.html?id=${chatId}&target=${posterUid}&name=${encodeURIComponent(posterName)}&listing=${currentListingId}`;
             }
 
             document.getElementById('btn-message-seller').onclick = () => createChat(currentListingData.posterUid, currentListingData.posterDisplayName);
