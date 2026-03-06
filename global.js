@@ -70,10 +70,13 @@ globalStyle.innerHTML = `
     .lang-btn { display: block; width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; background: white; font-weight: bold; cursor: pointer; font-size: 1rem; transition: 0.2s; }
     #hard-lockdown { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; color: #ff4d4d; z-index: 999999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; font-family: 'Courier New', monospace; padding: 20px; }
 
+    /* MOBILE ONLY CLASS */
+    .mobile-link { display: none; }
+
     @media (max-width: 767px) {
         nav { display: none !important; }
         .msg-btn-mobile { display: flex; }
-        .mobile-link { display: flex; }
+        .mobile-link { display: flex; } /* Shown only on phone */
         .btn { font-size: 0.75rem !important; padding: 0 12px !important; height: 34px !important; }
         .main-wrapper { display: block !important; height: auto !important; }
         .image-stage { height: 380px !important; border-radius: 0 !important; }
@@ -165,12 +168,14 @@ function updateHeaderToLoggedIn(userData) {
             <div class="dropdown-menu" id="globalDropdown">
                 <div class="dropdown-header"><span>${name}</span>${studentBadgeHTML}</div>
                 
-                <!-- MOVED LIST AN ITEM HERE -->
                 <a href="/listanitem.html" class="dropdown-item" data-i18n="btn_list" style="font-weight:bold; color:#2E7D32;"><i class="fas fa-plus-circle"></i> List an Item</a>
                 
                 <a href="/profile.html" class="dropdown-item" data-i18n="nav_profile"><i class="fas fa-user"></i> My Profile</a>
+                
+                <!-- MOBILE ONLY LINKS (HIDDEN ON DESKTOP) -->
                 <a href="/search.html" class="dropdown-item mobile-link" data-i18n="nav_browse"><i class="fas fa-search"></i> Browse</a>
                 <a href="/my-listings.html" class="dropdown-item mobile-link" data-i18n="nav_listings"><i class="fas fa-list"></i> My Listings</a>
+                
                 <a href="#" class="dropdown-item" id="globalLogout" style="color:#d32f2f; border-top: 1px solid #eee;" data-i18n="btn_signout">
                     <i class="fas fa-sign-out-alt"></i> Sign Out
                 </a>
