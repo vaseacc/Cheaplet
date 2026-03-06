@@ -72,11 +72,13 @@ globalStyle.innerHTML = `
 
     /* MOBILE ONLY CLASS */
     .mobile-link { display: none; }
+    .desktop-only { display: inline-flex; }
 
     @media (max-width: 767px) {
         nav { display: none !important; }
         .msg-btn-mobile { display: flex; }
-        .mobile-link { display: flex; } /* Shown only on phone */
+        .mobile-link { display: flex; } 
+        .desktop-only { display: none !important; }
         .btn { font-size: 0.75rem !important; padding: 0 12px !important; height: 34px !important; }
         .main-wrapper { display: block !important; height: auto !important; }
         .image-stage { height: 380px !important; border-radius: 0 !important; }
@@ -162,17 +164,20 @@ function updateHeaderToLoggedIn(userData) {
     const studentBadgeHTML = userData.isStudent ? `<div class="student-badge"><i class="fas fa-graduation-cap"></i> <span data-i18n="verified_student">Verified Student</span></div>` : '';
 
     container.innerHTML = `
+        <!-- DESKTOP ONLY BUTTON -->
+        <button class="btn desktop-only" id="globalListBtn" style="margin-right: 12px;" data-i18n="btn_list">List an Item</button>
+
         <a href="/messages.html" class="msg-btn-mobile"><i class="fas fa-envelope"></i></a>
+        
         <div class="profile-menu-container" id="globalProfileMenu">
             <div class="profile-avatar" style="${photoStyle}">${avatarContent}</div>
             <div class="dropdown-menu" id="globalDropdown">
                 <div class="dropdown-header"><span>${name}</span>${studentBadgeHTML}</div>
                 
-                <a href="/listanitem.html" class="dropdown-item" data-i18n="btn_list" style="font-weight:bold; color:#2E7D32;"><i class="fas fa-plus-circle"></i> List an Item</a>
+                <!-- MOBILE ONLY LINK (HIDDEN ON DESKTOP) -->
+                <a href="/listanitem.html" class="dropdown-item mobile-link" data-i18n="btn_list" style="font-weight:bold; color:#2E7D32;"><i class="fas fa-plus-circle"></i> List an Item</a>
                 
                 <a href="/profile.html" class="dropdown-item" data-i18n="nav_profile"><i class="fas fa-user"></i> My Profile</a>
-                
-                <!-- MOBILE ONLY LINKS (HIDDEN ON DESKTOP) -->
                 <a href="/search.html" class="dropdown-item mobile-link" data-i18n="nav_browse"><i class="fas fa-search"></i> Browse</a>
                 <a href="/my-listings.html" class="dropdown-item mobile-link" data-i18n="nav_listings"><i class="fas fa-list"></i> My Listings</a>
                 
@@ -182,6 +187,9 @@ function updateHeaderToLoggedIn(userData) {
             </div>
         </div>
     `;
+
+    const desktopListBtn = document.getElementById('globalListBtn');
+    if (desktopListBtn) desktopListBtn.onclick = () => window.location.href = '/listanitem.html';
 
     const avatar = container.querySelector('.profile-avatar');
     const menu = document.getElementById('globalDropdown');
