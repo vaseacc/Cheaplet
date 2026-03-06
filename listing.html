@@ -45,6 +45,20 @@
         .action-buttons { display: flex; gap: 10px; margin-bottom: 25px; }
         .btn-primary { flex: 1; background-color: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: 600; padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 1rem; }
         .btn-icon { width: 45px; height: 42px; background-color: #f0f0f0; border-radius: 6px; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
+        
+        /* NEW: FLAG BUTTON STYLE */
+        .btn-report { color: #ff5252; }
+
+        /* MODAL STYLES FOR REPORTING */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: none; justify-content: center; align-items: center; }
+        .modal-card { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .modal-card select, .modal-card textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+        .modal-card textarea { height: 100px; resize: none; }
+        .modal-buttons { display: flex; gap: 10px; }
+        .modal-buttons button { flex: 1; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; }
+        .btn-submit-red { background: #d32f2f; color: white; }
+        .btn-cancel-gray { background: #eee; color: #333; }
+
         .section-header { font-weight: 700; font-size: 1.1rem; margin-top: 15px; margin-bottom: 10px; color: #050505; }
         .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; }
         .info-label { font-weight: 600; color: #555; }
@@ -91,8 +105,10 @@
                 <button class="btn-primary" id="btn-message-seller">
                     <i class="fas fa-paper-plane"></i> &nbsp; <span data-i18n="btn_message">Message</span>
                 </button>
-                <button class="btn-icon" id="btn-save"><i class="far fa-bookmark"></i></button>
-                <button class="btn-icon" id="btn-share"><i class="fas fa-share-alt"></i></button>
+                <button class="btn-icon" id="btn-save" title="Save"><i class="far fa-bookmark"></i></button>
+                <button class="btn-icon" id="btn-share" title="Share"><i class="fas fa-share-alt"></i></button>
+                <!-- NEW REPORT BUTTON -->
+                <button class="btn-icon btn-report" id="btn-report-listing" title="Report" style="display: none;"><i class="fas fa-flag"></i></button>
             </div>
 
             <div class="section-header" data-i18n="details_title">Details</div>
@@ -151,10 +167,29 @@
         </div>
     </div>
 
+    <!-- REPORT MODAL -->
+    <div class="modal-overlay" id="report-modal">
+        <div class="modal-card">
+            <h2 id="modal-title">Report Listing</h2>
+            <p style="margin-bottom: 15px; font-size: 0.9rem; color: #666;" id="modal-desc">Why are you reporting this listing?</p>
+            <select id="report-reason">
+                <option value="Inappropriate Content">Inappropriate Content</option>
+                <option value="Scam or Fraud">Scam or Fraud</option>
+                <option value="Sold or Unavailable">Sold or Unavailable</option>
+                <option value="Other">Other</option>
+            </select>
+            <textarea id="report-details" placeholder="Provide more details..."></textarea>
+            <div class="modal-buttons">
+                <button class="btn-submit-red" id="submit-report-btn">Submit</button>
+                <button class="btn-cancel-gray" id="close-report-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, serverTimestamp, deleteDoc, updateDoc, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, serverTimestamp, deleteDoc, updateDoc, arrayUnion, arrayRemove, addDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -168,6 +203,7 @@
             const thumbnailContainer = document.getElementById('thumbnail-container');
             const saveBtn = document.getElementById('btn-save');
             const shareBtn = document.getElementById('btn-share');
+            const reportBtn = document.getElementById('btn-report-listing');
             
             const prevBtn = document.getElementById('prev-img-btn');
             const nextBtn = document.getElementById('next-img-btn');
@@ -179,27 +215,36 @@
             let imageUrls = [];
             let isSaved = false; 
 
-            const dataTranslations = {
-                fr: {
-                    "New": "Neuf", "Like New": "Comme neuf", "Good": "Bon état", "Fair": "État correct",
-                    "Not applicable": "Non applicable", "Available / Unused": "Disponible / Inutilisé", "Already used": "Déjà utilisé",
-                    "Dawson College": "Collège Dawson", "Vanier College": "Collège Vanier", "McGill University": "Université McGill",
-                    "Yes": "Oui", "No": "Non", "N/A": "N/O"
+            const lang = localStorage.getItem('preferred_language') || 'en';
+            const strings = {
+                en: { 
+                    reportTitle: "Report Listing", reportDesc: "Why are you reporting this?", reportPlaceholder: "Details...", reportSuccess: "Reported.",
+                    opt1: "Inappropriate Content", opt2: "Scam or Fraud", opt3: "Sold or Unavailable", opt4: "Other"
+                },
+                fr: { 
+                    reportTitle: "Signaler l'annonce", reportDesc: "Pourquoi signalez-vous cela ?", reportPlaceholder: "Détails...", reportSuccess: "Signalé.",
+                    opt1: "Contenu inapproprié", opt2: "Arnaque ou Fraude", opt3: "Vendu ou Indisponible", opt4: "Autre"
                 }
             };
 
+            const dataTranslations = {
+                fr: { "New": "Neuf", "Like New": "Comme neuf", "Good": "Bon état", "Fair": "État correct", "Not applicable": "Non applicable", "Available / Unused": "Disponible / Inutilisé", "Already used": "Déjà utilisé", "Yes": "Oui", "No": "Non", "N/A": "N/O" }
+            };
+
             function translateData(value) {
-                if (value === true) value = "Yes";
-                if (value === false) value = "No";
-                const lang = localStorage.getItem('preferred_language') || 'en';
+                if (value === true) value = "Yes"; if (value === false) value = "No";
                 if (lang === 'fr' && dataTranslations.fr[value]) return dataTranslations.fr[value];
                 return value;
             }
 
             onAuthStateChanged(auth, user => {
                 currentUser = user;
-                const lang = localStorage.getItem('preferred_language') || 'en';
                 if (lang === 'fr') document.getElementById('quick-msg-text').value = "Bonjour, est-ce disponible ?";
+                
+                // Show report button if logged in and not owner
+                if (user) {
+                    reportBtn.style.display = 'flex';
+                }
                 fetchAndDisplayListing();
             });
 
@@ -215,12 +260,13 @@
 
                     const data = listingSnap.data();
                     currentListingData = data;
-                    const savedLang = localStorage.getItem('preferred_language') || 'en';
+
+                    // Hide report button if it's the user's own listing
+                    if (currentUser && currentUser.uid === data.posterUid) reportBtn.style.display = 'none';
 
                     document.getElementById('listing-title').textContent = data.title;
-                    
                     if (data.status === 'sold') {
-                        const soldText = savedLang === 'fr' ? "VENDU" : "SOLD";
+                        const soldText = lang === 'fr' ? "VENDU" : "SOLD";
                         document.getElementById('listing-price').innerHTML = `<span style="color: #d32f2f; font-weight: 800;">${soldText}</span>`;
                         document.getElementById('original-price-display').style.display = 'none';
                         document.getElementById('btn-message-seller').style.display = 'none';
@@ -229,29 +275,22 @@
                     } else {
                         document.getElementById('listing-price').textContent = `$${data.price.toFixed(2)}`;
                         const origPriceEl = document.getElementById('original-price-display');
-                        if (data.originalPrice) {
-                            origPriceEl.textContent = `$${data.originalPrice.toFixed(2)}`;
-                            origPriceEl.style.display = 'block';
-                        } else {
-                            origPriceEl.style.display = 'none';
-                        }
+                        if (data.originalPrice) { origPriceEl.textContent = `$${data.originalPrice.toFixed(2)}`; origPriceEl.style.display = 'block'; }
+                        else { origPriceEl.style.display = 'none'; }
                     }
                     
                     const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : '';
-                    const metaPrefix = savedLang === 'fr' ? 'Publié le' : 'Listed';
-                    
+                    const metaPrefix = lang === 'fr' ? 'Publié le' : 'Listed';
                     document.getElementById('listing-meta').textContent = `${metaPrefix} ${date} • ${translateData(data.location)}`;
                     document.getElementById('location-text').textContent = translateData(data.location);
                     document.getElementById('listing-condition').textContent = translateData(data.condition || "Used");
                     document.getElementById('listing-digital-code').textContent = translateData(data.digitalCode || "N/A");
-                    
-                    document.getElementById('listing-meeting-point').textContent = data.meetingPoint || (savedLang === 'fr' ? "À discuter" : "To be discussed");
+                    document.getElementById('listing-meeting-point').textContent = data.meetingPoint || (lang === 'fr' ? "À discuter" : "To be discussed");
                     document.getElementById('listing-writing').textContent = translateData(data.hasWriting);
                     document.getElementById('listing-water').textContent = translateData(data.hasWaterDamage);
                     document.getElementById('listing-missing').textContent = translateData(data.hasMissingPages);
-
                     document.getElementById('listing-description').textContent = data.description;
-                    document.getElementById('seller-name-link').textContent = data.posterDisplayName || "A User";
+                    document.getElementById('seller-name-link').textContent = data.posterDisplayName || "User";
                     document.getElementById('seller-name-link').href = `/user.html?id=${data.posterUid}`;
                     
                     if (data.posterUid) {
@@ -281,10 +320,7 @@
                         const userSnap = await getDoc(userRef);
                         if (userSnap.exists()) {
                             const userData = userSnap.data();
-                            if (userData.savedListings && userData.savedListings.includes(currentListingId)) {
-                                isSaved = true;
-                                updateSaveIcon();
-                            }
+                            if (userData.savedListings && userData.savedListings.includes(currentListingId)) { isSaved = true; updateSaveIcon(); }
                             if (currentUser.uid === data.posterUid || userData.role === 'admin') {
                                 document.getElementById('admin-controls').style.display = 'block';
                                 document.getElementById('delete-listing-btn').onclick = () => deleteListing(currentListingId, userData.role === 'admin');
@@ -294,50 +330,52 @@
                 } catch (error) { console.error(error); }
             }
 
+            // REPORT LOGIC
+            const reportModal = document.getElementById('report-modal');
+            reportBtn.onclick = () => {
+                document.getElementById('modal-title').textContent = strings[lang].reportTitle;
+                document.getElementById('modal-desc').textContent = strings[lang].reportDesc;
+                document.getElementById('report-details').placeholder = strings[lang].reportPlaceholder;
+                const opts = document.getElementById('report-reason').options;
+                opts[0].text = strings[lang].opt1; opts[1].text = strings[lang].opt2; opts[2].text = strings[lang].opt3; opts[3].text = strings[lang].opt4;
+                reportModal.style.display = 'flex';
+            };
+            document.getElementById('close-report-btn').onclick = () => reportModal.style.display = 'none';
+            document.getElementById('submit-report-btn').onclick = async () => {
+                const reason = document.getElementById('report-reason').value;
+                const details = document.getElementById('report-details').value.trim();
+                await addDoc(collection(db, "reports"), {
+                    reporterUid: currentUser.uid, reporterName: currentUser.displayName,
+                    targetUid: currentListingData.posterUid, targetUserName: currentListingData.posterDisplayName,
+                    reason: "Listing: " + reason, details: `Item: ${currentListingData.title} (${currentListingId})\n\n${details}`,
+                    timestamp: serverTimestamp()
+                });
+                alert(strings[lang].reportSuccess);
+                reportModal.style.display = 'none';
+            };
+
             function updateMainImage(index) {
                 currentImageIndex = index;
                 const url = imageUrls[index];
-                if(url) {
-                    mainImage.src = url;
-                    blurBg.style.backgroundImage = `url('${url}')`;
-                }
-                document.querySelectorAll('.thumb').forEach((thumb, i) => {
-                    thumb.classList.toggle('active', i === index);
-                });
+                if(url) { mainImage.src = url; blurBg.style.backgroundImage = `url('${url}')`; }
+                document.querySelectorAll('.thumb').forEach((thumb, i) => { thumb.classList.toggle('active', i === index); });
             }
 
             prevBtn.onclick = () => { if (imageUrls.length === 0) return; let newIndex = currentImageIndex - 1; if (newIndex < 0) newIndex = imageUrls.length - 1; updateMainImage(newIndex); };
             nextBtn.onclick = () => { if (imageUrls.length === 0) return; let newIndex = currentImageIndex + 1; if (newIndex >= imageUrls.length) newIndex = 0; updateMainImage(newIndex); };
 
             async function createChat(posterUid, posterName) {
-                // --- FIX: REDIRECT IF NOT LOGGED IN ---
-                if (!currentUser) {
-                    const currentPath = window.location.pathname + window.location.search;
-                    window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(currentPath)}`;
-                    return;
-                }
-
+                if (!currentUser) { window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`; return; }
                 const uids = [currentUser.uid, posterUid].sort();
                 const chatId = uids.join('_');
                 const chatRef = doc(db, 'chats', chatId);
                 try {
                     const chatSnap = await getDoc(chatRef);
-                    const myName = currentUser.displayName || currentUser.email || "User";
-
                     if (!chatSnap.exists()) {
-                        await setDoc(chatRef, { 
-                            participants: uids, 
-                            participantInfo: { [currentUser.uid]: myName, [posterUid]: posterName }, 
-                            lastUpdate: serverTimestamp(), 
-                            lastMessage: "",
-                            listingId: currentListingId 
-                        }); 
+                        await setDoc(chatRef, { participants: uids, participantInfo: { [currentUser.uid]: (currentUser.displayName || "User"), [posterUid]: posterName }, lastUpdate: serverTimestamp(), lastMessage: "", listingId: currentListingId }); 
                     }
                     window.location.href = `/chat.html?id=${chatId}`;
-                } catch (error) { 
-                    console.error("Chat creation error:", error);
-                    alert("Error starting chat. Please try again."); 
-                }
+                } catch (error) { alert("Error starting chat."); }
             }
 
             document.getElementById('btn-message-seller').onclick = () => createChat(currentListingData.posterUid, currentListingData.posterDisplayName);
@@ -350,35 +388,21 @@
             }
 
             saveBtn.onclick = async () => {
-                if (!currentUser) {
-                    const currentPath = window.location.pathname + window.location.search;
-                    window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(currentPath)}`;
-                    return;
-                }
+                if (!currentUser) { window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`; return; }
                 const userRef = doc(db, "users", currentUser.uid);
-                const lang = localStorage.getItem('preferred_language') || 'en';
-                if (isSaved) {
-                    await updateDoc(userRef, { savedListings: arrayRemove(currentListingId) });
-                    isSaved = false;
-                } else {
-                    await updateDoc(userRef, { savedListings: arrayUnion(currentListingId) });
-                    isSaved = true;
-                    const msg = lang === 'fr' 
-                        ? "Annonce enregistrée ! Vous pouvez la retrouver dans votre profil." 
-                        : "Listing saved! You can find it in your profile.";
-                    alert(msg);
+                if (isSaved) { await updateDoc(userRef, { savedListings: arrayRemove(currentListingId) }); isSaved = false; }
+                else {
+                    await updateDoc(userRef, { savedListings: arrayUnion(currentListingId) }); isSaved = true;
+                    alert(lang === 'fr' ? "Annonce enregistrée !" : "Listing saved!");
                 }
                 updateSaveIcon();
             };
 
             shareBtn.onclick = async () => {
                 const url = window.location.href;
-                const title = currentListingData ? currentListingData.title : 'Cheaplet Listing';
-                const lang = localStorage.getItem('preferred_language') || 'en';
                 const copyMsg = lang === 'fr' ? "Lien copié !" : "Link copied!";
-                if (navigator.share) {
-                    try { await navigator.share({ title: title, url: url }); } catch (err) { await navigator.clipboard.writeText(url); alert(copyMsg); }
-                } else { await navigator.clipboard.writeText(url); alert(copyMsg); }
+                if (navigator.share) { try { await navigator.share({ title: currentListingData.title, url: url }); } catch (err) { await navigator.clipboard.writeText(url); alert(copyMsg); } } 
+                else { await navigator.clipboard.writeText(url); alert(copyMsg); }
             };
 
             async function deleteListing(docId, isAdmin) { if (confirm("Delete listing?")) { await deleteDoc(doc(db, 'listings', docId)); window.location.href = '/index.html'; } }
