@@ -66,8 +66,6 @@
         .listing-image { height: 200px; background-color: #eee; background-size: cover; background-position: center; }
         .listing-details { padding: 15px; }
         .listing-price { color: #4CAF50; font-weight: 800; font-size: 1.2rem; }
-        
-        /* NEW: ORIGINAL PRICE STYLE FOR CARDS */
         .original-price { font-size: 0.9rem; color: #999; text-decoration: line-through; margin-left: 8px; font-weight: 400; }
 
         /* Section styling */
@@ -176,9 +174,10 @@
             const startBtn = document.getElementById('startBrowsingBtn');
             if(startBtn) startBtn.onclick = () => document.querySelector('main').scrollIntoView({ behavior: 'smooth' });
 
+            // --- FIXED: LIMIT TAGS TO ONLY 6 ---
             async function loadGlobalTags() {
                 try {
-                    const q = query(collection(db, "global_tags"), orderBy("count", "desc"), limit(12));
+                    const q = query(collection(db, "global_tags"), orderBy("count", "desc"), limit(6));
                     const snapshot = await getDocs(q);
                     tagsGridContainer.innerHTML = '';
                     snapshot.forEach(doc => {
@@ -192,15 +191,12 @@
                 } catch (e) { console.error(e); }
             }
 
-            // MODIFIED LISTING RENDER TO MATCH THE SCREENSHOT STYLE
             function renderListing(doc) {
                 const data = doc.data();
                 const firstImage = data.imageUrls?.[0] || '';
                 const card = document.createElement('a');
                 card.className = 'listing-card';
                 card.href = `/listing.html?id=${doc.id}`;
-                
-                // Show original price if it exists and is different
                 const originalPriceHTML = (data.originalPrice && data.originalPrice > data.price) 
                     ? `<span class="original-price">$${data.originalPrice.toFixed(2)}</span>` 
                     : '';
