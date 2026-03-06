@@ -10,7 +10,6 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
-        /* CSS ADJUSTMENT: Allow scrolling for the bottom sections */
         body { background-color: #f8f9fa; color: #333; min-height: 100vh; display: flex; flex-direction: column; overflow-y: auto; }
         
         header { 
@@ -44,7 +43,10 @@
         .thumb.active { opacity: 1; border-color: #FFD700; transform: scale(1.15); }
 
         .details-panel { width: 420px; background-color: white; border-left: 1px solid #ddd; overflow-y: auto; display: flex; flex-direction: column; padding: 25px; flex-shrink: 0; }
-        h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 5px; color: #050505; }
+        
+        /* FIX: PREVENT TITLE FROM OVERFLOWING */
+        h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 5px; color: #050505; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; }
+        
         .price-container { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
         .price { font-size: 1.5rem; font-weight: 700; color: #2E7D32; }
         .original-price { font-size: 1.1rem; color: #999; text-decoration: line-through; }
@@ -56,7 +58,6 @@
         
         .btn-report { color: #ff5252; }
 
-        /* MODAL STYLES */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: none; justify-content: center; align-items: center; }
         .modal-card { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .modal-card select, .modal-card textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
@@ -67,9 +68,14 @@
         .btn-cancel-gray { background: #eee; color: #333; }
 
         .section-header { font-weight: 700; font-size: 1.1rem; margin-top: 15px; margin-bottom: 10px; color: #050505; }
-        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; }
-        .info-label { font-weight: 600; color: #555; }
-        .description-text { font-size: 0.95rem; line-height: 1.6; color: #444; white-space: pre-wrap; margin-bottom: 20px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; gap: 10px; }
+        .info-label { font-weight: 600; color: #555; flex-shrink: 0; }
+        
+        /* FIX: PREVENT MEETING POINT / VALUES FROM OVERFLOWING */
+        .info-value { color: #333; text-align: right; overflow-wrap: break-word; word-wrap: break-word; word-break: break-word; }
+        
+        /* FIX: PREVENT DESCRIPTION FROM OVERFLOWING */
+        .description-text { font-size: 0.95rem; line-height: 1.6; color: #444; white-space: pre-wrap; margin-bottom: 20px; overflow-wrap: break-word; word-wrap: break-word; }
         
         .seller-section { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 10px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; }
         #seller-avatar-small { width: 45px; height: 45px; border-radius: 50%; background: #ddd; background-size: cover; background-position: center; border: 1px solid #eee; }
@@ -78,7 +84,6 @@
         .quick-message-container { margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
         .btn-send { background-color: #4CAF50; color: white; width: 100%; border: none; border-radius: 6px; height: 40px; font-weight: 600; cursor: pointer; }
 
-        /* RELATED LISTINGS */
         .related-section { margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; }
         .related-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
         .related-card { background: white; text-decoration: none; color: inherit; display: block; overflow: hidden; }
@@ -342,10 +347,7 @@
             async function fetchRelatedListings(tags, currentId) {
                 const grid = document.getElementById('related-grid');
                 const section = document.getElementById('related-section');
-                
-                // FIX: Limit to 10 tags to prevent Firebase error
                 const searchTags = tags.slice(0, 10);
-                
                 const q = query(collection(db, "listings"), where("tags", "array-contains-any", searchTags), limit(6));
                 const snap = await getDocs(q);
                 const related = snap.docs.filter(d => d.id !== currentId && d.data().status !== 'sold').slice(0, 4);
@@ -413,8 +415,10 @@
 
             shareBtn.onclick = async () => {
                 const url = window.location.href;
+                const title = currentListingData ? currentListingData.title : 'Cheaplet Listing';
+                const lang = localStorage.getItem('preferred_language') || 'en';
                 const copyMsg = lang === 'fr' ? "Lien copié !" : "Link copied!";
-                if (navigator.share) { try { await navigator.share({ title: currentListingData.title, url: url }); } catch (err) { await navigator.clipboard.writeText(url); alert(copyMsg); } }
+                if (navigator.share) { try { await navigator.share({ title: title, url: url }); } catch (err) { await navigator.clipboard.writeText(url); alert(copyMsg); } }
                 else { await navigator.clipboard.writeText(url); alert(copyMsg); }
             };
 
