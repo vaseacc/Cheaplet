@@ -29,28 +29,23 @@
 
         /* TAG SYSTEM */
         .tag-container { border: 2px solid #ddd; border-radius: 6px; padding: 10px; margin-bottom: 15px; background: #fff; display: flex; flex-wrap: wrap; gap: 8px; position: relative; }
-        .tag-chip { background-color: #e8f5e9; color: #2E7D32; padding: 5px 10px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+        .tag-chip { background-color: #e8f5e9; color: #2E7D32; padding: 5px 10px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; }
         #tag-input { border: none; outline: none; padding: 5px; flex-grow: 1; min-width: 120px; margin-bottom: 0; }
         .suggestions-box { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ddd; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .suggestion-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
 
         /* CHECKBOX GROUP */
         .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; background: #fdfdfd; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
         .checkbox-item { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.9rem; cursor: pointer; color: #444; }
-        .checkbox-item input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
 
         .image-preview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-        .image-preview-wrapper { position: relative; width: 80px; height: 80px; }
-        .image-preview { width: 100%; height: 100%; border-radius: 8px; object-fit: cover; border: 1px solid #ddd; }
-        .remove-image-btn { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; background: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; cursor: pointer; font-size: 10px; display: flex; align-items: center; justify-content: center; }
-        #add-photo-label { width: 80px; height: 80px; border: 2px dashed #ccc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #777; }
+        #add-photo-label { width: 80px; height: 80px; border: 2px dashed #ccc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #777; margin: 0 auto; }
 
         #page-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: flex; justify-content: center; align-items: center; }
         @media (max-width: 767px) { nav { display: none; } }
     </style>
 </head>
 <body>
-    <div id="page-loader">Loading...</div>
+    <div id="page-loader">...</div>
 
     <header>
         <div class="container header-content">
@@ -64,13 +59,15 @@
 
     <main class="container">
         <div class="form-wrapper">
-            <h2 data-i18n="btn_list">List an Item</h2>
+            <h2 data-i18n="btn_list">List a Book</h2>
             <form id="listing-form">
+                <!-- ADDED MAXLENGTH 80 -->
                 <label data-i18n="label_title">Title</label>
-                <input type="text" id="listing-title" required>
+                <input type="text" id="listing-title" maxlength="80" required>
                 
+                <!-- ADDED MAXLENGTH 1500 -->
                 <label data-i18n="label_description">Description</label>
-                <textarea id="listing-description" required></textarea>
+                <textarea id="listing-description" maxlength="1500" required></textarea>
                 
                 <div style="display: flex; gap: 15px;">
                     <div style="flex: 1;">
@@ -99,18 +96,11 @@
                     <option value="Fair" data-i18n="opt_fair">Fair</option>
                 </select>
 
-                <!-- NEW: DETAILED CONDITION CHECKBOXES -->
                 <label data-i18n="label_additional_details">Additional Details</label>
                 <div class="checkbox-group">
-                    <label class="checkbox-item">
-                        <input type="checkbox" id="cond-writing"> <span data-i18n="label_writing">Writing inside</span>
-                    </label>
-                    <label class="checkbox-item">
-                        <input type="checkbox" id="cond-water"> <span data-i18n="label_water">Water damage</span>
-                    </label>
-                    <label class="checkbox-item">
-                        <input type="checkbox" id="cond-missing"> <span data-i18n="label_missing">Missing pages</span>
-                    </label>
+                    <label class="checkbox-item"><input type="checkbox" id="cond-writing"> <span data-i18n="label_writing">Writing inside</span></label>
+                    <label class="checkbox-item"><input type="checkbox" id="cond-water"> <span data-i18n="label_water">Water damage</span></label>
+                    <label class="checkbox-item"><input type="checkbox" id="cond-missing"> <span data-i18n="label_missing">Missing pages</span></label>
                 </div>
 
                 <label data-i18n="label_digital_code">Digital Access Code</label>
@@ -138,9 +128,9 @@
                     </optgroup>
                 </select>
 
-                <!-- NEW: MEETING POINT -->
-                <label data-i18n="label_meeting_point">Meeting Point (e.g. Near Library)</label>
-                <input type="text" id="listing-meeting-point" placeholder="Specific spot on campus">
+                <!-- ADDED MAXLENGTH 60 -->
+                <label data-i18n="label_meeting_point">Meeting Point</label>
+                <input type="text" id="listing-meeting-point" maxlength="60">
 
                 <label data-i18n="label_photos">Photos (Max 5)</label>
                 <div id="image-uploader">
@@ -175,6 +165,12 @@
             const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`;
             const UPLOAD_PRESET = config.cloudinary.uploadPreset;
 
+            const lang = localStorage.getItem('preferred_language') || 'en';
+            const strings = {
+                en: { priceErr: "Price cannot exceed $1200.", imgErr: "Add at least one photo.", uploading: "Processing...", tagLimit: "Max 15 tags allowed." },
+                fr: { priceErr: "Le prix ne peut dépasser 1200$.", imgErr: "Ajoutez au moins une photo.", uploading: "Traitement...", tagLimit: "Maximum 15 tags autorisés." }
+            };
+
             let currentUser = null;
             let selectedFiles = [];
             let tags = [];
@@ -199,11 +195,15 @@
                 });
             }
             window.removeTag = (index) => { tags.splice(index, 1); renderTags(); };
+            
             function addTag(tagName) {
                 const cleaned = tagName.trim();
+                // FIXED: LIMIT TO 15 TAGS
+                if (tags.length >= 15) { alert(strings[lang].tagLimit); return; }
                 if (cleaned && !tags.includes(cleaned)) { tags.push(cleaned); renderTags(); }
                 tagInput.value = ''; suggestionsBox.style.display = 'none';
             }
+
             tagInput.oninput = async (e) => {
                 const val = e.target.value.trim().toLowerCase();
                 if (val.length < 1) { suggestionsBox.style.display = 'none'; return; }
@@ -228,7 +228,6 @@
             window.addTagManual = () => addTag(tagInput.value);
             tagInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput.value); } };
 
-            // --- IMAGE LOGIC ---
             const imageInput = document.getElementById('listing-image-input');
             const previewContainer = document.getElementById('image-preview-container');
             function renderPreviews() {
@@ -250,12 +249,15 @@
             }
             imageInput.onchange = (e) => { if (e.target.files[0]) { selectedFiles.push(e.target.files[0]); renderPreviews(); } };
 
-            // --- SUBMISSION ---
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
+                const price = parseFloat(document.getElementById('listing-price').value);
+                if (price > 1200) { alert(strings[lang].priceErr); return; }
+                if (selectedFiles.length === 0) { alert(strings[lang].imgErr); return; }
+
                 const submitBtn = document.getElementById('postListingBtn');
                 submitBtn.disabled = true;
-                submitBtn.textContent = "Processing...";
+                submitBtn.textContent = strings[lang].uploading;
 
                 try {
                     const imageUrls = [];
@@ -276,12 +278,12 @@
                     const docRef = await addDoc(collection(db, 'listings'), {
                         title: document.getElementById('listing-title').value.trim(),
                         description: document.getElementById('listing-description').value.trim(),
-                        price: parseFloat(document.getElementById('listing-price').value),
-                        originalPrice: parseFloat(document.getElementById('listing-original-price').value) || null, // NEW
-                        meetingPoint: document.getElementById('listing-meeting-point').value.trim(), // NEW
-                        hasWriting: document.getElementById('cond-writing').checked, // NEW
-                        hasWaterDamage: document.getElementById('cond-water').checked, // NEW
-                        hasMissingPages: document.getElementById('cond-missing').checked, // NEW
+                        price: price,
+                        originalPrice: parseFloat(document.getElementById('listing-original-price').value) || null,
+                        meetingPoint: document.getElementById('listing-meeting-point').value.trim(),
+                        hasWriting: document.getElementById('cond-writing').checked,
+                        hasWaterDamage: document.getElementById('cond-water').checked,
+                        hasMissingPages: document.getElementById('cond-missing').checked,
                         condition: document.getElementById('listing-condition').value,
                         digitalCode: document.getElementById('listing-digital-code').value,
                         location: document.getElementById('listing-location').value,
@@ -293,7 +295,7 @@
                     });
 
                     window.location.href = `/listing.html?id=${docRef.id}`;
-                } catch (err) { console.error(err); submitBtn.disabled = false; }
+                } catch (err) { console.error(err); submitBtn.disabled = false; submitBtn.textContent = "Post Item"; }
             };
         }
         main();
