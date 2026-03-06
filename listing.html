@@ -46,10 +46,8 @@
         .btn-primary { flex: 1; background-color: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: 600; padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 1rem; }
         .btn-icon { width: 45px; height: 42px; background-color: #f0f0f0; border-radius: 6px; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
         
-        /* NEW: FLAG BUTTON STYLE */
         .btn-report { color: #ff5252; }
 
-        /* MODAL STYLES FOR REPORTING */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: none; justify-content: center; align-items: center; }
         .modal-card { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
         .modal-card select, .modal-card textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
@@ -68,6 +66,14 @@
         .seller-name { font-weight: 600; color: #050505; text-decoration: none; }
         .quick-message-container { margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
         .btn-send { background-color: #4CAF50; color: white; width: 100%; border: none; border-radius: 6px; height: 40px; font-weight: 600; cursor: pointer; }
+
+        /* RELATED LISTINGS CSS (FB STYLE) */
+        .related-section { margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; }
+        .related-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
+        .related-card { background: white; text-decoration: none; color: inherit; display: block; overflow: hidden; }
+        .related-img { width: 100%; height: 120px; background-color: #eee; background-size: cover; background-position: center; border-radius: 8px; margin-bottom: 8px; }
+        .related-title { font-size: 0.85rem; font-weight: 600; height: 2.4em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.2; color: #050505; }
+        .related-price { font-weight: bold; color: #4CAF50; font-size: 0.95rem; margin-top: 4px; }
 
         @media (max-width: 900px) { .main-wrapper { flex-direction: column; overflow-y: auto; height: auto; } .image-stage { height: 350px; flex: none; } .details-panel { width: 100%; border-left: none; height: auto; padding-bottom: 50px; } nav { display: none; } }
     </style>
@@ -107,7 +113,6 @@
                 </button>
                 <button class="btn-icon" id="btn-save" title="Save"><i class="far fa-bookmark"></i></button>
                 <button class="btn-icon" id="btn-share" title="Share"><i class="fas fa-share-alt"></i></button>
-                <!-- NEW REPORT BUTTON -->
                 <button class="btn-icon btn-report" id="btn-report-listing" title="Report" style="display: none;"><i class="fas fa-flag"></i></button>
             </div>
 
@@ -160,6 +165,12 @@
                 <button class="btn-send" id="btn-quick-send" data-i18n="btn_send">Send</button>
             </div>
 
+            <!-- RELATED LISTINGS SECTION -->
+            <div class="related-section" id="related-section" style="display: none;">
+                <div class="section-header" data-i18n="related_title">Related Items</div>
+                <div class="related-grid" id="related-grid"></div>
+            </div>
+
             <div class="admin-controls" id="admin-controls" style="display:none;">
                 <p style="color: #d32f2f; font-weight: bold; font-size: 0.9rem; margin-bottom: 5px;">Admin Zone</p>
                 <button class="btn-delete" id="delete-listing-btn">Delete Listing</button>
@@ -189,7 +200,7 @@
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, serverTimestamp, deleteDoc, updateDoc, arrayUnion, arrayRemove, addDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, setDoc, serverTimestamp, deleteDoc, updateDoc, arrayUnion, arrayRemove, addDoc, collection, query, where, limit, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -204,7 +215,6 @@
             const saveBtn = document.getElementById('btn-save');
             const shareBtn = document.getElementById('btn-share');
             const reportBtn = document.getElementById('btn-report-listing');
-            
             const prevBtn = document.getElementById('prev-img-btn');
             const nextBtn = document.getElementById('next-img-btn');
             
@@ -240,11 +250,7 @@
             onAuthStateChanged(auth, user => {
                 currentUser = user;
                 if (lang === 'fr') document.getElementById('quick-msg-text').value = "Bonjour, est-ce disponible ?";
-                
-                // Show report button if logged in and not owner
-                if (user) {
-                    reportBtn.style.display = 'flex';
-                }
+                if (user) reportBtn.style.display = 'flex';
                 fetchAndDisplayListing();
             });
 
@@ -261,7 +267,6 @@
                     const data = listingSnap.data();
                     currentListingData = data;
 
-                    // Hide report button if it's the user's own listing
                     if (currentUser && currentUser.uid === data.posterUid) reportBtn.style.display = 'none';
 
                     document.getElementById('listing-title').textContent = data.title;
@@ -327,10 +332,47 @@
                             }
                         }
                     }
+
+                    // FETCH RELATED LISTINGS (FB STYLE)
+                    if (data.tags && data.tags.length > 0) {
+                        fetchRelatedListings(data.tags, currentListingId);
+                    }
+
                 } catch (error) { console.error(error); }
             }
 
-            // REPORT LOGIC
+            async function fetchRelatedListings(tags, currentId) {
+                const grid = document.getElementById('related-grid');
+                const section = document.getElementById('related-section');
+                
+                // Query for items with similar tags
+                const q = query(
+                    collection(db, "listings"), 
+                    where("tags", "array-contains-any", tags),
+                    limit(6)
+                );
+
+                const snap = await getDocs(q);
+                const related = snap.docs.filter(d => d.id !== currentId && d.data().status !== 'sold').slice(0, 4);
+
+                if (related.length > 0) {
+                    section.style.display = 'block';
+                    grid.innerHTML = '';
+                    related.forEach(rdoc => {
+                        const rd = rdoc.data();
+                        const rLink = document.createElement('a');
+                        rLink.className = 'related-card';
+                        rLink.href = `/listing.html?id=${rdoc.id}`;
+                        rLink.innerHTML = `
+                            <div class="related-img" style="background-image: url('${rd.imageUrls?.[0] || ''}')"></div>
+                            <div class="related-title">${rd.title}</div>
+                            <div class="related-price">$${rd.price.toFixed(2)}</div>
+                        `;
+                        grid.appendChild(rLink);
+                    });
+                }
+            }
+
             const reportModal = document.getElementById('report-modal');
             reportBtn.onclick = () => {
                 document.getElementById('modal-title').textContent = strings[lang].reportTitle;
@@ -400,9 +442,11 @@
 
             shareBtn.onclick = async () => {
                 const url = window.location.href;
+                const title = currentListingData ? currentListingData.title : 'Cheaplet Listing';
                 const copyMsg = lang === 'fr' ? "Lien copié !" : "Link copied!";
-                if (navigator.share) { try { await navigator.share({ title: currentListingData.title, url: url }); } catch (err) { await navigator.clipboard.writeText(url); alert(copyMsg); } } 
-                else { await navigator.clipboard.writeText(url); alert(copyMsg); }
+                if (navigator.share) {
+                    try { await navigator.share({ title: title, url: url }); } catch (err) { await navigator.clipboard.writeText(url); alert(copyMsg); }
+                } else { await navigator.clipboard.writeText(url); alert(copyMsg); }
             };
 
             async function deleteListing(docId, isAdmin) { if (confirm("Delete listing?")) { await deleteDoc(doc(db, 'listings', docId)); window.location.href = '/index.html'; } }
