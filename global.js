@@ -69,10 +69,10 @@ globalStyle.innerHTML = `
     .lang-modal { background: white; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     .lang-btn { display: block; width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; background: white; font-weight: bold; cursor: pointer; font-size: 1rem; transition: 0.2s; }
     #hard-lockdown { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; color: #ff4d4d; z-index: 999999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; font-family: 'Courier New', monospace; padding: 20px; }
-
+    
+    /* Responsive logic */
     .mobile-link { display: none; }
     .desktop-only { display: inline-flex; }
-
     @media (max-width: 767px) {
         nav { display: none !important; }
         .msg-btn-mobile { display: flex; }
@@ -91,25 +91,16 @@ const path = window.location.pathname;
 if (path.includes('messages.html')) document.body.classList.add('page-messages');
 if (path.includes('chat.html')) document.body.classList.add('page-chat');
 
-// List of pages that require a user to be fully logged in
-const protectedPages = ['listanitem.html', 'my-listings.html', 'messages.html', 'chat.html', 'profile.html', 'edit-listing.html'];
-
 onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
     if (docSnap.exists()) { globalSettings = docSnap.data(); refreshUI(); }
 });
 
 onAuthStateChanged(auth, (user) => {
-    // FIX: Recognize Microsoft/Google accounts properly without kicking them out
-    const isOAuth = user && user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
-
-    if (user && (user.emailVerified || isOAuth)) {
+    if (user && user.emailVerified) {
         onSnapshot(doc(db, "users", user.uid), (docSnap) => {
             if (docSnap.exists()) {
                 currentUserData = docSnap.data();
-                if (currentUserData.role === 'banned') {
-                    triggerHardLockdown();
-                    return;
-                }
+                if (currentUserData.role === 'banned') { triggerHardLockdown(); return; }
                 if (currentUserData.language) localStorage.setItem('preferred_language', currentUserData.language);
                 refreshUI();
             }
@@ -117,12 +108,6 @@ onAuthStateChanged(auth, (user) => {
     } else {
         currentUserData = null;
         refreshUI();
-        
-        // --- PROTECTED PAGE REDIRECT ---
-        // If the user is NOT logged in properly, and they are on a protected page, kick them to login
-        if (protectedPages.some(page => path.includes(page))) {
-            window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(path + window.location.search)}`;
-        }
     }
 });
 
@@ -172,7 +157,6 @@ function updateHeaderToLoggedIn(userData) {
             <div class="profile-avatar" style="${photoStyle}">${avatarContent}</div>
             <div class="dropdown-menu" id="globalDropdown">
                 <div class="dropdown-header"><span>${name}</span>${studentBadgeHTML}</div>
-                
                 <a href="/listanitem.html" class="dropdown-item mobile-link" data-i18n="btn_list" style="font-weight:bold; color:#2E7D32;"><i class="fas fa-plus-circle"></i> List an Item</a>
                 <a href="/profile.html" class="dropdown-item" data-i18n="nav_profile"><i class="fas fa-user"></i> My Profile</a>
                 <a href="/search.html" class="dropdown-item mobile-link" data-i18n="nav_browse"><i class="fas fa-search"></i> Browse</a>
@@ -184,9 +168,7 @@ function updateHeaderToLoggedIn(userData) {
         </div>
     `;
 
-    const desktopListBtn = document.getElementById('globalListBtn');
-    if (desktopListBtn) desktopListBtn.onclick = () => window.location.href = '/listanitem.html';
-
+    document.getElementById('globalListBtn').onclick = () => window.location.href = '/listanitem.html';
     const avatar = container.querySelector('.profile-avatar');
     const menu = document.getElementById('globalDropdown');
     if(avatar) avatar.onclick = (e) => { e.stopPropagation(); menu.classList.toggle('show'); };
@@ -201,8 +183,10 @@ function updateHeaderToLoggedOut() {
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
     if (!container) return;
     container.innerHTML = `
-        <button class="btn" id="globalLoginBtn" data-i18n="btn_login">Login / Register</button>
+        <button class="btn" id="globalListBtn" data-i18n="btn_list">List an Item</button>
+        <button class="btn" id="globalLoginBtn" style="margin-left: 10px;" data-i18n="btn_login">Login / Register</button>
     `;
+    document.getElementById('globalListBtn').onclick = () => window.location.href = '/LoginInToCheaplet.html';
     document.getElementById('globalLoginBtn').onclick = () => window.location.href = '/LoginInToCheaplet.html';
 }
 
@@ -228,8 +212,3 @@ function showLanguagePopup() {
         }
     }, 100);
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-    const logo = document.querySelector('.logo');
-    if (logo) logo.onclick = () => window.location.href = '/index.html';
-});
