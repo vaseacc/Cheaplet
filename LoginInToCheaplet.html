@@ -112,7 +112,6 @@
             let isLoginMode = true;
             let isRegistering = false;
 
-            // --- MASSIVE VERIFIED STUDENT DOMAIN LIST ---
             const schoolDomains = [
                 "@cegepat.qc.ca", "@cegeptr.qc.ca", "@cegep-rimouski.qc.ca", "@cegep-rdl.qc.ca", "@cegep-matane.qc.ca",
                 "@cegepbaiecomeau.ca", "@cegep-chicoutimi.qc.ca", "@cegepjonquiere.ca", "@cegepsth.qc.ca", "@cegepgranby.qc.ca",
@@ -127,7 +126,6 @@
                 "@andregrasset.qc.ca", "@marianopolis.edu", "@merici.ca", "@collegenotredame.qc.ca", "@cndf.qc.ca",
                 "@campusnotredamefoy.com", "@collegelafleche.qc.ca", "@lasallecollege.com", "@collegebart.ca", "@collegeuniversel.ca",
                 "@sram.qc.ca", "@sracq.qc.ca", "@srasl.qc.ca", "@cegepsquebec.ca", "@fedecegeps.ca",
-                // Alternate & Short versions kept for safety
                 "@cegepbc.ca", "@crcmail.net", "@cgodin.qc.ca", "@cstjean.qc.ca", "@cstj.qc.ca", "@cll.qc.ca", "@clg.qc.ca", "@collegemv.qc.ca", "@cmontmorency.qc.ca", "@cegep-sept-iles.qc.ca", "@cegepshawinigan.qc.ca", "@colval.qc.ca",
                 "@concordia.ca", "@mcgill.ca", "@umontreal.ca", "@uqam.ca", "@hec.ca", "@polymtl.ca"
             ];
@@ -150,7 +148,6 @@
                             window.location.reload();
                             return;
                         }
-                        // Retroactive upgrade for existing users
                         if (isStudent && !userData.isStudent) {
                             await updateDoc(userDocRef, { isStudent: true });
                         }
@@ -161,8 +158,15 @@
 
             onAuthStateChanged(auth, async (user) => { 
                 if (user && !isRegistering) {
-                    if (user.emailVerified) handleLoginSuccess(user);
-                    else { await signOut(auth); loadingOverlay.style.display = 'none'; }
+                    // FIX: Check if they are OAuth (Microsoft/Google) to bypass the emailVerified block
+                    const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
+                    
+                    if (user.emailVerified || isOAuth) {
+                        handleLoginSuccess(user);
+                    } else { 
+                        await signOut(auth); 
+                        loadingOverlay.style.display = 'none'; 
+                    }
                 }
             });
 
