@@ -91,12 +91,15 @@ const path = window.location.pathname;
 if (path.includes('messages.html')) document.body.classList.add('page-messages');
 if (path.includes('chat.html')) document.body.classList.add('page-chat');
 
+// List of pages that require a user to be fully logged in
+const protectedPages = ['listanitem.html', 'my-listings.html', 'messages.html', 'chat.html', 'profile.html', 'edit-listing.html'];
+
 onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
     if (docSnap.exists()) { globalSettings = docSnap.data(); refreshUI(); }
 });
 
 onAuthStateChanged(auth, (user) => {
-    // FIX: Check if they are OAuth (Microsoft/Google) to bypass the emailVerified block
+    // FIX: Recognize Microsoft/Google accounts properly without kicking them out
     const isOAuth = user && user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
 
     if (user && (user.emailVerified || isOAuth)) {
@@ -114,6 +117,12 @@ onAuthStateChanged(auth, (user) => {
     } else {
         currentUserData = null;
         refreshUI();
+        
+        // --- PROTECTED PAGE REDIRECT ---
+        // If the user is NOT logged in properly, and they are on a protected page, kick them to login
+        if (protectedPages.some(page => path.includes(page))) {
+            window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(path + window.location.search)}`;
+        }
     }
 });
 
@@ -163,6 +172,7 @@ function updateHeaderToLoggedIn(userData) {
             <div class="profile-avatar" style="${photoStyle}">${avatarContent}</div>
             <div class="dropdown-menu" id="globalDropdown">
                 <div class="dropdown-header"><span>${name}</span>${studentBadgeHTML}</div>
+                
                 <a href="/listanitem.html" class="dropdown-item mobile-link" data-i18n="btn_list" style="font-weight:bold; color:#2E7D32;"><i class="fas fa-plus-circle"></i> List an Item</a>
                 <a href="/profile.html" class="dropdown-item" data-i18n="nav_profile"><i class="fas fa-user"></i> My Profile</a>
                 <a href="/search.html" class="dropdown-item mobile-link" data-i18n="nav_browse"><i class="fas fa-search"></i> Browse</a>
