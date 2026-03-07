@@ -91,7 +91,7 @@
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendEmailVerification, onAuthStateChanged, GoogleAuthProvider, OAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -112,19 +112,24 @@
             let isLoginMode = true;
             let isRegistering = false;
 
+            // --- MASSIVE VERIFIED STUDENT DOMAIN LIST ---
             const schoolDomains = [
-                "@cegepbc.ca", "@cegepba.qc.ca", "@bdeb.qc.ca", "@crcmail.net", "@cegep-chicoutimi.qc.ca",
-                "@cegepdrummond.ca", "@cegepmontpetit.ca", "@cegepstfe.ca", "@cegep-ste-foy.qc.ca",
-                "@cegepgarneau.ca", "@cegepgim.ca", "@cgodin.qc.ca", "@cegepgranby.qc.ca",
-                "@cegep-heritage.qc.ca", "@cegepsth.qc.ca", "@cstjean.qc.ca", "@cstj.qc.ca",
-                "@johnabbott.qc.ca", "@cegepjonquiere.ca", "@cegep-lanaudiere.qc.ca",
-                "@cegeplapocatiere.qc.ca", "@cegepsl.qc.ca", "@cll.qc.ca", "@cegeplimoilou.ca",
-                "@clg.qc.ca", "@cmaisonneuve.qc.ca", "@collegemv.qc.ca", "@cegep-matane.qc.ca",
-                "@cmontmorency.qc.ca", "@cegepoutaouais.qc.ca", "@cegep-rimouski.qc.ca",
-                "@cegeprdl.ca", "@crosemont.qc.ca", "@cegep-sept-iles.qc.ca", "@cegepshawinigan.qc.ca",
-                "@cegepsherbrooke.qc.ca", "@cegepthetford.ca", "@cegeptr.qc.ca", "@colval.qc.ca",
-                "@vaniercollege.qc.ca", "@cegepvicto.ca", "@cvm.qc.ca", "@dawsoncollege.qc.ca",
-                "@concordia.ca", "@mcgill.ca", "@umontreal.ca", "@uqam.ca"
+                "@cegepat.qc.ca", "@cegeptr.qc.ca", "@cegep-rimouski.qc.ca", "@cegep-rdl.qc.ca", "@cegep-matane.qc.ca",
+                "@cegepbaiecomeau.ca", "@cegep-chicoutimi.qc.ca", "@cegepjonquiere.ca", "@cegepsth.qc.ca", "@cegepgranby.qc.ca",
+                "@cegepdrummond.ca", "@cegepsherbrooke.qc.ca", "@cegepshawinigan.ca", "@cegepsoreltracy.qc.ca", "@cegepstlaurent.ca",
+                "@cegepsl.qc.ca", "@cegeplimoilou.ca", "@cegepgarneau.ca", "@cegep-ste-foy.qc.ca", "@cegeplevis.ca",
+                "@cegepoutaouais.qc.ca", "@cegepheritage.qc.ca", "@cegep-st-jean.qc.ca", "@cegep-st-jerome.qc.ca", "@cegep-edouard-montpetit.qc.ca",
+                "@montmorency.qc.ca", "@gerald-godin.qc.ca", "@crosemont.qc.ca", "@cmaisonneuve.qc.ca", "@cvm.qc.ca",
+                "@ahuntsic.qc.ca", "@boisdeboulogne.qc.ca", "@claurendeau.qc.ca", "@cegepba.qc.ca", "@cegepthetford.ca",
+                "@cegepstfelicien.ca", "@cegepseptiles.ca", "@cegepvicto.ca", "@cegep-lanaudiere.qc.ca", "@cegep-gaspesie.qc.ca",
+                "@cegeplapocatiere.qc.ca", "@cegep-limoilou.ca", "@dawsoncollege.qc.ca", "@vaniercollege.qc.ca", "@johnabbott.qc.ca",
+                "@champlaincollege.qc.ca", "@slc.qc.ca", "@lennoxville.qc.ca", "@heritagec.qc.ca", "@brebeuf.qc.ca",
+                "@andregrasset.qc.ca", "@marianopolis.edu", "@merici.ca", "@collegenotredame.qc.ca", "@cndf.qc.ca",
+                "@campusnotredamefoy.com", "@collegelafleche.qc.ca", "@lasallecollege.com", "@collegebart.ca", "@collegeuniversel.ca",
+                "@sram.qc.ca", "@sracq.qc.ca", "@srasl.qc.ca", "@cegepsquebec.ca", "@fedecegeps.ca",
+                // Alternate & Short versions kept for safety
+                "@cegepbc.ca", "@crcmail.net", "@cgodin.qc.ca", "@cstjean.qc.ca", "@cstj.qc.ca", "@cll.qc.ca", "@clg.qc.ca", "@collegemv.qc.ca", "@cmontmorency.qc.ca", "@cegep-sept-iles.qc.ca", "@cegepshawinigan.qc.ca", "@colval.qc.ca",
+                "@concordia.ca", "@mcgill.ca", "@umontreal.ca", "@uqam.ca", "@hec.ca", "@polymtl.ca"
             ];
 
             async function handleLoginSuccess(user) {
@@ -132,18 +137,23 @@
                 try {
                     const userDocRef = doc(db, "users", user.uid);
                     const userDoc = await getDoc(userDocRef);
-
-                    if (userDoc.exists() && userDoc.data().role === 'banned') {
-                        await signOut(auth);
-                        alert("Account banned.");
-                        window.location.reload();
-                        return;
-                    }
+                    const email = user.email.toLowerCase();
+                    const isStudent = schoolDomains.some(domain => email.endsWith(domain));
 
                     if (!userDoc.exists()) {
-                        const email = user.email.toLowerCase();
-                        const isStudent = schoolDomains.some(domain => email.endsWith(domain));
                         await setDoc(userDocRef, { uid: user.uid, displayName: user.displayName, email: user.email, role: 'user', isStudent: isStudent });
+                    } else {
+                        const userData = userDoc.data();
+                        if (userData.role === 'banned') {
+                            await signOut(auth);
+                            alert("Account banned.");
+                            window.location.reload();
+                            return;
+                        }
+                        // Retroactive upgrade for existing users
+                        if (isStudent && !userData.isStudent) {
+                            await updateDoc(userDocRef, { isStudent: true });
+                        }
                     }
                     window.location.href = new URLSearchParams(window.location.search).get('redirect') || '/index.html';
                 } catch (e) { window.location.href = '/index.html'; }
@@ -181,12 +191,14 @@
                         const cred = await createUserWithEmailAndPassword(auth, email, pass);
                         const name = `${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`;
                         const isStudent = schoolDomains.some(domain => email.endsWith(domain));
+                        
                         await updateProfile(cred.user, { displayName: name });
                         await setDoc(doc(db, "users", cred.user.uid), { uid: cred.user.uid, displayName: name, email: email, role: 'user', isStudent: isStudent });
                         await sendEmailVerification(cred.user);
+                        
                         await signOut(auth);
                         isRegistering = false;
-                        alert("Verification email sent! (Check Spam)");
+                        alert("Verification email sent! (Check Spam folder)");
                         location.reload();
                     }
                 } catch (err) { alert(err.message); isRegistering = false; }
