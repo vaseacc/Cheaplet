@@ -31,7 +31,6 @@
 
         /* TAG SYSTEM STYLES */
         .tag-container { border: 2px solid #ddd; border-radius: 6px; padding: 10px; margin-bottom: 15px; background: #fff; display: flex; flex-wrap: wrap; gap: 8px; position: relative; }
-        .tag-container:focus-within { border-color: #4CAF50; }
         .tag-chip { background-color: #e8f5e9; color: #2E7D32; padding: 5px 10px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 5px; }
         .tag-close { cursor: pointer; font-weight: bold; }
         #tag-input { border: none; outline: none; padding: 5px; flex-grow: 1; min-width: 120px; margin-bottom: 0; }
@@ -77,8 +76,11 @@
                 <label data-i18n="label_description">Description</label>
                 <textarea id="listing-description" maxlength="1500" required></textarea>
                 
-                <label data-i18n="label_price">Price ($) - Max $1200</label>
+                <label data-i18n="label_price">Sale Price ($) - Max $1200</label>
                 <input type="number" id="listing-price" min="0" max="1200" step="0.01" required>
+                
+                <label data-i18n="label_original_price">Original Price ($)</label>
+                <input type="number" id="listing-original-price" min="0" step="0.01">
                 
                 <label data-i18n="label_tags">Tags (Max 15)</label>
                 <div class="tag-container" id="tag-container">
@@ -110,9 +112,6 @@
                         <option value="Dawson College">Dawson College</option>
                         <option value="Vanier College">Vanier College</option>
                         <option value="John Abbott College">John Abbott College</option>
-                        <option value="Cégep de Maisonneuve">Cégep de Maisonneuve</option>
-                        <option value="Cégep du Vieux Montréal">Cégep du Vieux Montréal</option>
-                        <option value="Cégep Ahuntsic">Cégep Ahuntsic</option>
                     </optgroup>
                     <optgroup label="Universities" data-i18n="opt_universities">
                         <option value="Concordia University">Concordia University</option>
@@ -123,6 +122,13 @@
 
                 <label data-i18n="label_meeting_point">Meeting Point (Max 60 chars)</label>
                 <input type="text" id="listing-meeting-point" maxlength="60" placeholder="e.g., Near Library">
+                
+                <label data-i18n="label_additional_details">Additional Details</label>
+                <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="checkbox" id="cond-writing"> <span data-i18n="label_writing">Writing inside</span></label>
+                    <label class="checkbox-item"><input type="checkbox" id="cond-water"> <span data-i18n="label_water">Water damage</span></label>
+                    <label class="checkbox-item"><input type="checkbox" id="cond-missing"> <span data-i18n="label_missing">Missing pages</span></label>
+                </div>
 
                 <label data-i18n="label_photos">Photos (Max 5)</label>
                 <div id="image-uploader">
@@ -168,25 +174,9 @@
             let tags = [];
             const pageLoader = document.getElementById('page-loader');
 
-            // --- FIXED AUTH CHECK FOR OAUTH USERS ---
             onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
-                    if (user.emailVerified || isOAuth) {
-                        try {
-                            const userDoc = await getDoc(doc(db, "users", user.uid));
-                            if (userDoc.exists() && userDoc.data().role === 'banned') {
-                                pageLoader.innerHTML = "Access Denied"; return;
-                            }
-                            currentUser = user;
-                            pageLoader.style.display = 'none';
-                        } catch (e) { pageLoader.style.display = 'none'; }
-                    } else {
-                        window.location.href = '/LoginInToCheaplet.html';
-                    }
-                } else {
-                    window.location.href = '/LoginInToCheaplet.html';
-                }
+                if (user && user.emailVerified) { currentUser = user; pageLoader.style.display = 'none'; }
+                else { window.location.href = '/LoginInToCheaplet.html'; }
             });
 
             // --- TAGS LOGIC ---
