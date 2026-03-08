@@ -82,7 +82,7 @@
                 
                 <label data-i18n="label_tags">Tags (Max 15)</label>
                 <div class="tag-container" id="tag-container">
-                    <div id="selected-tags" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                    <div id="selected-tags"></div>
                     <input type="text" id="tag-input" placeholder="Type and press Enter..." autocomplete="off">
                     <div class="suggestions-box" id="suggestions-box"></div>
                 </div>
@@ -166,9 +166,10 @@
             let currentUser = null;
             let selectedFiles = [];
             let tags = [];
+            const pageLoader = document.getElementById('page-loader');
 
             onAuthStateChanged(auth, async (user) => {
-                if (user && user.emailVerified) { currentUser = user; document.getElementById('page-loader').style.display = 'none'; }
+                if (user && user.emailVerified) { currentUser = user; pageLoader.style.display = 'none'; }
                 else { window.location.href = '/LoginInToCheaplet.html'; }
             });
 
@@ -187,12 +188,14 @@
                 });
             }
             window.removeTag = (index) => { tags.splice(index, 1); renderTags(); };
+            
             function addTag(tagName) {
                 const cleaned = tagName.trim();
                 if (tags.length >= 15) { alert(strings[lang].tagLimit); return; }
                 if (cleaned && !tags.includes(cleaned)) { tags.push(cleaned); renderTags(); }
                 tagInput.value = ''; suggestionsBox.style.display = 'none';
             }
+
             tagInput.oninput = async (e) => {
                 const val = e.target.value.trim().toLowerCase();
                 if (val.length < 1) { suggestionsBox.style.display = 'none'; return; }
