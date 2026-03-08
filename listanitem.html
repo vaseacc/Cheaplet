@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>List an Item - Cheaplet</title>
+    <!-- GLOBAL CONFIGURATION -->
     <script type="module" src="global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -15,47 +16,136 @@
         .header-left { display: flex; align-items: center; gap: 20px; }
         .logo { font-size: 24px; font-weight: bold; color: white; text-decoration: none; }
         .logo span { color: #FFD700; }
-        nav ul { display: flex; list-style: none; gap: 20px; }
+        nav ul { display: flex; list-style: none; margin: 0; padding: 0; gap: 20px; }
         .header-right { display: flex; align-items: center; gap: 15px; }
-        .form-wrapper { max-width: 600px; margin: 40px auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+
+        .form-wrapper { max-width: 600px; margin: 40px auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         h2 { text-align: center; color: #2E7D32; margin-bottom: 25px; }
-        input, textarea, select { width: 100%; padding: 12px; margin-bottom: 15px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; display: block; }
+        input, textarea, select { width: 100%; padding: 12px; margin-bottom: 15px; border: 2px solid #ddd; border-radius: 6px; font-size: 1rem; transition: border-color 0.3s; display: block; }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: #4CAF50; }
+        textarea { resize: vertical; min-height: 100px; }
         label { font-weight: 600; margin-bottom: 5px; display: block; color: #555; }
+
         .form-buttons { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
         .form-buttons .btn { flex: 1; min-width: 120px; }
+
+        /* TAG SYSTEM STYLES */
         .tag-container { border: 2px solid #ddd; border-radius: 6px; padding: 10px; margin-bottom: 15px; background: #fff; display: flex; flex-wrap: wrap; gap: 8px; position: relative; }
-        .tag-chip { background-color: #e8f5e9; color: #2E7D32; padding: 5px 10px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; }
+        .tag-container:focus-within { border-color: #4CAF50; }
+        .tag-chip { background-color: #e8f5e9; color: #2E7D32; padding: 5px 10px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+        .tag-close { cursor: pointer; font-weight: bold; }
         #tag-input { border: none; outline: none; padding: 5px; flex-grow: 1; min-width: 120px; margin-bottom: 0; }
-        .suggestions-box { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ddd; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .suggestions-box { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto; z-index: 10; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .suggestion-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+
         .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; background: #fdfdfd; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
         .checkbox-item { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.9rem; cursor: pointer; color: #444; }
-        .image-preview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-        #add-photo-label { width: 80px; height: 80px; border: 2px dashed #ccc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #777; margin: 0 auto; }
-        #page-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: flex; justify-content: center; align-items: center; }
+        .checkbox-item input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
+
+        .image-preview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; justify-content: center; }
+        .image-preview-wrapper { position: relative; width: 100px; height: 100px; }
+        .image-preview { width: 100%; height: 100%; border-radius: 8px; object-fit: cover; border: 1px solid #ddd; }
+        .remove-image-btn { position: absolute; top: -5px; right: -5px; width: 25px; height: 25px; background: rgba(0,0,0,0.6); color: white; border: none; border-radius: 50%; cursor: pointer; font-weight: bold; }
+        #add-photo-label { width: 100px; height: 100px; border: 2px dashed #ccc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #777; margin: 0 auto; }
+        #add-photo-label:hover { background: #f8f9fa; border-color: #4CAF50; }
+        #listing-image-input { display: none; }
+
+        #page-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; color: #666; }
         @media (max-width: 767px) { nav { display: none; } }
     </style>
 </head>
 <body>
-    <div id="page-loader">...</div>
-    <header><div class="container header-content"><div class="header-left"><a href="/index.html" class="logo">Cheap<span>let</span></a><nav><ul></ul></nav></div><div class="header-right"></div></div></header>
-    <main class="container"><div class="form-wrapper"><h2 data-i18n="btn_list">List a Book</h2><form id="listing-form">
-        <label data-i18n="label_title">Title</label><input type="text" id="listing-title" maxlength="80" required>
-        <label data-i18n="label_description">Description</label><textarea id="listing-description" maxlength="1500" required></textarea>
-        <div style="display: flex; gap: 15px;"><div style="flex: 1;"><label data-i18n="label_price">Sale Price ($)</label><input type="number" id="listing-price" min="0" max="1200" step="0.01" required></div><div style="flex: 1;"><label data-i18n="label_original_price">Original Price ($)</label><input type="number" id="listing-original-price" min="0" step="0.01"></div></div>
-        <label data-i18n="label_tags">Tags</label><div class="tag-container" id="tag-container"><div id="selected-tags" style="display: flex; flex-wrap: wrap; gap: 8px;"></div><input type="text" id="tag-input" autocomplete="off" placeholder="Type and press Enter..."><div class="suggestions-box" id="suggestions-box"></div></div>
-        <label data-i18n="label_condition">Condition</label><select id="listing-condition" required><option value="" data-i18n="opt_select">Select Condition</option><option value="New" data-i18n="opt_new">New</option><option value="Like New" data-i18n="opt_like_new">Like New</option><option value="Good" data-i18n="opt_good">Good</option><option value="Fair" data-i18n="opt_fair">Fair</option></select>
-        <label data-i18n="label_additional_details">Additional Details</label><div class="checkbox-group"><label class="checkbox-item"><input type="checkbox" id="cond-writing"> <span data-i18n="label_writing">Writing inside</span></label><label class="checkbox-item"><input type="checkbox" id="cond-water"> <span data-i18n="label_water">Water damage</span></label><label class="checkbox-item"><input type="checkbox" id="cond-missing"> <span data-i18n="label_missing">Missing pages</span></label></div>
-        <label data-i18n="label_digital_code">Digital Access Code</label><select id="listing-digital-code"><option value="Not applicable" data-i18n="opt_na">Not applicable</option><option value="Available / Unused" data-i18n="opt_available">Available / Unused</option><option value="Already used" data-i18n="opt_used">Already used</option></select>
-        <label data-i18n="label_location">Campus Location</label><select id="listing-location" required><option value="" data-i18n="opt_select_campus">Select a Campus</option><optgroup label="Cégeps" data-i18n="opt_cegeps"><option value="Dawson College">Dawson College</option><option value="John Abbott College">John Abbott College</option><option value="Cégep de Maisonneuve">Cégep de Maisonneuve</option><option value="Cégep du Vieux Montréal">Cégep du Vieux Montréal</option><option value="Cégep Ahuntsic">Cégep Ahuntsic</option></optgroup><optgroup label="Universities" data-i18n="opt_universities"><option value="Concordia University">Concordia University</option><option value="McGill University">McGill University</option><option value="Université de Montréal">Université de Montréal</option></optgroup></select>
-        <label data-i18n="label_meeting_point">Meeting Point</label><input type="text" id="listing-meeting-point" maxlength="60">
-        <label data-i18n="label_photos">Photos (Max 5)</label><div id="image-uploader"><div class="image-preview-grid" id="image-preview-container"></div><label for="listing-image-input" id="add-photo-label" style="margin-top:10px;"><i class="fas fa-camera"></i><span style="font-size: 12px;" data-i18n="btn_add_photo">Add Photo</span></label><input type="file" id="listing-image-input" accept="image/*" style="display:none;"></div>
-        <div class="form-buttons"><button type="submit" class="btn" id="postListingBtn" data-i18n="btn_list">Post Item</button><button type="button" class="btn btn-secondary" onclick="window.location.href='/index.html'" data-i18n="btn_cancel">Cancel</button></div>
-    </form></div></main>
+    <div id="page-loader">Loading...</div>
+
+    <header>
+        <div class="container header-content">
+            <div class="header-left">
+                <a href="/index.html" class="logo">Cheap<span>let</span></a>
+                <nav><ul></ul></nav>
+            </div>
+            <div class="header-right"></div>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="form-wrapper">
+            <h2 data-i18n="btn_list">List a Book</h2>
+            <form id="listing-form">
+                <label data-i18n="label_title">Title</label>
+                <input type="text" id="listing-title" maxlength="80" required>
+                
+                <label data-i18n="label_description">Description</label>
+                <textarea id="listing-description" maxlength="1500" required></textarea>
+                
+                <label data-i18n="label_price">Price ($) - Max $1200</label>
+                <input type="number" id="listing-price" min="0" max="1200" step="0.01" required>
+                
+                <label data-i18n="label_tags">Tags (Max 15)</label>
+                <div class="tag-container" id="tag-container">
+                    <div id="selected-tags" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
+                    <input type="text" id="tag-input" placeholder="Type and press Enter..." autocomplete="off">
+                    <div class="suggestions-box" id="suggestions-box"></div>
+                </div>
+
+                <label data-i18n="label_condition">Condition</label>
+                <select id="listing-condition" required>
+                    <option value="" data-i18n="opt_select">Select Condition</option>
+                    <option value="New" data-i18n="opt_new">New</option>
+                    <option value="Like New" data-i18n="opt_like_new">Like New</option>
+                    <option value="Good" data-i18n="opt_good">Good</option>
+                    <option value="Fair" data-i18n="opt_fair">Fair</option>
+                </select>
+
+                <label data-i18n="label_digital_code">Digital Access Code</label>
+                <select id="listing-digital-code">
+                    <option value="Not applicable" data-i18n="opt_na">Not applicable</option>
+                    <option value="Available / Unused" data-i18n="opt_available">Available / Unused</option>
+                    <option value="Already used" data-i18n="opt_used">Already used</option>
+                </select>
+
+                <label data-i18n="label_location">Campus Location</label>
+                <select id="listing-location" required>
+                    <option value="" data-i18n="opt_select_campus">Select a Campus</option>
+                    <optgroup label="Cégeps" data-i18n="opt_cegeps">
+                        <option value="Dawson College">Dawson College</option>
+                        <option value="Vanier College">Vanier College</option>
+                        <option value="John Abbott College">John Abbott College</option>
+                        <option value="Cégep de Maisonneuve">Cégep de Maisonneuve</option>
+                        <option value="Cégep du Vieux Montréal">Cégep du Vieux Montréal</option>
+                        <option value="Cégep Ahuntsic">Cégep Ahuntsic</option>
+                    </optgroup>
+                    <optgroup label="Universities" data-i18n="opt_universities">
+                        <option value="Concordia University">Concordia University</option>
+                        <option value="McGill University">McGill University</option>
+                        <option value="Université de Montréal">Université de Montréal</option>
+                    </optgroup>
+                </select>
+
+                <label data-i18n="label_meeting_point">Meeting Point (Max 60 chars)</label>
+                <input type="text" id="listing-meeting-point" maxlength="60" placeholder="e.g., Near Library">
+
+                <label data-i18n="label_photos">Photos (Max 5)</label>
+                <div id="image-uploader">
+                    <div class="image-preview-grid" id="image-preview-container"></div>
+                    <label for="listing-image-input" id="add-photo-label" style="margin-top:10px;">
+                        <i class="fas fa-camera"></i>
+                        <span style="font-size: 12px;" data-i18n="btn_add_photo">Add Photo</span>
+                    </label>
+                    <input type="file" id="listing-image-input" accept="image/*" style="display:none;">
+                </div>
+
+                <div class="form-buttons">
+                    <button type="submit" class="btn" id="postListingBtn" data-i18n="btn_list">Post Item</button>
+                    <button type="button" class="btn btn-secondary" onclick="window.location.href='/index.html'" data-i18n="btn_cancel">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </main>
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, doc, setDoc, increment, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, setDoc, increment, limit } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -82,10 +172,11 @@
                 else { window.location.href = '/LoginInToCheaplet.html'; }
             });
 
-            // (Tag and Image Logic Restored Exactly)
+            // --- TAGS LOGIC ---
             const tagInput = document.getElementById('tag-input');
             const selectedTagsContainer = document.getElementById('selected-tags');
             const suggestionsBox = document.getElementById('suggestions-box');
+
             function renderTags() {
                 selectedTagsContainer.innerHTML = '';
                 tags.forEach((tag, index) => {
@@ -114,7 +205,7 @@
                         const d = doc.data();
                         const div = document.createElement('div');
                         div.className = 'suggestion-item';
-                        div.innerHTML = `<span>${d.tag}</span><span class="suggestion-count">${d.count || 0}</span>`;
+                        div.innerHTML = `<span>${d.tag}</span>`;
                         div.onclick = () => addTag(d.tag);
                         suggestionsBox.appendChild(div);
                     });
@@ -126,6 +217,7 @@
             window.addTagManual = () => addTag(tagInput.value);
             tagInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput.value); } };
 
+            // --- IMAGE LOGIC ---
             const imageInput = document.getElementById('listing-image-input');
             const previewContainer = document.getElementById('image-preview-container');
             function renderPreviews() {
@@ -147,6 +239,7 @@
             }
             imageInput.onchange = (e) => { if (e.target.files[0]) { selectedFiles.push(e.target.files[0]); renderPreviews(); } };
 
+            // --- SUBMISSION ---
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
                 const title = document.getElementById('listing-title').value;
@@ -154,11 +247,7 @@
                 const meet = document.getElementById('listing-meeting-point').value;
                 const price = parseFloat(document.getElementById('listing-price').value);
 
-                // --- NEW STRICT VALIDATION ---
-                if (title.length > 80 || desc.length > 1500 || meet.length > 60) {
-                    alert(strings[lang].lenErr);
-                    return;
-                }
+                if (title.length > 80 || desc.length > 1500 || meet.length > 60) { alert(strings[lang].lenErr); return; }
                 if (price > 1200) { alert(strings[lang].priceErr); return; }
                 if (selectedFiles.length === 0) { alert(strings[lang].imgErr); return; }
 
