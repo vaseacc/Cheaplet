@@ -130,12 +130,8 @@
             onAuthStateChanged(auth, async (user) => { 
                 if (user && !isRegistering) {
                     const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
-                    if (user.emailVerified || isOAuth) {
-                        await handleLoginSuccess(user);
-                    } else {
-                        await signOut(auth); 
-                        loadingOverlay.style.display = 'none';
-                    }
+                    if (user.emailVerified || isOAuth) handleLoginSuccess(user);
+                    else { await signOut(auth); loadingOverlay.style.display = 'none'; }
                 }
             });
 
@@ -171,7 +167,7 @@
                         
                         await signOut(auth);
                         isRegistering = false;
-                        alert("Verification email sent! (Check Spam)");
+                        alert("Verification email sent!");
                         location.reload();
                     }
                 } catch (err) { alert(err.message); isRegistering = false; }
