@@ -168,9 +168,25 @@
             let tags = [];
             const pageLoader = document.getElementById('page-loader');
 
+            // --- FIXED AUTH CHECK FOR OAUTH USERS ---
             onAuthStateChanged(auth, async (user) => {
-                if (user && user.emailVerified) { currentUser = user; pageLoader.style.display = 'none'; }
-                else { window.location.href = '/LoginInToCheaplet.html'; }
+                if (user) {
+                    const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
+                    if (user.emailVerified || isOAuth) {
+                        try {
+                            const userDoc = await getDoc(doc(db, "users", user.uid));
+                            if (userDoc.exists() && userDoc.data().role === 'banned') {
+                                pageLoader.innerHTML = "Access Denied"; return;
+                            }
+                            currentUser = user;
+                            pageLoader.style.display = 'none';
+                        } catch (e) { pageLoader.style.display = 'none'; }
+                    } else {
+                        window.location.href = '/LoginInToCheaplet.html';
+                    }
+                } else {
+                    window.location.href = '/LoginInToCheaplet.html';
+                }
             });
 
             // --- TAGS LOGIC ---
