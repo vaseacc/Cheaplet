@@ -29,10 +29,8 @@
         .separator::before, .separator::after { content: ''; flex: 1; border-bottom: 1px solid #eee; }
         .separator::before { margin-right: 10px; }
         .separator::after { margin-left: 10px; }
-        
         .btn-google, .btn-microsoft { background-color: white; color: #555; border: 1px solid #ddd; padding: 10px; width: 100%; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; margin-bottom: 10px; }
         .btn-google img, .btn-microsoft img { width: 18px; }
-        
         .toggle-link { display: block; margin-top: 20px; color: #4CAF50; text-decoration: none; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
         .error-message { color: #d32f2f; background-color: #ffebee; padding: 10px; border-radius: 6px; margin-bottom: 20px; display: none; font-size: 0.85rem; }
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 9999; }
@@ -44,7 +42,9 @@
     <header>
         <div class="container header-content">
             <div class="header-left">
-                <button id="smart-back-btn" class="btn-back"><i class="fas fa-arrow-left"></i> <span>Back</span></button>
+                <button id="smart-back-btn" class="btn-back">
+                    <i class="fas fa-arrow-left"></i> <span>Back</span>
+                </button>
                 <a href="/index.html" class="logo">Cheap<span>let</span></a>
             </div>
             <div class="header-right"></div>
@@ -71,7 +71,6 @@
                 <button type="submit" class="btn-submit" id="submit-btn">Log In</button>
             </form>
             <div class="separator">OR</div>
-            
             <button type="button" class="btn-google" id="google-btn">
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
                 Continue with Google
@@ -114,10 +113,15 @@
                 try {
                     const userDocRef = doc(db, "users", user.uid);
                     const userDoc = await getDoc(userDocRef);
+                    const email = user.email.toLowerCase();
+                    const isStudent = schoolDomains.some(domain => email.endsWith(domain));
+
                     if (!userDoc.exists()) {
-                        const email = user.email.toLowerCase();
-                        const isStudent = schoolDomains.some(domain => email.endsWith(domain));
                         await setDoc(userDocRef, { uid: user.uid, displayName: user.displayName, email: user.email, role: 'user', isStudent: isStudent });
+                    } else if (userDoc.data().role === 'banned') {
+                        await signOut(auth); alert("Account banned."); window.location.reload(); return;
+                    } else if (isStudent && !userDoc.data().isStudent) {
+                        await updateDoc(userDocRef, { isStudent: true });
                     }
                     window.location.href = new URLSearchParams(window.location.search).get('redirect') || '/index.html';
                 } catch (e) { window.location.href = '/index.html'; }
@@ -126,9 +130,12 @@
             onAuthStateChanged(auth, async (user) => { 
                 if (user && !isRegistering) {
                     const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
-                    // FIX: Accept verified email OR Microsoft/Google login
-                    if (user.emailVerified || isOAuth) handleLoginSuccess(user);
-                    else { await signOut(auth); loadingOverlay.style.display = 'none'; }
+                    if (user.emailVerified || isOAuth) {
+                        await handleLoginSuccess(user);
+                    } else {
+                        await signOut(auth); 
+                        loadingOverlay.style.display = 'none';
+                    }
                 }
             });
 
@@ -147,21 +154,24 @@
                 submitBtn.disabled = true;
                 const email = document.getElementById('email').value.toLowerCase();
                 const pass = document.getElementById('password').value;
+
                 try {
                     if (isLoginMode) {
                         const cred = await signInWithEmailAndPassword(auth, email, pass);
-                        if (!cred.user.emailVerified) { await signOut(auth); alert("Verify your email first!"); }
+                        if (!cred.user.emailVerified) { await signOut(auth); alert("Verify email first!"); }
                     } else {
                         isRegistering = true;
                         const cred = await createUserWithEmailAndPassword(auth, email, pass);
                         const name = `${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`;
                         const isStudent = schoolDomains.some(domain => email.endsWith(domain));
+                        
                         await updateProfile(cred.user, { displayName: name });
                         await setDoc(doc(db, "users", cred.user.uid), { uid: cred.user.uid, displayName: name, email: email, role: 'user', isStudent: isStudent });
                         await sendEmailVerification(cred.user);
+                        
                         await signOut(auth);
                         isRegistering = false;
-                        alert("Verification email sent!");
+                        alert("Verification email sent! (Check Spam)");
                         location.reload();
                     }
                 } catch (err) { alert(err.message); isRegistering = false; }
