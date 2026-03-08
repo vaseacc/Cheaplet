@@ -96,7 +96,7 @@ onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
 });
 
 onAuthStateChanged(auth, (user) => {
-    if (user && user.emailVerified) {
+    if (user) {
         onSnapshot(doc(db, "users", user.uid), (docSnap) => {
             if (docSnap.exists()) {
                 currentUserData = docSnap.data();
@@ -122,6 +122,8 @@ function triggerHardLockdown() {
 
 function refreshUI() {
     if (globalSettings.enableGlobalHeader === false) return;
+    
+    // Header Logic
     if (currentUserData) updateHeaderToLoggedIn(currentUserData);
     else {
         updateHeaderToLoggedOut();
@@ -129,8 +131,7 @@ function refreshUI() {
             showLanguagePopup();
         }
     }
-    const savedLang = localStorage.getItem('preferred_language') || 'en';
-    window.applyLanguage(savedLang);
+    window.applyLanguage(localStorage.getItem('preferred_language') || 'en');
 }
 
 // --- 5. UI BUILDERS ---
@@ -174,9 +175,7 @@ function updateHeaderToLoggedIn(userData) {
         </div>
     `;
 
-    const desktopListBtn = document.getElementById('globalListBtn');
-    if (desktopListBtn) desktopListBtn.onclick = () => window.location.href = '/listanitem.html';
-
+    document.getElementById('globalListBtn').onclick = () => window.location.href = '/listanitem.html';
     const avatar = container.querySelector('.profile-avatar');
     const menu = document.getElementById('globalDropdown');
     if(avatar) avatar.onclick = (e) => { e.stopPropagation(); menu.classList.toggle('show'); };
