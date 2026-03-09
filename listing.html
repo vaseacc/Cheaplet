@@ -4,19 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Listing Details - Cheaplet</title>
-    <!-- GLOBAL BRAIN (Header, Auth, Ban Check) -->
+    <!-- GLOBAL BRAIN -->
     <script type="module" src="global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f8f9fa; color: #333; min-height: 100vh; display: flex; flex-direction: column; overflow-y: auto; }
         
-        header { 
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); 
-            color: white; height: 60px; padding: 0 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-            display: flex; align-items: center; justify-content: space-between; 
-            z-index: 100; flex-shrink: 0; position: sticky; top: 0;
-        }
+        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; height: 60px; padding: 0 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; z-index: 100; flex-shrink: 0; position: sticky; top: 0; }
         .header-left { display: flex; align-items: center; gap: 20px; }
         .logo { font-size: 24px; font-weight: bold; color: white; text-decoration: none; display: flex; align-items: center; }
         .logo span { color: #FFD700; }
@@ -45,17 +40,7 @@
         .action-buttons { display: flex; gap: 10px; margin-bottom: 25px; }
         .btn-primary { flex: 1; background-color: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: 600; padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 1rem; }
         .btn-icon { width: 45px; height: 42px; background-color: #f0f0f0; border-radius: 6px; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
-        
         .btn-report { color: #ff5252; }
-
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: none; justify-content: center; align-items: center; }
-        .modal-card { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        .modal-card select, .modal-card textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
-        .modal-card textarea { height: 100px; resize: none; }
-        .modal-buttons { display: flex; gap: 10px; }
-        .modal-buttons button { flex: 1; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; }
-        .btn-submit-red { background: #d32f2f; color: white; }
-        .btn-cancel-gray { background: #eee; color: #333; }
 
         .section-header { font-weight: 700; font-size: 1.1rem; margin-top: 15px; margin-bottom: 10px; color: #050505; }
         .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; gap: 10px; }
@@ -67,7 +52,8 @@
         #seller-avatar-small { width: 45px; height: 45px; border-radius: 50%; background: #ddd; background-size: cover; background-position: center; border: 1px solid #eee; }
         .seller-name { font-weight: 600; color: #050505; text-decoration: none; }
         
-        /* STUDENT BADGE STYLE */
+        /* SELLER RATING STYLES */
+        .seller-rating-display { color: #FFD700; font-size: 0.85rem; margin-top: 2px; }
         .verified-student-badge { display: inline-flex; align-items: center; gap: 5px; background: #e8f5e9; color: #2E7D32; font-size: 0.75rem; font-weight: bold; padding: 2px 8px; border-radius: 12px; border: 1px solid #c8e6c9; margin-top: 3px; }
 
         .quick-message-container { margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
@@ -79,6 +65,15 @@
         .related-img { width: 100%; height: 120px; background-color: #eee; background-size: cover; background-position: center; border-radius: 8px; margin-bottom: 8px; }
         .related-title { font-size: 0.85rem; font-weight: 600; height: 2.4em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.2; color: #050505; }
         .related-price { font-weight: bold; color: #4CAF50; font-size: 0.95rem; margin-top: 4px; }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: none; justify-content: center; align-items: center; }
+        .modal-card { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .modal-card select, .modal-card textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+        .modal-card textarea { height: 100px; resize: none; }
+        .modal-buttons { display: flex; gap: 10px; }
+        .modal-buttons button { flex: 1; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; }
+        .btn-submit-red { background: #d32f2f; color: white; }
+        .btn-cancel-gray { background: #eee; color: #333; }
 
         @media (max-width: 900px) { .main-wrapper { flex-direction: column; overflow-y: auto; height: auto; } .image-stage { height: 350px; flex: none; } .details-panel { width: 100%; border-left: none; height: auto; padding-bottom: 50px; } nav { display: none; } }
     </style>
@@ -138,6 +133,7 @@
                 <div id="seller-avatar-small"></div>
                 <div>
                     <a href="#" id="seller-name-link" class="seller-name">Loading...</a>
+                    <div id="seller-rating-container" class="seller-rating-display"></div>
                     <div id="seller-badge-container" style="font-size: 0.8rem; color: #65676b;">Cheaplet Member</div>
                 </div>
             </div>
@@ -194,6 +190,7 @@
             const prevBtn = document.getElementById('prev-img-btn');
             const nextBtn = document.getElementById('next-img-btn');
             const sellerBadgeContainer = document.getElementById('seller-badge-container');
+            const sellerRatingContainer = document.getElementById('seller-rating-container');
             
             let currentUser = null;
             let currentListingData = null;
@@ -204,8 +201,8 @@
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = {
-                en: { reportTitle: "Report Listing", reportDesc: "Why are you reporting this?", reportPlaceholder: "Details...", reportSuccess: "Reported.", opt1: "Inappropriate Content", opt2: "Scam or Fraud", opt3: "Sold or Unavailable", opt4: "Other", sold: "SOLD", seeMore: "See more", seeLess: "See less", verifiedStudent: "Verified Student", cheapletMember: "Cheaplet Member" },
-                fr: { reportTitle: "Signaler l'annonce", reportDesc: "Pourquoi signalez-vous cela ?", reportPlaceholder: "Détails...", reportSuccess: "Signalé.", opt1: "Contenu inapproprié", opt2: "Arnaque ou Fraude", opt3: "Vendu ou Indisponible", opt4: "Autre", sold: "VENDU", seeMore: "Voir plus", seeLess: "Voir moins", verifiedStudent: "Étudiant vérifié", cheapletMember: "Membre Cheaplet" }
+                en: { reportTitle: "Report Listing", reportDesc: "Why are you reporting this?", reportPlaceholder: "Details...", reportSuccess: "Reported.", opt1: "Inappropriate Content", opt2: "Scam or Fraud", opt3: "Sold or Unavailable", opt4: "Other", sold: "SOLD", seeMore: "See more", seeLess: "See less", verifiedStudent: "Verified Student", cheapletMember: "Cheaplet Member", noRatings: "No ratings yet" },
+                fr: { reportTitle: "Signaler l'annonce", reportDesc: "Pourquoi signalez-vous cela ?", reportPlaceholder: "Détails...", reportSuccess: "Signalé.", opt1: "Contenu inapproprié", opt2: "Arnaque ou Fraude", opt3: "Vendu ou Indisponible", opt4: "Autre", sold: "VENDU", seeMore: "Voir plus", seeLess: "Voir moins", verifiedStudent: "Étudiant vérifié", cheapletMember: "Membre Cheaplet", noRatings: "Aucune évaluation" }
             };
 
             const dataTranslations = {
@@ -273,22 +270,30 @@
                     document.getElementById('seller-name-link').textContent = data.posterDisplayName || "User";
                     document.getElementById('seller-name-link').href = `/user.html?id=${data.posterUid}`;
                     
-                    // Fetch seller details and update avatar & verified student badge
+                    // Fetch seller details, badges, and RATINGS
                     if (data.posterUid) {
                         try {
                             const sellerDoc = await getDoc(doc(db, "users", data.posterUid));
                             if (sellerDoc.exists()) {
                                 const sellerData = sellerDoc.data();
-                                if (sellerData.photoURL) {
-                                    document.getElementById('seller-avatar-small').style.backgroundImage = `url('${sellerData.photoURL}')`;
-                                }
+                                if (sellerData.photoURL) document.getElementById('seller-avatar-small').style.backgroundImage = `url('${sellerData.photoURL}')`;
                                 
-                                // Check if user is a verified student
-                                if (sellerData.isStudent) {
-                                    sellerBadgeContainer.innerHTML = `<span class="verified-student-badge"><i class="fas fa-graduation-cap"></i> ${strings[lang].verifiedStudent}</span>`;
+                                // Stars Logic
+                                if (sellerData.ratingCount && sellerData.ratingCount > 0) {
+                                    const avg = (sellerData.ratingSum / sellerData.ratingCount).toFixed(1);
+                                    let starsHtml = '';
+                                    for(let i=1; i<=5; i++) {
+                                        if (avg >= i) starsHtml += '<i class="fas fa-star"></i>';
+                                        else if (avg >= i - 0.5) starsHtml += '<i class="fas fa-star-half-alt"></i>';
+                                        else starsHtml += '<i class="far fa-star"></i>';
+                                    }
+                                    sellerRatingContainer.innerHTML = `${starsHtml} <span style="color:#888; font-size:0.8rem;">(${avg})</span>`;
                                 } else {
-                                    sellerBadgeContainer.textContent = strings[lang].cheapletMember;
+                                    sellerRatingContainer.innerHTML = `<span style="color:#888;">${strings[lang].noRatings}</span>`;
                                 }
+
+                                if (sellerData.isStudent) sellerBadgeContainer.innerHTML = `<span class="verified-student-badge"><i class="fas fa-graduation-cap"></i> ${strings[lang].verifiedStudent}</span>`;
+                                else sellerBadgeContainer.textContent = strings[lang].cheapletMember;
                             }
                         } catch(e) { console.error(e); }
                     }
@@ -298,10 +303,7 @@
                         updateMainImage(0); 
                         thumbnailContainer.innerHTML = '';
                         imageUrls.forEach((url, index) => {
-                            const img = document.createElement('img');
-                            img.src = url;
-                            img.className = `thumb ${index === 0 ? 'active' : ''}`;
-                            img.onclick = () => updateMainImage(index);
+                            const img = document.createElement('img'); img.src = url; img.className = `thumb ${index === 0 ? 'active' : ''}`; img.onclick = () => updateMainImage(index);
                             thumbnailContainer.appendChild(img);
                         });
                     }
@@ -324,21 +326,16 @@
             }
 
             async function fetchRelatedListings(tags, currentId) {
-                const grid = document.getElementById('related-grid');
-                const section = document.getElementById('related-section');
-                
+                const grid = document.getElementById('related-grid'); const section = document.getElementById('related-section');
                 const searchTags = tags.slice(0, 10);
-                
                 const q = query(collection(db, "listings"), where("tags", "array-contains-any", searchTags), limit(6));
                 const snap = await getDocs(q);
                 const related = snap.docs.filter(d => d.id !== currentId && d.data().status !== 'sold').slice(0, 4);
                 if (related.length > 0) {
-                    section.style.display = 'block';
-                    grid.innerHTML = '';
+                    section.style.display = 'block'; grid.innerHTML = '';
                     related.forEach(rdoc => {
                         const rd = rdoc.data();
-                        const rLink = document.createElement('a');
-                        rLink.className = 'related-card'; rLink.href = `/listing.html?id=${rdoc.id}`;
+                        const rLink = document.createElement('a'); rLink.className = 'related-card'; rLink.href = `/listing.html?id=${rdoc.id}`;
                         rLink.innerHTML = `<div class="related-img" style="background-image: url('${rd.imageUrls?.[0] || ''}')"></div><div class="related-title">${rd.title}</div><div class="related-price">$${rd.price.toFixed(2)}</div>`;
                         grid.appendChild(rLink);
                     });
@@ -347,24 +344,18 @@
 
             const reportModal = document.getElementById('report-modal');
             document.getElementById('btn-report-listing').onclick = () => {
-                document.getElementById('modal-title').textContent = strings[lang].reportTitle;
-                document.getElementById('modal-desc').textContent = strings[lang].reportDesc;
-                document.getElementById('report-details').placeholder = strings[lang].reportPlaceholder;
-                const opts = document.getElementById('report-reason').options;
-                opts[0].text = strings[lang].opt1; opts[1].text = strings[lang].opt2; opts[2].text = strings[lang].opt3; opts[3].text = strings[lang].opt4;
-                reportModal.style.display = 'flex';
+                document.getElementById('modal-title').textContent = strings[lang].reportTitle; document.getElementById('modal-desc').textContent = strings[lang].reportDesc; document.getElementById('report-details').placeholder = strings[lang].reportPlaceholder;
+                const opts = document.getElementById('report-reason').options; opts[0].text = strings[lang].opt1; opts[1].text = strings[lang].opt2; opts[2].text = strings[lang].opt3; opts[3].text = strings[lang].opt4; reportModal.style.display = 'flex';
             };
             document.getElementById('close-report-btn').onclick = () => reportModal.style.display = 'none';
             document.getElementById('submit-report-btn').onclick = async () => {
-                const reason = document.getElementById('report-reason').value;
-                const details = document.getElementById('report-details').value.trim();
+                const reason = document.getElementById('report-reason').value; const details = document.getElementById('report-details').value.trim();
                 await addDoc(collection(db, "reports"), { reporterUid: currentUser.uid, reporterName: currentUser.displayName, targetUid: currentListingData.posterUid, targetUserName: currentListingData.posterDisplayName, reason: "Listing: " + reason, details: `Item: ${currentListingData.title} (${currentListingId})\n\n${details}`, timestamp: serverTimestamp() });
                 alert(strings[lang].reportSuccess); reportModal.style.display = 'none';
             };
 
             function updateMainImage(index) {
-                currentImageIndex = index;
-                const url = imageUrls[index];
+                currentImageIndex = index; const url = imageUrls[index];
                 if(url) { mainImage.src = url; blurBg.style.backgroundImage = `url('${url}')`; }
                 document.querySelectorAll('.thumb').forEach((thumb, i) => { thumb.classList.toggle('active', i === index); });
             }
@@ -375,24 +366,12 @@
             async function createChat(posterUid, posterName) {
                 if (!currentUser) { window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`; return; }
                 const uids = [currentUser.uid, posterUid].sort();
-                
-                // Add currentListingId to make the chat specific to this item
                 const chatId = uids.join('_') + '_' + currentListingId;
-                
                 const chatRef = doc(db, 'chats', chatId);
                 try {
                     const chatSnap = await getDoc(chatRef);
                     const myName = currentUser.displayName || "User";
-                    if (!chatSnap.exists()) { 
-                        await setDoc(chatRef, { 
-                            participants: uids, 
-                            participantInfo: { [currentUser.uid]: myName, [posterUid]: posterName }, 
-                            lastUpdate: serverTimestamp(), 
-                            lastMessage: "", 
-                            listingId: currentListingId,
-                            listingTitle: currentListingData.title 
-                        }); 
-                    }
+                    if (!chatSnap.exists()) { await setDoc(chatRef, { participants: uids, participantInfo: { [currentUser.uid]: myName, [posterUid]: posterName }, lastUpdate: serverTimestamp(), lastMessage: "", listingId: currentListingId, listingTitle: currentListingData.title }); }
                     window.location.href = `/chat.html?id=${chatId}`;
                 } catch (error) { alert("Error starting chat."); }
             }
@@ -415,8 +394,7 @@
             };
 
             shareBtn.onclick = async () => {
-                const url = window.location.href;
-                const copyMsg = lang === 'fr' ? "Lien copié !" : "Link copied!";
+                const url = window.location.href; const copyMsg = lang === 'fr' ? "Lien copié !" : "Link copied!";
                 if (navigator.share) { try { await navigator.share({ title: currentListingData.title, url: url }); } catch (err) { await navigator.clipboard.writeText(url); alert(copyMsg); } }
                 else { await navigator.clipboard.writeText(url); alert(copyMsg); }
             };
