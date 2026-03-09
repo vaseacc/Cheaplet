@@ -32,7 +32,10 @@
         .conversation-item:last-child { border-bottom: none; }
         .conversation-item:hover { background-color: #f8f9fa; }
 
-        .avatar { width: 50px; height: 50px; border-radius: 50%; background-color: #4CAF50; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; margin-right: 15px; flex-shrink: 0; }
+        /* AVATAR UPDATES: Added overflow hidden and image styling */
+        .avatar { width: 50px; height: 50px; border-radius: 50%; background-color: #4CAF50; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; margin-right: 15px; flex-shrink: 0; overflow: hidden; }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        
         .conversation-details { flex-grow: 1; overflow: hidden; }
         .participant-name { font-weight: 600; }
         .last-message { color: #777; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -67,7 +70,7 @@
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, query, where, onSnapshot, orderBy, getDoc, doc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -86,13 +89,14 @@
                 fr: { loading: "Chargement des conversations...", empty: "Vous n'avez pas encore de messages.", login: "Veuillez vous connecter pour voir vos messages.", start: "Cliquez pour commencer la conversation" }
             };
 
-            // --- UPDATED AUTH CHECK: FIXES MESSAGES REDIRECT ---
+            // Local cache to speed up profile picture loading
+            const userCache = {};
+            let unsubscribe = null;
+
             onAuthStateChanged(auth, user => {
-                // Check if it's a social login (Microsoft/Google)
                 const isOAuth = user && user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
 
                 if (user && (user.emailVerified || isOAuth)) {
-                    // Global.js handles header UI
                     fetchConversations(user);
                 } else {
                     if (unsubscribe) unsubscribe();
@@ -105,33 +109,60 @@
                 const q = query(collection(db, "chats"), where("participants", "array-contains", currentUser.uid), orderBy("lastUpdate", "desc"));
                 infoContainer.innerHTML = `<p class="info-message">${strings[lang].loading}</p>`;
 
-                onSnapshot(q, (snapshot) => {
+                unsubscribe = onSnapshot(q, (snapshot) => {
                     inboxContainer.innerHTML = '';
                     if (snapshot.empty) {
                         infoContainer.innerHTML = `<p class="info-message">${strings[lang].empty}</p>`;
                     } else {
                         infoContainer.innerHTML = ''; 
-                        snapshot.forEach((doc) => {
-                            inboxContainer.appendChild(renderConversation(doc, currentUser));
+                        snapshot.forEach((docSnap) => {
+                            inboxContainer.appendChild(renderConversation(docSnap, currentUser));
                         });
                     }
                 });
             }
 
-            function renderConversation(doc, currentUser) {
-                const chatData = doc.data();
+            function renderConversation(docSnap, currentUser) {
+                const chatData = docSnap.data();
                 const otherId = chatData.participants.find(p => p !== currentUser.uid);
                 const displayName = chatData.participantInfo ? chatData.participantInfo[otherId] || 'User' : 'User';
+                
+                // Show the title of the item they are chatting about
+                const itemTitle = chatData.listingTitle ? `<span style="font-size:0.8rem; color:#4CAF50; font-weight:normal;">(${chatData.listingTitle})</span>` : '';
 
                 const link = document.createElement('a');
-                link.href = `/chat.html?id=${doc.id}`;
+                link.href = `/chat.html?id=${docSnap.id}`;
                 link.className = 'conversation-item';
+                
+                // Add an ID to the avatar div so we can target it once the image loads
+                const avatarId = `msg-avatar-${docSnap.id}`;
+                
                 link.innerHTML = `
-                    <div class="avatar">${displayName.charAt(0).toUpperCase()}</div>
+                    <div class="avatar" id="${avatarId}">${displayName.charAt(0).toUpperCase()}</div>
                     <div class="conversation-details">
-                        <p class="participant-name">${displayName}</p>
+                        <p class="participant-name">${displayName} ${itemTitle}</p>
                         <p class="last-message">${chatData.lastMessage || strings[lang].start}</p>
                     </div>`;
+
+                // Fetch the other user's profile picture dynamically without slowing down the page load
+                if (userCache[otherId]) {
+                    if (userCache[otherId].photoURL) {
+                        const avatarDiv = link.querySelector(`#${avatarId}`);
+                        if (avatarDiv) avatarDiv.innerHTML = `<img src="${userCache[otherId].photoURL}" alt="Profile">`;
+                    }
+                } else {
+                    getDoc(doc(db, 'users', otherId)).then(uSnap => {
+                        if (uSnap.exists()) {
+                            const data = uSnap.data();
+                            userCache[otherId] = data;
+                            if (data.photoURL) {
+                                const avatarDiv = link.querySelector(`#${avatarId}`);
+                                if (avatarDiv) avatarDiv.innerHTML = `<img src="${data.photoURL}" alt="Profile">`;
+                            }
+                        }
+                    }).catch(err => console.error("Error fetching user profile:", err));
+                }
+
                 return link;
             }
         }
