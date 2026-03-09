@@ -67,6 +67,9 @@
         #seller-avatar-small { width: 45px; height: 45px; border-radius: 50%; background: #ddd; background-size: cover; background-position: center; border: 1px solid #eee; }
         .seller-name { font-weight: 600; color: #050505; text-decoration: none; }
         
+        /* STUDENT BADGE STYLE */
+        .verified-student-badge { display: inline-flex; align-items: center; gap: 5px; background: #e8f5e9; color: #2E7D32; font-size: 0.75rem; font-weight: bold; padding: 2px 8px; border-radius: 12px; border: 1px solid #c8e6c9; margin-top: 3px; }
+
         .quick-message-container { margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
         .btn-send { background-color: #4CAF50; color: white; width: 100%; border: none; border-radius: 6px; height: 40px; font-weight: 600; cursor: pointer; }
 
@@ -135,7 +138,7 @@
                 <div id="seller-avatar-small"></div>
                 <div>
                     <a href="#" id="seller-name-link" class="seller-name">Loading...</a>
-                    <div style="font-size: 0.8rem; color: #65676b;">Cheaplet Member</div>
+                    <div id="seller-badge-container" style="font-size: 0.8rem; color: #65676b;">Cheaplet Member</div>
                 </div>
             </div>
 
@@ -190,6 +193,7 @@
             const reportBtn = document.getElementById('btn-report-listing');
             const prevBtn = document.getElementById('prev-img-btn');
             const nextBtn = document.getElementById('next-img-btn');
+            const sellerBadgeContainer = document.getElementById('seller-badge-container');
             
             let currentUser = null;
             let currentListingData = null;
@@ -200,8 +204,8 @@
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = {
-                en: { reportTitle: "Report Listing", reportDesc: "Why are you reporting this?", reportPlaceholder: "Details...", reportSuccess: "Reported.", opt1: "Inappropriate Content", opt2: "Scam or Fraud", opt3: "Sold or Unavailable", opt4: "Other", sold: "SOLD", seeMore: "See more", seeLess: "See less" },
-                fr: { reportTitle: "Signaler l'annonce", reportDesc: "Pourquoi signalez-vous cela ?", reportPlaceholder: "Détails...", reportSuccess: "Signalé.", opt1: "Contenu inapproprié", opt2: "Arnaque ou Fraude", opt3: "Vendu ou Indisponible", opt4: "Autre", sold: "VENDU", seeMore: "Voir plus", seeLess: "Voir moins" }
+                en: { reportTitle: "Report Listing", reportDesc: "Why are you reporting this?", reportPlaceholder: "Details...", reportSuccess: "Reported.", opt1: "Inappropriate Content", opt2: "Scam or Fraud", opt3: "Sold or Unavailable", opt4: "Other", sold: "SOLD", seeMore: "See more", seeLess: "See less", verifiedStudent: "Verified Student", cheapletMember: "Cheaplet Member" },
+                fr: { reportTitle: "Signaler l'annonce", reportDesc: "Pourquoi signalez-vous cela ?", reportPlaceholder: "Détails...", reportSuccess: "Signalé.", opt1: "Contenu inapproprié", opt2: "Arnaque ou Fraude", opt3: "Vendu ou Indisponible", opt4: "Autre", sold: "VENDU", seeMore: "Voir plus", seeLess: "Voir moins", verifiedStudent: "Étudiant vérifié", cheapletMember: "Membre Cheaplet" }
             };
 
             const dataTranslations = {
@@ -269,13 +273,24 @@
                     document.getElementById('seller-name-link').textContent = data.posterDisplayName || "User";
                     document.getElementById('seller-name-link').href = `/user.html?id=${data.posterUid}`;
                     
+                    // Fetch seller details and update avatar & verified student badge
                     if (data.posterUid) {
                         try {
                             const sellerDoc = await getDoc(doc(db, "users", data.posterUid));
-                            if (sellerDoc.exists() && sellerDoc.data().photoURL) {
-                                document.getElementById('seller-avatar-small').style.backgroundImage = `url('${sellerDoc.data().photoURL}')`;
+                            if (sellerDoc.exists()) {
+                                const sellerData = sellerDoc.data();
+                                if (sellerData.photoURL) {
+                                    document.getElementById('seller-avatar-small').style.backgroundImage = `url('${sellerData.photoURL}')`;
+                                }
+                                
+                                // Check if user is a verified student
+                                if (sellerData.isStudent) {
+                                    sellerBadgeContainer.innerHTML = `<span class="verified-student-badge"><i class="fas fa-graduation-cap"></i> ${strings[lang].verifiedStudent}</span>`;
+                                } else {
+                                    sellerBadgeContainer.textContent = strings[lang].cheapletMember;
+                                }
                             }
-                        } catch(e) {}
+                        } catch(e) { console.error(e); }
                     }
 
                     imageUrls = data.imageUrls || [];
