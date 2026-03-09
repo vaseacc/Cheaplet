@@ -217,31 +217,77 @@
             mobileMenuBtn.onclick = (e) => { e.stopPropagation(); sidebar.classList.toggle('open'); };
             document.addEventListener('click', (e) => { if (window.innerWidth < 768 && !sidebar.contains(e.target)) sidebar.classList.remove('open'); });
 
+            // --- UPDATED AUTH CHECK: Fixes OAuth / Microsoft Users ---
             onAuthStateChanged(auth, user => {
-                const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
-if (user && (user.emailVerified || isOAuth)) {
+                const isOAuth = user && user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
+
+                if (user && (user.emailVerified || isOAuth)) {
                     loadSidebar(user);
                     const chatId = new URLSearchParams(window.location.search).get('id');
                     if (chatId) initializeChat(chatId, user);
-                } else { window.location.href = '/LoginInToCheaplet.html'; }
+                } else { 
+                    window.location.href = '/LoginInToCheaplet.html'; 
+                }
             });
 
-            function loadSidebar(currentUser) {
-                const q = query(collection(db, "chats"), where("participants", "array-contains", currentUser.uid), orderBy("lastUpdate", "desc"));
-                onSnapshot(q, (snapshot) => {
-                    sidebarList.innerHTML = '';
-                    snapshot.forEach(docSnap => {
-                        const d = docSnap.data();
-                        const otherId = d.participants.find(p => p !== currentUser.uid);
-                        const otherName = d.participantInfo ? d.participantInfo[otherId] : 'User';
-                        const isNew = d.lastSenderId && d.lastSenderId !== currentUser.uid;
-                        const item = document.createElement('a');
-                        item.className = `side-conv-item ${docSnap.id === new URLSearchParams(window.location.search).get('id') ? 'active' : ''} ${isNew ? 'is-new' : ''}`;
-                        item.href = `?id=${docSnap.id}`;
-                        item.innerHTML = `<div class="side-avatar">${otherName.charAt(0).toUpperCase()}</div><div class="side-info"><div class="side-name">${otherName}</div><div class="side-msg">${d.lastMessage || '...'}</div></div><div class="unread-dot"></div>`;
-                        sidebarList.appendChild(item);
-                    });
+            async function initializeChat(chatId, currentUser) {
+                const chatRef = doc(db, 'chats', chatId);
+                const chatSnap = await getDoc(chatRef);
+
+                // Initialize UI if user is authorized
+                document.getElementById('info-container').style.display = 'none';
+                chatActiveUI.style.display = 'flex';
+                
+                const otherId = chatSnap.exists() ? chatSnap.data().participants.find(p => p !== currentUser.uid) : new URLSearchParams(window.location.search).get('target');
+                const otherName = chatSnap.exists() ? chatSnap.data().participantInfo[otherId] : new URLSearchParams(window.location.search).get('name');
+                
+                chatHeaderName.textContent = `${strings[lang].chatWith} ${otherName || 'User'}`;
+
+                // Mark as read
+                if (chatSnap.exists() && chatSnap.data().lastSenderId !== currentUser.uid) {
+                    await updateDoc(chatRef, { lastSenderId: currentUser.uid });
+                }
+
+                // Listen for messages
+                onSnapshot(query(collection(db, 'chats', chatId, 'messages'), orderBy("timestamp", "asc")), (snapshot) => {
+                    messagesList.innerHTML = '';
+                    snapshot.forEach(doc => renderMessage(doc.data(), currentUser.uid));
+                    messagesList.scrollTop = messagesList.scrollHeight;
                 });
+
+                // Form submit text
+                messageForm.onsubmit = async (e) => {
+                    e.preventDefault();
+                    const text = messageInput.value.trim();
+                    if (!text) return;
+                    messageInput.value = '';
+                    await addDoc(collection(db, 'chats', chatId, 'messages'), { text, senderId: currentUser.uid, timestamp: serverTimestamp() });
+                    await updateDoc(chatRef, { lastMessage: text, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
+                };
+
+                // --- IMAGE UPLOAD LOGIC (Moved outside any if-statement so it always works) ---
+                imgBtn.onclick = () => fileInput.click();
+                fileInput.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    imgBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    imgBtn.disabled = true;
+
+                    try {
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('upload_preset', UPLOAD_PRESET);
+                        const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData }).then(r => r.json());
+                        
+                        await addDoc(collection(db, 'chats', chatId, 'messages'), { imageUrl: res.secure_url, senderId: currentUser.uid, timestamp: serverTimestamp() });
+                        await updateDoc(chatRef, { lastMessage: `📷 ${strings[lang].imageSent}`, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
+                    } catch (err) { console.error(err); } finally {
+                        imgBtn.innerHTML = '<i class="fas fa-camera"></i>';
+                        imgBtn.disabled = false;
+                        fileInput.value = '';
+                    }
+                };
             }
 
             async function ensureChatExists(chatId, currentUser) {
