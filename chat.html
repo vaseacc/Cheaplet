@@ -218,7 +218,8 @@
             document.addEventListener('click', (e) => { if (window.innerWidth < 768 && !sidebar.contains(e.target)) sidebar.classList.remove('open'); });
 
             onAuthStateChanged(auth, user => {
-                if (user && user.emailVerified) {
+                const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
+if (user && (user.emailVerified || isOAuth)) {
                     loadSidebar(user);
                     const chatId = new URLSearchParams(window.location.search).get('id');
                     if (chatId) initializeChat(chatId, user);
