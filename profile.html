@@ -170,24 +170,50 @@
 
             let selectedPhotoFile = null;
 
+            // --- UPDATED AUTH CHECK: FIXES THE REDIRECT LOOP ---
             onAuthStateChanged(auth, async (user) => {
-                if (user && user.emailVerified) {
-                    // --- FIX: FORCE DROPDOWN TO MATCH STORAGE ON LOAD ---
-                    const savedLang = localStorage.getItem('preferred_language') || 'en';
-                    languageSelect.value = savedLang;
+                if (user) {
+                    // Check if it's a social login (Microsoft/Google)
+                    const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
+                    
+                    // Allow access if email is verified OR if it's a social login
+                    if (user.emailVerified || isOAuth) {
+                        // --- NOW LOAD DATA ---
+                        const savedLang = localStorage.getItem('preferred_language') || 'en';
+                        languageSelect.value = savedLang;
 
-                    populateProfileForm(user);
-                    infoContainer.style.display = 'none';
-                    profileContainer.style.display = 'flex';
+                        populateProfileForm(user);
+                        infoContainer.style.display = 'none';
+                        profileContainer.style.display = 'flex';
 
-                    const userDocSnap = await getDoc(doc(db, "users", user.uid));
-                    if (userDocSnap.exists()) {
-                        const data = userDocSnap.data();
-                        if (data.photoURL) setAvatar(data.photoURL);
-                        else setAvatar(user.photoURL, user.displayName);
-                        if (data.savedListings) fetchSavedListings(data.savedListings);
+                        const userDocSnap = await getDoc(doc(db, "users", user.uid));
+                        if (userDocSnap.exists()) {
+                            const data = userDocSnap.data();
+                            
+                            // Check for Ban
+                            if (data.role === 'banned') {
+                                await signOut(auth);
+                                alert("You have been banned.");
+                                window.location.href = '/LoginInToCheaplet.html';
+                                return;
+                            }
+
+                            if (data.photoURL) setAvatar(data.photoURL);
+                            else setAvatar(user.photoURL, user.displayName);
+                            
+                            if (data.savedListings && data.savedListings.length > 0) {
+                                fetchSavedListings(data.savedListings);
+                            } else if (savedListingsContainer) {
+                                savedListingsContainer.innerHTML = '<p style="color:#999; grid-column:1/-1;">You haven\'t saved any items yet.</p>';
+                            }
+                        }
+                    } else {
+                        // User exists but isn't verified (and not OAuth), kick them
+                        alert("Please verify your email address.");
+                        window.location.href = '/LoginInToCheaplet.html';
                     }
                 } else {
+                    // Not logged in at all
                     window.location.href = '/LoginInToCheaplet.html';
                 }
             });
