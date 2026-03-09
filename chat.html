@@ -2,18 +2,15 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat - Cheaplet</title>
     <!-- GLOBAL BRAIN -->
     <script type="module" src="global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        
-        /* FIX: Prevent body from scrolling, only the chat list should scroll */
-        body { background-color: #f8f9fa; color: #333; height: 100vh; height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
-        
-        .container { width: 100%; max-width: 1300px; margin: 0 auto; padding: 0 15px; }
+        body { background-color: #f8f9fa; color: #333; height: 100vh; overflow: hidden; }
+        .container { width: 100%; max-width: 1300px; margin: 0 auto; padding: 0 15px; height: 100%; }
 
         header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 100; flex-shrink: 0; }
         .header-content { display: flex; justify-content: space-between; align-items: center; }
@@ -22,13 +19,7 @@
         nav ul { display: flex; list-style: none; gap: 20px; }
         .header-right { display: flex; align-items: center; gap: 15px; }
 
-        /* FIX: Main wrapper fills remaining height perfectly */
-        .chat-main-wrapper { 
-            display: flex; 
-            flex: 1;
-            overflow: hidden;
-            background: white;
-        }
+        .chat-main-wrapper { display: flex; height: calc(100vh - 65px); max-width: 1300px; margin: 0 auto; background: white; border-left: 1px solid #eee; border-right: 1px solid #eee; }
 
         /* --- SIDEBAR --- */
         .chat-sidebar { width: 320px; border-right: 1px solid #eee; display: flex; flex-direction: column; background: #fdfdfd; flex-shrink: 0; transition: 0.3s ease; }
@@ -47,70 +38,36 @@
         .side-conv-item.is-new .unread-dot { display: block; }
 
         /* --- CHAT WINDOW --- */
-        .chat-window { flex-grow: 1; display: flex; flex-direction: column; background: white; min-width: 0; height: 100%; }
+        .chat-window { flex-grow: 1; display: flex; flex-direction: column; background: white; position: relative; }
+        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: 700; color: #050505; background: #fff; display: flex; align-items: center; gap: 15px; z-index: 10; font-size: 1.1rem; }
         
-        .chat-header { padding: 12px 20px; border-bottom: 1px solid #eee; font-weight: 700; color: #050505; background: #fff; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; font-size: 1.1rem; }
-        
-        .btn-report-chat { background: none; border: none; color: #ff5252; cursor: pointer; font-size: 1.2rem; padding: 5px; }
-
-        .listing-preview-banner {
-            display: flex; align-items: center; padding: 10px 20px; background: #fff;
-            border-bottom: 1px solid #ddd; gap: 12px; flex-shrink: 0;
-            text-decoration: none; color: inherit;
-        }
+        .listing-preview-banner { display: flex; align-items: center; padding: 10px 20px; background: #fff; border-bottom: 1px solid #ddd; gap: 12px; flex-shrink: 0; text-decoration: none; color: inherit; transition: background 0.2s; }
         .lp-img { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; background: #eee; }
         .lp-info { flex-grow: 1; overflow: hidden; display: flex; flex-direction: column; }
-        .lp-title { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .lp-title { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #050505; }
         .lp-price { color: #65676B; font-size: 0.85rem; }
         .lp-status { font-size: 0.75rem; color: #d32f2f; font-weight: bold; text-transform: uppercase; }
 
-        /* FIX: Messages list is the only part that expands/scrolls */
-        #messages-list { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; background-color: #fff; }
+        #mobile-menu-btn { display: none; background: none; border: none; font-size: 1.2rem; color: #4CAF50; cursor: pointer; }
+
+        #messages-list { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; background-color: #fcfcfc; }
+        .message-bubble { max-width: 75%; padding: 10px 15px; border-radius: 18px; margin-bottom: 12px; word-wrap: break-word; position: relative; }
+        .message-bubble.sent { background-color: #4CAF50; color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+        .message-bubble.received { background-color: #f1f0f0; color: #333; align-self: flex-start; border-bottom-left-radius: 4px; }
         
-        .date-divider { text-align: center; margin: 20px 0 15px; font-size: 0.75rem; color: #8e8e8e; font-weight: 600; text-transform: uppercase; }
-        
-        .message-row { display: flex; gap: 8px; margin-bottom: 4px; align-items: flex-end; width: 100%; }
-        .message-row.sent { flex-direction: row-reverse; }
-        .msg-avatar-circle { width: 28px; height: 28px; border-radius: 50%; background: #4CAF50; color: white; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; flex-shrink: 0; }
-        .message-row.sent .msg-avatar-circle { background: #0084FF; }
-        .message-bubble { max-width: 70%; padding: 10px 15px; border-radius: 18px; word-wrap: break-word; }
-        .message-bubble.sent { background-color: #0084FF; color: white; border-bottom-right-radius: 4px; }
-        .message-bubble.received { background-color: #E4E6EB; color: #050505; border-bottom-left-radius: 4px; }
         .message-img { max-width: 100%; border-radius: 12px; display: block; margin-bottom: 5px; cursor: pointer; }
-        .message-timestamp { font-size: 0.65rem; color: rgba(0,0,0,0.4); margin-top: 2px; display: block; }
-        .sent .message-timestamp { color: rgba(255,255,255,0.7); text-align: right; }
+        .message-timestamp { font-size: 0.7rem; color: rgba(255,255,255,0.7); margin-top: 4px; text-align: right; }
+        .message-bubble.received .message-timestamp { color: #888; }
 
-        /* FIX: Form is pinned to bottom and cannot be pushed off screen */
-        .message-form { 
-            display: flex; 
-            align-items: center; 
-            padding: 10px 15px; 
-            border-top: 1px solid #eee; 
-            background: white; 
-            gap: 10px; 
-            flex-shrink: 0;
-            padding-bottom: max(10px, env(safe-area-inset-bottom)); /* Handles modern iPhone notches */
-        }
-        #img-upload-btn { background: none; border: none; color: #0084FF; cursor: pointer; font-size: 1.3rem; }
-        #message-input { flex-grow: 1; border: none; background: #F0F2F5; border-radius: 20px; padding: 10px 15px; outline: none; font-size: 16px; /* Prevents auto-zoom on iOS */ }
-        #send-btn { background: none; border: none; color: #0084FF; cursor: pointer; font-size: 1.3rem; }
-
-        #mobile-menu-btn { display: none; background: none; border: none; font-size: 1.2rem; color: #4CAF50; }
-
-        /* MODAL STYLES */
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: none; justify-content: center; align-items: center; }
-        .modal-card { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 450px; }
-        .modal-card select, .modal-card textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; }
-        .modal-buttons { display: flex; gap: 10px; }
-        .modal-buttons button { flex: 1; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; }
-        .btn-submit-red { background: #d32f2f; color: white; }
-        .btn-cancel-gray { background: #eee; color: #333; }
+        .message-form { display: flex; align-items: center; padding: 15px; border-top: 1px solid #eee; background: white; gap: 10px; }
+        #img-upload-btn { background: none; border: none; color: #555; cursor: pointer; font-size: 1.1rem; }
+        #message-input { flex-grow: 1; border: 1px solid #ddd; border-radius: 25px; padding: 10px 20px; outline: none; }
+        #send-btn { border-radius: 50%; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; background: #FFD700; color: #333; border: none; cursor: pointer; font-size: 1.1rem; }
 
         .info-message { text-align: center; padding: 100px 0; font-size: 1.2rem; color: #999; }
-
         @media (max-width: 767px) {
             #mobile-menu-btn { display: block; }
-            .chat-sidebar { position: fixed; left: -100%; top: 60px; height: calc(100dvh - 60px); z-index: 1000; width: 85%; box-shadow: 10px 0 20px rgba(0,0,0,0.1); }
+            .chat-sidebar { position: fixed; left: -100%; top: 60px; height: calc(100vh - 60px); z-index: 1000; width: 85%; box-shadow: 10px 0 20px rgba(0,0,0,0.1); }
             .chat-sidebar.open { left: 0; }
             nav { display: none; }
         }
@@ -138,11 +95,8 @@
 
             <div id="chat-active-ui" style="display: none; flex-direction: column; height: 100%;">
                 <div class="chat-header">
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <button id="mobile-menu-btn"><i class="fas fa-bars"></i></button>
-                        <span id="chat-header-name">...</span>
-                    </div>
-                    <button id="report-chat-btn" class="btn-report-chat"><i class="fas fa-flag"></i></button>
+                    <button id="mobile-menu-btn"><i class="fas fa-bars"></i></button>
+                    <span id="chat-header-name">Chat</span>
                 </div>
 
                 <a href="#" id="listing-preview-banner" class="listing-preview-banner" style="display: none;">
@@ -158,22 +112,12 @@
                 
                 <form id="message-form" class="message-form">
                     <input type="file" id="hidden-file-input" accept="image/*" style="display: none;">
-                    <button type="button" id="img-upload-btn"><i class="fas fa-image"></i></button>
-                    <input type="text" id="message-input" data-i18n-placeholder="search_placeholder" placeholder="Aa" autocomplete="off">
-                    <button type="submit" id="send-btn"><i class="fas fa-paper-plane"></i></button>
+                    <button type="button" id="img-upload-btn"><i class="fas fa-camera"></i></button>
+                    <input type="text" id="message-input" data-i18n-placeholder="search_placeholder" placeholder="Type a message..." autocomplete="off">
+                    <button type="submit" id="send-btn">&#10148;</button>
                 </form>
             </div>
         </main>
-    </div>
-
-    <div class="modal-overlay" id="report-modal">
-        <div class="modal-card">
-            <h2 id="modal-title">Report Conversation</h2>
-            <p style="margin-bottom: 15px; font-size: 0.9rem; color: #666;" id="modal-desc">Help us keep Cheaplet safe.</p>
-            <select id="report-reason"><option value="Harassment or Hate Speech">Harassment or Hate Speech</option><option value="Scam or Fraud">Scam or Fraud</option><option value="Spam">Spam</option><option value="Other">Other</option></select>
-            <textarea id="report-details" placeholder="Tell us more..."></textarea>
-            <div class="modal-buttons"><button class="btn-submit-red" id="submit-report-btn">Submit</button><button class="btn-cancel-gray" id="close-report-btn">Cancel</button></div>
-        </div>
     </div>
 
     <script type="module">
@@ -199,8 +143,8 @@
             const messageInput = document.getElementById('message-input');
             const chatHeaderName = document.getElementById('chat-header-name');
             const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-            const reportBtn = document.getElementById('report-chat-btn');
-            const reportModal = document.getElementById('report-modal');
+            const imgBtn = document.getElementById('img-upload-btn');
+            const fileInput = document.getElementById('hidden-file-input');
 
             const lpBanner = document.getElementById('listing-preview-banner');
             const lpImage = document.getElementById('lp-image');
@@ -209,53 +153,70 @@
             const lpStatus = document.getElementById('lp-status');
 
             const lang = localStorage.getItem('preferred_language') || 'en';
-            const strings = { 
-                en: { imageSent: "Sent a photo", sold: "SOLD", reportTitle: "Report Conversation", reportDesc: "Why are you reporting this chat?", reportPlaceholder: "Details...", reportSuccess: "Reported successfully.", opt1: "Harassment or Hate Speech", opt2: "Scam or Fraud", opt3: "Spam", opt4: "Other" }, 
-                fr: { imageSent: "A envoyé une photo", sold: "VENDU", reportTitle: "Signaler la discussion", reportDesc: "Pourquoi signalez-vous ce chat ?", reportPlaceholder: "Détails...", reportSuccess: "Signalement envoyé.", opt1: "Harcèlement ou haine", opt2: "Arnaque ou Fraude", opt3: "Spam", opt4: "Autre" } 
-            };
+            const strings = { en: { chatWith: "Chat with", imageSent: "Sent a photo", sold: "SOLD" }, fr: { chatWith: "Discussion avec", imageSent: "A envoyé une photo", sold: "VENDU" } };
 
             mobileMenuBtn.onclick = (e) => { e.stopPropagation(); sidebar.classList.toggle('open'); };
             document.addEventListener('click', (e) => { if (window.innerWidth < 768 && !sidebar.contains(e.target)) sidebar.classList.remove('open'); });
 
-            // --- UPDATED AUTH CHECK: Fixes OAuth / Microsoft Users ---
             onAuthStateChanged(auth, user => {
                 const isOAuth = user && user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
-
                 if (user && (user.emailVerified || isOAuth)) {
                     loadSidebar(user);
                     const chatId = new URLSearchParams(window.location.search).get('id');
                     if (chatId) initializeChat(chatId, user);
-                } else { 
-                    window.location.href = '/LoginInToCheaplet.html'; 
-                }
+                } else { window.location.href = '/LoginInToCheaplet.html'; }
             });
+
+            function loadSidebar(currentUser) {
+                const q = query(collection(db, "chats"), where("participants", "array-contains", currentUser.uid), orderBy("lastUpdate", "desc"));
+                onSnapshot(q, (snapshot) => {
+                    sidebarList.innerHTML = '';
+                    snapshot.forEach(docSnap => {
+                        const d = docSnap.data();
+                        const otherId = d.participants.find(p => p !== currentUser.uid);
+                        const otherName = d.participantInfo ? d.participantInfo[otherId] : 'User';
+                        const isNew = d.lastSenderId && d.lastSenderId !== currentUser.uid;
+                        const item = document.createElement('a');
+                        item.className = `side-conv-item ${docSnap.id === new URLSearchParams(window.location.search).get('id') ? 'active' : ''} ${isNew ? 'is-new' : ''}`;
+                        item.href = `?id=${docSnap.id}`;
+                        item.innerHTML = `<div class="side-avatar">${otherName.charAt(0).toUpperCase()}</div><div class="side-info"><div class="side-name">${otherName}</div><div class="side-msg">${d.lastMessage || '...'}</div></div><div class="unread-dot"></div>`;
+                        sidebarList.appendChild(item);
+                    });
+                });
+            }
 
             async function initializeChat(chatId, currentUser) {
                 const chatRef = doc(db, 'chats', chatId);
                 const chatSnap = await getDoc(chatRef);
-
-                // Initialize UI if user is authorized
+                if (!chatSnap.exists() || !chatSnap.data().participants.includes(currentUser.uid)) return;
+                
                 document.getElementById('info-container').style.display = 'none';
                 chatActiveUI.style.display = 'flex';
                 
-                const otherId = chatSnap.exists() ? chatSnap.data().participants.find(p => p !== currentUser.uid) : new URLSearchParams(window.location.search).get('target');
-                const otherName = chatSnap.exists() ? chatSnap.data().participantInfo[otherId] : new URLSearchParams(window.location.search).get('name');
-                
-                chatHeaderName.textContent = `${strings[lang].chatWith} ${otherName || 'User'}`;
+                const d = chatSnap.data();
+                const otherId = d.participants.find(p => p !== currentUser.uid);
+                const otherName = d.participantInfo ? d.participantInfo[otherId] : 'User';
+                chatHeaderName.textContent = `${strings[lang].chatWith} ${otherName}`;
 
-                // Mark as read
-                if (chatSnap.exists() && chatSnap.data().lastSenderId !== currentUser.uid) {
-                    await updateDoc(chatRef, { lastSenderId: currentUser.uid });
+                if (d.listingId) {
+                    const lSnap = await getDoc(doc(db, 'listings', d.listingId));
+                    if (lSnap.exists()) {
+                        const ld = lSnap.data();
+                        lpBanner.style.display = 'flex'; lpBanner.href = `/listing.html?id=${d.listingId}`;
+                        lpImage.src = ld.imageUrls?.[0] || ''; lpTitle.textContent = ld.title;
+                        if (ld.status === 'sold') { lpPrice.style.display = 'none'; lpStatus.textContent = strings[lang].sold; } 
+                        else { lpStatus.style.display = 'none'; lpPrice.textContent = `$${ld.price.toFixed(2)}`; }
+                    }
                 }
 
-                // Listen for messages
+                if (chatSnap.data().lastSenderId !== currentUser.uid) await updateDoc(chatRef, { lastSenderId: currentUser.uid });
+
                 onSnapshot(query(collection(db, 'chats', chatId, 'messages'), orderBy("timestamp", "asc")), (snapshot) => {
                     messagesList.innerHTML = '';
                     snapshot.forEach(doc => renderMessage(doc.data(), currentUser.uid));
                     messagesList.scrollTop = messagesList.scrollHeight;
                 });
 
-                // Form submit text
                 messageForm.onsubmit = async (e) => {
                     e.preventDefault();
                     const text = messageInput.value.trim();
@@ -265,158 +226,25 @@
                     await updateDoc(chatRef, { lastMessage: text, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
                 };
 
-                // --- IMAGE UPLOAD LOGIC (Moved outside any if-statement so it always works) ---
                 imgBtn.onclick = () => fileInput.click();
                 fileInput.onchange = async (e) => {
                     const file = e.target.files[0];
                     if (!file) return;
-                    
-                    imgBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                    imgBtn.disabled = true;
-
-                    try {
-                        const formData = new FormData();
-                        formData.append('file', file);
-                        formData.append('upload_preset', UPLOAD_PRESET);
-                        const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData }).then(r => r.json());
-                        
-                        await addDoc(collection(db, 'chats', chatId, 'messages'), { imageUrl: res.secure_url, senderId: currentUser.uid, timestamp: serverTimestamp() });
-                        await updateDoc(chatRef, { lastMessage: `📷 ${strings[lang].imageSent}`, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
-                    } catch (err) { console.error(err); } finally {
-                        imgBtn.innerHTML = '<i class="fas fa-camera"></i>';
-                        imgBtn.disabled = false;
-                        fileInput.value = '';
-                    }
-                };
-            }
-
-            async function ensureChatExists(chatId, currentUser) {
-                const chatRef = doc(db, 'chats', chatId);
-                const chatSnap = await getDoc(chatRef);
-                if (!chatSnap.exists()) {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const targetId = urlParams.get('target');
-                    const targetName = urlParams.get('name');
-                    const listingId = urlParams.get('listing');
-                    if (targetId && targetName) {
-                        await setDoc(chatRef, { participants: [currentUser.uid, targetId].sort(), participantInfo: { [currentUser.uid]: currentUser.displayName || "User", [targetId]: targetName }, lastUpdate: serverTimestamp(), lastMessage: "", listingId: listingId || null });
-                        return true;
-                    }
-                    return false;
-                }
-                return true;
-            }
-
-            async function initializeChat(chatId, currentUser) {
-                const chatRef = doc(db, 'chats', chatId);
-                let chatSnap = await getDoc(chatRef);
-
-                if (!chatSnap.exists()) {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const targetName = urlParams.get('name');
-                    const listingId = urlParams.get('listing');
-                    if (!targetName) { document.getElementById('info-container').innerHTML = `<p class="info-message">Chat not found.</p>`; return; }
-                    document.getElementById('info-container').style.display = 'none';
-                    chatActiveUI.style.display = 'flex';
-                    chatHeaderName.textContent = targetName;
-                    if (listingId) {
-                        const lSnap = await getDoc(doc(db, 'listings', listingId));
-                        if (lSnap.exists()) {
-                            const ld = lSnap.data();
-                            lpBanner.style.display = 'flex'; lpImage.src = ld.imageUrls?.[0] || ''; lpTitle.textContent = ld.title; lpPrice.textContent = `$${ld.price.toFixed(2)}`;
-                        }
-                    }
-                } else {
-                    if (!chatSnap.data().participants.includes(currentUser.uid)) return;
-                    document.getElementById('info-container').style.display = 'none';
-                    chatActiveUI.style.display = 'flex';
-                    const otherId = chatSnap.data().participants.find(p => p !== currentUser.uid);
-                    chatHeaderName.textContent = chatSnap.data().participantInfo[otherId];
-                    if (chatSnap.data().listingId) {
-                        const lSnap = await getDoc(doc(db, 'listings', chatSnap.data().listingId));
-                        if (lSnap.exists()) {
-                            const ld = lSnap.data();
-                            lpBanner.style.display = 'flex'; lpBanner.href = `/listing.html?id=${chatSnap.data().listingId}`;
-                            lpImage.src = ld.imageUrls?.[0] || ''; lpTitle.textContent = ld.title;
-                            if (ld.status === 'sold') { lpPrice.style.display = 'none'; lpStatus.textContent = strings[lang].sold; } 
-                            else { lpStatus.style.display = 'none'; lpPrice.textContent = `$${ld.price.toFixed(2)}`; }
-                        }
-                    }
-                    if (chatSnap.data().lastSenderId !== currentUser.uid) await updateDoc(chatRef, { lastSenderId: currentUser.uid });
-                }
-
-                reportBtn.onclick = () => {
-                    document.getElementById('modal-title').textContent = strings[lang].reportTitle;
-                    document.getElementById('modal-desc').textContent = strings[lang].reportDesc;
-                    document.getElementById('report-details').placeholder = strings[lang].reportPlaceholder;
-                    const opts = document.getElementById('report-reason').options;
-                    opts[0].text = strings[lang].opt1; opts[1].text = strings[lang].opt2; opts[2].text = strings[lang].opt3; opts[3].text = strings[lang].opt4;
-                    reportModal.style.display = 'flex';
-                };
-                document.getElementById('close-report-btn').onclick = () => reportModal.style.display = 'none';
-                document.getElementById('submit-report-btn').onclick = async () => {
-                    const reason = document.getElementById('report-reason').value;
-                    const details = document.getElementById('report-details').value.trim();
-                    const targetId = chatSnap.exists() ? chatSnap.data().participants.find(p => p !== currentUser.uid) : new URLSearchParams(window.location.search).get('target');
-                    await addDoc(collection(db, "reports"), { reporterUid: currentUser.uid, reporterName: currentUser.displayName, targetUid: targetId, reason: "Chat: " + reason, details: `Chat ID: ${chatId}\n\n${details}`, timestamp: serverTimestamp() });
-                    alert(strings[lang].reportSuccess); reportModal.style.display = 'none';
-                };
-
-                onSnapshot(query(collection(db, 'chats', chatId, 'messages'), orderBy("timestamp", "asc")), (snapshot) => {
-                    messagesList.innerHTML = '';
-                    let lastDateString = "";
-                    snapshot.forEach(doc => {
-                        const mData = doc.data();
-                        const date = mData.timestamp ? mData.timestamp.toDate() : new Date();
-                        const dateString = date.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-                        if (dateString !== lastDateString) {
-                            const divider = document.createElement('div');
-                            divider.className = 'date-divider'; divider.textContent = dateString;
-                            messagesList.appendChild(divider); lastDateString = dateString;
-                        }
-                        renderMessage(mData, currentUser.uid);
-                    });
-                    messagesList.scrollTop = messagesList.scrollHeight;
-                });
-
-                messageForm.onsubmit = async (e) => {
-                    e.preventDefault();
-                    const text = messageInput.value.trim();
-                    if (!text) return;
-                    const exists = await ensureChatExists(chatId, currentUser);
-                    if (exists) {
-                        messageInput.value = '';
-                        await addDoc(collection(db, 'chats', chatId, 'messages'), { text, senderId: currentUser.uid, timestamp: serverTimestamp() });
-                        await updateDoc(doc(db, 'chats', chatId), { lastMessage: text, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
-                    }
-                };
-
-                imgBtn.onclick = () => fileInput.click();
-                fileInput.onchange = async (e) => {
-                    const file = e.target.files[0];
-                    if (!file) return;
-                    const exists = await ensureChatExists(chatId, currentUser);
-                    if (exists) {
-                        const formData = new FormData(); formData.append('file', file); formData.append('upload_preset', UPLOAD_PRESET);
-                        const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData }).then(r => r.json());
-                        await addDoc(collection(db, 'chats', chatId, 'messages'), { imageUrl: res.secure_url, senderId: currentUser.uid, timestamp: serverTimestamp() });
-                        await updateDoc(doc(db, 'chats', chatId), { lastMessage: `📷 ${strings[lang].imageSent}`, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
-                    }
+                    const formData = new FormData(); formData.append('file', file); formData.append('upload_preset', UPLOAD_PRESET);
+                    const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData }).then(r => r.json());
+                    await addDoc(collection(db, 'chats', chatId, 'messages'), { imageUrl: res.secure_url, senderId: currentUser.uid, timestamp: serverTimestamp() });
+                    await updateDoc(chatRef, { lastMessage: `📷 ${strings[lang].imageSent}`, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
                 };
             }
 
             function renderMessage(data, currentUserId) {
-                const isMe = data.senderId === currentUserId;
-                const row = document.createElement('div');
-                row.className = `message-row ${isMe ? 'sent' : 'received'}`;
-                const bubble = document.createElement('div');
-                bubble.className = `message-bubble ${isMe ? 'sent' : 'received'}`;
+                const div = document.createElement('div');
+                div.className = `message-bubble ${data.senderId === currentUserId ? 'sent' : 'received'}`;
                 let content = data.imageUrl ? `<img src="${data.imageUrl}" class="message-img" onclick="window.open('${data.imageUrl}', '_blank')">` : '';
-                content += data.text ? `<p style="margin:0;">${data.text}</p>` : '';
+                content += data.text ? `<p>${data.text}</p>` : '';
                 const time = data.timestamp ? data.timestamp.toDate().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
-                bubble.innerHTML = `${content}<span class="message-timestamp">${time}</span>`;
-                row.appendChild(bubble);
-                messagesList.appendChild(row);
+                div.innerHTML = `${content}<span class="message-timestamp">${time}</span>`;
+                messagesList.appendChild(div);
             }
         }
         main();
