@@ -86,12 +86,18 @@
                 fr: { loading: "Chargement des conversations...", empty: "Vous n'avez pas encore de messages.", login: "Veuillez vous connecter pour voir vos messages.", start: "Cliquez pour commencer la conversation" }
             };
 
+            // --- UPDATED AUTH CHECK: FIXES MESSAGES REDIRECT ---
             onAuthStateChanged(auth, user => {
-                if (user && user.emailVerified) {
+                // Check if it's a social login (Microsoft/Google)
+                const isOAuth = user && user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
+
+                if (user && (user.emailVerified || isOAuth)) {
+                    // Global.js handles header UI
                     fetchConversations(user);
                 } else {
+                    if (unsubscribe) unsubscribe();
                     inboxContainer.innerHTML = '';
-                    infoContainer.innerHTML = `<p class="info-message">${strings[lang].login}</p>`;
+                    infoContainer.innerHTML = `<p class="info-message">You must be logged in to view your messages. <a href="/LoginInToCheaplet.html">Log in here.</a></p>`;
                 }
             });
 
