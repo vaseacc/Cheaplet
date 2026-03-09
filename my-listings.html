@@ -22,8 +22,6 @@
 
         .btn-secondary { background: #e0e0e0; color: #333; }
         .btn-delete { background: #f44336 !important; color: white !important; }
-        
-        /* NEW: SOLD BUTTON STYLE */
         .btn-sold { background: #2E7D32 !important; color: white !important; }
         .btn-sold:disabled { background: #aaa !important; opacity: 0.7; }
 
@@ -35,8 +33,6 @@
         .listing-card:hover { transform: translateY(-5px); }
         
         .listing-image { height: 180px; background-color: #eee; background-size: cover; background-position: center; cursor: pointer; position: relative; }
-        
-        /* SOLD OVERLAY */
         .sold-badge { position: absolute; top: 10px; left: 10px; background: rgba(244, 67, 54, 0.9); color: white; padding: 4px 12px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; z-index: 5; }
 
         .listing-details { padding: 15px; flex-grow: 1; }
@@ -107,21 +103,15 @@
                 fr: { loading: "Chargement de vos annonces...", empty: "Vous n'avez pas encore publié d'annonces !", confirm: "Supprimer cette annonce définitivement ?", deleting: "Suppression...", btnEdit: "Modifier", btnDel: "Supprimer", btnSold: "Vendu", confirmSold: "Marquer cet article comme vendu ?", badgeSold: "VENDU" }
             };
 
-            // --- FIXED AUTH CHECK ---
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    // Check if it's a social login (Google/Microsoft)
                     const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
-                    
-                    // Allow if verified OR if it's a social login
                     if (user.emailVerified || isOAuth) {
                         fetchMyListings(user.uid);
                     } else {
-                        // Not verified email and not OAuth: Force them to login/verify
                         window.location.href = '/LoginInToCheaplet.html';
                     }
                 } else {
-                    // Not logged in at all
                     window.location.href = '/LoginInToCheaplet.html';
                 }
             });
@@ -150,6 +140,12 @@
                 const img = data.imageUrls?.[0] || '';
                 const isSold = data.status === 'sold';
                 
+                // Show Edit button ONLY if not sold
+                const editButtonHtml = isSold ? '' : `
+                    <a href="/edit-listing.html?id=${listingDoc.id}">
+                        <button class="btn btn-secondary">${strings[lang].btnEdit}</button>
+                    </a>`;
+                
                 card.innerHTML = `
                     <div class="listing-image" style="background-image: url('${img}')" onclick="window.location.href='/listing.html?id=${listingDoc.id}'">
                         ${isSold ? `<div class="sold-badge">${strings[lang].badgeSold}</div>` : ''}
@@ -159,14 +155,11 @@
                         <div class="listing-price">$${data.price ? data.price.toFixed(2) : '0.00'}</div>
                     </div>
                     <div class="manage-buttons">
-                        <a href="/edit-listing.html?id=${listingDoc.id}">
-                            <button class="btn btn-secondary">${strings[lang].btnEdit}</button>
-                        </a>
+                        ${editButtonHtml}
                         <button class="btn btn-sold sold-btn" ${isSold ? 'disabled' : ''}>${strings[lang].btnSold}</button>
                         <button class="btn btn-delete delete-btn">${strings[lang].btnDel}</button>
                     </div>`;
 
-                // Handle Sold
                 const soldBtn = card.querySelector('.sold-btn');
                 soldBtn.onclick = async () => {
                     if (confirm(strings[lang].confirmSold)) {
@@ -175,7 +168,6 @@
                     }
                 };
 
-                // Handle Delete
                 const delBtn = card.querySelector('.delete-btn');
                 delBtn.onclick = async () => {
                     if (confirm(strings[lang].confirm)) {
