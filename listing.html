@@ -229,13 +229,21 @@
                 return value;
             }
 
+            // 1. Updated Auth State Change
             onAuthStateChanged(auth, user => {
                 currentUser = user;
+                const lang = localStorage.getItem('preferred_language') || 'en';
                 if (lang === 'fr') document.getElementById('quick-msg-text').value = "Bonjour, est-ce disponible ?";
-                if (user) reportBtn.style.display = 'flex';
+                
+                // Only show report button if user is signed in
+                if (user) {
+                    reportBtn.style.display = 'flex';
+                }
+                
                 fetchAndDisplayListing();
             });
 
+            // 2. Updated Fetch Function
             async function fetchAndDisplayListing() {
                 const params = new URLSearchParams(window.location.search);
                 currentListingId = params.get('id');
@@ -249,20 +257,30 @@
                     const data = listingSnap.data();
                     currentListingData = data;
 
-                    if (currentUser && currentUser.uid === data.posterUid) reportBtn.style.display = 'none';
+                    // --- NEW: HIDE MESSAGE/REPORT BUTTONS IF OWNER ---
+                    if (currentUser && currentUser.uid === data.posterUid) {
+                        reportBtn.style.display = 'none';
+                        document.getElementById('btn-message-seller').style.display = 'none';
+                        document.getElementById('quick-message-area').style.display = 'none';
+                    } else if (!currentUser) {
+                        // Keep buttons visible if logged out, but they will redirect to login on click
+                        reportBtn.style.display = 'none';
+                    }
 
                     document.getElementById('listing-title').textContent = data.title;
                     if (data.status === 'sold') {
-                        document.getElementById('listing-price').innerHTML = `<span style="color: #d32f2f; font-weight: 800;">${strings[lang].sold}</span>`;
+                        const soldText = lang === 'fr' ? "VENDU" : "SOLD";
+                        document.getElementById('listing-price').innerHTML = `<span style="color: #d32f2f; font-weight: 800;">${soldText}</span>`;
                         document.getElementById('original-price-display').style.display = 'none';
                         document.getElementById('btn-message-seller').style.display = 'none';
                         document.getElementById('btn-save').style.display = 'none';
                         document.getElementById('quick-message-area').style.display = 'none';
                     } else {
                         document.getElementById('listing-price').textContent = `$${data.price.toFixed(2)}`;
+                        const origPriceEl = document.getElementById('original-price-display');
                         if (data.originalPrice) { 
-                            document.getElementById('original-price-display').textContent = `$${data.originalPrice.toFixed(2)}`; 
-                            document.getElementById('original-price-display').style.display = 'block'; 
+                            origPriceEl.textContent = `$${data.originalPrice.toFixed(2)}`; 
+                            origPriceEl.style.display = 'block'; 
                         } else { document.getElementById('original-price-display').style.display = 'none'; }
                     }
                     
@@ -276,26 +294,7 @@
                     document.getElementById('listing-writing').textContent = translateData(data.hasWriting);
                     document.getElementById('listing-water').textContent = translateData(data.hasWaterDamage);
                     document.getElementById('listing-missing').textContent = translateData(data.hasMissingPages);
-                    
-                    const descEl = document.getElementById('listing-description');
-                    const fullDesc = data.description || '';
-                    const charLimit = 300;
-                    if (fullDesc.length > charLimit) {
-                        const shortDesc = fullDesc.substring(0, charLimit) + "... ";
-                        descEl.textContent = shortDesc;
-                        const seeMoreBtn = document.createElement('span');
-                        seeMoreBtn.style.color = "#4CAF50"; seeMoreBtn.style.cursor = "pointer"; seeMoreBtn.style.fontWeight = "bold";
-                        seeMoreBtn.textContent = strings[lang].seeMore;
-                        seeMoreBtn.onclick = () => {
-                            if (seeMoreBtn.textContent === strings[lang].seeMore) {
-                                descEl.textContent = fullDesc + " "; seeMoreBtn.textContent = strings[lang].seeLess; descEl.appendChild(seeMoreBtn);
-                            } else {
-                                descEl.textContent = shortDesc; seeMoreBtn.textContent = strings[lang].seeMore; descEl.appendChild(seeMoreBtn);
-                            }
-                        };
-                        descEl.appendChild(seeMoreBtn);
-                    } else { descEl.textContent = fullDesc; }
-
+                    document.getElementById('listing-description').textContent = data.description;
                     document.getElementById('seller-name-link').textContent = data.posterDisplayName || "User";
                     document.getElementById('seller-name-link').href = `/user.html?id=${data.posterUid}`;
                     
@@ -307,6 +306,35 @@
                             }
                         } catch(e) {}
                     }
+
+                    imageUrls = data.imageUrls || [];
+                    if (imageUrls.length > 0) {
+                        updateMainImage(0); 
+                        thumbnailContainer.innerHTML = '';
+                        imageUrls.forEach((url, index) => {
+                            const img = document.createElement('img');
+                            img.src = url;
+                            img.className = `thumb ${index === 0 ? 'active' : ''}`;
+                            img.onclick = () => updateMainImage(index);
+                            thumbnailContainer.appendChild(img);
+                        });
+                    }
+
+                    if (currentUser) {
+                        const userSnap = await getDoc(doc(db, "users", currentUser.uid));
+                        if (userSnap.exists()) {
+                            const ud = userSnap.data();
+                            if (ud.savedListings && ud.savedListings.includes(currentListingId)) { isSaved = true; updateSaveIcon(); }
+                            if (currentUser.uid === data.posterUid || ud.role === 'admin') {
+                                document.getElementById('admin-controls').style.display = 'block';
+                                document.getElementById('delete-listing-btn').onclick = () => deleteListing(currentListingId, ud.role === 'admin');
+                            }
+                        }
+                    }
+
+                    if (data.tags && data.tags.length > 0) { fetchRelatedListings(data.tags, currentListingId); }
+                } catch (error) { console.error(error); }
+            }
 
                     imageUrls = data.imageUrls || [];
                     if (imageUrls.length > 0) {
