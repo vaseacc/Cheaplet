@@ -8,294 +8,93 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f8f9fa; color: #333; min-height: 100vh; display: flex; flex-direction: column; }
-        .container { width: 100%; max-width: 1300px; margin: 0 auto; padding: 0 15px; }
+        body { background-color: #f8f9fa; color: #333; height: 100vh; overflow: hidden; }
+        .container { width: 100%; max-width: 1300px; margin: 0 auto; padding: 0 15px; height: 100%; }
 
         header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 100; flex-shrink: 0; }
         .header-content { display: flex; justify-content: space-between; align-items: center; }
         .logo { font-size: 24px; font-weight: bold; color: white; text-decoration: none; }
-        
-        .chat-main-wrapper { display: flex; flex-grow: 1; width: 100%; max-width: 1300px; margin: 0 auto; background: white; border-left: 1px solid #eee; border-right: 1px solid #eee; }
+        .logo span { color: #FFD700; }
+        nav ul { display: flex; list-style: none; gap: 20px; }
+        .header-right { display: flex; align-items: center; gap: 15px; }
 
-        .chat-sidebar { width: 320px; border-right: 1px solid #eee; display: flex; flex-direction: column; background: #fdfdfd; flex-shrink: 0; }
-        .side-conv-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f9f9f9; text-decoration: none; color: inherit; }
-        .side-avatar { width: 45px; height: 45px; border-radius: 50%; background: #4CAF50; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px; overflow: hidden; }
+        .chat-main-wrapper { display: flex; height: calc(100vh - 65px); max-width: 1300px; margin: 0 auto; background: white; border-left: 1px solid #eee; border-right: 1px solid #eee; }
+
+        .chat-sidebar { width: 320px; border-right: 1px solid #eee; display: flex; flex-direction: column; background: #fdfdfd; flex-shrink: 0; transition: 0.3s ease; }
+        .sidebar-header { padding: 20px; font-weight: 800; font-size: 1.2rem; border-bottom: 1px solid #eee; color: #2E7D32; }
+        #sidebar-list { flex-grow: 1; overflow-y: auto; }
+        
+        .side-conv-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f9f9f9; text-decoration: none; color: inherit; position: relative; }
+        .side-conv-item:hover { background: #f1f8e9; }
+        .side-conv-item.active { background: #e8f5e9; border-left: 4px solid #4CAF50; }
+        .side-avatar { width: 45px; height: 45px; border-radius: 50%; background: #4CAF50; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px; flex-shrink: 0; overflow: hidden; }
         .side-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .side-info { overflow: hidden; flex-grow: 1; }
+        .side-name { font-weight: 600; font-size: 0.95rem; }
+        .side-msg { font-size: 0.8rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .unread-dot { width: 10px; height: 10px; background-color: #f44336; border-radius: 50%; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); display: none; }
+        .side-conv-item.is-new .unread-dot { display: block; }
 
-        .chat-window { flex-grow: 1; display: flex; flex-direction: column; background: white; }
-        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: 700; background: #fff; display: flex; align-items: center; gap: 15px; }
-        #chat-header-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; display: none; border: 1px solid #ddd; }
-        #report-chat-btn { background: none; border: none; color: #ff5252; cursor: pointer; font-size: 1.2rem; }
-
-        .listing-preview-banner { display: flex; align-items: center; padding: 10px 20px; background: #fff; border-bottom: 1px solid #ddd; gap: 12px; text-decoration: none; color: inherit; }
-        .lp-img { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; }
+        .chat-window { flex-grow: 1; display: flex; flex-direction: column; background: white; position: relative; }
+        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: 700; color: #050505; background: #fff; display: flex; align-items: center; gap: 15px; z-index: 10; font-size: 1.1rem; }
         
-        #messages-list { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; background-color: #fcfcfc; }
-        .message-row { display: flex; width: 100%; margin-bottom: 15px; align-items: flex-end; }
-        .message-row.sent { justify-content: flex-end; }
-        .message-row.received { justify-content: flex-start; gap: 8px; }
-        .chat-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #ddd; flex-shrink: 0; margin-bottom: 20px; }
-        .message-bubble { max-width: 75%; padding: 10px 15px; border-radius: 18px; word-wrap: break-word; }
-        .message-bubble.sent { background-color: #4CAF50; color: white; }
-        .message-bubble.received { background-color: #f1f0f0; color: #333; }
-        .message-img { max-width: 100%; border-radius: 12px; display: block; margin-top: 5px; cursor: pointer; }
+        #chat-header-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #eee; display: none; border: 1px solid #ddd; }
+        #report-chat-btn { background: none; border: none; color: #ff5252; cursor: pointer; font-size: 1.2rem; display: none; transition: transform 0.2s; }
+        #report-chat-btn:hover { transform: scale(1.1); }
 
-        .date-separator { text-align: center; margin: 20px 0; font-size: 0.8rem; font-weight: bold; color: #888; }
-        .date-separator span { background: #f0f0f0; padding: 4px 12px; border-radius: 12px; }
-
-        .sold-banner { background: #fff3e0; color: #e65100; text-align: center; padding: 12px; font-weight: bold; display: none; }
-        .rating-container { display: flex; flex-direction: column; align-items: center; padding: 15px; background: white; border-top: 1px solid #eee; display: none; }
-        .stars { display: flex; gap: 10px; font-size: 1.8rem; color: #ddd; cursor: pointer; margin: 10px 0; }
-        .stars .fas.active { color: #FFD700; }
-        .btn-rate { background: #4CAF50; color: white; border: none; padding: 8px 20px; border-radius: 20px; cursor: pointer; }
-
-        .message-form { display: flex; align-items: center; padding: 15px; border-top: 1px solid #eee; background: white; gap: 10px; }
-        #message-input { flex-grow: 1; border: 1px solid #ddd; border-radius: 25px; padding: 10px 20px; outline: none; }
-        #send-btn { border-radius: 50%; width: 40px; height: 40px; background: #FFD700; border: none; cursor: pointer; }
-
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: none; justify-content: center; align-items: center; }
-        .modal-card { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 450px; }
-    </style>
-</head>
-<body>
-    <header>
-        <div class="container header-content">
-            <a href="/index.html" class="logo">Cheap<span>let</span></a>
-            <div class="header-right"></div> 
-        </div>
-    </header>
-
-    <div class="chat-main-wrapper">
-        <aside class="chat-sidebar" id="chat-sidebar">
-            <div class="sidebar-header">Messages</div>
-            <div id="sidebar-list"></div>
-        </aside>
-
-        <main class="chat-window">
-            <div id="info-container"><p style="text-align:center; padding: 50px;">Loading chat...</p></div>
-            <div id="chat-active-ui" style="display: none; flex-direction: column; height: 100%;">
-                <div class="chat-header">
-                    <div style="display: flex; align-items: center; gap: 10px; flex-grow: 1;">
-                        <img id="chat-header-avatar" src="">
-                        <span id="chat-header-name">Chat</span>
-                    </div>
-                    <button id="report-chat-btn" title="Report User"><i class="fas fa-flag"></i></button>
-                </div>
-                <a href="#" id="listing-preview-banner" class="listing-preview-banner" style="display: none;">
-                    <img src="" class="lp-img" id="lp-image">
-                    <div class="lp-info">
-                        <span class="lp-title" id="lp-title">...</span>
-                        <div id="lp-price"></div>
-                    </div>
-                </a>
-                <div id="messages-list"></div>
-                <div class="sold-banner" id="sold-banner"><i class="fas fa-lock"></i> Listing Sold - Chat Disabled</div>
-                <div class="rating-container" id="rating-container">
-                    <div id="rate-title" style="font-weight:bold;">Rate your experience</div>
-                    <div class="stars" id="star-rating">
-                        <i class="fas fa-star" data-val="1"></i><i class="fas fa-star" data-val="2"></i><i class="fas fa-star" data-val="3"></i><i class="fas fa-star" data-val="4"></i><i class="fas fa-star" data-val="5"></i>
-                    </div>
-                    <button class="btn-rate" id="btn-submit-rating">Submit Rating</button>
-                </div>
-                <form id="message-form" class="message-form">
-                    <input type="file" id="hidden-file-input" accept="image/*" style="display: none;">
-                    <button type="button" id="img-upload-btn"><i class="fas fa-camera"></i></button>
-                    <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
-                    <button type="submit" id="send-btn">&#10148;</button>
-                </form>
-            </div>
-        </main>
-    </div>
-
-    <div class="modal-overlay" id="report-modal">
-        <div class="modal-card">
-            <h2>Report User</h2>
-            <select id="report-reason"><option value="Inappropriate Behavior">Inappropriate Behavior</option><option value="Scam or Fraud">Scam or Fraud</option><option value="Spam">Spam</option><option value="Other">Other</option></select>
-            <textarea id="report-details" placeholder="Provide more details..."></textarea>
-            <div class="modal-buttons"><button class="btn" style="background:#d32f2f; color:white; padding:10px; border:none; border-radius:5px;" id="submit-report-btn">Submit</button><button class="btn" style="background:#eee; padding:10px; border:none; border-radius:5px;" id="close-report-btn">Cancel</button></div>
-        </div>
-    </div>
-
-    <script type="module">
-        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, where, increment, arrayUnion } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
-
-        async function main() {
-            const config = await fetch('/.netlify/functions/config').then(r => r.json());
-            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
-            const auth = getAuth(app);
-            const db = getFirestore(app);
-
-            const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`;
-            const UPLOAD_PRESET = config.cloudinary.uploadPreset;
-
-            const messagesList = document.getElementById('messages-list');
-            const chatHeaderAvatar = document.getElementById('chat-header-avatar');
-            const stars = document.querySelectorAll('#star-rating .fas');
-            
-            let currentUser = null;
-            let reportTargetUid = null;
-            let currentOtherPhotoUrl = null;
-            let selectedRating = 0;
-
-            onAuthStateChanged(auth, user => { if (user) { currentUser = user; loadSidebar(user); } });
-
-            function loadSidebar(currentUser) {
-                const q = query(collection(db, "chats"), where("participants", "array-contains", currentUser.uid), orderBy("lastUpdate", "desc"));
-                onSnapshot(q, (snapshot) => {
-                    const sidebarList = document.getElementById('sidebar-list');
-                    sidebarList.innerHTML = '';
-                    snapshot.forEach(docSnap => {
-                        const d = docSnap.data();
-                        const otherId = d.participants.find(p => p !== currentUser.uid);
-                        const otherName = d.participantInfo?.[otherId] || 'User';
-                        const item = document.createElement('a');
-                        item.className = 'side-conv-item';
-                        item.href = `?id=${docSnap.id}`;
-                        item.innerHTML = `<div class="side-avatar" id="side-avatar-${docSnap.id}"></div><div class="side-info"><div class="side-name">${otherName}</div><div class="side-msg">${d.lastMessage || '...'}</div></div>`;
-                        sidebarList.appendChild(item);
-                        getDoc(doc(db, 'users', otherId)).then(u => { if(u.exists() && u.data().photoURL) item.querySelector(`#side-avatar-${docSnap.id}`).innerHTML = `<img src="${u.data().photoURL}">`; else item.querySelector(`#side-avatar-${docSnap.id}`).textContent = otherName[0]; });
-                    });
-                });
-            }
-
-            async function initializeChat(chatId, currentUser) {
-                const chatRef = doc(db, 'chats', chatId);
-                const chatSnap = await getDoc(chatRef);
-                if (!chatSnap.exists()) return;
-                
-                document.getElementById('info-container').style.display = 'none';
-                document.getElementById('chat-active-ui').style.display = 'flex';
-                const d = chatSnap.data();
-                const otherId = d.participants.find(p => p !== currentUser.uid);
-                reportTargetUid = otherId;
-                document.getElementById('chat-header-name').textContent = d.participantInfo[otherId];
-                document.getElementById('report-chat-btn').style.display = 'block';
-
-                getDoc(doc(db, "users", otherId)).then(u => { if(u.exists() && u.data().photoURL) { currentOtherPhotoUrl = u.data().photoURL; chatHeaderAvatar.src = currentOtherPhotoUrl; chatHeaderAvatar.style.display = 'block'; } });
-
-                if (d.listingId) {
-                    onSnapshot(doc(db, 'listings', d.listingId), (lSnap) => {
-                        if (lSnap.exists()) {
-                            const ld = lSnap.data();
-                            document.getElementById('listing-preview-banner').style.display = 'flex';
-                            document.getElementById('lp-image').src = ld.imageUrls?.[0] || '';
-                            document.getElementById('lp-title').textContent = ld.title;
-                            if (ld.status === 'sold') {
-                                document.getElementById('message-form').style.display = 'none';
-                                document.getElementById('sold-banner').style.display = 'block';
-                                if (!d.ratedBy || !d.ratedBy.includes(currentUser.uid)) document.getElementById('rating-container').style.display = 'flex';
-                            }
-                        }
-                    });
-                }
-
-                onSnapshot(query(collection(db, 'chats', chatId, 'messages'), orderBy("timestamp", "asc")), (snapshot) => {
-                    messagesList.innerHTML = '';
-                    let lastDateString = null;
-                    snapshot.forEach(doc => {
-                        const data = doc.data();
-                        const dateObj = data.timestamp ? data.timestamp.toDate() : new Date();
-                        const dateString = dateObj.toDateString();
-                        if (dateString !== lastDateString) {
-                            const sep = document.createElement('div'); sep.className = 'date-separator'; sep.innerHTML = `<span>${dateString}</span>`;
-                            messagesList.appendChild(sep); lastDateString = dateString;
-                        }
-                        renderMessage(data, currentUser.uid);
-                    });
-                    messagesList.scrollTop = messagesList.scrollHeight;
-                });
-
-                document.getElementById('message-form').onsubmit = async (e) => {
-                    e.preventDefault();
-                    const text = messageInput.value.trim();
-                    if (!text) return;
-                    messageInput.value = '';
-                    await addDoc(collection(db, 'chats', chatId, 'messages'), { text, senderId: currentUser.uid, timestamp: serverTimestamp() });
-                    await updateDoc(chatRef, { lastMessage: text, lastUpdate: serverTimestamp() });
-                };
-
-                document.getElementById('img-upload-btn').onclick = () => document.getElementById('hidden-file-input').click();
-                document.getElementById('hidden-file-input').onchange = async (e) => {
-                    const file = e.target.files[0];
-                    const fd = new FormData(); fd.append('file', file); fd.append('upload_preset', UPLOAD_PRESET);
-                    const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd }).then(r => r.json());
-                    await addDoc(collection(db, 'chats', chatId, 'messages'), { imageUrl: res.secure_url, senderId: currentUser.uid, timestamp: serverTimestamp() });
-                    await updateDoc(chatRef, { lastMessage: "📷 Photo", lastUpdate: serverTimestamp() });
-                };
-
-                stars.forEach(star => {
-                    star.onclick = function() {
-                        selectedRating = parseInt(this.getAttribute('data-val'));
-                        stars.forEach((s, i) => s.classList.toggle('active', i < selectedRating));
-                    };
-                });
-
-                document.getElementById('btn-submit-rating').onclick = async () => {
-                    if (selectedRating === 0) return;
-                    await updateDoc(doc(db, 'users', otherId), { ratingSum: increment(selectedRating), ratingCount: increment(1) });
-                    await updateDoc(chatRef, { ratedBy: arrayUnion(currentUser.uid) });
-                    document.getElementById('rating-container').innerHTML = "Thank you!";
-                };
-            }
-
-            function renderMessage(data, currentUserId) {
-                const isSent = data.senderId === currentUserId;
-                const row = document.createElement('div'); row.className = `message-row ${isSent ? 'sent' : 'received'}`;
-                const bubble = document.createElement('div'); bubble.className = `message-bubble ${isSent ? 'sent' : 'received'}`;
-                let content = data.imageUrl ? `<img src="${data.imageUrl}" class="message-img" onclick="window.open('${data.imageUrl}', '_blank')">` : '';
-                content += data.text ? `<p>${data.text}</p>` : '';
-                bubble.innerHTML = `${content}<span class="message-timestamp">${data.timestamp?.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>`;
-                if (!isSent) row.innerHTML += `<img src="${currentOtherPhotoUrl || ''}" class="chat-avatar">`;
-                row.appendChild(bubble); messagesList.appendChild(row);
-            }
-
-            document.getElementById('report-chat-btn').onclick = () => document.getElementById('report-modal').style.display = 'flex';
-            document.getElementById('close-report-btn').onclick = () => document.getElementById('report-modal').style.display = 'none';
-            document.getElementById('submit-report-btn').onclick = async () => {
-                await addDoc(collection(db, "reports"), { reporterUid: currentUser.uid, targetUid: reportTargetUid, reason: document.getElementById('report-reason').value, details: document.getElementById('report-details').value, timestamp: serverTimestamp() });
-                alert("Reported"); document.getElementById('report-modal').style.display = 'none';
-            };
-
-            const chatId = new URLSearchParams(window.location.search).get('id');
-            if (chatId) initializeChat(chatId, auth.currentUser);
-        }
-        main();
-    </script>
-</body>
-</html>
-        .listing-preview-banner { display: flex; align-items: center; padding: 10px 20px; background: #fff; border-bottom: 1px solid #ddd; gap: 12px; flex-shrink: 0; text-decoration: none; color: inherit; }
+        .listing-preview-banner { display: flex; align-items: center; padding: 10px 20px; background: #fff; border-bottom: 1px solid #ddd; gap: 12px; flex-shrink: 0; text-decoration: none; color: inherit; transition: background 0.2s; }
         .lp-img { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; background: #eee; }
-        
+        .lp-info { flex-grow: 1; overflow: hidden; display: flex; flex-direction: column; }
+        .lp-title { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #050505; }
+        .lp-price { color: #65676B; font-size: 0.85rem; }
+        .lp-status { font-size: 0.75rem; color: #d32f2f; font-weight: bold; text-transform: uppercase; }
+
+        #mobile-menu-btn { display: none; background: none; border: none; font-size: 1.2rem; color: #4CAF50; cursor: pointer; }
+
         #messages-list { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; background-color: #fcfcfc; }
         .message-row { display: flex; width: 100%; margin-bottom: 15px; align-items: flex-end; }
         .message-row.sent { justify-content: flex-end; }
         .message-row.received { justify-content: flex-start; gap: 8px; }
         .chat-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #ddd; flex-shrink: 0; margin-bottom: 20px; }
         
-        .message-bubble { max-width: 75%; padding: 10px 15px; border-radius: 18px; word-wrap: break-word; }
+        .message-bubble { max-width: 75%; padding: 10px 15px; border-radius: 18px; word-wrap: break-word; position: relative; }
         .message-bubble.sent { background-color: #4CAF50; color: white; border-bottom-right-radius: 4px; }
         .message-bubble.received { background-color: #f1f0f0; color: #333; border-bottom-left-radius: 4px; }
         
+        .message-img { max-width: 100%; border-radius: 12px; display: block; margin-bottom: 5px; cursor: pointer; }
+        .message-timestamp { display: block; font-size: 0.7rem; color: rgba(255,255,255,0.7); margin-top: 4px; text-align: right; }
+        .message-bubble.received .message-timestamp { color: #888; }
         .date-separator { text-align: center; margin: 20px 0; font-size: 0.8rem; font-weight: bold; color: #888; }
         .date-separator span { background: #f0f0f0; padding: 4px 12px; border-radius: 12px; }
 
         .message-form { display: flex; align-items: center; padding: 15px; border-top: 1px solid #eee; background: white; gap: 10px; }
+        #img-upload-btn { background: none; border: none; color: #555; cursor: pointer; font-size: 1.1rem; }
         #message-input { flex-grow: 1; border: 1px solid #ddd; border-radius: 25px; padding: 10px 20px; outline: none; }
-        #send-btn { border-radius: 50%; width: 40px; height: 40px; background: #FFD700; border: none; cursor: pointer; }
+        #send-btn { border-radius: 50%; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; background: #FFD700; color: #333; border: none; cursor: pointer; font-size: 1.1rem; }
 
-        .sold-banner { background: #fff3e0; color: #e65100; text-align: center; padding: 12px; font-weight: bold; display: none; }
+        /* RATING & SOLD STYLES */
+        .sold-banner { background: #fff3e0; color: #e65100; text-align: center; padding: 12px; font-weight: bold; border-top: 1px solid #ffe0b2; display: none; }
         .rating-container { display: flex; flex-direction: column; align-items: center; padding: 15px; background: white; border-top: 1px solid #eee; display: none; }
         .stars { display: flex; gap: 10px; font-size: 1.8rem; color: #ddd; cursor: pointer; margin: 10px 0; }
         .stars .fas.active { color: #FFD700; }
-        .btn-rate { background: #4CAF50; color: white; border: none; padding: 8px 20px; border-radius: 20px; cursor: pointer; }
+        .btn-rate { background: #4CAF50; color: white; border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; }
 
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: none; justify-content: center; align-items: center; }
-        .modal-card { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 450px; }
-        
-        @media (max-width: 767px) { .chat-sidebar { position: fixed; left: -100%; top: 60px; height: calc(100vh - 60px); z-index: 1000; width: 85%; box-shadow: 10px 0 20px rgba(0,0,0,0.1); } .chat-sidebar.open { left: 0; } nav { display: none; } }
+        .modal-card { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .modal-card select, .modal-card textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+        .modal-card textarea { height: 100px; resize: none; }
+        .modal-buttons { display: flex; gap: 10px; }
+        .modal-buttons button { flex: 1; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; }
+        .btn-submit-red { background: #d32f2f; color: white; }
+        .btn-cancel-gray { background: #eee; color: #333; }
+
+        .info-message { text-align: center; padding: 100px 0; font-size: 1.2rem; color: #999; }
+        @media (max-width: 767px) {
+            #mobile-menu-btn { display: block; }
+            .chat-sidebar { position: fixed; left: -100%; top: 60px; height: calc(100vh - 60px); z-index: 1000; width: 85%; box-shadow: 10px 0 20px rgba(0,0,0,0.1); }
+            .chat-sidebar.open { left: 0; }
+            nav { display: none; }
+        }
     </style>
 </head>
 <body>
@@ -309,12 +108,15 @@
 
     <div class="chat-main-wrapper">
         <aside class="chat-sidebar" id="chat-sidebar">
-            <div class="sidebar-header">Messages</div>
+            <div class="sidebar-header" data-i18n="nav_messages">Messages</div>
             <div id="sidebar-list"></div>
         </aside>
 
         <main class="chat-window">
-            <div id="info-container"><p class="info-message">Loading chat...</p></div>
+            <div id="info-container">
+                <p class="info-message" data-i18n="loading_chat">Loading chat...</p>
+            </div>
+
             <div id="chat-active-ui" style="display: none; flex-direction: column; height: 100%;">
                 <div class="chat-header">
                     <button id="mobile-menu-btn"><i class="fas fa-bars"></i></button>
@@ -324,38 +126,60 @@
                     </div>
                     <button id="report-chat-btn" title="Report User"><i class="fas fa-flag"></i></button>
                 </div>
+
                 <a href="#" id="listing-preview-banner" class="listing-preview-banner" style="display: none;">
                     <img src="" class="lp-img" id="lp-image">
                     <div class="lp-info">
                         <span class="lp-title" id="lp-title">...</span>
                         <div><span class="lp-price" id="lp-price"></span><span class="lp-status" id="lp-status"></span></div>
                     </div>
+                    <i class="fas fa-chevron-right" style="color: #bec3c9; font-size: 0.8rem;"></i>
                 </a>
+
                 <div id="messages-list"></div>
-                <div class="sold-banner" id="sold-banner"><i class="fas fa-lock"></i> <span id="sold-text">Listing Sold - Chat Disabled</span></div>
+                
+                <div class="sold-banner" id="sold-banner">
+                    <i class="fas fa-lock"></i> <span id="sold-text">Listing Sold - Chat Disabled</span>
+                </div>
+
                 <div class="rating-container" id="rating-container">
-                    <div id="rate-title" style="font-weight:bold;">Rate your experience</div>
+                    <div id="rate-title" style="font-weight:bold; color:#555;">Rate your experience</div>
                     <div class="stars" id="star-rating">
-                        <i class="fas fa-star" data-val="1"></i><i class="fas fa-star" data-val="2"></i><i class="fas fa-star" data-val="3"></i><i class="fas fa-star" data-val="4"></i><i class="fas fa-star" data-val="5"></i>
+                        <i class="fas fa-star" data-val="1"></i>
+                        <i class="fas fa-star" data-val="2"></i>
+                        <i class="fas fa-star" data-val="3"></i>
+                        <i class="fas fa-star" data-val="4"></i>
+                        <i class="fas fa-star" data-val="5"></i>
                     </div>
                     <button class="btn-rate" id="btn-submit-rating">Submit Rating</button>
                 </div>
+
                 <form id="message-form" class="message-form">
                     <input type="file" id="hidden-file-input" accept="image/*" style="display: none;">
                     <button type="button" id="img-upload-btn"><i class="fas fa-camera"></i></button>
-                    <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
+                    <input type="text" id="message-input" data-i18n-placeholder="search_placeholder" placeholder="Type a message..." autocomplete="off">
                     <button type="submit" id="send-btn">&#10148;</button>
                 </form>
             </div>
         </main>
     </div>
 
+    <!-- REPORT MODAL -->
     <div class="modal-overlay" id="report-modal">
         <div class="modal-card">
-            <h2>Report User</h2>
-            <select id="report-reason"><option value="Inappropriate Behavior">Inappropriate Behavior</option><option value="Scam or Fraud">Scam or Fraud</option><option value="Spam">Spam</option><option value="Other">Other</option></select>
+            <h2 id="modal-title">Report User</h2>
+            <p style="margin-bottom: 15px; font-size: 0.9rem; color: #666;" id="modal-desc">Why are you reporting this chat/user?</p>
+            <select id="report-reason">
+                <option value="Inappropriate Behavior">Inappropriate Behavior</option>
+                <option value="Scam or Fraud">Scam or Fraud</option>
+                <option value="Spam">Spam</option>
+                <option value="Other">Other</option>
+            </select>
             <textarea id="report-details" placeholder="Provide more details..."></textarea>
-            <div class="modal-buttons"><button class="btn" style="background:#d32f2f; color:white;" id="submit-report-btn">Submit</button><button class="btn" style="background:#eee;" id="close-report-btn">Cancel</button></div>
+            <div class="modal-buttons">
+                <button class="btn-submit-red" id="submit-report-btn">Submit Report</button>
+                <button class="btn-cancel-gray" id="close-report-btn">Cancel</button>
+            </div>
         </div>
     </div>
 
@@ -365,56 +189,158 @@
         import { getFirestore, doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, where, increment, arrayUnion } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
-            const config = await fetch('/.netlify/functions/config').then(r => r.json());
+            const response = await fetch('/.netlify/functions/config');
+            const config = await response.json();
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
 
+            const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`;
+            const UPLOAD_PRESET = config.cloudinary.uploadPreset;
+
+            const sidebar = document.getElementById('chat-sidebar');
+            const sidebarList = document.getElementById('sidebar-list');
+            const chatActiveUI = document.getElementById('chat-active-ui');
             const messagesList = document.getElementById('messages-list');
+            const messageForm = document.getElementById('message-form');
+            const messageInput = document.getElementById('message-input');
+            const chatHeaderName = document.getElementById('chat-header-name');
             const chatHeaderAvatar = document.getElementById('chat-header-avatar');
+            const reportChatBtn = document.getElementById('report-chat-btn');
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const imgBtn = document.getElementById('img-upload-btn');
+            const fileInput = document.getElementById('hidden-file-input');
+
+            const lpBanner = document.getElementById('listing-preview-banner');
+            const lpImage = document.getElementById('lp-image');
+            const lpTitle = document.getElementById('lp-title');
+            const lpPrice = document.getElementById('lp-price');
+            const lpStatus = document.getElementById('lp-status');
+
+            const soldBanner = document.getElementById('sold-banner');
+            const ratingContainer = document.getElementById('rating-container');
             const stars = document.querySelectorAll('#star-rating .fas');
-            
-            let currentUser = null;
+            const btnSubmitRating = document.getElementById('btn-submit-rating');
+
+            const reportModal = document.getElementById('report-modal');
+            const closeReportBtn = document.getElementById('close-report-btn');
+            const submitReportBtn = document.getElementById('submit-report-btn');
             let reportTargetUid = null;
             let reportTargetName = null;
             let currentOtherPhotoUrl = null;
             let selectedRating = 0;
 
-            onAuthStateChanged(auth, user => { if (user) { currentUser = user; loadSidebar(user); } });
+            const lang = localStorage.getItem('preferred_language') || 'en';
+            const strings = { 
+                en: { imageSent: "Sent a photo", sold: "SOLD", reportSuccess: "Report submitted.", soldBanner: "Listing Sold - Chat Disabled", rateText: "Rate your experience", rateSuccess: "Thanks for rating!" }, 
+                fr: { imageSent: "A envoyé une photo", sold: "VENDU", reportSuccess: "Signalement envoyé.", soldBanner: "Annonce vendue - Chat désactivé", rateText: "Évaluez votre expérience", rateSuccess: "Merci pour votre évaluation !" } 
+            };
+
+            const userCache = {};
+            mobileMenuBtn.onclick = (e) => { e.stopPropagation(); sidebar.classList.toggle('open'); };
+            document.addEventListener('click', (e) => { if (window.innerWidth < 768 && !sidebar.contains(e.target)) sidebar.classList.remove('open'); });
+
+            onAuthStateChanged(auth, user => {
+                const isOAuth = user && user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
+                if (user && (user.emailVerified || isOAuth)) {
+                    loadSidebar(user);
+                    const chatId = new URLSearchParams(window.location.search).get('id');
+                    if (chatId) initializeChat(chatId, user);
+                } else { window.location.href = '/LoginInToCheaplet.html'; }
+            });
 
             function loadSidebar(currentUser) {
                 const q = query(collection(db, "chats"), where("participants", "array-contains", currentUser.uid), orderBy("lastUpdate", "desc"));
                 onSnapshot(q, (snapshot) => {
-                    const sidebarList = document.getElementById('sidebar-list');
                     sidebarList.innerHTML = '';
                     snapshot.forEach(docSnap => {
                         const d = docSnap.data();
                         const otherId = d.participants.find(p => p !== currentUser.uid);
-                        const otherName = d.participantInfo?.[otherId] || 'User';
+                        const otherName = d.participantInfo ? d.participantInfo[otherId] : 'User';
+                        const isNew = d.lastSenderId && d.lastSenderId !== currentUser.uid;
+                        const itemTitle = d.listingTitle ? `<span style="font-size:0.75rem; color:#4CAF50;">(${d.listingTitle})</span>` : '';
+                        
                         const item = document.createElement('a');
-                        item.className = 'side-conv-item';
+                        item.className = `side-conv-item ${docSnap.id === new URLSearchParams(window.location.search).get('id') ? 'active' : ''} ${isNew ? 'is-new' : ''}`;
                         item.href = `?id=${docSnap.id}`;
-                        item.innerHTML = `<div class="side-avatar" id="side-avatar-${docSnap.id}"></div><div class="side-info"><div class="side-name">${otherName}</div><div class="side-msg">${d.lastMessage || '...'}</div></div>`;
+                        item.innerHTML = `
+                            <div class="side-avatar" id="side-avatar-${docSnap.id}">${otherName.charAt(0).toUpperCase()}</div>
+                            <div class="side-info"><div class="side-name">${otherName} ${itemTitle}</div><div class="side-msg">${d.lastMessage || '...'}</div></div>
+                            <div class="unread-dot"></div>`;
                         sidebarList.appendChild(item);
-                        getDoc(doc(db, 'users', otherId)).then(u => { if(u.exists() && u.data().photoURL) item.querySelector(`#side-avatar-${docSnap.id}`).innerHTML = `<img src="${u.data().photoURL}">`; else item.querySelector(`#side-avatar-${docSnap.id}`).textContent = otherName[0]; });
+
+                        const avatarDiv = item.querySelector(`#side-avatar-${docSnap.id}`);
+                        if (userCache[otherId]) {
+                            if(userCache[otherId].photoURL) avatarDiv.innerHTML = `<img src="${userCache[otherId].photoURL}">`;
+                        } else {
+                            getDoc(doc(db, 'users', otherId)).then(uSnap => {
+                                if(uSnap.exists()) {
+                                    userCache[otherId] = uSnap.data();
+                                    if(userCache[otherId].photoURL) avatarDiv.innerHTML = `<img src="${userCache[otherId].photoURL}">`;
+                                }
+                            });
+                        }
                     });
                 });
+            }
+
+            function getFriendlyDate(dateObj) {
+                const today = new Date(); const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
+                if (dateObj.toDateString() === today.toDateString()) return lang === 'fr' ? "Aujourd'hui" : "Today";
+                if (dateObj.toDateString() === yesterday.toDateString()) return lang === 'fr' ? "Hier" : "Yesterday";
+                return dateObj.toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' });
             }
 
             async function initializeChat(chatId, currentUser) {
                 const chatRef = doc(db, 'chats', chatId);
                 const chatSnap = await getDoc(chatRef);
-                if (!chatSnap.exists()) return;
+                if (!chatSnap.exists() || !chatSnap.data().participants.includes(currentUser.uid)) return;
                 
                 document.getElementById('info-container').style.display = 'none';
-                document.getElementById('chat-active-ui').style.display = 'flex';
+                chatActiveUI.style.display = 'flex';
+                
                 const d = chatSnap.data();
                 const otherId = d.participants.find(p => p !== currentUser.uid);
                 reportTargetUid = otherId; reportTargetName = d.participantInfo[otherId];
-                document.getElementById('chat-header-name').textContent = reportTargetName;
-                document.getElementById('report-chat-btn').style.display = 'block';
+                chatHeaderName.textContent = reportTargetName;
+                reportChatBtn.style.display = 'block';
 
-                getDoc(doc(db, "users", otherId)).then(u => { if(u.exists() && u.data().photoURL) { currentOtherPhotoUrl = u.data().photoURL; chatHeaderAvatar.src = currentOtherPhotoUrl; chatHeaderAvatar.style.display = 'block'; } });
+                document.getElementById('sold-text').textContent = strings[lang].soldBanner;
+                document.getElementById('rate-title').textContent = strings[lang].rateText;
+
+                const uSnap = await getDoc(doc(db, "users", otherId));
+                if (uSnap.exists() && uSnap.data().photoURL) {
+                    currentOtherPhotoUrl = uSnap.data().photoURL;
+                    chatHeaderAvatar.src = currentOtherPhotoUrl;
+                    chatHeaderAvatar.style.display = 'block';
+                }
+
+                // LISTEN TO LISTING STATUS (For Disabled Chat & Rating)
+                if (d.listingId) {
+                    onSnapshot(doc(db, 'listings', d.listingId), (lSnap) => {
+                        if (lSnap.exists()) {
+                            const ld = lSnap.data();
+                            lpBanner.style.display = 'flex'; lpBanner.href = `/listing.html?id=${d.listingId}`;
+                            lpImage.src = ld.imageUrls?.[0] || ''; lpTitle.textContent = ld.title;
+                            
+                            if (ld.status === 'sold') { 
+                                lpPrice.style.display = 'none'; lpStatus.textContent = strings[lang].sold; lpStatus.style.display = 'inline-block';
+                                // DISABLE CHAT
+                                messageForm.style.display = 'none';
+                                soldBanner.style.display = 'block';
+                                
+                                // SHOW RATING IF NOT RATED
+                                if (!d.ratedBy || !d.ratedBy.includes(currentUser.uid)) {
+                                    ratingContainer.style.display = 'flex';
+                                }
+                            } else { 
+                                lpStatus.style.display = 'none'; lpPrice.style.display = 'block'; lpPrice.textContent = `$${ld.price.toFixed(2)}`; 
+                            }
+                        }
+                    });
+                }
+
+                if (chatSnap.data().lastSenderId !== currentUser.uid) await updateDoc(chatRef, { lastSenderId: currentUser.uid });
 
                 onSnapshot(query(collection(db, 'chats', chatId, 'messages'), orderBy("timestamp", "asc")), (snapshot) => {
                     messagesList.innerHTML = '';
@@ -424,45 +350,94 @@
                         const dateObj = data.timestamp ? data.timestamp.toDate() : new Date();
                         const dateString = dateObj.toDateString();
                         if (dateString !== lastDateString) {
-                            const sep = document.createElement('div'); sep.className = 'date-separator'; sep.innerHTML = `<span>${dateString}</span>`;
+                            const sep = document.createElement('div'); sep.className = 'date-separator';
+                            sep.innerHTML = `<span>${getFriendlyDate(dateObj)}</span>`;
                             messagesList.appendChild(sep); lastDateString = dateString;
                         }
-                        renderMessage(data, currentUser.uid);
+                        renderMessage(data, currentUser.uid, currentOtherPhotoUrl);
                     });
                     messagesList.scrollTop = messagesList.scrollHeight;
                 });
 
-                document.getElementById('message-form').onsubmit = async (e) => {
+                messageForm.onsubmit = async (e) => {
                     e.preventDefault();
                     const text = messageInput.value.trim();
                     if (!text) return;
                     messageInput.value = '';
                     await addDoc(collection(db, 'chats', chatId, 'messages'), { text, senderId: currentUser.uid, timestamp: serverTimestamp() });
-                    await updateDoc(chatRef, { lastMessage: text, lastUpdate: serverTimestamp() });
+                    await updateDoc(chatRef, { lastMessage: text, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
+                };
+
+                imgBtn.onclick = () => fileInput.click();
+                fileInput.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const formData = new FormData(); formData.append('file', file); formData.append('upload_preset', UPLOAD_PRESET);
+                    const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData }).then(r => r.json());
+                    await addDoc(collection(db, 'chats', chatId, 'messages'), { imageUrl: res.secure_url, senderId: currentUser.uid, timestamp: serverTimestamp() });
+                    await updateDoc(chatRef, { lastMessage: `📷 ${strings[lang].imageSent}`, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
+                };
+
+                // --- STAR RATING LOGIC ---
+                stars.forEach(star => {
+                    star.onclick = function() {
+                        selectedRating = parseInt(this.getAttribute('data-val'));
+                        stars.forEach(s => {
+                            if(parseInt(s.getAttribute('data-val')) <= selectedRating) s.classList.add('active');
+                            else s.classList.remove('active');
+                        });
+                    };
+                });
+
+                btnSubmitRating.onclick = async () => {
+                    if (selectedRating === 0) return;
+                    btnSubmitRating.disabled = true;
+                    try {
+                        // 1. Update User Rating
+                        await updateDoc(doc(db, 'users', otherId), {
+                            ratingSum: increment(selectedRating),
+                            ratingCount: increment(1)
+                        });
+                        // 2. Mark this chat as rated by me
+                        await updateDoc(chatRef, { ratedBy: arrayUnion(currentUser.uid) });
+                        
+                        ratingContainer.innerHTML = `<div style="color:#4CAF50; font-weight:bold;">${strings[lang].rateSuccess}</div>`;
+                        setTimeout(() => { ratingContainer.style.display = 'none'; }, 3000);
+                    } catch(err) { console.error(err); btnSubmitRating.disabled = false; }
                 };
             }
 
-            function renderMessage(data, currentUserId) {
+            function renderMessage(data, currentUserId, otherPhotoUrl) {
                 const isSent = data.senderId === currentUserId;
                 const row = document.createElement('div');
                 row.className = `message-row ${isSent ? 'sent' : 'received'}`;
+                let avatarHtml = '';
+                if (!isSent) {
+                    const avatarSrc = otherPhotoUrl || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ccc"><circle cx="12" cy="12" r="12"/></svg>';
+                    avatarHtml = `<img src="${avatarSrc}" class="chat-avatar">`;
+                }
                 const bubble = document.createElement('div');
                 bubble.className = `message-bubble ${isSent ? 'sent' : 'received'}`;
-                bubble.innerHTML = data.text + `<span class="message-timestamp">${data.timestamp?.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>`;
-                if (!isSent) row.innerHTML += `<img src="${currentOtherPhotoUrl || ''}" class="chat-avatar">`;
+                let content = data.imageUrl ? `<img src="${data.imageUrl}" class="message-img" onclick="window.open('${data.imageUrl}', '_blank')">` : '';
+                content += data.text ? `<p>${data.text}</p>` : '';
+                const time = data.timestamp ? data.timestamp.toDate().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+                bubble.innerHTML = `${content}<span class="message-timestamp">${time}</span>`;
+                if(!isSent) row.innerHTML += avatarHtml;
                 row.appendChild(bubble); messagesList.appendChild(row);
             }
 
-            // Report Modal Logic
-            document.getElementById('report-chat-btn').onclick = () => document.getElementById('report-modal').style.display = 'flex';
-            document.getElementById('close-report-btn').onclick = () => document.getElementById('report-modal').style.display = 'none';
-            document.getElementById('submit-report-btn').onclick = async () => {
-                await addDoc(collection(db, "reports"), { reporterUid: currentUser.uid, targetUid: reportTargetUid, reason: document.getElementById('report-reason').value, details: document.getElementById('report-details').value, timestamp: serverTimestamp() });
-                alert("Reported"); document.getElementById('report-modal').style.display = 'none';
+            // REPORT MODAL LOGIC
+            reportChatBtn.onclick = () => { reportModal.style.display = 'flex'; };
+            closeReportBtn.onclick = () => { reportModal.style.display = 'none'; };
+            submitReportBtn.onclick = async () => {
+                const reason = document.getElementById('report-reason').value;
+                const details = document.getElementById('report-details').value.trim();
+                submitReportBtn.disabled = true;
+                try {
+                    await addDoc(collection(db, "reports"), { reporterUid: auth.currentUser.uid, reporterName: auth.currentUser.displayName, targetUid: reportTargetUid, targetUserName: reportTargetName, reason: "Chat: " + reason, details: details, timestamp: serverTimestamp() });
+                    alert(strings[lang].reportSuccess); reportModal.style.display = 'none';
+                } catch (e) { alert("Error."); } finally { submitReportBtn.disabled = false; }
             };
-
-            const chatId = new URLSearchParams(window.location.search).get('id');
-            if (chatId) initializeChat(chatId, auth.currentUser);
         }
         main();
     </script>
