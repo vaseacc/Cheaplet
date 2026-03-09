@@ -360,12 +360,24 @@
             async function createChat(posterUid, posterName) {
                 if (!currentUser) { window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`; return; }
                 const uids = [currentUser.uid, posterUid].sort();
-                const chatId = uids.join('_');
+                
+                // Add currentListingId to make the chat specific to this item
+                const chatId = uids.join('_') + '_' + currentListingId;
+                
                 const chatRef = doc(db, 'chats', chatId);
                 try {
                     const chatSnap = await getDoc(chatRef);
                     const myName = currentUser.displayName || "User";
-                    if (!chatSnap.exists()) { await setDoc(chatRef, { participants: uids, participantInfo: { [currentUser.uid]: myName, [posterUid]: posterName }, lastUpdate: serverTimestamp(), lastMessage: "", listingId: currentListingId }); }
+                    if (!chatSnap.exists()) { 
+                        await setDoc(chatRef, { 
+                            participants: uids, 
+                            participantInfo: { [currentUser.uid]: myName, [posterUid]: posterName }, 
+                            lastUpdate: serverTimestamp(), 
+                            lastMessage: "", 
+                            listingId: currentListingId,
+                            listingTitle: currentListingData.title 
+                        }); 
+                    }
                     window.location.href = `/chat.html?id=${chatId}`;
                 } catch (error) { alert("Error starting chat."); }
             }
