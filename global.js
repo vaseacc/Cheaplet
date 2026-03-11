@@ -232,7 +232,7 @@ function showTermsBanner() {
         ? `En utilisant ce site, vous acceptez nos <a href="/terms.html">Conditions</a>, notre <a href="/privacy.html">Politique de confidentialité</a> et nos <a href="/safety.html">Consignes de sécurité</a>.`
         : `By using this site, you accept our <a href="/terms.html">Terms of Service</a>, <a href="/privacy.html">Privacy Policy</a>, and <a href="/safety.html">Safety Guidelines</a>.`;
         
-    const btnText = lang === 'fr' ? "J'accepte" : "I Accept";
+    const btnText = lang === 'fr' ? "ok" : "ok";
 
     banner.innerHTML = `
         <div>${textHtml}</div>
