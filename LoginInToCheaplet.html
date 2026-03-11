@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <title>Login - Cheaplet</title>
+    <title>Login / Register - Cheaplet</title>
     <!-- GLOBAL BRAIN -->
     <script type="module" src="global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -19,21 +18,35 @@
         .logo span { color: #FFD700; }
         .header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
         .btn-back { background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; gap: 4px; transition: background 0.3s; white-space: nowrap; }
+        
         .auth-wrapper { display: flex; justify-content: center; align-items: center; min-height: 85vh; padding: 15px; }
         .auth-card { background: white; padding: clamp(20px, 5vw, 40px); border-radius: 12px; box-shadow: 0 4px 25px rgba(0,0,0,0.1); width: 100%; max-width: 420px; text-align: center; }
         .auth-card h2 { color: #2E7D32; margin-bottom: 10px; font-size: 1.7rem; }
         .auth-card p { color: #666; margin-bottom: 25px; font-size: 0.95rem; }
-        input[type="text"], input[type="email"], input[type="password"] { width: 100%; padding: 12px; margin-bottom: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; }
-        input:focus { outline: none; border-color: #4CAF50; }
+        
+        /* STUDENT TIP BOX */
+        .student-tip { background-color: #e8f5e9; border: 1px solid #c8e6c9; color: #2E7D32; padding: 12px 15px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; text-align: left; font-size: 0.85rem; line-height: 1.4; display: none; }
+        .student-tip i { font-size: 1.5rem; flex-shrink: 0; }
+
+        input[type="text"], input[type="email"], input[type="password"] { width: 100%; padding: 12px; margin-bottom: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; outline: none; }
+        input:focus { border-color: #4CAF50; }
+        
         .btn-submit { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); color: #333; border: none; padding: 14px; width: 100%; border-radius: 8px; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: 5px; }
+        
         .separator { display: flex; align-items: center; text-align: center; margin: 15px 0; color: #888; font-size: 0.85rem; }
         .separator::before, .separator::after { content: ''; flex: 1; border-bottom: 1px solid #eee; }
         .separator::before { margin-right: 10px; }
         .separator::after { margin-left: 10px; }
-        .btn-google, .btn-microsoft { background-color: white; color: #555; border: 1px solid #ddd; padding: 10px; width: 100%; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; margin-bottom: 10px; }
+        
+        .btn-google, .btn-microsoft { background-color: white; color: #555; border: 1px solid #ddd; padding: 10px; width: 100%; border-radius: 8px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; margin-bottom: 10px; transition: background 0.2s; }
+        .btn-google:hover, .btn-microsoft:hover { background-color: #f8f9fa; }
         .btn-google img, .btn-microsoft img { width: 18px; }
+        
         .toggle-link { display: block; margin-top: 20px; color: #4CAF50; text-decoration: none; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
+        .toggle-link:hover { text-decoration: underline; }
+        
         .error-message { color: #d32f2f; background-color: #ffebee; padding: 10px; border-radius: 6px; margin-bottom: 20px; display: none; font-size: 0.85rem; }
+        
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); display: none; justify-content: center; align-items: center; flex-direction: column; z-index: 9999; }
         .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #4CAF50; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 10px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -44,7 +57,7 @@
         <div class="container header-content">
             <div class="header-left">
                 <button id="smart-back-btn" class="btn-back">
-                    <i class="fas fa-arrow-left"></i> <span>Back</span>
+                    <i class="fas fa-arrow-left"></i> <span id="back-btn-text">Back</span>
                 </button>
                 <a href="/index.html" class="logo">Cheap<span>let</span></a>
             </div>
@@ -54,14 +67,22 @@
 
     <div id="loading-overlay">
         <div class="spinner"></div>
-        <div style="font-weight:bold;">Verifying...</div>
+        <div style="font-weight:bold;" id="loading-text">Verifying...</div>
     </div>
 
     <main class="container auth-wrapper">
         <div class="auth-card">
             <h2 id="form-title">Welcome Back</h2>
             <p id="form-subtitle">Log in to continue shopping and selling.</p>
+            
             <div id="auth-error" class="error-message"></div>
+
+            <!-- THE NEW STUDENT TIP BOX -->
+            <div class="student-tip" id="student-tip">
+                <i class="fas fa-graduation-cap"></i>
+                <span id="student-tip-text">Use your school email (or school Google/Microsoft account) to automatically get a <strong>Verified Student</strong> badge!</span>
+            </div>
+
             <form id="auth-form">
                 <div id="register-fields" style="display:none;">
                     <input type="text" id="firstName" placeholder="First Name">
@@ -71,15 +92,18 @@
                 <input type="password" id="password" placeholder="Password" required>
                 <button type="submit" class="btn-submit" id="submit-btn">Log In</button>
             </form>
-            <div class="separator">OR</div>
+            
+            <div class="separator" id="or-text">OR</div>
+            
             <button type="button" class="btn-google" id="google-btn">
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
-                Continue with Google
+                <span id="google-btn-text">Continue with Google</span>
             </button>
             <button type="button" class="btn-microsoft" id="microsoft-btn">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="MS">
-                Continue with Microsoft
+                <span id="microsoft-btn-text">Continue with Microsoft</span>
             </button>
+            
             <a class="toggle-link" id="toggle-auth">New to Cheaplet? Create an account.</a>
         </div>
     </main>
@@ -103,9 +127,51 @@
             const authForm = document.getElementById('auth-form');
             const submitBtn = document.getElementById('submit-btn');
             const loadingOverlay = document.getElementById('loading-overlay');
+            const studentTip = document.getElementById('student-tip');
 
             let isLoginMode = true;
             let isRegistering = false;
+
+            // --- BILINGUAL STRINGS ---
+            const lang = localStorage.getItem('preferred_language') || 'en';
+            const strings = {
+                en: {
+                    loginTitle: "Welcome Back", loginSub: "Log in to continue shopping and selling.",
+                    regTitle: "Join Cheaplet", regSub: "Create an account to start buying and selling.",
+                    loginBtn: "Log In", regBtn: "Register",
+                    toggleToReg: "New to Cheaplet? Create an account.", toggleToLogin: "Already have an account? Log in.",
+                    studentTip: "Use your school email (or link your school's Google/Microsoft account) to automatically get a <strong>Verified Student</strong> badge!",
+                    placeFirst: "First Name", placeLast: "Last Name", placeEmail: "Email Address", placePass: "Password",
+                    google: "Continue with Google", microsoft: "Continue with Microsoft", or: "OR", back: "Back", verify: "Verifying...",
+                    errBanned: "Account banned.", errVerify: "Please verify your email first!", errSent: "Verification email sent! Please check your inbox."
+                },
+                fr: {
+                    loginTitle: "Bon retour", loginSub: "Connectez-vous pour continuer vos achats et ventes.",
+                    regTitle: "Rejoindre Cheaplet", regSub: "Créez un compte pour commencer à acheter et vendre.",
+                    loginBtn: "Connexion", regBtn: "S'inscrire",
+                    toggleToReg: "Nouveau sur Cheaplet ? Créez un compte.", toggleToLogin: "Vous avez déjà un compte ? Connectez-vous.",
+                    studentTip: "Utilisez votre courriel scolaire (ou un compte Google/Microsoft de l'école) pour obtenir automatiquement le badge <strong>Étudiant vérifié</strong> !",
+                    placeFirst: "Prénom", placeLast: "Nom de famille", placeEmail: "Adresse e-mail", placePass: "Mot de passe",
+                    google: "Continuer avec Google", microsoft: "Continuer avec Microsoft", or: "OU", back: "Retour", verify: "Vérification...",
+                    errBanned: "Compte banni.", errVerify: "Veuillez d'abord vérifier votre e-mail !", errSent: "E-mail de vérification envoyé ! Vérifiez votre boîte de réception."
+                }
+            };
+
+            // Initialize Language Text
+            formTitle.textContent = strings[lang].loginTitle;
+            document.getElementById('form-subtitle').textContent = strings[lang].loginSub;
+            submitBtn.textContent = strings[lang].loginBtn;
+            toggleLink.textContent = strings[lang].toggleToReg;
+            document.getElementById('student-tip-text').innerHTML = strings[lang].studentTip;
+            document.getElementById('firstName').placeholder = strings[lang].placeFirst;
+            document.getElementById('lastName').placeholder = strings[lang].placeLast;
+            document.getElementById('email').placeholder = strings[lang].placeEmail;
+            document.getElementById('password').placeholder = strings[lang].placePass;
+            document.getElementById('google-btn-text').textContent = strings[lang].google;
+            document.getElementById('microsoft-btn-text').textContent = strings[lang].microsoft;
+            document.getElementById('or-text').textContent = strings[lang].or;
+            document.getElementById('back-btn-text').textContent = strings[lang].back;
+            document.getElementById('loading-text').textContent = strings[lang].verify;
 
             const schoolDomains = ["@cegepat.qc.ca", "@cegeptr.qc.ca", "@cegep-rimouski.qc.ca", "@cegep-rdl.qc.ca", "@cegep-matane.qc.ca", "@cegepbaiecomeau.ca", "@cegep-chicoutimi.qc.ca", "@cegepjonquiere.ca", "@cegepsth.qc.ca", "@cegepgranby.qc.ca", "@cegepdrummond.ca", "@cegepsherbrooke.qc.ca", "@cegepshawinigan.ca", "@cegepsoreltracy.qc.ca", "@cegepstlaurent.ca", "@cegepsl.qc.ca", "@cegeplimoilou.ca", "@cegepgarneau.ca", "@cegep-ste-foy.qc.ca", "@cegeplevis.ca", "@cegepoutaouais.qc.ca", "@cegepheritage.qc.ca", "@cegep-st-jean.qc.ca", "@cegep-st-jerome.qc.ca", "@cegep-edouard-montpetit.qc.ca", "@montmorency.qc.ca", "@gerald-godin.qc.ca", "@crosemont.qc.ca", "@cmaisonneuve.qc.ca", "@cvm.qc.ca", "@ahuntsic.qc.ca", "@boisdeboulogne.qc.ca", "@claurendeau.qc.ca", "@cegepba.qc.ca", "@cegepthetford.ca", "@cegepstfelicien.ca", "@cegepseptiles.ca", "@cegepvicto.ca", "@cegep-lanaudiere.qc.ca", "@cegep-gaspesie.qc.ca", "@cegeplapocatiere.qc.ca", "@cegep-limoilou.ca", "@dawsoncollege.qc.ca", "@vaniercollege.qc.ca", "@johnabbott.qc.ca", "@champlaincollege.qc.ca", "@slc.qc.ca", "@lennoxville.qc.ca", "@heritagec.qc.ca", "@brebeuf.qc.ca", "@andregrasset.qc.ca", "@marianopolis.edu", "@merici.ca", "@collegenotredame.qc.ca", "@cndf.qc.ca", "@campusnotredamefoy.com", "@collegelafleche.qc.ca", "@lasallecollege.com", "@collegebart.ca", "@collegeuniversel.ca", "@sram.qc.ca", "@sracq.qc.ca", "@srasl.qc.ca", "@cegepsquebec.ca", "@fedecegeps.ca", "@cegepbc.ca", "@crcmail.net", "@cgodin.qc.ca", "@cstjean.qc.ca", "@cstj.qc.ca", "@cll.qc.ca", "@clg.qc.ca", "@collegemv.qc.ca", "@cmontmorency.qc.ca", "@cegep-sept-iles.qc.ca", "@cegepshawinigan.qc.ca", "@colval.qc.ca", "@concordia.ca", "@mcgill.ca", "@umontreal.ca", "@uqam.ca"];
 
@@ -120,7 +186,7 @@
                     if (!userDoc.exists()) {
                         await setDoc(userDocRef, { uid: user.uid, displayName: user.displayName, email: user.email, role: 'user', isStudent: isStudent });
                     } else if (userDoc.data().role === 'banned') {
-                        await signOut(auth); alert("Account banned."); window.location.reload(); return;
+                        await signOut(auth); alert(strings[lang].errBanned); window.location.reload(); return;
                     } else if (isStudent && !userDoc.data().isStudent) {
                         await updateDoc(userDocRef, { isStudent: true });
                     }
@@ -136,11 +202,18 @@
                 }
             });
 
+            // TOGGLE BETWEEN LOGIN AND REGISTER
             toggleLink.onclick = () => {
                 isLoginMode = !isLoginMode;
                 document.getElementById('register-fields').style.display = isLoginMode ? 'none' : 'block';
-                formTitle.textContent = isLoginMode ? 'Welcome Back' : 'Join Cheaplet';
-                submitBtn.textContent = isLoginMode ? 'Log In' : 'Register';
+                
+                // Show Student Tip ONLY in Register mode
+                studentTip.style.display = isLoginMode ? 'none' : 'flex';
+                
+                formTitle.textContent = isLoginMode ? strings[lang].loginTitle : strings[lang].regTitle;
+                document.getElementById('form-subtitle').textContent = isLoginMode ? strings[lang].loginSub : strings[lang].regSub;
+                submitBtn.textContent = isLoginMode ? strings[lang].loginBtn : strings[lang].regBtn;
+                toggleLink.textContent = isLoginMode ? strings[lang].toggleToReg : strings[lang].toggleToLogin;
             };
 
             document.getElementById('google-btn').onclick = async () => { try { await signInWithPopup(auth, googleProvider); } catch (e) { alert(e.message); } };
@@ -155,7 +228,7 @@
                 try {
                     if (isLoginMode) {
                         const cred = await signInWithEmailAndPassword(auth, email, pass);
-                        if (!cred.user.emailVerified) { await signOut(auth); alert("Verify email first!"); }
+                        if (!cred.user.emailVerified) { await signOut(auth); alert(strings[lang].errVerify); }
                     } else {
                         isRegistering = true;
                         const cred = await createUserWithEmailAndPassword(auth, email, pass);
@@ -168,7 +241,7 @@
                         
                         await signOut(auth);
                         isRegistering = false;
-                        alert("Verification email sent!");
+                        alert(strings[lang].errSent);
                         location.reload();
                     }
                 } catch (err) { alert(err.message); isRegistering = false; }
