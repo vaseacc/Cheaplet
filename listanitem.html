@@ -77,14 +77,15 @@
                 <label data-i18n="label_description">Description</label>
                 <textarea id="listing-description" maxlength="1500" required></textarea>
                 
-                <!-- 🔥 FIXED: Increased Max Price to $5000 -->
-                <label data-i18n="label_price">Sale Price ($) - Max $5000</label>
+                <!-- Strict Number Input for Sale Price -->
+                <label data-i18n="label_price">Sale Price ($) - Max $1200</label>
                 <input type="text" inputmode="decimal" id="listing-price" placeholder="0.00" required 
-                       oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 5000) this.value = '5000';">
+                       oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 1200) this.value = '1200';">
                 
-                <label data-i18n="label_original_price">Original Price ($)</label>
+                <!-- 🔥 FIXED: Strict Number Input & 5k Limit for Original Price -->
+                <label>Original Price ($) - Max $5000</label>
                 <input type="text" inputmode="decimal" id="listing-original-price" placeholder="0.00" 
-                       oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1');">
+                       oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 5000) this.value = '5000';">
                 
                 <label data-i18n="label_tags">Tags (Max 15)</label>
                 <div class="tag-container" id="tag-container">
@@ -183,10 +184,10 @@
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             
-            // 🔥 FIXED: Translated strings updated to $5000
+            // 🔥 FIXED: Added origPriceErr to translations
             const strings = {
-                en: { priceErr: "Price cannot exceed $5000.", imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type. Please upload an image.", imgSizeErr: "Image too large (Max 5MB).", uploading: "Processing...", tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.", tagUses: "uses" },
-                fr: { priceErr: "Le prix ne peut dépasser 5000$.", imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté. Veuillez télécharger une image.", imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Traitement...", tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.", tagUses: "utilisations" }
+                en: { priceErr: "Price cannot exceed $1200.", origPriceErr: "Original price cannot exceed $5000.", imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type. Please upload an image.", imgSizeErr: "Image too large (Max 5MB).", uploading: "Processing...", tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.", tagUses: "uses" },
+                fr: { priceErr: "Le prix ne peut dépasser 1200$.", origPriceErr: "Le prix d'origine ne peut dépasser 5000$.", imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté. Veuillez télécharger une image.", imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Traitement...", tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.", tagUses: "utilisations" }
             };
 
             let currentUser = null;
@@ -295,7 +296,7 @@
                         imageInput.value = '';
                         return;
                     }
-                    if (file.size > 5 * 1024 * 1024) { // 5 Megabytes
+                    if (file.size > 5 * 1024 * 1024) { 
                         alert(strings[lang].imgSizeErr);
                         imageInput.value = '';
                         return;
@@ -314,11 +315,13 @@
                 const meet = document.getElementById('listing-meeting-point').value;
                 const price = parseFloat(document.getElementById('listing-price').value);
                 const originalPriceVal = document.getElementById('listing-original-price').value;
+                const originalPrice = originalPriceVal ? parseFloat(originalPriceVal) : null;
 
                 if (title.length > 80 || desc.length > 1500 || meet.length > 60) { alert(strings[lang].lenErr); return; }
+                if (price > 1200) { alert(strings[lang].priceErr); return; }
                 
-                // 🔥 FIXED: Validates 5000 max
-                if (price > 5000) { alert(strings[lang].priceErr); return; }
+                // 🔥 FIXED: Added backup JS validation for Original Price
+                if (originalPrice && originalPrice > 5000) { alert(strings[lang].origPriceErr); return; }
                 
                 if (selectedFiles.length === 0) { alert(strings[lang].imgErr); return; }
 
@@ -343,7 +346,7 @@
                         title: title.trim(),
                         description: desc.trim(),
                         price: price,
-                        originalPrice: originalPriceVal ? parseFloat(originalPriceVal) : null,
+                        originalPrice: originalPrice,
                         meetingPoint: meet.trim(),
                         hasWriting: document.getElementById('cond-writing').checked,
                         hasWaterDamage: document.getElementById('cond-water').checked,
