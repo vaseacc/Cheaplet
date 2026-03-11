@@ -2,12 +2,21 @@ import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebase
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
-// --- 0. AUTO-IMPORT ICONS ---
+// --- 0. AUTO-IMPORT ICONS & FAVICON ---
 if (!document.querySelector('link[href*="font-awesome"]')) {
     const faLink = document.createElement('link');
     faLink.rel = 'stylesheet';
     faLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
     document.head.appendChild(faLink);
+}
+
+// INJECT FAVICON GLOBALLY
+if (!document.querySelector('link[rel="icon"]')) {
+    const favicon = document.createElement('link');
+    favicon.rel = 'icon';
+    favicon.type = 'image/svg+xml';
+    favicon.href = '/favicon.svg'; // Make sure favicon.svg is in your root folder
+    document.head.appendChild(favicon);
 }
 
 // --- 1. INITIALIZE CONFIG ---
@@ -70,6 +79,13 @@ globalStyle.innerHTML = `
     .lang-btn { display: block; width: 100%; padding: 14px; margin: 10px 0; border: 2px solid #ddd; border-radius: 8px; background: white; font-weight: bold; cursor: pointer; font-size: 1rem; transition: 0.2s; }
     #hard-lockdown { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; color: #ff4d4d; z-index: 999999; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; font-family: 'Courier New', monospace; padding: 20px; }
 
+    /* TERMS BANNER CSS */
+    .terms-banner { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(30, 30, 30, 0.95); color: #fff; padding: 15px 20px; display: flex; justify-content: center; align-items: center; gap: 20px; z-index: 99999; box-shadow: 0 -2px 15px rgba(0,0,0,0.3); font-size: 0.85rem; flex-wrap: wrap; text-align: center; backdrop-filter: blur(10px); }
+    .terms-banner a { color: #4CAF50; text-decoration: none; font-weight: bold; margin: 0 3px; }
+    .terms-banner a:hover { text-decoration: underline; }
+    .btn-accept-terms { background: #4CAF50; color: white; border: none; padding: 8px 24px; border-radius: 20px; font-weight: bold; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+    .btn-accept-terms:hover { background: #388E3C; }
+
     .mobile-link { display: none; }
     .desktop-only { display: inline-flex; }
 
@@ -79,6 +95,7 @@ globalStyle.innerHTML = `
         .mobile-link { display: flex; } 
         .desktop-only { display: none !important; }
         .btn { font-size: 0.75rem !important; padding: 0 12px !important; height: 34px !important; }
+        .terms-banner { flex-direction: column; gap: 10px; padding: 15px; padding-bottom: max(15px, env(safe-area-inset-bottom)); }
     }
 `;
 document.head.appendChild(globalStyle);
@@ -131,7 +148,9 @@ function refreshUI() {
             showLanguagePopup();
         }
     }
+    
     window.applyLanguage(localStorage.getItem('preferred_language') || 'en');
+    showTermsBanner(); // Call terms banner on UI refresh
 }
 
 // --- 5. UI BUILDERS ---
@@ -195,6 +214,39 @@ function updateHeaderToLoggedOut() {
     document.getElementById('globalLoginBtn').onclick = () => window.location.href = '/LoginInToCheaplet.html';
 }
 
+// --- TERMS & CONDITIONS BANNER ---
+function showTermsBanner() {
+    // If they already accepted it, or if it's already on the screen, do nothing.
+    if (localStorage.getItem('cheaplet_terms_accepted') === 'true' || document.getElementById('terms-banner-global')) return;
+    
+    // Don't show it if the language popup is currently active so we don't crowd the screen
+    if (document.getElementById('lang-modal')) return;
+
+    const lang = localStorage.getItem('preferred_language') || 'en';
+    
+    const banner = document.createElement('div');
+    banner.id = 'terms-banner-global';
+    banner.className = 'terms-banner';
+    
+    const textHtml = lang === 'fr' 
+        ? `En utilisant ce site, vous acceptez nos <a href="/terms.html">Conditions</a>, notre <a href="/privacy.html">Politique de confidentialité</a> et nos <a href="/safety.html">Consignes de sécurité</a>.`
+        : `By using this site, you accept our <a href="/terms.html">Terms of Service</a>, <a href="/privacy.html">Privacy Policy</a>, and <a href="/safety.html">Safety Guidelines</a>.`;
+        
+    const btnText = lang === 'fr' ? "J'accepte" : "I Accept";
+
+    banner.innerHTML = `
+        <div>${textHtml}</div>
+        <button class="btn-accept-terms" id="accept-terms-btn">${btnText}</button>
+    `;
+    
+    document.body.appendChild(banner);
+
+    document.getElementById('accept-terms-btn').onclick = () => {
+        localStorage.setItem('cheaplet_terms_accepted', 'true');
+        banner.remove();
+    };
+}
+
 function showLanguagePopup() {
     if (document.getElementById('lang-modal')) return;
     const checkBody = setInterval(() => {
@@ -212,8 +264,8 @@ function showLanguagePopup() {
                 </div>
             `;
             document.body.appendChild(modal);
-            document.getElementById('btn-en').onclick = () => { window.applyLanguage('en'); sessionStorage.setItem('lang_picked_this_session', 'true'); modal.remove(); };
-            document.getElementById('btn-fr').onclick = () => { window.applyLanguage('fr'); sessionStorage.setItem('lang_picked_this_session', 'true'); modal.remove(); };
+            document.getElementById('btn-en').onclick = () => { window.applyLanguage('en'); sessionStorage.setItem('lang_picked_this_session', 'true'); modal.remove(); showTermsBanner(); };
+            document.getElementById('btn-fr').onclick = () => { window.applyLanguage('fr'); sessionStorage.setItem('lang_picked_this_session', 'true'); modal.remove(); showTermsBanner(); };
         }
     }, 100);
 }
