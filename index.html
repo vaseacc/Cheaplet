@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <title>Cheaplet - Great Finds, Unbeatable Prices</title>
     <!-- GLOBAL BRAIN -->
     <script type="module" src="global.js"></script>
@@ -73,6 +72,10 @@
         .section-title { font-size: 1.8rem; color: #2E7D32; margin-bottom: 25px; text-align: center; font-weight: 600; }
         .tag-pill { background: white; border: 1px solid #ddd; padding: 8px 16px; border-radius: 30px; font-weight: 600; cursor: pointer; transition: 0.2s; white-space: nowrap; }
         .tags-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding: 20px 0; }
+        
+        /* Footer Links Hover */
+        .footer-link { color: white; text-decoration: none; margin: 0 15px; font-weight: 600; transition: opacity 0.2s; }
+        .footer-link:hover { opacity: 0.8; text-decoration: underline; }
     </style>
 </head>
 <body>
@@ -142,14 +145,15 @@
         </div>
     </section>
 
+    <!-- UPDATED FOOTER WITH CLICKABLE LINKS -->
     <footer style="background: #2E7D32; color: white; padding: 40px 0; margin-top: 40px; text-align: center;">
         <div class="container">
             <div style="margin-bottom: 20px;">
-                <span data-i18n="footer_about" style="margin: 0 15px;">About</span>
-                <span data-i18n="footer_support" style="margin: 0 15px;">Support</span>
-                <span data-i18n="footer_legal" style="margin: 0 15px;">Legal</span>
+                <a href="/terms.html" id="link-terms" class="footer-link">Terms</a>
+                <a href="/privacy.html" id="link-privacy" class="footer-link">Privacy</a>
+                <a href="/safety.html" id="link-safety" class="footer-link">Safety</a>
             </div>
-            <div>© 2025 Cheaplet. All rights reserved.</div>
+            <div style="font-size: 0.9rem; opacity: 0.8;">© 2025 Cheaplet. All rights reserved.</div>
         </div>
     </footer>
 
@@ -164,6 +168,16 @@
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const db = getFirestore(app);
 
+            // Translate footer links dynamically
+            const lang = localStorage.getItem('preferred_language') || 'en';
+            const footerStrings = {
+                en: { terms: "Terms of Service", privacy: "Privacy Policy", safety: "Safety Guidelines" },
+                fr: { terms: "Conditions d'utilisation", privacy: "Confidentialité", safety: "Sécurité" }
+            };
+            document.getElementById('link-terms').textContent = footerStrings[lang].terms;
+            document.getElementById('link-privacy').textContent = footerStrings[lang].privacy;
+            document.getElementById('link-safety').textContent = footerStrings[lang].safety;
+
             const listingsContainer = document.getElementById('listings-container');
             const itemCountSpan = document.getElementById('itemCount');
             const sortFilter = document.getElementById('sort-filter');
@@ -175,7 +189,6 @@
             const startBtn = document.getElementById('startBrowsingBtn');
             if(startBtn) startBtn.onclick = () => document.querySelector('main').scrollIntoView({ behavior: 'smooth' });
 
-            // --- FIXED: LIMIT TAGS TO ONLY 6 ---
             async function loadGlobalTags() {
                 try {
                     const q = query(collection(db, "global_tags"), orderBy("count", "desc"), limit(6));
