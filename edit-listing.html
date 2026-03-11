@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <title>Edit Listing - Cheaplet</title>
     <!-- GLOBAL BRAIN -->
     <script type="module" src="global.js"></script>
@@ -36,6 +35,7 @@
         #tag-input { border: none; outline: none; padding: 5px; flex-grow: 1; min-width: 120px; }
         .suggestions-box { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ddd; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
         .suggestion-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .suggestion-item:hover { background-color: #f8f9fa; }
 
         /* CHECKBOX GROUP */
         .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; background: #fdfdfd; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
@@ -82,11 +82,13 @@
             <div style="display: flex; gap: 15px;">
                 <div style="flex: 1;" class="form-field">
                     <label data-i18n="label_price">Sale Price ($)</label>
-                    <input type="number" id="listing-price" min="0" max="1200" step="0.01" required>
+                    <input type="text" inputmode="decimal" id="listing-price" placeholder="0.00" required 
+                           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 1200) this.value = '1200';">
                 </div>
                 <div style="flex: 1;" class="form-field">
                     <label data-i18n="label_original_price">Original Price ($)</label>
-                    <input type="number" id="listing-original-price" min="0" step="0.01">
+                    <input type="text" inputmode="decimal" id="listing-original-price" placeholder="0.00" 
+                           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1');">
                 </div>
             </div>
 
@@ -128,22 +130,34 @@
                 </div>
             </div>
 
+            <!-- 🔥 FIXED: Updated Schools List -->
             <div class="form-field">
                 <label data-i18n="label_location">Campus Location</label>
                 <select id="listing-location" required>
                     <option value="" data-i18n="opt_select_campus">Select a Campus</option>
-                    <optgroup label="Cégeps" data-i18n="opt_cegeps">
-                        <option value="Dawson College">Dawson College</option>
-                        <option value="Vanier College">Vanier College</option>
+                    <optgroup label="Cégeps & Colleges" data-i18n="opt_cegeps">
+                        <option value="Collège Ahuntsic">Collège Ahuntsic</option>
+                        <option value="Collège André-Grasset">Collège André-Grasset</option>
+                        <option value="Cégep André-Laurendeau">Cégep André-Laurendeau</option>
+                        <option value="Collège de Bois-de-Boulogne">Collège de Bois-de-Boulogne</option>
+                        <option value="Collège Dawson">Collège Dawson / Dawson College</option>
+                        <option value="Cégep Édouard-Montpetit">Cégep Édouard-Montpetit</option>
+                        <option value="Cégep Gérald-Godin">Cégep Gérald-Godin</option>
+                        <option value="Collège Jean-de-Brébeuf">Collège Jean-de-Brébeuf</option>
                         <option value="John Abbott College">John Abbott College</option>
-                        <option value="Cégep de Maisonneuve">Cégep de Maisonneuve</option>
+                        <option value="Collège de Maisonneuve">Collège de Maisonneuve</option>
+                        <option value="Cégep Marie-Victorin">Cégep Marie-Victorin</option>
+                        <option value="Collège de Rosemont">Collège de Rosemont</option>
+                        <option value="Cégep de Saint-Laurent">Cégep de Saint-Laurent</option>
+                        <option value="Collège Stanislas">Collège Stanislas</option>
+                        <option value="Vanier College">Vanier College</option>
                         <option value="Cégep du Vieux Montréal">Cégep du Vieux Montréal</option>
-                        <option value="Cégep Ahuntsic">Cégep Ahuntsic</option>
                     </optgroup>
                     <optgroup label="Universities" data-i18n="opt_universities">
                         <option value="Concordia University">Concordia University</option>
                         <option value="McGill University">McGill University</option>
                         <option value="Université de Montréal">Université de Montréal</option>
+                        <option value="UQAM">UQAM</option>
                     </optgroup>
                 </select>
             </div>
@@ -154,7 +168,7 @@
             </div>
             
             <div class="form-field">
-                <label data-i18n="label_photos">Photos (1-5 Required)</label>
+                <label data-i18n="label_photos">Photos (Max 5, Max 5MB each)</label>
                 <div id="image-uploader">
                     <div class="image-preview-grid" id="image-preview-container"></div>
                     <label for="listing-image-input" id="add-photo-label" style="margin-top:10px;">
@@ -198,6 +212,13 @@
             let newImageFiles = [];
             let tags = [];
 
+            // Add languages mapping for error handling and UI
+            const lang = localStorage.getItem('preferred_language') || 'en';
+            const strings = {
+                en: { imgTypeErr: "Unsupported file type. Please upload an image.", imgSizeErr: "Image too large (Max 5MB).", tagUses: "uses", priceErr: "Max price is $1200.", saving: "Saving..." },
+                fr: { imgTypeErr: "Format non supporté. Veuillez télécharger une image.", imgSizeErr: "Image trop lourde (Max 5MB).", tagUses: "utilisations", priceErr: "Le prix max est de 1200$.", saving: "Enregistrement..." }
+            };
+
             // --- TAG SYSTEM LOGIC ---
             function renderTags() {
                 selectedTagsContainer.innerHTML = '';
@@ -214,6 +235,7 @@
                 if (cleaned && !tags.includes(cleaned)) { tags.push(cleaned); renderTags(); }
                 tagInput.value = ''; suggestionsBox.style.display = 'none';
             }
+            
             tagInput.oninput = async (e) => {
                 const val = e.target.value.trim().toLowerCase();
                 if (val.length < 1) { suggestionsBox.style.display = 'none'; return; }
@@ -226,7 +248,8 @@
                         const d = doc.data();
                         const div = document.createElement('div');
                         div.className = 'suggestion-item';
-                        div.innerHTML = `<span>${d.tag}</span><span class="suggestion-count">${d.count || 0}</span>`;
+                        // 🔥 FIXED: Show Tag Count
+                        div.innerHTML = `<span>${d.tag}</span> <span style="font-size:0.8rem; color:#888; background:#f0f0f0; padding:2px 8px; border-radius:10px;">${d.count || 1} ${strings[lang].tagUses}</span>`;
                         div.onclick = () => addTag(d.tag);
                         suggestionsBox.appendChild(div);
                     });
@@ -238,7 +261,7 @@
             window.addTagManual = () => addTag(tagInput.value);
             tagInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput.value); } };
 
-            // --- IMAGE LOGIC ---
+            // --- IMAGE LOGIC WITH VALIDATION ---
             function renderPreviews() {
                 previewContainer.innerHTML = '';
                 const all = [...existingImageUrls, ...newImageFiles];
@@ -261,8 +284,24 @@
                 });
                 document.getElementById('add-photo-label').style.display = all.length < 5 ? 'flex' : 'none';
             }
+            
             document.getElementById('listing-image-input').onchange = (e) => {
-                if (e.target.files[0]) { newImageFiles.push(e.target.files[0]); renderPreviews(); }
+                const file = e.target.files[0];
+                if (file) {
+                    // 🔥 FIXED: Strict Image Validation
+                    if (!file.type.startsWith('image/')) {
+                        alert(strings[lang].imgTypeErr);
+                        e.target.value = '';
+                        return;
+                    }
+                    if (file.size > 5 * 1024 * 1024) { // 5 Megabytes
+                        alert(strings[lang].imgSizeErr);
+                        e.target.value = '';
+                        return;
+                    }
+                    newImageFiles.push(file); 
+                    renderPreviews(); 
+                }
             };
 
             // --- DATA LOAD ---
@@ -277,7 +316,16 @@
                     document.getElementById('listing-original-price').value = d.originalPrice || "";
                     document.getElementById('listing-condition').value = d.condition || "";
                     document.getElementById('listing-digital-code').value = d.digitalCode || "Not applicable";
-                    document.getElementById('listing-location').value = d.location || "";
+                    
+                    // Match location safely
+                    const locationSelect = document.getElementById('listing-location');
+                    const locationOptions = Array.from(locationSelect.options).map(opt => opt.value);
+                    if (locationOptions.includes(d.location)) {
+                        locationSelect.value = d.location;
+                    } else {
+                        locationSelect.value = ""; // Fallback if old location string isn't in the new list
+                    }
+
                     document.getElementById('listing-meeting-point').value = d.meetingPoint || "";
                     document.getElementById('cond-writing').checked = d.hasWriting || false;
                     document.getElementById('cond-water').checked = d.hasWaterDamage || false;
@@ -297,11 +345,13 @@
 
             // --- SAVE ---
             document.getElementById('updateListingBtn').onclick = async () => {
-                const price = parseFloat(document.getElementById('listing-price').value);
-                if (price > 1200) { alert("Max price is $1200."); return; }
+                const priceVal = document.getElementById('listing-price').value;
+                const price = priceVal ? parseFloat(priceVal) : 0;
+                
+                if (price > 1200) { alert(strings[lang].priceErr); return; }
                 
                 const btn = document.getElementById('updateListingBtn');
-                btn.disabled = true; btn.textContent = "Saving...";
+                btn.disabled = true; btn.textContent = strings[lang].saving;
 
                 try {
                     const uploaded = [];
@@ -310,12 +360,14 @@
                         const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd }).then(r => r.json());
                         uploaded.push(res.secure_url);
                     }
+                    
+                    const originalPriceVal = document.getElementById('listing-original-price').value;
 
                     await updateDoc(doc(db, 'listings', new URLSearchParams(window.location.search).get('id')), {
                         title: document.getElementById('listing-title').value.trim(),
                         description: document.getElementById('listing-description').value.trim(),
                         price: price,
-                        originalPrice: parseFloat(document.getElementById('listing-original-price').value) || null,
+                        originalPrice: originalPriceVal ? parseFloat(originalPriceVal) : null,
                         condition: document.getElementById('listing-condition').value,
                         digitalCode: document.getElementById('listing-digital-code').value,
                         location: document.getElementById('listing-location').value,
