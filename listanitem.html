@@ -77,12 +77,11 @@
                 <label data-i18n="label_description">Description</label>
                 <textarea id="listing-description" maxlength="1500" required></textarea>
                 
-                <!-- 🔥 FIXED: Strict Number Input for Sale Price -->
-                <label data-i18n="label_price">Sale Price ($) - Max $1200</label>
+                <!-- 🔥 FIXED: Increased Max Price to $5000 -->
+                <label data-i18n="label_price">Sale Price ($) - Max $5000</label>
                 <input type="text" inputmode="decimal" id="listing-price" placeholder="0.00" required 
-                       oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 1200) this.value = '1200';">
+                       oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 5000) this.value = '5000';">
                 
-                <!-- 🔥 FIXED: Strict Number Input for Original Price -->
                 <label data-i18n="label_original_price">Original Price ($)</label>
                 <input type="text" inputmode="decimal" id="listing-original-price" placeholder="0.00" 
                        oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1');">
@@ -110,7 +109,6 @@
                     <option value="Already used" data-i18n="opt_used">Already used</option>
                 </select>
 
-                <!-- 🔥 FIXED: Updated Schools List -->
                 <label data-i18n="label_location">Campus Location</label>
                 <select id="listing-location" required>
                     <option value="" data-i18n="opt_select_campus">Select a Campus</option>
@@ -185,10 +183,10 @@
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             
-            // 🔥 FIXED: Added image validation error translations
+            // 🔥 FIXED: Translated strings updated to $5000
             const strings = {
-                en: { priceErr: "Price cannot exceed $1200.", imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type. Please upload an image.", imgSizeErr: "Image too large (Max 5MB).", uploading: "Processing...", tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.", tagUses: "uses" },
-                fr: { priceErr: "Le prix ne peut dépasser 1200$.", imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté. Veuillez télécharger une image.", imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Traitement...", tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.", tagUses: "utilisations" }
+                en: { priceErr: "Price cannot exceed $5000.", imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type. Please upload an image.", imgSizeErr: "Image too large (Max 5MB).", uploading: "Processing...", tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.", tagUses: "uses" },
+                fr: { priceErr: "Le prix ne peut dépasser 5000$.", imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté. Veuillez télécharger une image.", imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Traitement...", tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.", tagUses: "utilisations" }
             };
 
             let currentUser = null;
@@ -255,7 +253,6 @@
                         const d = doc.data();
                         const div = document.createElement('div');
                         div.className = 'suggestion-item';
-                        // 🔥 FIXED: Added the usage count right next to the tag!
                         div.innerHTML = `<span>${d.tag}</span> <span style="font-size:0.8rem; color:#888; background:#f0f0f0; padding:2px 8px; border-radius:10px;">${d.count || 1} ${strings[lang].tagUses}</span>`;
                         div.onclick = () => addTag(d.tag);
                         suggestionsBox.appendChild(div);
@@ -293,7 +290,6 @@
             imageInput.onchange = (e) => { 
                 const file = e.target.files[0];
                 if (file) {
-                    // 🔥 FIXED: Strict Image Validation
                     if (!file.type.startsWith('image/')) {
                         alert(strings[lang].imgTypeErr);
                         imageInput.value = '';
@@ -320,7 +316,10 @@
                 const originalPriceVal = document.getElementById('listing-original-price').value;
 
                 if (title.length > 80 || desc.length > 1500 || meet.length > 60) { alert(strings[lang].lenErr); return; }
-                if (price > 1200) { alert(strings[lang].priceErr); return; }
+                
+                // 🔥 FIXED: Validates 5000 max
+                if (price > 5000) { alert(strings[lang].priceErr); return; }
+                
                 if (selectedFiles.length === 0) { alert(strings[lang].imgErr); return; }
 
                 const submitBtn = document.getElementById('postListingBtn');
