@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <title>Listing Details - Cheaplet</title>
     <!-- GLOBAL BRAIN -->
     <script type="module" src="global.js"></script>
@@ -22,8 +21,11 @@
         .main-wrapper { display: flex; flex-shrink: 0; height: calc(100vh - 60px); overflow: hidden; }
         .image-stage { flex: 1; background-color: #000; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
         .blurred-bg { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-size: cover; background-position: center; filter: blur(40px) brightness(0.5); z-index: 1; transition: background-image 0.3s ease-in-out; transform: scale(1.1); }
-        .main-image-container { position: relative; z-index: 2; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 40px; }
-        .main-image { display: block; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; box-shadow: 0 10px 30px rgba(0,0,0,0.6); }
+        
+        /* 🔥 SMART IMAGE FORMATTING */
+        .main-image-container { position: relative; z-index: 2; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .main-image { display: block; width: 100%; height: 100%; object-fit: contain; box-shadow: 0 10px 30px rgba(0,0,0,0.6); border-radius: 4px; }
+        
         .nav-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; border-radius: 50%; background-color: rgba(60, 60, 60, 0.6); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; border: none; z-index: 10; }
         .nav-arrow:hover { background-color: rgba(60, 60, 60, 0.9); }
         .nav-prev { left: 20px; } .nav-next { right: 20px; }
@@ -53,7 +55,6 @@
         #seller-avatar-small { width: 45px; height: 45px; border-radius: 50%; background: #ddd; background-size: cover; background-position: center; border: 1px solid #eee; }
         .seller-name { font-weight: 600; color: #050505; text-decoration: none; }
         
-        /* SELLER RATING STYLES */
         .seller-rating-display { color: #FFD700; font-size: 0.85rem; margin-top: 2px; }
         .verified-student-badge { display: inline-flex; align-items: center; gap: 5px; background: #e8f5e9; color: #2E7D32; font-size: 0.75rem; font-weight: bold; padding: 2px 8px; border-radius: 12px; border: 1px solid #c8e6c9; margin-top: 3px; }
 
@@ -76,7 +77,13 @@
         .btn-submit-red { background: #d32f2f; color: white; }
         .btn-cancel-gray { background: #eee; color: #333; }
 
-        @media (max-width: 900px) { .main-wrapper { flex-direction: column; overflow-y: auto; height: auto; } .image-stage { height: 350px; flex: none; } .details-panel { width: 100%; border-left: none; height: auto; padding-bottom: 50px; } nav { display: none; } }
+        @media (max-width: 900px) { 
+            .main-wrapper { flex-direction: column; overflow-y: auto; height: auto; } 
+            .image-stage { height: 350px; flex: none; width: 100%; } 
+            .main-image-container { padding: 10px; } /* Reduced padding on mobile for bigger images */
+            .details-panel { width: 100%; border-left: none; height: auto; padding-bottom: 50px; } 
+            nav { display: none; } 
+        }
     </style>
 </head>
 <body>
@@ -271,7 +278,6 @@
                     document.getElementById('seller-name-link').textContent = data.posterDisplayName || "User";
                     document.getElementById('seller-name-link').href = `/user.html?id=${data.posterUid}`;
                     
-                    // Fetch seller details, badges, and RATINGS
                     if (data.posterUid) {
                         try {
                             const sellerDoc = await getDoc(doc(db, "users", data.posterUid));
@@ -279,7 +285,6 @@
                                 const sellerData = sellerDoc.data();
                                 if (sellerData.photoURL) document.getElementById('seller-avatar-small').style.backgroundImage = `url('${sellerData.photoURL}')`;
                                 
-                                // Stars Logic
                                 if (sellerData.ratingCount && sellerData.ratingCount > 0) {
                                     const avg = (sellerData.ratingSum / sellerData.ratingCount).toFixed(1);
                                     let starsHtml = '';
