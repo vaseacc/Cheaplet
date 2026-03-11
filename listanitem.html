@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <title>List an Item - Cheaplet</title>
     <!-- GLOBAL CONFIGURATION -->
     <script type="module" src="global.js"></script>
@@ -37,6 +36,7 @@
         #tag-input { border: none; outline: none; padding: 5px; flex-grow: 1; min-width: 120px; margin-bottom: 0; }
         .suggestions-box { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto; z-index: 10; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .suggestion-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+        .suggestion-item:hover { background-color: #f8f9fa; }
 
         .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; background: #fdfdfd; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
         .checkbox-item { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.9rem; cursor: pointer; color: #444; }
@@ -69,7 +69,7 @@
 
     <main class="container">
         <div class="form-wrapper">
-            <h2 data-i18n="btn_list">List a Book</h2>
+            <h2 data-i18n="btn_list">List an Item</h2>
             <form id="listing-form">
                 <label data-i18n="label_title">Title</label>
                 <input type="text" id="listing-title" maxlength="80" required>
@@ -77,11 +77,15 @@
                 <label data-i18n="label_description">Description</label>
                 <textarea id="listing-description" maxlength="1500" required></textarea>
                 
+                <!-- 🔥 FIXED: Strict Number Input for Sale Price -->
                 <label data-i18n="label_price">Sale Price ($) - Max $1200</label>
-                <input type="number" id="listing-price" min="0" max="1200" step="0.01" required>
+                <input type="text" inputmode="decimal" id="listing-price" placeholder="0.00" required 
+                       oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 1200) this.value = '1200';">
                 
+                <!-- 🔥 FIXED: Strict Number Input for Original Price -->
                 <label data-i18n="label_original_price">Original Price ($)</label>
-                <input type="number" id="listing-original-price" min="0" step="0.01">
+                <input type="text" inputmode="decimal" id="listing-original-price" placeholder="0.00" 
+                       oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1');">
                 
                 <label data-i18n="label_tags">Tags (Max 15)</label>
                 <div class="tag-container" id="tag-container">
@@ -106,18 +110,33 @@
                     <option value="Already used" data-i18n="opt_used">Already used</option>
                 </select>
 
+                <!-- 🔥 FIXED: Updated Schools List -->
                 <label data-i18n="label_location">Campus Location</label>
                 <select id="listing-location" required>
                     <option value="" data-i18n="opt_select_campus">Select a Campus</option>
-                    <optgroup label="Cégeps" data-i18n="opt_cegeps">
-                        <option value="Dawson College">Dawson College</option>
-                        <option value="Vanier College">Vanier College</option>
+                    <optgroup label="Cégeps & Colleges" data-i18n="opt_cegeps">
+                        <option value="Collège Ahuntsic">Collège Ahuntsic</option>
+                        <option value="Collège André-Grasset">Collège André-Grasset</option>
+                        <option value="Cégep André-Laurendeau">Cégep André-Laurendeau</option>
+                        <option value="Collège de Bois-de-Boulogne">Collège de Bois-de-Boulogne</option>
+                        <option value="Collège Dawson">Collège Dawson / Dawson College</option>
+                        <option value="Cégep Édouard-Montpetit">Cégep Édouard-Montpetit</option>
+                        <option value="Cégep Gérald-Godin">Cégep Gérald-Godin</option>
+                        <option value="Collège Jean-de-Brébeuf">Collège Jean-de-Brébeuf</option>
                         <option value="John Abbott College">John Abbott College</option>
+                        <option value="Collège de Maisonneuve">Collège de Maisonneuve</option>
+                        <option value="Cégep Marie-Victorin">Cégep Marie-Victorin</option>
+                        <option value="Collège de Rosemont">Collège de Rosemont</option>
+                        <option value="Cégep de Saint-Laurent">Cégep de Saint-Laurent</option>
+                        <option value="Collège Stanislas">Collège Stanislas</option>
+                        <option value="Vanier College">Vanier College</option>
+                        <option value="Cégep du Vieux Montréal">Cégep du Vieux Montréal</option>
                     </optgroup>
                     <optgroup label="Universities" data-i18n="opt_universities">
                         <option value="Concordia University">Concordia University</option>
                         <option value="McGill University">McGill University</option>
                         <option value="Université de Montréal">Université de Montréal</option>
+                        <option value="UQAM">UQAM</option>
                     </optgroup>
                 </select>
 
@@ -131,7 +150,7 @@
                     <label class="checkbox-item"><input type="checkbox" id="cond-missing"> <span data-i18n="label_missing">Missing pages</span></label>
                 </div>
 
-                <label data-i18n="label_photos">Photos (Max 5)</label>
+                <label data-i18n="label_photos">Photos (Max 5, Max 5MB each)</label>
                 <div id="image-uploader">
                     <div class="image-preview-grid" id="image-preview-container"></div>
                     <label for="listing-image-input" id="add-photo-label" style="margin-top:10px;">
@@ -165,9 +184,11 @@
             const UPLOAD_PRESET = config.cloudinary.uploadPreset;
 
             const lang = localStorage.getItem('preferred_language') || 'en';
+            
+            // 🔥 FIXED: Added image validation error translations
             const strings = {
-                en: { priceErr: "Price cannot exceed $1200.", imgErr: "Add at least one photo.", uploading: "Processing...", tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long." },
-                fr: { priceErr: "Le prix ne peut dépasser 1200$.", imgErr: "Ajoutez au moins une photo.", uploading: "Traitement...", tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long." }
+                en: { priceErr: "Price cannot exceed $1200.", imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type. Please upload an image.", imgSizeErr: "Image too large (Max 5MB).", uploading: "Processing...", tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.", tagUses: "uses" },
+                fr: { priceErr: "Le prix ne peut dépasser 1200$.", imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté. Veuillez télécharger une image.", imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Traitement...", tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.", tagUses: "utilisations" }
             };
 
             let currentUser = null;
@@ -175,13 +196,9 @@
             let tags = [];
             const pageLoader = document.getElementById('page-loader');
 
-            // --- UPDATED AUTH CHECK: FIXES THE REDIRECT LOOP ---
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    // Check if it's a social login (Google/Microsoft)
                     const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
-                    
-                    // Allow if verified OR if it's a social login
                     if (user.emailVerified || isOAuth) {
                         try {
                             const userDoc = await getDoc(doc(db, "users", user.uid));
@@ -196,11 +213,9 @@
                             pageLoader.style.display = 'none'; 
                         }
                     } else {
-                        // Not verified email and not OAuth: Force them to login/verify
                         window.location.href = '/LoginInToCheaplet.html';
                     }
                 } else {
-                    // Not logged in at all
                     window.location.href = '/LoginInToCheaplet.html';
                 }
             });
@@ -240,7 +255,8 @@
                         const d = doc.data();
                         const div = document.createElement('div');
                         div.className = 'suggestion-item';
-                        div.innerHTML = `<span>${d.tag}</span>`;
+                        // 🔥 FIXED: Added the usage count right next to the tag!
+                        div.innerHTML = `<span>${d.tag}</span> <span style="font-size:0.8rem; color:#888; background:#f0f0f0; padding:2px 8px; border-radius:10px;">${d.count || 1} ${strings[lang].tagUses}</span>`;
                         div.onclick = () => addTag(d.tag);
                         suggestionsBox.appendChild(div);
                     });
@@ -252,9 +268,10 @@
             window.addTagManual = () => addTag(tagInput.value);
             tagInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput.value); } };
 
-            // --- IMAGE LOGIC ---
+            // --- IMAGE LOGIC WITH VALIDATION ---
             const imageInput = document.getElementById('listing-image-input');
             const previewContainer = document.getElementById('image-preview-container');
+            
             function renderPreviews() {
                 previewContainer.innerHTML = '';
                 selectedFiles.forEach((file, index) => {
@@ -272,7 +289,26 @@
                 });
                 document.getElementById('add-photo-label').style.display = selectedFiles.length < 5 ? 'flex' : 'none';
             }
-            imageInput.onchange = (e) => { if (e.target.files[0]) { selectedFiles.push(e.target.files[0]); renderPreviews(); } };
+
+            imageInput.onchange = (e) => { 
+                const file = e.target.files[0];
+                if (file) {
+                    // 🔥 FIXED: Strict Image Validation
+                    if (!file.type.startsWith('image/')) {
+                        alert(strings[lang].imgTypeErr);
+                        imageInput.value = '';
+                        return;
+                    }
+                    if (file.size > 5 * 1024 * 1024) { // 5 Megabytes
+                        alert(strings[lang].imgSizeErr);
+                        imageInput.value = '';
+                        return;
+                    }
+                    
+                    selectedFiles.push(file); 
+                    renderPreviews(); 
+                } 
+            };
 
             // --- SUBMISSION ---
             document.getElementById('listing-form').onsubmit = async (e) => {
@@ -281,6 +317,7 @@
                 const desc = document.getElementById('listing-description').value;
                 const meet = document.getElementById('listing-meeting-point').value;
                 const price = parseFloat(document.getElementById('listing-price').value);
+                const originalPriceVal = document.getElementById('listing-original-price').value;
 
                 if (title.length > 80 || desc.length > 1500 || meet.length > 60) { alert(strings[lang].lenErr); return; }
                 if (price > 1200) { alert(strings[lang].priceErr); return; }
@@ -307,7 +344,7 @@
                         title: title.trim(),
                         description: desc.trim(),
                         price: price,
-                        originalPrice: parseFloat(document.getElementById('listing-original-price').value) || null,
+                        originalPrice: originalPriceVal ? parseFloat(originalPriceVal) : null,
                         meetingPoint: meet.trim(),
                         hasWriting: document.getElementById('cond-writing').checked,
                         hasWaterDamage: document.getElementById('cond-water').checked,
