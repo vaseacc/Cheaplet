@@ -22,7 +22,6 @@
         .image-stage { flex: 1; background-color: #000; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
         .blurred-bg { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-size: cover; background-position: center; filter: blur(40px) brightness(0.5); z-index: 1; transition: background-image 0.3s ease-in-out; transform: scale(1.1); }
         
-        /* 🔥 SMART IMAGE FORMATTING */
         .main-image-container { position: relative; z-index: 2; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .main-image { display: block; width: 100%; height: 100%; object-fit: contain; box-shadow: 0 10px 30px rgba(0,0,0,0.6); border-radius: 4px; }
         
@@ -80,7 +79,7 @@
         @media (max-width: 900px) { 
             .main-wrapper { flex-direction: column; overflow-y: auto; height: auto; } 
             .image-stage { height: 350px; flex: none; width: 100%; } 
-            .main-image-container { padding: 10px; } /* Reduced padding on mobile for bigger images */
+            .main-image-container { padding: 10px; } 
             .details-panel { width: 100%; border-left: none; height: auto; padding-bottom: 50px; } 
             nav { display: none; } 
         }
@@ -100,9 +99,10 @@
         <div class="image-stage">
             <div class="blurred-bg" id="blur-bg"></div>
             <div class="main-image-container">
-                <button class="nav-arrow nav-prev" id="prev-img-btn"><i class="fas fa-chevron-left"></i></button>
+                <!-- 🔥 FIXED: Buttons hidden by default -->
+                <button class="nav-arrow nav-prev" id="prev-img-btn" style="display: none;"><i class="fas fa-chevron-left"></i></button>
                 <img src="" alt="Listing Item" class="main-image" id="main-image">
-                <button class="nav-arrow nav-next" id="next-img-btn"><i class="fas fa-chevron-right"></i></button>
+                <button class="nav-arrow nav-next" id="next-img-btn" style="display: none;"><i class="fas fa-chevron-right"></i></button>
             </div>
             <div class="thumbnails-overlay" id="thumbnail-container"></div>
         </div>
@@ -308,10 +308,23 @@
                     if (imageUrls.length > 0) {
                         updateMainImage(0); 
                         thumbnailContainer.innerHTML = '';
-                        imageUrls.forEach((url, index) => {
-                            const img = document.createElement('img'); img.src = url; img.className = `thumb ${index === 0 ? 'active' : ''}`; img.onclick = () => updateMainImage(index);
-                            thumbnailContainer.appendChild(img);
-                        });
+                        
+                        // 🔥 FIXED: Hide arrows and thumbnails if only 1 image exists
+                        if (imageUrls.length > 1) {
+                            document.getElementById('prev-img-btn').style.display = 'flex';
+                            document.getElementById('next-img-btn').style.display = 'flex';
+                            thumbnailContainer.style.display = 'flex';
+                            
+                            imageUrls.forEach((url, index) => {
+                                const img = document.createElement('img'); img.src = url; img.className = `thumb ${index === 0 ? 'active' : ''}`; img.onclick = () => updateMainImage(index);
+                                thumbnailContainer.appendChild(img);
+                            });
+                        } else {
+                            // Enforce hidden state for single images
+                            document.getElementById('prev-img-btn').style.display = 'none';
+                            document.getElementById('next-img-btn').style.display = 'none';
+                            thumbnailContainer.style.display = 'none';
+                        }
                     }
 
                     if (currentUser) {
@@ -366,24 +379,57 @@
                 document.querySelectorAll('.thumb').forEach((thumb, i) => { thumb.classList.toggle('active', i === index); });
             }
 
-            prevBtn.onclick = () => { if (imageUrls.length === 0) return; let newIndex = currentImageIndex - 1; if (newIndex < 0) newIndex = imageUrls.length - 1; updateMainImage(newIndex); };
-            nextBtn.onclick = () => { if (imageUrls.length === 0) return; let newIndex = currentImageIndex + 1; if (newIndex >= imageUrls.length) newIndex = 0; updateMainImage(newIndex); };
+            prevBtn.onclick = () => { if (imageUrls.length <= 1) return; let newIndex = currentImageIndex - 1; if (newIndex < 0) newIndex = imageUrls.length - 1; updateMainImage(newIndex); };
+            nextBtn.onclick = () => { if (imageUrls.length <= 1) return; let newIndex = currentImageIndex + 1; if (newIndex >= imageUrls.length) newIndex = 0; updateMainImage(newIndex); };
 
-            async function createChat(posterUid, posterName) {
+            // 🔥 FIXED: Quick Message Initial Text Database Sync
+            async function createChat(posterUid, posterName, initialMessage = null) {
                 if (!currentUser) { window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`; return; }
+                
                 const uids = [currentUser.uid, posterUid].sort();
                 const chatId = uids.join('_') + '_' + currentListingId;
                 const chatRef = doc(db, 'chats', chatId);
+                
                 try {
                     const chatSnap = await getDoc(chatRef);
                     const myName = currentUser.displayName || "User";
-                    if (!chatSnap.exists()) { await setDoc(chatRef, { participants: uids, participantInfo: { [currentUser.uid]: myName, [posterUid]: posterName }, lastUpdate: serverTimestamp(), lastMessage: "", listingId: currentListingId, listingTitle: currentListingData.title }); }
+                    
+                    if (!chatSnap.exists()) { 
+                        await setDoc(chatRef, { 
+                            participants: uids, 
+                            participantInfo: { [currentUser.uid]: myName, [posterUid]: posterName }, 
+                            lastUpdate: serverTimestamp(), 
+                            lastMessage: initialMessage || "", 
+                            listingId: currentListingId, 
+                            listingTitle: currentListingData.title 
+                        }); 
+                    }
+                    
+                    if (initialMessage) {
+                        await addDoc(collection(db, 'chats', chatId, 'messages'), { 
+                            text: initialMessage, 
+                            senderId: currentUser.uid, 
+                            timestamp: serverTimestamp() 
+                        });
+                        await updateDoc(chatRef, { 
+                            lastMessage: initialMessage, 
+                            lastUpdate: serverTimestamp(), 
+                            lastSenderId: currentUser.uid 
+                        });
+                    }
+                    
                     window.location.href = `/chat.html?id=${chatId}`;
-                } catch (error) { alert("Error starting chat."); }
+                } catch (error) { console.error(error); alert("Error starting chat."); }
             }
 
-            document.getElementById('btn-message-seller').onclick = () => createChat(currentListingData.posterUid, currentListingData.posterDisplayName);
-            document.getElementById('btn-quick-send').onclick = () => createChat(currentListingData.posterUid, currentListingData.posterDisplayName);
+            document.getElementById('btn-message-seller').onclick = () => {
+                createChat(currentListingData.posterUid, currentListingData.posterDisplayName);
+            };
+
+            document.getElementById('btn-quick-send').onclick = () => {
+                const msg = document.getElementById('quick-msg-text').value.trim();
+                createChat(currentListingData.posterUid, currentListingData.posterDisplayName, msg !== "" ? msg : null);
+            };
 
             function updateSaveIcon() {
                 const icon = saveBtn.querySelector('i');
