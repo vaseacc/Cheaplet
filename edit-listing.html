@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Listing - Cheaplet</title>
-    <!-- GLOBAL BRAIN -->
     <script type="module" src="global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -37,7 +36,6 @@
         .suggestion-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
         .suggestion-item:hover { background-color: #f8f9fa; }
 
-        /* CHECKBOX GROUP */
         .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; background: #fdfdfd; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
         .checkbox-item { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.9rem; cursor: pointer; color: #444; }
         .checkbox-item input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
@@ -67,121 +65,97 @@
         </div>
 
         <section id="edit-form-container" class="firebase-form-section" style="display: none;">
-            <h2 data-i18n="edit_listing_title">Edit Your Listing</h2>
+            <h2 id="ui-main-title">Edit Your Listing</h2>
             
             <div class="form-field">
-                <label data-i18n="label_title">Title</label>
+                <label id="ui-label-title">Title</label>
                 <input type="text" id="listing-title" required>
             </div>
 
             <div class="form-field">
-                <label data-i18n="label_description">Description</label>
+                <label id="ui-label-desc">Description</label>
                 <textarea id="listing-description" required></textarea>
             </div>
 
             <div style="display: flex; gap: 15px;">
                 <div style="flex: 1;" class="form-field">
-                    <label data-i18n="label_price">Sale Price ($)</label>
+                    <label id="ui-label-price">Sale Price ($) - Max $1200</label>
                     <input type="text" inputmode="decimal" id="listing-price" placeholder="0.00" required 
                            oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 1200) this.value = '1200';">
                 </div>
                 <div style="flex: 1;" class="form-field">
-                    <label data-i18n="label_original_price">Original Price ($)</label>
+                    <label id="ui-label-orig-price">Original Price ($) - Max $5000</label>
                     <input type="text" inputmode="decimal" id="listing-original-price" placeholder="0.00" 
-                           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1');">
+                           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 5000) this.value = '5000';">
                 </div>
             </div>
 
             <div class="form-field">
-                <label data-i18n="label_condition">Condition</label>
+                <label id="ui-label-condition">Condition</label>
                 <select id="listing-condition" required>
-                    <option value="" data-i18n="opt_select">Select Condition</option>
-                    <option value="New" data-i18n="opt_new">New</option>
-                    <option value="Like New" data-i18n="opt_like_new">Like New</option>
-                    <option value="Good" data-i18n="opt_good">Good</option>
-                    <option value="Fair" data-i18n="opt_fair">Fair</option>
+                    <option value="" id="opt-cond-select">Select Condition</option>
+                    <option value="New" id="opt-cond-new">New</option>
+                    <option value="Like New" id="opt-cond-likenew">Like New</option>
+                    <option value="Good" id="opt-cond-good">Good</option>
+                    <option value="Fair" id="opt-cond-fair">Fair</option>
                 </select>
             </div>
 
             <div class="form-field">
-                <label data-i18n="label_additional_details">Additional Details</label>
+                <label id="ui-label-details">Additional Details</label>
                 <div class="checkbox-group">
-                    <label class="checkbox-item"><input type="checkbox" id="cond-writing"> <span data-i18n="label_writing">Writing inside</span></label>
-                    <label class="checkbox-item"><input type="checkbox" id="cond-water"> <span data-i18n="label_water">Water damage</span></label>
-                    <label class="checkbox-item"><input type="checkbox" id="cond-missing"> <span data-i18n="label_missing">Missing pages</span></label>
+                    <label class="checkbox-item"><input type="checkbox" id="cond-writing"> <span id="ui-check-writing">Writing inside</span></label>
+                    <label class="checkbox-item"><input type="checkbox" id="cond-water"> <span id="ui-check-water">Water damage</span></label>
+                    <label class="checkbox-item"><input type="checkbox" id="cond-missing"> <span id="ui-check-missing">Missing pages</span></label>
                 </div>
             </div>
 
             <div class="form-field">
-                <label data-i18n="label_digital_code">Digital Access Code</label>
+                <label id="ui-label-code">Digital Access Code</label>
                 <select id="listing-digital-code">
-                    <option value="Not applicable" data-i18n="opt_na">Not applicable</option>
-                    <option value="Available / Unused" data-i18n="opt_available">Available / Unused</option>
-                    <option value="Already used" data-i18n="opt_used">Already used</option>
+                    <option value="Not applicable" id="opt-code-na">Not applicable</option>
+                    <option value="Available / Unused" id="opt-code-avail">Available / Unused</option>
+                    <option value="Already used" id="opt-code-used">Already used</option>
                 </select>
             </div>
 
             <div class="form-field">
-                <label data-i18n="label_tags">Tags</label>
+                <label id="ui-label-tags">Tags</label>
                 <div class="tag-container" id="tag-container">
                     <div id="selected-tags" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
-                    <input type="text" id="tag-input" autocomplete="off" placeholder="Type and press Enter...">
+                    <input type="text" id="tag-input" autocomplete="off">
                     <div class="suggestions-box" id="suggestions-box"></div>
                 </div>
             </div>
 
-            <!-- 🔥 FIXED: Updated Schools List -->
+            <!-- 🔥 FIXED: Restricted strictly to Rosemont -->
             <div class="form-field">
-                <label data-i18n="label_location">Campus Location</label>
+                <label id="ui-label-location">Campus Location</label>
                 <select id="listing-location" required>
-                    <option value="" data-i18n="opt_select_campus">Select a Campus</option>
-                    <optgroup label="Cégeps & Colleges" data-i18n="opt_cegeps">
-                        <option value="Collège Ahuntsic">Collège Ahuntsic</option>
-                        <option value="Collège André-Grasset">Collège André-Grasset</option>
-                        <option value="Cégep André-Laurendeau">Cégep André-Laurendeau</option>
-                        <option value="Collège de Bois-de-Boulogne">Collège de Bois-de-Boulogne</option>
-                        <option value="Collège Dawson">Collège Dawson / Dawson College</option>
-                        <option value="Cégep Édouard-Montpetit">Cégep Édouard-Montpetit</option>
-                        <option value="Cégep Gérald-Godin">Cégep Gérald-Godin</option>
-                        <option value="Collège Jean-de-Brébeuf">Collège Jean-de-Brébeuf</option>
-                        <option value="John Abbott College">John Abbott College</option>
-                        <option value="Collège de Maisonneuve">Collège de Maisonneuve</option>
-                        <option value="Cégep Marie-Victorin">Cégep Marie-Victorin</option>
-                        <option value="Collège de Rosemont">Collège de Rosemont</option>
-                        <option value="Cégep de Saint-Laurent">Cégep de Saint-Laurent</option>
-                        <option value="Collège Stanislas">Collège Stanislas</option>
-                        <option value="Vanier College">Vanier College</option>
-                        <option value="Cégep du Vieux Montréal">Cégep du Vieux Montréal</option>
-                    </optgroup>
-                    <optgroup label="Universities" data-i18n="opt_universities">
-                        <option value="Concordia University">Concordia University</option>
-                        <option value="McGill University">McGill University</option>
-                        <option value="Université de Montréal">Université de Montréal</option>
-                        <option value="UQAM">UQAM</option>
-                    </optgroup>
+                    <option value="Collège de Rosemont" selected>Collège de Rosemont</option>
                 </select>
             </div>
 
             <div class="form-field">
-                <label data-i18n="label_meeting_point">Meeting Point</label>
+                <label id="ui-label-meet">Meeting Point</label>
                 <input type="text" id="listing-meeting-point">
             </div>
             
             <div class="form-field">
-                <label data-i18n="label_photos">Photos (Max 5, Max 5MB each)</label>
+                <label id="ui-label-photos">Photos (Max 5, Max 5MB each)</label>
                 <div id="image-uploader">
                     <div class="image-preview-grid" id="image-preview-container"></div>
                     <label for="listing-image-input" id="add-photo-label" style="margin-top:10px;">
                         <i class="fas fa-camera"></i>
-                        <span style="font-size: 10px;" data-i18n="btn_add_photo">Add Photo</span>
+                        <span style="font-size: 10px;" id="ui-btn-add-photo">Add Photo</span>
                     </label>
                     <input type="file" id="listing-image-input" accept="image/*" style="display:none;">
                 </div>
             </div>
             
             <div class="form-buttons">
-                <button class="btn" id="updateListingBtn" data-i18n="btn_save_changes">Save Changes</button>
-                <button class="btn btn-secondary" id="cancelEditBtn" data-i18n="btn_cancel">Cancel</button>
+                <button class="btn" id="updateListingBtn">Save Changes</button>
+                <button class="btn btn-secondary" id="cancelEditBtn">Cancel</button>
             </div>
         </section>
     </main>
@@ -212,12 +186,65 @@
             let newImageFiles = [];
             let tags = [];
 
-            // Add languages mapping for error handling and UI
+            // 🔥 FIXED: Direct Local Translations
             const lang = localStorage.getItem('preferred_language') || 'en';
-            const strings = {
-                en: { imgTypeErr: "Unsupported file type. Please upload an image.", imgSizeErr: "Image too large (Max 5MB).", tagUses: "uses", priceErr: "Max price is $1200.", saving: "Saving..." },
-                fr: { imgTypeErr: "Format non supporté. Veuillez télécharger une image.", imgSizeErr: "Image trop lourde (Max 5MB).", tagUses: "utilisations", priceErr: "Le prix max est de 1200$.", saving: "Enregistrement..." }
+            const ui = {
+                en: {
+                    mainTitle: "Edit Your Listing", lblTitle: "Title", lblDesc: "Description", lblPrice: "Sale Price ($) - Max $1200", 
+                    lblOrigPrice: "Original Price ($) - Max $5000", lblTags: "Tags (Max 15)", tagPlace: "Type and press Enter...",
+                    lblCond: "Condition", optCondSel: "Select Condition", optNew: "New", optLikeNew: "Like New", optGood: "Good", optFair: "Fair",
+                    lblCode: "Digital Access Code", optNa: "Not applicable", optAvail: "Available / Unused", optUsed: "Already used",
+                    lblLoc: "Campus Location", lblMeet: "Meeting Point (Max 60 chars)", meetPlace: "e.g., Near Library",
+                    lblDet: "Additional Details", chkWrite: "Writing inside", chkWater: "Water damage", chkMiss: "Missing pages",
+                    lblPhotos: "Photos (Max 5, Max 5MB each)", btnAddPhoto: "Add Photo", btnPost: "Save Changes", btnCancel: "Cancel",
+                    priceErr: "Max price is $1200.", origPriceErr: "Original price cannot exceed $5000.", 
+                    imgTypeErr: "Unsupported file type. Please upload an image.", imgSizeErr: "Image too large (Max 5MB).", 
+                    saving: "Saving...", tagUses: "uses"
+                },
+                fr: {
+                    mainTitle: "Modifier votre annonce", lblTitle: "Titre", lblDesc: "Description", lblPrice: "Prix de vente ($) - Max 1200$", 
+                    lblOrigPrice: "Prix d'origine ($) - Max 5000$", lblTags: "Mots-clés (Max 15)", tagPlace: "Tapez et appuyez sur Entrée...",
+                    lblCond: "État", optCondSel: "Sélectionner l'état", optNew: "Neuf", optLikeNew: "Comme neuf", optGood: "Bon état", optFair: "Acceptable",
+                    lblCode: "Code d'accès numérique", optNa: "Non applicable", optAvail: "Disponible / Inutilisé", optUsed: "Déjà utilisé",
+                    lblLoc: "Emplacement du campus", lblMeet: "Point de rencontre (Max 60 car.)", meetPlace: "ex: Près de la bibliothèque",
+                    lblDet: "Détails supplémentaires", chkWrite: "Écritures à l'intérieur", chkWater: "Dommages causés par l'eau", chkMiss: "Pages manquantes",
+                    lblPhotos: "Photos (Max 5, Max 5MB chacune)", btnAddPhoto: "Ajouter une photo", btnPost: "Enregistrer", btnCancel: "Annuler",
+                    priceErr: "Le prix max est de 1200$.", origPriceErr: "Le prix d'origine ne peut dépasser 5000$.", 
+                    imgTypeErr: "Format non supporté. Veuillez télécharger une image.", imgSizeErr: "Image trop lourde (Max 5MB).", 
+                    saving: "Enregistrement...", tagUses: "utilisations"
+                }
             };
+
+            // Apply translations to UI
+            document.getElementById('ui-main-title').textContent = ui[lang].mainTitle;
+            document.getElementById('ui-label-title').textContent = ui[lang].lblTitle;
+            document.getElementById('ui-label-desc').textContent = ui[lang].lblDesc;
+            document.getElementById('ui-label-price').textContent = ui[lang].lblPrice;
+            document.getElementById('ui-label-orig-price').textContent = ui[lang].lblOrigPrice;
+            document.getElementById('ui-label-tags').textContent = ui[lang].lblTags;
+            document.getElementById('tag-input').placeholder = ui[lang].tagPlace;
+            document.getElementById('ui-label-condition').textContent = ui[lang].lblCond;
+            document.getElementById('opt-cond-select').textContent = ui[lang].optCondSel;
+            document.getElementById('opt-cond-new').textContent = ui[lang].optNew;
+            document.getElementById('opt-cond-likenew').textContent = ui[lang].optLikeNew;
+            document.getElementById('opt-cond-good').textContent = ui[lang].optGood;
+            document.getElementById('opt-cond-fair').textContent = ui[lang].optFair;
+            document.getElementById('ui-label-code').textContent = ui[lang].lblCode;
+            document.getElementById('opt-code-na').textContent = ui[lang].optNa;
+            document.getElementById('opt-code-avail').textContent = ui[lang].optAvail;
+            document.getElementById('opt-code-used').textContent = ui[lang].optUsed;
+            document.getElementById('ui-label-location').textContent = ui[lang].lblLoc;
+            document.getElementById('ui-label-meet').textContent = ui[lang].lblMeet;
+            document.getElementById('listing-meeting-point').placeholder = ui[lang].meetPlace;
+            document.getElementById('ui-label-details').textContent = ui[lang].lblDet;
+            document.getElementById('ui-check-writing').textContent = ui[lang].chkWrite;
+            document.getElementById('ui-check-water').textContent = ui[lang].chkWater;
+            document.getElementById('ui-check-missing').textContent = ui[lang].chkMiss;
+            document.getElementById('ui-label-photos').textContent = ui[lang].lblPhotos;
+            document.getElementById('ui-btn-add-photo').textContent = ui[lang].btnAddPhoto;
+            document.getElementById('updateListingBtn').textContent = ui[lang].btnPost;
+            document.getElementById('cancelEditBtn').textContent = ui[lang].btnCancel;
+
 
             // --- TAG SYSTEM LOGIC ---
             function renderTags() {
@@ -248,8 +275,7 @@
                         const d = doc.data();
                         const div = document.createElement('div');
                         div.className = 'suggestion-item';
-                        // 🔥 FIXED: Show Tag Count
-                        div.innerHTML = `<span>${d.tag}</span> <span style="font-size:0.8rem; color:#888; background:#f0f0f0; padding:2px 8px; border-radius:10px;">${d.count || 1} ${strings[lang].tagUses}</span>`;
+                        div.innerHTML = `<span>${d.tag}</span> <span style="font-size:0.8rem; color:#888; background:#f0f0f0; padding:2px 8px; border-radius:10px;">${d.count || 1} ${ui[lang].tagUses}</span>`;
                         div.onclick = () => addTag(d.tag);
                         suggestionsBox.appendChild(div);
                     });
@@ -288,19 +314,9 @@
             document.getElementById('listing-image-input').onchange = (e) => {
                 const file = e.target.files[0];
                 if (file) {
-                    // 🔥 FIXED: Strict Image Validation
-                    if (!file.type.startsWith('image/')) {
-                        alert(strings[lang].imgTypeErr);
-                        e.target.value = '';
-                        return;
-                    }
-                    if (file.size > 5 * 1024 * 1024) { // 5 Megabytes
-                        alert(strings[lang].imgSizeErr);
-                        e.target.value = '';
-                        return;
-                    }
-                    newImageFiles.push(file); 
-                    renderPreviews(); 
+                    if (!file.type.startsWith('image/')) { alert(ui[lang].imgTypeErr); e.target.value = ''; return; }
+                    if (file.size > 5 * 1024 * 1024) { alert(ui[lang].imgSizeErr); e.target.value = ''; return; }
+                    newImageFiles.push(file); renderPreviews(); 
                 }
             };
 
@@ -310,6 +326,7 @@
                 if (snap.exists()) {
                     const d = snap.data();
                     if (d.posterUid !== userId) { infoContainer.innerHTML = "<p>Unauthorized</p>"; return; }
+                    
                     document.getElementById('listing-title').value = d.title;
                     document.getElementById('listing-description').value = d.description;
                     document.getElementById('listing-price').value = d.price;
@@ -317,19 +334,14 @@
                     document.getElementById('listing-condition').value = d.condition || "";
                     document.getElementById('listing-digital-code').value = d.digitalCode || "Not applicable";
                     
-                    // Match location safely
-                    const locationSelect = document.getElementById('listing-location');
-                    const locationOptions = Array.from(locationSelect.options).map(opt => opt.value);
-                    if (locationOptions.includes(d.location)) {
-                        locationSelect.value = d.location;
-                    } else {
-                        locationSelect.value = ""; // Fallback if old location string isn't in the new list
-                    }
+                    // Always default to Rosemont since it's the only option now
+                    document.getElementById('listing-location').value = "Collège de Rosemont";
 
                     document.getElementById('listing-meeting-point').value = d.meetingPoint || "";
                     document.getElementById('cond-writing').checked = d.hasWriting || false;
                     document.getElementById('cond-water').checked = d.hasWaterDamage || false;
                     document.getElementById('cond-missing').checked = d.hasMissingPages || false;
+                    
                     tags = d.tags || [];
                     existingImageUrls = d.imageUrls || [];
                     renderTags(); renderPreviews();
@@ -347,11 +359,14 @@
             document.getElementById('updateListingBtn').onclick = async () => {
                 const priceVal = document.getElementById('listing-price').value;
                 const price = priceVal ? parseFloat(priceVal) : 0;
+                if (price > 1200) { alert(ui[lang].priceErr); return; }
                 
-                if (price > 1200) { alert(strings[lang].priceErr); return; }
+                const originalPriceVal = document.getElementById('listing-original-price').value;
+                const originalPrice = originalPriceVal ? parseFloat(originalPriceVal) : null;
+                if (originalPrice && originalPrice > 5000) { alert(ui[lang].origPriceErr); return; }
                 
                 const btn = document.getElementById('updateListingBtn');
-                btn.disabled = true; btn.textContent = strings[lang].saving;
+                btn.disabled = true; btn.textContent = ui[lang].saving;
 
                 try {
                     const uploaded = [];
@@ -360,14 +375,12 @@
                         const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd }).then(r => r.json());
                         uploaded.push(res.secure_url);
                     }
-                    
-                    const originalPriceVal = document.getElementById('listing-original-price').value;
 
                     await updateDoc(doc(db, 'listings', new URLSearchParams(window.location.search).get('id')), {
                         title: document.getElementById('listing-title').value.trim(),
                         description: document.getElementById('listing-description').value.trim(),
                         price: price,
-                        originalPrice: originalPriceVal ? parseFloat(originalPriceVal) : null,
+                        originalPrice: originalPrice,
                         condition: document.getElementById('listing-condition').value,
                         digitalCode: document.getElementById('listing-digital-code').value,
                         location: document.getElementById('listing-location').value,
@@ -381,7 +394,7 @@
 
                     alert("Updated!");
                     window.location.href = `/listing.html?id=${new URLSearchParams(window.location.search).get('id')}`;
-                } catch (e) { alert(e.message); btn.disabled = false; btn.textContent = "Save Changes"; }
+                } catch (e) { alert(e.message); btn.disabled = false; btn.textContent = ui[lang].btnPost; }
             };
 
             document.getElementById('cancelEditBtn').onclick = () => window.history.back();
