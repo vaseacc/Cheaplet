@@ -30,7 +30,6 @@
 
         .tag-container { border: 2px solid #ddd; border-radius: 6px; padding: 10px; margin-bottom: 15px; background: #fff; display: flex; flex-wrap: wrap; gap: 8px; position: relative; }
         .tag-chip { background-color: #e8f5e9; color: #2E7D32; padding: 5px 10px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 5px; }
-        .tag-close { cursor: pointer; font-weight: bold; }
         #tag-input { border: none; outline: none; padding: 5px; flex-grow: 1; min-width: 120px; margin-bottom: 0; }
         .suggestions-box { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 6px 6px; max-height: 200px; overflow-y: auto; z-index: 10; display: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .suggestion-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
@@ -50,12 +49,6 @@
 
         #page-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; color: #666; }
         @media (max-width: 767px) { nav { display: none; } }
-        
-        /* RESTRICTION MSG STYLES */
-        .restricted-msg { text-align: center; padding: 40px 20px; }
-        .restricted-msg i { font-size: 4rem; color: #f44336; margin-bottom: 20px; }
-        .restricted-msg h2 { color: #d32f2f; margin-bottom: 15px; }
-        .restricted-msg p { font-size: 1.1rem; color: #555; margin-bottom: 25px; }
     </style>
 </head>
 <body>
@@ -72,98 +65,75 @@
     </header>
 
     <main class="container">
-        <div class="form-wrapper" id="form-container">
-            <h2 data-i18n="btn_list">List an Item</h2>
+        <div class="form-wrapper">
+            <h2 id="ui-main-title">List an Item</h2>
             <form id="listing-form">
-                <label data-i18n="label_title">Title</label>
+                <label id="ui-label-title">Title</label>
                 <input type="text" id="listing-title" maxlength="80" required>
                 
-                <label data-i18n="label_description">Description</label>
+                <label id="ui-label-desc">Description</label>
                 <textarea id="listing-description" maxlength="1500" required></textarea>
                 
-                <label data-i18n="label_price">Sale Price ($) - Max $1200</label>
+                <label id="ui-label-price">Sale Price ($) - Max $1200</label>
                 <input type="text" inputmode="decimal" id="listing-price" placeholder="0.00" required 
                        oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 1200) this.value = '1200';">
                 
-                <label>Original Price ($) - Max $5000</label>
+                <label id="ui-label-orig-price">Original Price ($) - Max $5000</label>
                 <input type="text" inputmode="decimal" id="listing-original-price" placeholder="0.00" 
                        oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 5000) this.value = '5000';">
                 
-                <label data-i18n="label_tags">Tags (Max 15)</label>
+                <label id="ui-label-tags">Tags (Max 15)</label>
                 <div class="tag-container" id="tag-container">
                     <div id="selected-tags"></div>
-                    <input type="text" id="tag-input" placeholder="Type and press Enter..." autocomplete="off">
+                    <input type="text" id="tag-input" autocomplete="off">
                     <div class="suggestions-box" id="suggestions-box"></div>
                 </div>
 
-                <label data-i18n="label_condition">Condition</label>
+                <label id="ui-label-condition">Condition</label>
                 <select id="listing-condition" required>
-                    <option value="" data-i18n="opt_select">Select Condition</option>
-                    <option value="New" data-i18n="opt_new">New</option>
-                    <option value="Like New" data-i18n="opt_like_new">Like New</option>
-                    <option value="Good" data-i18n="opt_good">Good</option>
-                    <option value="Fair" data-i18n="opt_fair">Fair</option>
+                    <option value="" id="opt-cond-select">Select Condition</option>
+                    <option value="New" id="opt-cond-new">New</option>
+                    <option value="Like New" id="opt-cond-likenew">Like New</option>
+                    <option value="Good" id="opt-cond-good">Good</option>
+                    <option value="Fair" id="opt-cond-fair">Fair</option>
                 </select>
 
-                <label data-i18n="label_digital_code">Digital Access Code</label>
+                <label id="ui-label-code">Digital Access Code</label>
                 <select id="listing-digital-code">
-                    <option value="Not applicable" data-i18n="opt_na">Not applicable</option>
-                    <option value="Available / Unused" data-i18n="opt_available">Available / Unused</option>
-                    <option value="Already used" data-i18n="opt_used">Already used</option>
+                    <option value="Not applicable" id="opt-code-na">Not applicable</option>
+                    <option value="Available / Unused" id="opt-code-avail">Available / Unused</option>
+                    <option value="Already used" id="opt-code-used">Already used</option>
                 </select>
 
-                <label data-i18n="label_location">Campus Location</label>
+                <label id="ui-label-location">Campus Location</label>
                 <select id="listing-location" required>
-                    <option value="" data-i18n="opt_select_campus">Select a Campus</option>
-                    <optgroup label="Cégeps & Colleges" data-i18n="opt_cegeps">
-                        <option value="Collège Ahuntsic">Collège Ahuntsic</option>
-                        <option value="Collège André-Grasset">Collège André-Grasset</option>
-                        <option value="Cégep André-Laurendeau">Cégep André-Laurendeau</option>
-                        <option value="Collège de Bois-de-Boulogne">Collège de Bois-de-Boulogne</option>
-                        <option value="Collège Dawson">Collège Dawson / Dawson College</option>
-                        <option value="Cégep Édouard-Montpetit">Cégep Édouard-Montpetit</option>
-                        <option value="Cégep Gérald-Godin">Cégep Gérald-Godin</option>
-                        <option value="Collège Jean-de-Brébeuf">Collège Jean-de-Brébeuf</option>
-                        <option value="John Abbott College">John Abbott College</option>
-                        <option value="Collège de Maisonneuve">Collège de Maisonneuve</option>
-                        <option value="Cégep Marie-Victorin">Cégep Marie-Victorin</option>
-                        <option value="Collège de Rosemont" selected>Collège de Rosemont</option>
-                        <option value="Cégep de Saint-Laurent">Cégep de Saint-Laurent</option>
-                        <option value="Collège Stanislas">Collège Stanislas</option>
-                        <option value="Vanier College">Vanier College</option>
-                        <option value="Cégep du Vieux Montréal">Cégep du Vieux Montréal</option>
-                    </optgroup>
-                    <optgroup label="Universities" data-i18n="opt_universities">
-                        <option value="Concordia University">Concordia University</option>
-                        <option value="McGill University">McGill University</option>
-                        <option value="Université de Montréal">Université de Montréal</option>
-                        <option value="UQAM">UQAM</option>
-                    </optgroup>
+                    <!-- 🔥 FIXED: Restricted strictly to Rosemont -->
+                    <option value="Collège de Rosemont" selected>Collège de Rosemont</option>
                 </select>
 
-                <label data-i18n="label_meeting_point">Meeting Point (Max 60 chars)</label>
-                <input type="text" id="listing-meeting-point" maxlength="60" placeholder="e.g., Near Library">
+                <label id="ui-label-meet">Meeting Point (Max 60 chars)</label>
+                <input type="text" id="listing-meeting-point" maxlength="60">
                 
-                <label data-i18n="label_additional_details">Additional Details</label>
+                <label id="ui-label-details">Additional Details</label>
                 <div class="checkbox-group">
-                    <label class="checkbox-item"><input type="checkbox" id="cond-writing"> <span data-i18n="label_writing">Writing inside</span></label>
-                    <label class="checkbox-item"><input type="checkbox" id="cond-water"> <span data-i18n="label_water">Water damage</span></label>
-                    <label class="checkbox-item"><input type="checkbox" id="cond-missing"> <span data-i18n="label_missing">Missing pages</span></label>
+                    <label class="checkbox-item"><input type="checkbox" id="cond-writing"> <span id="ui-check-writing">Writing inside</span></label>
+                    <label class="checkbox-item"><input type="checkbox" id="cond-water"> <span id="ui-check-water">Water damage</span></label>
+                    <label class="checkbox-item"><input type="checkbox" id="cond-missing"> <span id="ui-check-missing">Missing pages</span></label>
                 </div>
 
-                <label data-i18n="label_photos">Photos (Max 5, Max 5MB each)</label>
+                <label id="ui-label-photos">Photos (Max 5, Max 5MB each)</label>
                 <div id="image-uploader">
                     <div class="image-preview-grid" id="image-preview-container"></div>
                     <label for="listing-image-input" id="add-photo-label" style="margin-top:10px;">
                         <i class="fas fa-camera"></i>
-                        <span style="font-size: 12px;" data-i18n="btn_add_photo">Add Photo</span>
+                        <span style="font-size: 12px;" id="ui-btn-add-photo">Add Photo</span>
                     </label>
                     <input type="file" id="listing-image-input" accept="image/*" style="display:none;">
                 </div>
 
                 <div class="form-buttons">
-                    <button type="submit" class="btn" id="postListingBtn" data-i18n="btn_list">Post Item</button>
-                    <button type="button" class="btn btn-secondary" onclick="window.location.href='/index.html'" data-i18n="btn_cancel">Cancel</button>
+                    <button type="submit" class="btn" id="postListingBtn">Post Item</button>
+                    <button type="button" class="btn btn-secondary" id="cancelListingBtn" onclick="window.location.href='/index.html'">Cancel</button>
                 </div>
             </form>
         </div>
@@ -186,16 +156,68 @@
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             
-            const strings = {
-                en: { priceErr: "Price cannot exceed $1200.", origPriceErr: "Original price cannot exceed $5000.", imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type. Please upload an image.", imgSizeErr: "Image too large (Max 5MB).", uploading: "Processing...", tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.", tagUses: "uses", restrictTitle: "Exclusive Access", restrictMsg: "Currently, only verified students from <strong>Collège de Rosemont</strong> (@crosemont.qc.ca) can post new listings." },
-                fr: { priceErr: "Le prix ne peut dépasser 1200$.", origPriceErr: "Le prix d'origine ne peut dépasser 5000$.", imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté. Veuillez télécharger une image.", imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Traitement...", tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.", tagUses: "utilisations", restrictTitle: "Accès Exclusif", restrictMsg: "Actuellement, seuls les étudiants vérifiés du <strong>Collège de Rosemont</strong> (@crosemont.qc.ca) peuvent publier de nouvelles annonces." }
+            // 🔥 FIXED: Direct Local Translations to guarantee UI changes!
+            const ui = {
+                en: {
+                    mainTitle: "List an Item", lblTitle: "Title", lblDesc: "Description", lblPrice: "Sale Price ($) - Max $1200", 
+                    lblOrigPrice: "Original Price ($) - Max $5000", lblTags: "Tags (Max 15)", tagPlace: "Type and press Enter...",
+                    lblCond: "Condition", optCondSel: "Select Condition", optNew: "New", optLikeNew: "Like New", optGood: "Good", optFair: "Fair",
+                    lblCode: "Digital Access Code", optNa: "Not applicable", optAvail: "Available / Unused", optUsed: "Already used",
+                    lblLoc: "Campus Location", lblMeet: "Meeting Point (Max 60 chars)", meetPlace: "e.g., Near Library",
+                    lblDet: "Additional Details", chkWrite: "Writing inside", chkWater: "Water damage", chkMiss: "Missing pages",
+                    lblPhotos: "Photos (Max 5, Max 5MB each)", btnAddPhoto: "Add Photo", btnPost: "Post Item", btnCancel: "Cancel",
+                    priceErr: "Price cannot exceed $1200.", origPriceErr: "Original price cannot exceed $5000.", imgErr: "Add at least one photo.", 
+                    imgTypeErr: "Unsupported file type. Please upload an image.", imgSizeErr: "Image too large (Max 5MB).", 
+                    uploading: "Processing...", tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.", tagUses: "uses"
+                },
+                fr: {
+                    mainTitle: "Publier un article", lblTitle: "Titre", lblDesc: "Description", lblPrice: "Prix de vente ($) - Max 1200$", 
+                    lblOrigPrice: "Prix d'origine ($) - Max 5000$", lblTags: "Mots-clés (Max 15)", tagPlace: "Tapez et appuyez sur Entrée...",
+                    lblCond: "État", optCondSel: "Sélectionner l'état", optNew: "Neuf", optLikeNew: "Comme neuf", optGood: "Bon état", optFair: "Acceptable",
+                    lblCode: "Code d'accès numérique", optNa: "Non applicable", optAvail: "Disponible / Inutilisé", optUsed: "Déjà utilisé",
+                    lblLoc: "Emplacement du campus", lblMeet: "Point de rencontre (Max 60 car.)", meetPlace: "ex: Près de la bibliothèque",
+                    lblDet: "Détails supplémentaires", chkWrite: "Écritures à l'intérieur", chkWater: "Dommages causés par l'eau", chkMiss: "Pages manquantes",
+                    lblPhotos: "Photos (Max 5, Max 5MB chacune)", btnAddPhoto: "Ajouter une photo", btnPost: "Publier l'article", btnCancel: "Annuler",
+                    priceErr: "Le prix ne peut dépasser 1200$.", origPriceErr: "Le prix d'origine ne peut dépasser 5000$.", imgErr: "Ajoutez au moins une photo.", 
+                    imgTypeErr: "Format non supporté. Veuillez télécharger une image.", imgSizeErr: "Image trop lourde (Max 5MB).", 
+                    uploading: "Traitement...", tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.", tagUses: "utilisations"
+                }
             };
+
+            // Apply translations to UI
+            document.getElementById('ui-main-title').textContent = ui[lang].mainTitle;
+            document.getElementById('ui-label-title').textContent = ui[lang].lblTitle;
+            document.getElementById('ui-label-desc').textContent = ui[lang].lblDesc;
+            document.getElementById('ui-label-price').textContent = ui[lang].lblPrice;
+            document.getElementById('ui-label-orig-price').textContent = ui[lang].lblOrigPrice;
+            document.getElementById('ui-label-tags').textContent = ui[lang].lblTags;
+            document.getElementById('tag-input').placeholder = ui[lang].tagPlace;
+            document.getElementById('ui-label-condition').textContent = ui[lang].lblCond;
+            document.getElementById('opt-cond-select').textContent = ui[lang].optCondSel;
+            document.getElementById('opt-cond-new').textContent = ui[lang].optNew;
+            document.getElementById('opt-cond-likenew').textContent = ui[lang].optLikeNew;
+            document.getElementById('opt-cond-good').textContent = ui[lang].optGood;
+            document.getElementById('opt-cond-fair').textContent = ui[lang].optFair;
+            document.getElementById('ui-label-code').textContent = ui[lang].lblCode;
+            document.getElementById('opt-code-na').textContent = ui[lang].optNa;
+            document.getElementById('opt-code-avail').textContent = ui[lang].optAvail;
+            document.getElementById('opt-code-used').textContent = ui[lang].optUsed;
+            document.getElementById('ui-label-location').textContent = ui[lang].lblLoc;
+            document.getElementById('ui-label-meet').textContent = ui[lang].lblMeet;
+            document.getElementById('listing-meeting-point').placeholder = ui[lang].meetPlace;
+            document.getElementById('ui-label-details').textContent = ui[lang].lblDet;
+            document.getElementById('ui-check-writing').textContent = ui[lang].chkWrite;
+            document.getElementById('ui-check-water').textContent = ui[lang].chkWater;
+            document.getElementById('ui-check-missing').textContent = ui[lang].chkMiss;
+            document.getElementById('ui-label-photos').textContent = ui[lang].lblPhotos;
+            document.getElementById('ui-btn-add-photo').textContent = ui[lang].btnAddPhoto;
+            document.getElementById('postListingBtn').textContent = ui[lang].btnPost;
+            document.getElementById('cancelListingBtn').textContent = ui[lang].btnCancel;
 
             let currentUser = null;
             let selectedFiles = [];
             let tags = [];
             const pageLoader = document.getElementById('page-loader');
-            const formContainer = document.getElementById('form-container');
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
@@ -207,37 +229,11 @@
                                 pageLoader.innerHTML = "Access Denied";
                                 return;
                             }
-                            
-                            // 🔥 SECURITY CHECK: ONLY ROSEMONT OR ADMINS CAN LIST
-                            const email = user.email.toLowerCase();
-                            const isRosemont = email.endsWith('@crosemont.qc.ca');
-                            const isAdmin = userDoc.exists() && userDoc.data().role === 'admin';
-                            
-                            if (!isRosemont && !isAdmin) {
-                                formContainer.innerHTML = `
-                                    <div class="restricted-msg">
-                                        <i class="fas fa-lock"></i>
-                                        <h2>${strings[lang].restrictTitle}</h2>
-                                        <p>${strings[lang].restrictMsg}</p>
-                                        <button class="btn" style="width:100%;" onclick="window.location.href='/index.html'">Back to Home</button>
-                                    </div>
-                                `;
-                                pageLoader.style.display = 'none';
-                                return;
-                            }
-
                             currentUser = user;
                             pageLoader.style.display = 'none';
-                        } catch (e) { 
-                            console.error(e);
-                            pageLoader.style.display = 'none'; 
-                        }
-                    } else {
-                        window.location.href = '/LoginInToCheaplet.html';
-                    }
-                } else {
-                    window.location.href = '/LoginInToCheaplet.html';
-                }
+                        } catch (e) { pageLoader.style.display = 'none'; }
+                    } else { window.location.href = '/LoginInToCheaplet.html'; }
+                } else { window.location.href = '/LoginInToCheaplet.html'; }
             });
 
             // --- TAGS LOGIC ---
@@ -248,8 +244,7 @@
             function renderTags() {
                 selectedTagsContainer.innerHTML = '';
                 tags.forEach((tag, index) => {
-                    const chip = document.createElement('div');
-                    chip.className = 'tag-chip';
+                    const chip = document.createElement('div'); chip.className = 'tag-chip';
                     chip.innerHTML = `${tag} <span style="cursor:pointer; margin-left:5px;" onclick="window.removeTag(${index})">&times;</span>`;
                     selectedTagsContainer.appendChild(chip);
                 });
@@ -258,7 +253,7 @@
             
             function addTag(tagName) {
                 const cleaned = tagName.trim();
-                if (tags.length >= 15) { alert(strings[lang].tagLimit); return; }
+                if (tags.length >= 15) { alert(ui[lang].tagLimit); return; }
                 if (cleaned && !tags.includes(cleaned)) { tags.push(cleaned); renderTags(); }
                 tagInput.value = ''; suggestionsBox.style.display = 'none';
             }
@@ -273,11 +268,9 @@
                     suggestionsBox.style.display = 'block';
                     snap.forEach(doc => {
                         const d = doc.data();
-                        const div = document.createElement('div');
-                        div.className = 'suggestion-item';
-                        div.innerHTML = `<span>${d.tag}</span> <span style="font-size:0.8rem; color:#888; background:#f0f0f0; padding:2px 8px; border-radius:10px;">${d.count || 1} ${strings[lang].tagUses}</span>`;
-                        div.onclick = () => addTag(d.tag);
-                        suggestionsBox.appendChild(div);
+                        const div = document.createElement('div'); div.className = 'suggestion-item';
+                        div.innerHTML = `<span>${d.tag}</span> <span style="font-size:0.8rem; color:#888; background:#f0f0f0; padding:2px 8px; border-radius:10px;">${d.count || 1} ${ui[lang].tagUses}</span>`;
+                        div.onclick = () => addTag(d.tag); suggestionsBox.appendChild(div);
                     });
                 } else {
                     suggestionsBox.style.display = 'block';
@@ -294,17 +287,11 @@
             function renderPreviews() {
                 previewContainer.innerHTML = '';
                 selectedFiles.forEach((file, index) => {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'image-preview-wrapper';
-                    const img = document.createElement('img');
-                    img.src = URL.createObjectURL(file);
-                    img.className = 'image-preview';
-                    const removeBtn = document.createElement('button');
-                    removeBtn.className = 'remove-image-btn';
-                    removeBtn.innerHTML = '&times;';
+                    const wrapper = document.createElement('div'); wrapper.className = 'image-preview-wrapper';
+                    const img = document.createElement('img'); img.src = URL.createObjectURL(file); img.className = 'image-preview';
+                    const removeBtn = document.createElement('button'); removeBtn.className = 'remove-image-btn'; removeBtn.innerHTML = '&times;';
                     removeBtn.onclick = () => { selectedFiles.splice(index, 1); renderPreviews(); };
-                    wrapper.appendChild(img); wrapper.appendChild(removeBtn);
-                    previewContainer.appendChild(wrapper);
+                    wrapper.appendChild(img); wrapper.appendChild(removeBtn); previewContainer.appendChild(wrapper);
                 });
                 document.getElementById('add-photo-label').style.display = selectedFiles.length < 5 ? 'flex' : 'none';
             }
@@ -312,31 +299,15 @@
             imageInput.onchange = (e) => { 
                 const file = e.target.files[0];
                 if (file) {
-                    if (!file.type.startsWith('image/')) {
-                        alert(strings[lang].imgTypeErr);
-                        imageInput.value = '';
-                        return;
-                    }
-                    if (file.size > 5 * 1024 * 1024) { 
-                        alert(strings[lang].imgSizeErr);
-                        imageInput.value = '';
-                        return;
-                    }
-                    
-                    selectedFiles.push(file); 
-                    renderPreviews(); 
+                    if (!file.type.startsWith('image/')) { alert(ui[lang].imgTypeErr); imageInput.value = ''; return; }
+                    if (file.size > 5 * 1024 * 1024) { alert(ui[lang].imgSizeErr); imageInput.value = ''; return; }
+                    selectedFiles.push(file); renderPreviews(); 
                 } 
             };
 
             // --- SUBMISSION ---
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
-                
-                if (!config.cloudinary || !config.cloudinary.cloudName) {
-                    alert("System Error: Cloudinary is not connected. Cloud name is undefined.");
-                    return; 
-                }
-
                 const title = document.getElementById('listing-title').value;
                 const desc = document.getElementById('listing-description').value;
                 const meet = document.getElementById('listing-meeting-point').value;
@@ -344,27 +315,20 @@
                 const originalPriceVal = document.getElementById('listing-original-price').value;
                 const originalPrice = originalPriceVal ? parseFloat(originalPriceVal) : null;
 
-                if (title.length > 80 || desc.length > 1500 || meet.length > 60) { alert(strings[lang].lenErr); return; }
-                if (price > 1200) { alert(strings[lang].priceErr); return; }
-                if (originalPrice && originalPrice > 5000) { alert(strings[lang].origPriceErr); return; }
-                if (selectedFiles.length === 0) { alert(strings[lang].imgErr); return; }
+                if (title.length > 80 || desc.length > 1500 || meet.length > 60) { alert(ui[lang].lenErr); return; }
+                if (price > 1200) { alert(ui[lang].priceErr); return; }
+                if (originalPrice && originalPrice > 5000) { alert(ui[lang].origPriceErr); return; }
+                if (selectedFiles.length === 0) { alert(ui[lang].imgErr); return; }
 
                 const submitBtn = document.getElementById('postListingBtn');
-                submitBtn.disabled = true;
-                submitBtn.textContent = strings[lang].uploading;
+                submitBtn.disabled = true; submitBtn.textContent = ui[lang].uploading;
 
                 try {
                     const imageUrls = [];
                     for (const file of selectedFiles) {
-                        const formData = new FormData();
-                        formData.append('file', file);
-                        formData.append('upload_preset', config.cloudinary.uploadPreset);
+                        const formData = new FormData(); formData.append('file', file); formData.append('upload_preset', UPLOAD_PRESET);
                         const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData }).then(r => r.json());
-                        if (res.secure_url) {
-                            imageUrls.push(res.secure_url);
-                        } else {
-                            throw new Error("Image upload failed.");
-                        }
+                        imageUrls.push(res.secure_url);
                     }
                     for (const t of tags) {
                         const tagId = t.toLowerCase().replace(/[^a-z0-9]/g, "_");
@@ -372,28 +336,15 @@
                     }
                     
                     const displayName = currentUser.displayName || "User";
-
+                    
                     const docRef = await addDoc(collection(db, 'listings'), {
-                        title: title.trim(),
-                        description: desc.trim(),
-                        price: price,
-                        originalPrice: originalPrice,
-                        meetingPoint: meet.trim() || "",
-                        hasWriting: document.getElementById('cond-writing').checked,
-                        hasWaterDamage: document.getElementById('cond-water').checked,
-                        hasMissingPages: document.getElementById('cond-missing').checked,
-                        condition: document.getElementById('listing-condition').value || "Good",
-                        digitalCode: document.getElementById('listing-digital-code').value || "Not applicable",
-                        location: document.getElementById('listing-location').value || "Collège de Rosemont",
-                        tags: tags || [],
-                        imageUrls: imageUrls || [],
-                        posterUid: currentUser.uid,
-                        posterDisplayName: displayName,
-                        status: 'active',
-                        timestamp: serverTimestamp()
+                        title: title.trim(), description: desc.trim(), price: price, originalPrice: originalPrice, meetingPoint: meet.trim() || "",
+                        hasWriting: document.getElementById('cond-writing').checked, hasWaterDamage: document.getElementById('cond-water').checked, hasMissingPages: document.getElementById('cond-missing').checked,
+                        condition: document.getElementById('listing-condition').value || "Good", digitalCode: document.getElementById('listing-digital-code').value || "Not applicable", location: document.getElementById('listing-location').value || "",
+                        tags: tags || [], imageUrls: imageUrls || [], posterUid: currentUser.uid, posterDisplayName: displayName, status: 'active', timestamp: serverTimestamp()
                     });
                     window.location.href = `/listing.html?id=${docRef.id}`;
-                } catch (err) { console.error(err); submitBtn.disabled = false; submitBtn.textContent = "Post Item"; }
+                } catch (err) { console.error(err); submitBtn.disabled = false; submitBtn.textContent = ui[lang].btnPost; }
             };
         }
         main();
