@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>List an Item - Cheaplet</title>
-    <!-- GLOBAL CONFIGURATION -->
     <script type="module" src="global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -29,7 +28,6 @@
         .form-buttons { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
         .form-buttons .btn { flex: 1; min-width: 120px; }
 
-        /* TAG SYSTEM STYLES */
         .tag-container { border: 2px solid #ddd; border-radius: 6px; padding: 10px; margin-bottom: 15px; background: #fff; display: flex; flex-wrap: wrap; gap: 8px; position: relative; }
         .tag-chip { background-color: #e8f5e9; color: #2E7D32; padding: 5px 10px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 5px; }
         .tag-close { cursor: pointer; font-weight: bold; }
@@ -52,6 +50,12 @@
 
         #page-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; color: #666; }
         @media (max-width: 767px) { nav { display: none; } }
+        
+        /* RESTRICTION MSG STYLES */
+        .restricted-msg { text-align: center; padding: 40px 20px; }
+        .restricted-msg i { font-size: 4rem; color: #f44336; margin-bottom: 20px; }
+        .restricted-msg h2 { color: #d32f2f; margin-bottom: 15px; }
+        .restricted-msg p { font-size: 1.1rem; color: #555; margin-bottom: 25px; }
     </style>
 </head>
 <body>
@@ -68,7 +72,7 @@
     </header>
 
     <main class="container">
-        <div class="form-wrapper">
+        <div class="form-wrapper" id="form-container">
             <h2 data-i18n="btn_list">List an Item</h2>
             <form id="listing-form">
                 <label data-i18n="label_title">Title</label>
@@ -77,12 +81,10 @@
                 <label data-i18n="label_description">Description</label>
                 <textarea id="listing-description" maxlength="1500" required></textarea>
                 
-                <!-- Strict Number Input for Sale Price -->
                 <label data-i18n="label_price">Sale Price ($) - Max $1200</label>
                 <input type="text" inputmode="decimal" id="listing-price" placeholder="0.00" required 
                        oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 1200) this.value = '1200';">
                 
-                <!-- 🔥 FIXED: Strict Number Input & 5k Limit for Original Price -->
                 <label>Original Price ($) - Max $5000</label>
                 <input type="text" inputmode="decimal" id="listing-original-price" placeholder="0.00" 
                        oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 5000) this.value = '5000';">
@@ -125,7 +127,7 @@
                         <option value="John Abbott College">John Abbott College</option>
                         <option value="Collège de Maisonneuve">Collège de Maisonneuve</option>
                         <option value="Cégep Marie-Victorin">Cégep Marie-Victorin</option>
-                        <option value="Collège de Rosemont">Collège de Rosemont</option>
+                        <option value="Collège de Rosemont" selected>Collège de Rosemont</option>
                         <option value="Cégep de Saint-Laurent">Cégep de Saint-Laurent</option>
                         <option value="Collège Stanislas">Collège Stanislas</option>
                         <option value="Vanier College">Vanier College</option>
@@ -184,16 +186,16 @@
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             
-            // 🔥 FIXED: Added origPriceErr to translations
             const strings = {
-                en: { priceErr: "Price cannot exceed $1200.", origPriceErr: "Original price cannot exceed $5000.", imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type. Please upload an image.", imgSizeErr: "Image too large (Max 5MB).", uploading: "Processing...", tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.", tagUses: "uses" },
-                fr: { priceErr: "Le prix ne peut dépasser 1200$.", origPriceErr: "Le prix d'origine ne peut dépasser 5000$.", imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté. Veuillez télécharger une image.", imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Traitement...", tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.", tagUses: "utilisations" }
+                en: { priceErr: "Price cannot exceed $1200.", origPriceErr: "Original price cannot exceed $5000.", imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type. Please upload an image.", imgSizeErr: "Image too large (Max 5MB).", uploading: "Processing...", tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.", tagUses: "uses", restrictTitle: "Exclusive Access", restrictMsg: "Currently, only verified students from <strong>Collège de Rosemont</strong> (@crosemont.qc.ca) can post new listings." },
+                fr: { priceErr: "Le prix ne peut dépasser 1200$.", origPriceErr: "Le prix d'origine ne peut dépasser 5000$.", imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté. Veuillez télécharger une image.", imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Traitement...", tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.", tagUses: "utilisations", restrictTitle: "Accès Exclusif", restrictMsg: "Actuellement, seuls les étudiants vérifiés du <strong>Collège de Rosemont</strong> (@crosemont.qc.ca) peuvent publier de nouvelles annonces." }
             };
 
             let currentUser = null;
             let selectedFiles = [];
             let tags = [];
             const pageLoader = document.getElementById('page-loader');
+            const formContainer = document.getElementById('form-container');
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
@@ -205,6 +207,25 @@
                                 pageLoader.innerHTML = "Access Denied";
                                 return;
                             }
+                            
+                            // 🔥 SECURITY CHECK: ONLY ROSEMONT OR ADMINS CAN LIST
+                            const email = user.email.toLowerCase();
+                            const isRosemont = email.endsWith('@crosemont.qc.ca');
+                            const isAdmin = userDoc.exists() && userDoc.data().role === 'admin';
+                            
+                            if (!isRosemont && !isAdmin) {
+                                formContainer.innerHTML = `
+                                    <div class="restricted-msg">
+                                        <i class="fas fa-lock"></i>
+                                        <h2>${strings[lang].restrictTitle}</h2>
+                                        <p>${strings[lang].restrictMsg}</p>
+                                        <button class="btn" style="width:100%;" onclick="window.location.href='/index.html'">Back to Home</button>
+                                    </div>
+                                `;
+                                pageLoader.style.display = 'none';
+                                return;
+                            }
+
                             currentUser = user;
                             pageLoader.style.display = 'none';
                         } catch (e) { 
@@ -310,6 +331,12 @@
             // --- SUBMISSION ---
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
+                
+                if (!config.cloudinary || !config.cloudinary.cloudName) {
+                    alert("System Error: Cloudinary is not connected. Cloud name is undefined.");
+                    return; 
+                }
+
                 const title = document.getElementById('listing-title').value;
                 const desc = document.getElementById('listing-description').value;
                 const meet = document.getElementById('listing-meeting-point').value;
@@ -319,10 +346,7 @@
 
                 if (title.length > 80 || desc.length > 1500 || meet.length > 60) { alert(strings[lang].lenErr); return; }
                 if (price > 1200) { alert(strings[lang].priceErr); return; }
-                
-                // 🔥 FIXED: Added backup JS validation for Original Price
                 if (originalPrice && originalPrice > 5000) { alert(strings[lang].origPriceErr); return; }
-                
                 if (selectedFiles.length === 0) { alert(strings[lang].imgErr); return; }
 
                 const submitBtn = document.getElementById('postListingBtn');
@@ -334,30 +358,38 @@
                     for (const file of selectedFiles) {
                         const formData = new FormData();
                         formData.append('file', file);
-                        formData.append('upload_preset', UPLOAD_PRESET);
+                        formData.append('upload_preset', config.cloudinary.uploadPreset);
                         const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData }).then(r => r.json());
-                        imageUrls.push(res.secure_url);
+                        if (res.secure_url) {
+                            imageUrls.push(res.secure_url);
+                        } else {
+                            throw new Error("Image upload failed.");
+                        }
                     }
                     for (const t of tags) {
                         const tagId = t.toLowerCase().replace(/[^a-z0-9]/g, "_");
                         await setDoc(doc(db, "global_tags", tagId), { tag: t, tag_lowercase: t.toLowerCase(), count: increment(1) }, { merge: true });
                     }
+                    
+                    const displayName = currentUser.displayName || "User";
+
                     const docRef = await addDoc(collection(db, 'listings'), {
                         title: title.trim(),
                         description: desc.trim(),
                         price: price,
                         originalPrice: originalPrice,
-                        meetingPoint: meet.trim(),
+                        meetingPoint: meet.trim() || "",
                         hasWriting: document.getElementById('cond-writing').checked,
                         hasWaterDamage: document.getElementById('cond-water').checked,
                         hasMissingPages: document.getElementById('cond-missing').checked,
-                        condition: document.getElementById('listing-condition').value,
-                        digitalCode: document.getElementById('listing-digital-code').value,
-                        location: document.getElementById('listing-location').value,
-                        tags: tags,
-                        imageUrls: imageUrls,
+                        condition: document.getElementById('listing-condition').value || "Good",
+                        digitalCode: document.getElementById('listing-digital-code').value || "Not applicable",
+                        location: document.getElementById('listing-location').value || "Collège de Rosemont",
+                        tags: tags || [],
+                        imageUrls: imageUrls || [],
                         posterUid: currentUser.uid,
-                        posterDisplayName: currentUser.displayName,
+                        posterDisplayName: displayName,
+                        status: 'active',
                         timestamp: serverTimestamp()
                     });
                     window.location.href = `/listing.html?id=${docRef.id}`;
