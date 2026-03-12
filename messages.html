@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <title>My Messages - Cheaplet</title>
-    <!-- GLOBAL BRAIN (Connects Profile Circle, Ban Check, Language) -->
+    <!-- GLOBAL BRAIN -->
     <script type="module" src="global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -13,11 +12,7 @@
         body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
         .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
 
-        header { 
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); 
-            color: white; padding: 15px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); 
-            position: sticky; top: 0; z-index: 100; 
-        }
+        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
         .header-content { display: flex; justify-content: space-between; align-items: center; }
         .header-left { display: flex; align-items: center; gap: 20px; }
         .logo { font-size: 24px; font-weight: bold; color: white; text-decoration: none; }
@@ -33,7 +28,6 @@
         .conversation-item:last-child { border-bottom: none; }
         .conversation-item:hover { background-color: #f8f9fa; }
 
-        /* AVATAR UPDATES: Added overflow hidden and image styling */
         .avatar { width: 50px; height: 50px; border-radius: 50%; background-color: #4CAF50; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; margin-right: 15px; flex-shrink: 0; overflow: hidden; }
         .avatar img { width: 100%; height: 100%; object-fit: cover; }
         
@@ -48,23 +42,14 @@
 <body>
     <header>
         <div class="container header-content">
-            <div class="header-left">
-                <a href="/index.html" class="logo">Cheap<span>let</span></a>
-                <nav><ul></ul></nav>
-            </div>
+            <div class="header-left"><a href="/index.html" class="logo">Cheap<span>let</span></a><nav><ul></ul></nav></div>
             <div class="header-right"></div>
         </div>
     </header>
 
     <main class="container">
-        <div class="page-header">
-            <h1 data-i18n="nav_messages">My Messages</h1>
-        </div>
-
-        <div id="info-container">
-            <p class="info-message">...</p>
-        </div>
-    
+        <div class="page-header"><h1 data-i18n="nav_messages">My Messages</h1></div>
+        <div id="info-container"><p class="info-message">...</p></div>
         <div id="inbox-container"></div>
     </main>
 
@@ -83,26 +68,23 @@
             const infoContainer = document.getElementById('info-container');
             const inboxContainer = document.getElementById('inbox-container');
 
-            // --- LOCAL TRANSLATION LOGIC ---
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = {
-                en: { loading: "Loading conversations...", empty: "You have no messages yet.", login: "Please log in to view messages.", start: "Click to start conversation" },
-                fr: { loading: "Chargement des conversations...", empty: "Vous n'avez pas encore de messages.", login: "Veuillez vous connecter pour voir vos messages.", start: "Cliquez pour commencer la conversation" }
+                en: { loading: "Loading conversations...", empty: "You have no messages yet.", login: "Please log in to view messages." },
+                fr: { loading: "Chargement des conversations...", empty: "Vous n'avez pas encore de messages.", login: "Veuillez vous connecter pour voir vos messages." }
             };
 
-            // Local cache to speed up profile picture loading
             const userCache = {};
             let unsubscribe = null;
 
             onAuthStateChanged(auth, user => {
                 const isOAuth = user && user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
-
                 if (user && (user.emailVerified || isOAuth)) {
                     fetchConversations(user);
                 } else {
                     if (unsubscribe) unsubscribe();
                     inboxContainer.innerHTML = '';
-                    infoContainer.innerHTML = `<p class="info-message">You must be logged in to view your messages. <a href="/LoginInToCheaplet.html">Log in here.</a></p>`;
+                    infoContainer.innerHTML = `<p class="info-message">${strings[lang].login}</p>`;
                 }
             });
 
@@ -112,13 +94,23 @@
 
                 unsubscribe = onSnapshot(q, (snapshot) => {
                     inboxContainer.innerHTML = '';
-                    if (snapshot.empty) {
+                    let hasVisibleChats = false;
+
+                    snapshot.forEach((docSnap) => {
+                        const chatData = docSnap.data();
+                        
+                        // 🔥 THE FIX: Hide chats that have no messages!
+                        if (!chatData.lastMessage || chatData.lastMessage.trim() === "") return;
+                        
+                        hasVisibleChats = true;
+                        inboxContainer.appendChild(renderConversation(docSnap, currentUser));
+                    });
+
+                    // If all chats were empty/ghosts, show the empty message
+                    if (!hasVisibleChats) {
                         infoContainer.innerHTML = `<p class="info-message">${strings[lang].empty}</p>`;
                     } else {
                         infoContainer.innerHTML = ''; 
-                        snapshot.forEach((docSnap) => {
-                            inboxContainer.appendChild(renderConversation(docSnap, currentUser));
-                        });
                     }
                 });
             }
@@ -127,29 +119,24 @@
                 const chatData = docSnap.data();
                 const otherId = chatData.participants.find(p => p !== currentUser.uid);
                 const displayName = chatData.participantInfo ? chatData.participantInfo[otherId] || 'User' : 'User';
-                
-                // Show the title of the item they are chatting about
                 const itemTitle = chatData.listingTitle ? `<span style="font-size:0.8rem; color:#4CAF50; font-weight:normal;">(${chatData.listingTitle})</span>` : '';
 
                 const link = document.createElement('a');
                 link.href = `/chat.html?id=${docSnap.id}`;
                 link.className = 'conversation-item';
-                
-                // Add an ID to the avatar div so we can target it once the image loads
                 const avatarId = `msg-avatar-${docSnap.id}`;
                 
                 link.innerHTML = `
                     <div class="avatar" id="${avatarId}">${displayName.charAt(0).toUpperCase()}</div>
                     <div class="conversation-details">
                         <p class="participant-name">${displayName} ${itemTitle}</p>
-                        <p class="last-message">${chatData.lastMessage || strings[lang].start}</p>
+                        <p class="last-message">${chatData.lastMessage}</p>
                     </div>`;
 
-                // Fetch the other user's profile picture dynamically without slowing down the page load
                 if (userCache[otherId]) {
                     if (userCache[otherId].photoURL) {
                         const avatarDiv = link.querySelector(`#${avatarId}`);
-                        if (avatarDiv) avatarDiv.innerHTML = `<img src="${userCache[otherId].photoURL}" alt="Profile">`;
+                        if (avatarDiv) avatarDiv.innerHTML = `<img src="${userCache[otherId].photoURL}">`;
                     }
                 } else {
                     getDoc(doc(db, 'users', otherId)).then(uSnap => {
@@ -158,12 +145,11 @@
                             userCache[otherId] = data;
                             if (data.photoURL) {
                                 const avatarDiv = link.querySelector(`#${avatarId}`);
-                                if (avatarDiv) avatarDiv.innerHTML = `<img src="${data.photoURL}" alt="Profile">`;
+                                if (avatarDiv) avatarDiv.innerHTML = `<img src="${data.photoURL}">`;
                             }
                         }
-                    }).catch(err => console.error("Error fetching user profile:", err));
+                    });
                 }
-
                 return link;
             }
         }
