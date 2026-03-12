@@ -31,34 +31,15 @@
         .hero h1 { font-size: clamp(1.8rem, 6vw, 2.5rem); margin-bottom: 15px; }
         
         /* GRID RESPONSIVENESS */
-        .listings-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
-            gap: 20px; 
-            margin-bottom: 40px; 
-        }
+        .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-bottom: 40px; }
 
         @media (max-width: 767px) {
             nav { display: none; }
-            .listings-grid {
-                grid-template-columns: repeat(2, 1fr); 
-                gap: 10px; 
-                padding: 0;
-            }
-            .listing-image {
-                height: 160px !important; 
-            }
-            .listing-details {
-                padding: 8px !important;
-            }
-            .listing-price {
-                font-size: 1rem !important;
-            }
-            .listing-title {
-                font-size: 0.85rem !important;
-                height: 2.6em; 
-                overflow: hidden;
-            }
+            .listings-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0; }
+            .listing-image { height: 160px !important; }
+            .listing-details { padding: 8px !important; }
+            .listing-price { font-size: 1rem !important; }
+            .listing-title { font-size: 0.85rem !important; height: 2.6em; overflow: hidden; }
         }
 
         /* Listing Card UI */
@@ -98,7 +79,7 @@
     </section>
     
     <section class="tags-section container">
-        <h2 class="section-title" data-i18n="title_tags">Popular Tags</h2>
+        <h2 class="section-title" id="title-tags">Popular Tags</h2>
         <div class="tags-grid" id="tags-grid-container">
             <p style="color:#777;">...</p>
         </div>
@@ -108,9 +89,9 @@
         <section class="filters" style="margin: 30px 0;">
             <div style="display:flex; gap:10px; flex-wrap:wrap;">
                 <select id="sort-filter" style="padding:10px; border-radius:8px; border:2px solid #ddd; flex:1; min-width:150px;">
-                    <option value="newest">Newest First</option>
-                    <option value="price-low">Price: Low to High</option>
-                    <option value="price-high">Price: High to Low</option>
+                    <option value="newest" id="sort-newest">Newest First</option>
+                    <option value="price-low" id="sort-low">Price: Low to High</option>
+                    <option value="price-high" id="sort-high">Price: High to Low</option>
                 </select>
                 <input type="text" id="search-input" data-i18n-placeholder="search_placeholder" placeholder="Search listings..." style="padding:10px; border-radius:8px; border:2px solid #ddd; flex:2; min-width:200px;">
             </div>
@@ -118,7 +99,7 @@
 
         <section class="listings">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                <h2 data-i18n="title_listings">Featured Listings</h2>
+                <h2 id="title-listings">Featured Listings</h2>
                 <span id="itemCount" style="color:#888; font-weight:600;">...</span>
             </div>
             <div class="listings-grid" id="listings-container"></div>
@@ -127,25 +108,25 @@
 
     <section class="how-it-works" style="padding: 60px 0; background: #fff;">
         <div class="container">
-            <h2 class="section-title" data-i18n="how_title">How It Works</h2>
+            <h2 class="section-title" id="how-title">How It Works</h2>
             <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:30px; text-align:center;">
                 <div>
                     <i class="fas fa-user-plus" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i>
-                    <h3 data-i18n="step_1_title">Create an Account</h3>
+                    <h3 id="step-1">Create an Account</h3>
                 </div>
                 <div>
                     <i class="fas fa-camera-retro" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i>
-                    <h3 data-i18n="step_2_title">Post Your Item</h3>
+                    <h3 id="step-2">Post Your Item</h3>
                 </div>
                 <div>
                     <i class="fas fa-comments-dollar" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i>
-                    <h3 data-i18n="step_3_title">Connect & Sell</h3>
+                    <h3 id="step-3">Connect & Sell</h3>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- UPDATED FOOTER WITH CLICKABLE LINKS -->
+    <!-- FOOTER WITH CLICKABLE LINKS -->
     <footer style="background: #2E7D32; color: white; padding: 40px 0; margin-top: 40px; text-align: center;">
         <div class="container">
             <div style="margin-bottom: 20px;">
@@ -168,15 +149,40 @@
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const db = getFirestore(app);
 
-            // Translate footer links dynamically
+            // 🔥 TRADUCTIONS LOCALES POUR INDEX.HTML
             const lang = localStorage.getItem('preferred_language') || 'en';
-            const footerStrings = {
-                en: { terms: "Terms of Service", privacy: "Privacy Policy", safety: "Safety Guidelines" },
-                fr: { terms: "Conditions d'utilisation", privacy: "Confidentialité", safety: "Sécurité" }
+            const uiStrings = {
+                en: { 
+                    titleTags: "Popular Tags", titleListings: "Featured Listings",
+                    howTitle: "How It Works", step1: "Create an Account", step2: "Post Your Item", step3: "Connect & Sell",
+                    sortNewest: "Newest First", sortLow: "Price: Low to High", sortHigh: "Price: High to Low",
+                    itemsWord: "items", cityFallback: "Montreal",
+                    terms: "Terms of Service", privacy: "Privacy Policy", safety: "Safety Guidelines" 
+                },
+                fr: { 
+                    titleTags: "Mots-clés populaires", titleListings: "Annonces en vedette",
+                    howTitle: "Comment ça marche", step1: "Créer un compte", step2: "Publier un article", step3: "Connecter & Vendre",
+                    sortNewest: "Plus récents", sortLow: "Prix : Croissant", sortHigh: "Prix : Décroissant",
+                    itemsWord: "articles", cityFallback: "Montréal",
+                    terms: "Conditions d'utilisation", privacy: "Confidentialité", safety: "Sécurité" 
+                }
             };
-            document.getElementById('link-terms').textContent = footerStrings[lang].terms;
-            document.getElementById('link-privacy').textContent = footerStrings[lang].privacy;
-            document.getElementById('link-safety').textContent = footerStrings[lang].safety;
+
+            // Appliquer les traductions immédiatement
+            document.getElementById('title-tags').textContent = uiStrings[lang].titleTags;
+            document.getElementById('title-listings').textContent = uiStrings[lang].titleListings;
+            document.getElementById('how-title').textContent = uiStrings[lang].howTitle;
+            document.getElementById('step-1').textContent = uiStrings[lang].step1;
+            document.getElementById('step-2').textContent = uiStrings[lang].step2;
+            document.getElementById('step-3').textContent = uiStrings[lang].step3;
+            
+            document.getElementById('sort-newest').textContent = uiStrings[lang].sortNewest;
+            document.getElementById('sort-low').textContent = uiStrings[lang].sortLow;
+            document.getElementById('sort-high').textContent = uiStrings[lang].sortHigh;
+
+            document.getElementById('link-terms').textContent = uiStrings[lang].terms;
+            document.getElementById('link-privacy').textContent = uiStrings[lang].privacy;
+            document.getElementById('link-safety').textContent = uiStrings[lang].safety;
 
             const listingsContainer = document.getElementById('listings-container');
             const itemCountSpan = document.getElementById('itemCount');
@@ -223,7 +229,7 @@
                             ${originalPriceHTML}
                         </div>
                         <h3 class="listing-title" style="margin-bottom: 8px;">${data.title}</h3>
-                        <div style="font-size: 0.85rem; color: #777;"><i class="fas fa-map-marker-alt"></i> ${data.location || 'Montreal'}</div>
+                        <div style="font-size: 0.85rem; color: #777;"><i class="fas fa-map-marker-alt"></i> ${data.location || uiStrings[lang].cityFallback}</div>
                     </div>`;
                 return card;
             }
@@ -239,15 +245,22 @@
                 unsubscribeListings = onSnapshot(query(q, ...constraints), snapshot => {
                     listingsContainer.innerHTML = '';
                     const activeDocs = snapshot.docs.filter(doc => doc.data().status !== 'sold');
-                    itemCountSpan.textContent = `${activeDocs.length} items`;
+                    
+                    // 🔥 Traduction dynamique du nombre d'articles
+                    itemCountSpan.textContent = `${activeDocs.length} ${uiStrings[lang].itemsWord}`;
+                    
                     activeDocs.forEach(doc => listingsContainer.appendChild(renderListing(doc)));
                 });
             }
 
             sortFilter.onchange = fetchListings;
             searchInput.onkeydown = (e) => {
-                if (e.key === 'Enter' && searchInput.value.trim()) {
-                    window.location.href = `/search.html?q=${encodeURIComponent(searchInput.value.trim())}`;
+                if (e.key === 'Enter') {
+                    // Hide mobile keyboard and trigger search
+                    searchInput.blur();
+                    if (searchInput.value.trim()) {
+                        window.location.href = `/search.html?q=${encodeURIComponent(searchInput.value.trim())}`;
+                    }
                 }
             };
 
