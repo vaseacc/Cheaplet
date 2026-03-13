@@ -75,7 +75,7 @@
         .hero {
             position: relative; overflow: hidden;
             background: linear-gradient(135deg, var(--ink) 0%, var(--deep) 60%, #4a7db5 100%);
-            padding: 60px 20px 40px; /* 🔥 Shrunk from 100px to save space */
+            padding: 60px 20px 40px; 
             text-align: center;
         }
         .hero::before {
@@ -94,12 +94,12 @@
             background: rgba(179,205,224,0.15); border: 1px solid rgba(179,205,224,0.3);
             color: var(--mist); padding: 6px 16px; border-radius: 50px;
             font-size: 0.8rem; font-weight: 500; letter-spacing: 0.5px;
-            margin-bottom: 20px; /* Reduced margin */
+            margin-bottom: 20px; 
         }
         .hero-badge i { font-size: 0.7rem; color: var(--gold); }
         .hero h1 {
             font-family: var(--font-display);
-            font-size: clamp(2.2rem, 6vw, 3.5rem); /* 🔥 Shrunk font size slightly */
+            font-size: clamp(2.2rem, 6vw, 3.5rem); 
             font-weight: 900; color: var(--white);
             line-height: 1.1; margin-bottom: 15px;
             letter-spacing: -1px;
@@ -239,9 +239,9 @@
             .hero h1 { font-size: 2rem; margin-bottom: 10px; }
             .stats-inner { gap: 15px; }
             .search-section { padding: 15px; }
-            .listings-grid { grid-template-columns: repeat(2, 1fr); gap: 15px; } /* Looser grid for mobile */
+            .listings-grid { grid-template-columns: repeat(2, 1fr); gap: 15px; } 
             .listing-image { height: 140px; }
-            .listing-details { padding: 12px; } /* Looser padding */
+            .listing-details { padding: 12px; } 
             .listing-price { font-size: 1.1rem; }
             .listing-title { font-size: 0.85rem; }
             .footer-inner { grid-template-columns: 1fr; }
@@ -258,6 +258,13 @@
     <header>
         <div class="header-inner">
             <a href="/index.html" class="logo">Cheap<em>let</em></a>
+            <nav>
+                <ul>
+                    <li><a href="/search.html" id="nav-browse-link" data-i18n="nav_browse">Browse</a></li>
+                    <li><a href="/my-listings.html" id="nav-listings-link" data-i18n="nav_listings">My Listings</a></li>
+                    <li><a href="/messages.html" id="nav-messages-link" data-i18n="nav_messages">Messages</a></li>
+                </ul>
+            </nav>
             <div class="header-right"></div>
         </div>
     </header>
@@ -273,7 +280,6 @@
                 <button class="btn-hero-primary" id="startBrowsingBtn">
                     <i class="fas fa-book-open" style="margin-right:8px;"></i><span id="btn-browse-txt">Browse Books</span>
                 </button>
-                <!-- 🔥 FIXED: Button routes to listanitem.html -->
                 <button class="btn-hero-ghost" id="heroListBtn">
                     <i class="fas fa-plus" style="margin-right:8px;"></i><span id="btn-list-txt">List a Book</span>
                 </button>
@@ -283,7 +289,6 @@
 
     <div class="stats-bar">
         <div class="stats-inner">
-            <!-- 🔥 FIXED: Real Book Count + Removed "12 Campuses" -->
             <div class="stat">
                 <div class="stat-value" id="dynamic-book-count">...</div>
                 <div class="stat-label" id="stat-books">BOOKS LISTED</div>
@@ -317,7 +322,6 @@
         <section class="tags-section">
             <div class="section-header">
                 <h2 class="section-title" id="tags-title">Browse by Subject</h2>
-                <!-- 🔥 FIXED: Link goes to tag.html -->
                 <a href="/tag.html" class="section-link" id="tags-view-all">View all →</a>
             </div>
             <div class="tags-grid" id="tags-grid-container"></div>
@@ -395,6 +399,7 @@
                     h1: "Buy &amp; Sell<br><span>Used Books</span><br>for Less.",
                     sub: "The smartest campus marketplace. Save on textbooks, find course reads, and earn back cash on books you've already finished.",
                     btnB: "Browse Books", btnL: "List a Book",
+                    navB: "Browse", navL: "My Listings", navM: "Messages",
                     statB: "BOOKS LISTED", statS: "AVG. SAVINGS", statSt: "STUDENTS",
                     searchPl: "Search by title, author, ISBN, or course code…", searchBtn: "Search",
                     sortNew: "Newest First", sortLow: "Price: Low to High", sortHigh: "Price: High to Low",
@@ -412,6 +417,7 @@
                     h1: "Achetez &amp; Vendez<br><span>Livres Usagés</span><br>à bas prix.",
                     sub: "Le marché étudiant intelligent. Économisez sur les manuels, trouvez vos lectures de cours et récupérez de l'argent sur vos anciens livres.",
                     btnB: "Parcourir les livres", btnL: "Publier un livre",
+                    navB: "Parcourir", navL: "Mes Annonces", navM: "Messages",
                     statB: "LIVRES PUBLIÉS", statS: "ÉCONOMIE MOY.", statSt: "ÉTUDIANTS",
                     searchPl: "Rechercher par titre, auteur, ISBN ou sigle de cours…", searchBtn: "Rechercher",
                     sortNew: "Plus récents", sortLow: "Prix : Croissant", sortHigh: "Prix : Décroissant",
@@ -426,8 +432,14 @@
                 }
             };
 
-            // Apply Translations
             const ui = uiStrings[lang];
+            
+            // Header Nav Links
+            document.getElementById('nav-browse-link').textContent = ui.navB;
+            document.getElementById('nav-listings-link').textContent = ui.navL;
+            document.getElementById('nav-messages-link').textContent = ui.navM;
+
+            // Rest of UI
             document.getElementById('hero-badge').innerHTML = ui.badge;
             document.getElementById('hero-title').innerHTML = ui.h1;
             document.getElementById('hero-sub').innerHTML = ui.sub;
@@ -470,7 +482,6 @@
 
             let unsubscribeListings = null;
 
-            // Button actions
             document.getElementById('startBrowsingBtn').onclick = () => document.querySelector('.main-wrap').scrollIntoView({ behavior: 'smooth' });
             document.getElementById('heroListBtn').onclick = () => window.location.href = '/listanitem.html';
             document.getElementById('search-btn').onclick = () => { if (searchInput.value.trim()) window.location.href = `/search.html?q=${encodeURIComponent(searchInput.value.trim())}`; };
@@ -506,7 +517,6 @@
                 const origHTML = (data.originalPrice && data.originalPrice > data.price) ? `<span class="original-price">$${data.originalPrice.toFixed(2)}</span>` : '';
                 const badgeHTML = data.originalPrice && data.originalPrice > data.price ? `<div class="listing-badge">DEAL</div>` : '';
 
-                // 🔥 FIXED: Removed the tag display to save space
                 card.innerHTML = `
                     <div class="listing-image" style="background-image:url('${firstImage}');">${badgeHTML}</div>
                     <div class="listing-details">
@@ -532,9 +542,8 @@
                     listingsContainer.innerHTML = '';
                     const activeDocs = snapshot.docs.filter(d => d.data().status !== 'sold');
                     
-                    // Update Stats + Featured text
                     itemCountSpan.textContent = `${activeDocs.length} ${ui.items}`;
-                    dynamicBookCount.textContent = activeDocs.length; // 🔥 Real DB Count!
+                    dynamicBookCount.textContent = activeDocs.length; 
 
                     if (!activeDocs.length) {
                         listingsContainer.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-book"></i><p>No listings yet — be the first to post!</p></div>`;
