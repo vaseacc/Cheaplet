@@ -1,16 +1,13 @@
 const cloudinary = require('cloudinary').v2;
 
 exports.handler = async (event, context) => {
-    // SECURITY: Only allow the request if the user is logged into your site
-    // (You can add Firebase Admin SDK here later for 100% security)
-    
     const timestamp = Math.round((new Date()).getTime() / 1000);
     
-    // Configure Cloudinary with your SECRET keys (hiding them from the browser)
+    // Configure Cloudinary with your SECRET keys
     cloudinary.config({
         cloud_name: process.env.VITE_CLOUDINARY_CLOUD_NAME,
-        api_key: process.env.VITE_CLOUDINARY_API_KEY, // Add this to Netlify Dashboard!
-        api_secret: process.env.VITE_CLOUDINARY_API_SECRET // Add this to Netlify Dashboard!
+        api_key: process.env.VITE_CLOUDINARY_API_KEY, 
+        api_secret: process.env.VITE_CLOUDINARY_API_SECRET 
     });
 
     // Create the secure signature
