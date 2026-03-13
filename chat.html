@@ -34,8 +34,15 @@
         .side-conv-item.is-new .unread-dot { display: block; }
 
         .chat-window { flex-grow: 1; display: flex; flex-direction: column; background: white; position: relative; overflow: hidden; }
-        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; font-weight: 700; color: #050505; background: #fff; display: flex; align-items: center; gap: 15px; z-index: 10; font-size: 1.1rem; flex-shrink: 0; }
-        #chat-header-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #eee; display: none; border: 1px solid #ddd; }
+        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; background: #fff; display: flex; align-items: center; gap: 15px; z-index: 10; flex-shrink: 0; }
+        
+        /* 🔥 NEW: Clickable Header Styles */
+        #chat-header-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: #eee; display: none; border: 1px solid #ddd; cursor: pointer; transition: transform 0.2s; }
+        #chat-header-avatar:hover { transform: scale(1.05); }
+        #chat-header-name { font-weight: 700; color: #050505; font-size: 1.1rem; cursor: pointer; transition: color 0.2s; }
+        #chat-header-name:hover { color: #4CAF50; text-decoration: underline; }
+        #chat-header-meta { font-size: 0.75rem; color: #888; margin-top: 2px; display: flex; align-items: center; gap: 5px; }
+
         #report-chat-btn { background: none; border: none; color: #ff5252; cursor: pointer; font-size: 1.2rem; display: none; transition: transform 0.2s; }
         #report-chat-btn:hover { transform: scale(1.1); }
 
@@ -112,9 +119,13 @@
             <div id="chat-active-ui" style="display: none; flex-direction: column; height: 100%;">
                 <div class="chat-header">
                     <button id="mobile-menu-btn"><i class="fas fa-bars"></i></button>
-                    <div style="display: flex; align-items: center; gap: 10px; flex-grow: 1;">
-                        <img id="chat-header-avatar" src="">
-                        <span id="chat-header-name">Chat</span>
+                    <div style="display: flex; align-items: center; gap: 12px; flex-grow: 1;">
+                        <img id="chat-header-avatar" src="" title="View Profile">
+                        <div style="display: flex; flex-direction: column;">
+                            <span id="chat-header-name" title="View Profile">Chat</span>
+                            <!-- 🔥 NEW: Rating and Student Badge Container -->
+                            <div id="chat-header-meta"></div>
+                        </div>
                     </div>
                     <button id="report-chat-btn" title="Report User"><i class="fas fa-flag"></i></button>
                 </div>
@@ -191,6 +202,7 @@
             const messageInput = document.getElementById('message-input');
             const chatHeaderName = document.getElementById('chat-header-name');
             const chatHeaderAvatar = document.getElementById('chat-header-avatar');
+            const chatHeaderMeta = document.getElementById('chat-header-meta');
             const reportChatBtn = document.getElementById('report-chat-btn');
             const mobileMenuBtn = document.getElementById('mobile-menu-btn');
             const imgBtn = document.getElementById('img-upload-btn');
@@ -217,8 +229,8 @@
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = { 
-                en: { imageSent: "Sent a photo", sold: "SOLD", reportSuccess: "Report submitted.", soldBanner: "Listing Sold - Chat Disabled", rateText: "Rate your experience", rateSuccess: "Thanks for rating!" }, 
-                fr: { imageSent: "A envoyé une photo", sold: "VENDU", reportSuccess: "Signalement envoyé.", soldBanner: "Annonce vendue - Chat désactivé", rateText: "Évaluez votre expérience", rateSuccess: "Merci pour votre évaluation !" } 
+                en: { imageSent: "Sent a photo", sold: "SOLD", reportSuccess: "Report submitted.", soldBanner: "Listing Sold - Chat Disabled", rateText: "Rate your experience", rateSuccess: "Thanks for rating!", verifiedStudent: "Verified Student", noRatings: "No ratings yet" }, 
+                fr: { imageSent: "A envoyé une photo", sold: "VENDU", reportSuccess: "Signalement envoyé.", soldBanner: "Annonce vendue - Chat désactivé", rateText: "Évaluez votre expérience", rateSuccess: "Merci pour votre évaluation !", verifiedStudent: "Étudiant vérifié", noRatings: "Aucune évaluation" } 
             };
 
             const userCache = {};
@@ -242,7 +254,6 @@
                         const d = docSnap.data();
                         const currentChatId = new URLSearchParams(window.location.search).get('id');
                         
-                        // 🔥 THE FIX: Hide ghost chats in sidebar UNLESS it is the one we are currently looking at!
                         if ((!d.lastMessage || d.lastMessage.trim() === "") && docSnap.id !== currentChatId) return;
 
                         const otherId = d.participants.find(p => p !== currentUser.uid);
@@ -298,11 +309,35 @@
                 document.getElementById('sold-text').textContent = strings[lang].soldBanner;
                 document.getElementById('rate-title').textContent = strings[lang].rateText;
 
+                // 🔥 NEW: Fetch user info, add clickable profile links, and display rating/badge
                 const uSnap = await getDoc(doc(db, "users", otherId));
-                if (uSnap.exists() && uSnap.data().photoURL) {
-                    currentOtherPhotoUrl = uSnap.data().photoURL;
-                    chatHeaderAvatar.src = currentOtherPhotoUrl;
-                    chatHeaderAvatar.style.display = 'block';
+                if (uSnap.exists()) {
+                    const uData = uSnap.data();
+                    
+                    if (uData.photoURL) {
+                        currentOtherPhotoUrl = uData.photoURL;
+                        chatHeaderAvatar.src = currentOtherPhotoUrl;
+                        chatHeaderAvatar.style.display = 'block';
+                    }
+
+                    // Make avatar and name clickable to view profile
+                    chatHeaderAvatar.onclick = () => window.location.href = `/user.html?id=${otherId}`;
+                    chatHeaderName.onclick = () => window.location.href = `/user.html?id=${otherId}`;
+
+                    // Build Rating and Verified Student Badge
+                    let metaHtml = "";
+                    if (uData.ratingCount && uData.ratingCount > 0) {
+                        const avg = (uData.ratingSum / uData.ratingCount).toFixed(1);
+                        metaHtml += `<span style="color:#FFD700; font-weight:bold;"><i class="fas fa-star"></i> ${avg}</span>`;
+                    } else {
+                        metaHtml += `<span>${strings[lang].noRatings}</span>`;
+                    }
+                    
+                    if (uData.isStudent) {
+                        metaHtml += ` <span style="margin: 0 6px; color:#ccc;">&bull;</span> <span style="color:#2E7D32; font-weight:bold;"><i class="fas fa-graduation-cap"></i> ${strings[lang].verifiedStudent}</span>`;
+                    }
+                    
+                    chatHeaderMeta.innerHTML = metaHtml;
                 }
 
                 if (d.listingId) {
