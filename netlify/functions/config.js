@@ -1,22 +1,11 @@
 exports.handler = async function(event, context) {
-  // 1. Get the origin of the request
-  const referer = event.headers.referer || event.headers.origin || "";
-  
-  // 2. Check if the request is coming from your website (or localhost for testing)
-  // NOTE: If you buy a custom domain later (like cheaplet.com), add it to this list!
-  const isAllowed = referer.includes("cheaplet.netlify.app") || referer.includes("localhost");
-
-  // 3. If they typed the URL directly or are trying to steal it from another site, BLOCK THEM
-  if (!isAllowed) {
-    return {
-      statusCode: 403,
-      body: JSON.stringify({ error: "Access Denied. Nice try! 😉" })
-    };
-  }
-
-  // 4. If it's your website asking, send the data
+  // We are removing the referer check temporarily to fix your site design
   return {
     statusCode: 200,
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*", // Allows your site to read it
+    },
     body: JSON.stringify({
       firebaseConfig: {
         apiKey: process.env.FIREBASE_API_KEY,
