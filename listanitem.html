@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>List an Item - Cheaplet</title>
+    <!-- GLOBAL CONFIGURATION -->
     <script type="module" src="global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -107,7 +108,6 @@
 
                 <label id="ui-label-location">Campus Location</label>
                 <select id="listing-location" required>
-                    <!-- 🔥 FIXED: Restricted strictly to Rosemont -->
                     <option value="Collège de Rosemont" selected>Collège de Rosemont</option>
                 </select>
 
@@ -151,12 +151,8 @@
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`;
-            const UPLOAD_PRESET = config.cloudinary.uploadPreset;
-
             const lang = localStorage.getItem('preferred_language') || 'en';
             
-            // 🔥 FIXED: Direct Local Translations to guarantee UI changes!
             const ui = {
                 en: {
                     mainTitle: "List an Item", lblTitle: "Title", lblDesc: "Description", lblPrice: "Sale Price ($) - Max $1200", 
@@ -168,7 +164,8 @@
                     lblPhotos: "Photos (Max 5, Max 5MB each)", btnAddPhoto: "Add Photo", btnPost: "Post Item", btnCancel: "Cancel",
                     priceErr: "Price cannot exceed $1200.", origPriceErr: "Original price cannot exceed $5000.", imgErr: "Add at least one photo.", 
                     imgTypeErr: "Unsupported file type. Please upload an image.", imgSizeErr: "Image too large (Max 5MB).", 
-                    uploading: "Processing...", tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.", tagUses: "uses"
+                    uploading: "Processing...", tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.", tagUses: "uses",
+                    uploadFail: "Image upload failed. Please try again."
                 },
                 fr: {
                     mainTitle: "Publier un article", lblTitle: "Titre", lblDesc: "Description", lblPrice: "Prix de vente ($) - Max 1200$", 
@@ -180,11 +177,11 @@
                     lblPhotos: "Photos (Max 5, Max 5MB chacune)", btnAddPhoto: "Ajouter une photo", btnPost: "Publier l'article", btnCancel: "Annuler",
                     priceErr: "Le prix ne peut dépasser 1200$.", origPriceErr: "Le prix d'origine ne peut dépasser 5000$.", imgErr: "Ajoutez au moins une photo.", 
                     imgTypeErr: "Format non supporté. Veuillez télécharger une image.", imgSizeErr: "Image trop lourde (Max 5MB).", 
-                    uploading: "Traitement...", tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.", tagUses: "utilisations"
+                    uploading: "Traitement...", tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.", tagUses: "utilisations",
+                    uploadFail: "Échec du téléchargement de l'image. Veuillez réessayer."
                 }
             };
 
-            // Apply translations to UI
             document.getElementById('ui-main-title').textContent = ui[lang].mainTitle;
             document.getElementById('ui-label-title').textContent = ui[lang].lblTitle;
             document.getElementById('ui-label-desc').textContent = ui[lang].lblDesc;
@@ -244,7 +241,8 @@
             function renderTags() {
                 selectedTagsContainer.innerHTML = '';
                 tags.forEach((tag, index) => {
-                    const chip = document.createElement('div'); chip.className = 'tag-chip';
+                    const chip = document.createElement('div');
+                    chip.className = 'tag-chip';
                     chip.innerHTML = `${tag} <span style="cursor:pointer; margin-left:5px;" onclick="window.removeTag(${index})">&times;</span>`;
                     selectedTagsContainer.appendChild(chip);
                 });
@@ -268,9 +266,11 @@
                     suggestionsBox.style.display = 'block';
                     snap.forEach(doc => {
                         const d = doc.data();
-                        const div = document.createElement('div'); div.className = 'suggestion-item';
+                        const div = document.createElement('div');
+                        div.className = 'suggestion-item';
                         div.innerHTML = `<span>${d.tag}</span> <span style="font-size:0.8rem; color:#888; background:#f0f0f0; padding:2px 8px; border-radius:10px;">${d.count || 1} ${ui[lang].tagUses}</span>`;
-                        div.onclick = () => addTag(d.tag); suggestionsBox.appendChild(div);
+                        div.onclick = () => addTag(d.tag);
+                        suggestionsBox.appendChild(div);
                     });
                 } else {
                     suggestionsBox.style.display = 'block';
@@ -287,11 +287,17 @@
             function renderPreviews() {
                 previewContainer.innerHTML = '';
                 selectedFiles.forEach((file, index) => {
-                    const wrapper = document.createElement('div'); wrapper.className = 'image-preview-wrapper';
-                    const img = document.createElement('img'); img.src = URL.createObjectURL(file); img.className = 'image-preview';
-                    const removeBtn = document.createElement('button'); removeBtn.className = 'remove-image-btn'; removeBtn.innerHTML = '&times;';
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'image-preview-wrapper';
+                    const img = document.createElement('img');
+                    img.src = URL.createObjectURL(file);
+                    img.className = 'image-preview';
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-image-btn';
+                    removeBtn.innerHTML = '&times;';
                     removeBtn.onclick = () => { selectedFiles.splice(index, 1); renderPreviews(); };
-                    wrapper.appendChild(img); wrapper.appendChild(removeBtn); previewContainer.appendChild(wrapper);
+                    wrapper.appendChild(img); wrapper.appendChild(removeBtn);
+                    previewContainer.appendChild(wrapper);
                 });
                 document.getElementById('add-photo-label').style.display = selectedFiles.length < 5 ? 'flex' : 'none';
             }
@@ -299,13 +305,22 @@
             imageInput.onchange = (e) => { 
                 const file = e.target.files[0];
                 if (file) {
-                    if (!file.type.startsWith('image/')) { alert(ui[lang].imgTypeErr); imageInput.value = ''; return; }
-                    if (file.size > 5 * 1024 * 1024) { alert(ui[lang].imgSizeErr); imageInput.value = ''; return; }
-                    selectedFiles.push(file); renderPreviews(); 
+                    if (!file.type.startsWith('image/')) {
+                        alert(ui[lang].imgTypeErr);
+                        imageInput.value = '';
+                        return;
+                    }
+                    if (file.size > 5 * 1024 * 1024) { 
+                        alert(ui[lang].imgSizeErr);
+                        imageInput.value = '';
+                        return;
+                    }
+                    selectedFiles.push(file); 
+                    renderPreviews(); 
                 } 
             };
 
-            // --- SUBMISSION ---
+            // --- SUBMISSION WITH SIGNED UPLOADS ---
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
                 const title = document.getElementById('listing-title').value;
@@ -321,30 +336,76 @@
                 if (selectedFiles.length === 0) { alert(ui[lang].imgErr); return; }
 
                 const submitBtn = document.getElementById('postListingBtn');
-                submitBtn.disabled = true; submitBtn.textContent = ui[lang].uploading;
+                submitBtn.disabled = true;
+                submitBtn.textContent = ui[lang].uploading;
 
                 try {
                     const imageUrls = [];
                     for (const file of selectedFiles) {
-                        const formData = new FormData(); formData.append('file', file); formData.append('upload_preset', UPLOAD_PRESET);
-                        const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData }).then(r => r.json());
-                        imageUrls.push(res.secure_url);
+                        // 1. Fetch Secure Signature from Netlify Function
+                        const signResponse = await fetch('/.netlify/functions/sign-upload');
+                        if (!signResponse.ok) {
+                            throw new Error("Could not securely connect to image server. Are your Netlify Environment Variables set?");
+                        }
+                        const signRes = await signResponse.json();
+
+                        // 2. Attach Signature to FormData
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('api_key', signRes.apiKey);
+                        formData.append('timestamp', signRes.timestamp);
+                        formData.append('signature', signRes.signature);
+                        formData.append('upload_preset', signRes.uploadPreset);
+
+                        // 3. Upload to Cloudinary securely
+                        const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { 
+                            method: 'POST', 
+                            body: formData 
+                        }).then(r => r.json());
+                        
+                        if (res.secure_url) {
+                            imageUrls.push(res.secure_url);
+                        } else {
+                            throw new Error(res.error?.message || "Upload Failed");
+                        }
                     }
+
+                    // Save tags to Firebase
                     for (const t of tags) {
                         const tagId = t.toLowerCase().replace(/[^a-z0-9]/g, "_");
                         await setDoc(doc(db, "global_tags", tagId), { tag: t, tag_lowercase: t.toLowerCase(), count: increment(1) }, { merge: true });
                     }
                     
                     const displayName = currentUser.displayName || "User";
-                    
+
+                    // Save Listing Document
                     const docRef = await addDoc(collection(db, 'listings'), {
-                        title: title.trim(), description: desc.trim(), price: price, originalPrice: originalPrice, meetingPoint: meet.trim() || "",
-                        hasWriting: document.getElementById('cond-writing').checked, hasWaterDamage: document.getElementById('cond-water').checked, hasMissingPages: document.getElementById('cond-missing').checked,
-                        condition: document.getElementById('listing-condition').value || "Good", digitalCode: document.getElementById('listing-digital-code').value || "Not applicable", location: document.getElementById('listing-location').value || "",
-                        tags: tags || [], imageUrls: imageUrls || [], posterUid: currentUser.uid, posterDisplayName: displayName, status: 'active', timestamp: serverTimestamp()
+                        title: title.trim(),
+                        description: desc.trim(),
+                        price: price,
+                        originalPrice: originalPrice,
+                        meetingPoint: meet.trim(),
+                        hasWriting: document.getElementById('cond-writing').checked,
+                        hasWaterDamage: document.getElementById('cond-water').checked,
+                        hasMissingPages: document.getElementById('cond-missing').checked,
+                        condition: document.getElementById('listing-condition').value,
+                        digitalCode: document.getElementById('listing-digital-code').value,
+                        location: document.getElementById('listing-location').value,
+                        tags: tags,
+                        imageUrls: imageUrls,
+                        posterUid: currentUser.uid,
+                        posterDisplayName: displayName,
+                        status: 'active',
+                        timestamp: serverTimestamp()
                     });
+                    
                     window.location.href = `/listing.html?id=${docRef.id}`;
-                } catch (err) { console.error(err); submitBtn.disabled = false; submitBtn.textContent = ui[lang].btnPost; }
+                } catch (err) { 
+                    console.error(err); 
+                    alert(ui[lang].uploadFail + "\n" + err.message); 
+                    submitBtn.disabled = false; 
+                    submitBtn.textContent = ui[lang].btnPost; 
+                }
             };
         }
         main();
