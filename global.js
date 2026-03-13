@@ -51,7 +51,7 @@ window.applyLanguage = (lang) => {
     localStorage.setItem('preferred_language', lang);
 };
 
-// --- 3. GLOBAL CSS (INK & GOLD THEME) ---
+// --- 3. GLOBAL CSS (INK & GOLD THEME + MOBILE RESTORED) ---
 const globalStyle = document.createElement('style');
 globalStyle.innerHTML = `
     .btn { background: linear-gradient(135deg, #C8A96E 0%, #ddb97a 100%) !important; color: #0C1446 !important; border: none !important; padding: 0 18px !important; height: 38px !important; line-height: 38px !important; border-radius: 20px !important; font-weight: bold !important; cursor: pointer !important; transition: transform 0.2s !important; font-size: 0.85rem !important; display: inline-flex !important; align-items: center; justify-content: center; text-decoration: none !important; }
@@ -67,6 +67,9 @@ globalStyle.innerHTML = `
     .dropdown-item { padding: 12px 15px; text-decoration: none; color: #333; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.9rem; transition: background 0.2s; }
     .dropdown-item:hover { background-color: #f4f7fc; color: #2B5C92; }
     
+    /* MOBILE MESSAGE BUTTON STYLE */
+    .msg-btn-mobile { background: #C8A96E; color: #0C1446; width: 36px; height: 36px; border-radius: 50%; display: none; align-items: center; justify-content: center; text-decoration: none; margin-right: 12px; font-size: 1rem; }
+    
     .lang-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(12,20,70,0.85); z-index: 10000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
     .lang-modal { background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
     .lang-btn { display: block; width: 100%; padding: 16px; margin: 12px 0; border: 2px solid #EBF2FA; border-radius: 12px; background: white; font-weight: bold; cursor: pointer; font-size: 1.1rem; transition: all 0.2s; color: #0C1446; }
@@ -78,7 +81,11 @@ globalStyle.innerHTML = `
     .btn-accept-terms { background: #C8A96E; color: #0C1446; border: none; padding: 8px 30px; border-radius: 20px; font-weight: 800; cursor: pointer; transition: transform 0.2s; }
     .btn-accept-terms:hover { transform: scale(1.05); }
 
+    .mobile-link { display: none; }
+
     @media (max-width: 767px) {
+        .msg-btn-mobile { display: flex; }
+        .mobile-link { display: flex; }
         .terms-banner { flex-direction: column; text-align: center; padding-bottom: max(20px, env(safe-area-inset-bottom)); gap: 12px; }
     }
 `;
@@ -136,10 +143,17 @@ function updateHeaderToLoggedIn(userData) {
     const lang = localStorage.getItem('preferred_language') || 'en';
 
     container.innerHTML = `
+        <a href="/messages.html" class="msg-btn-mobile"><i class="fas fa-envelope"></i></a>
         <div class="profile-menu-container">
             <div class="profile-avatar" style="${photoStyle}">${avatarContent}</div>
             <div class="dropdown-menu" id="globalDropdown">
                 <div class="dropdown-header"><span>${name}</span></div>
+                
+                <!-- MOBILE ONLY LINKS -->
+                <a href="/search.html" class="dropdown-item mobile-link"><i class="fas fa-search"></i> ${translations[lang].nav_browse}</a>
+                <a href="/my-listings.html" class="dropdown-item mobile-link"><i class="fas fa-book"></i> ${translations[lang].nav_listings}</a>
+                <a href="/messages.html" class="dropdown-item mobile-link"><i class="fas fa-envelope"></i> ${translations[lang].nav_messages}</a>
+                
                 <a href="/profile.html" class="dropdown-item"><i class="fas fa-user-circle"></i> ${translations[lang].nav_profile}</a>
                 <a href="#" class="dropdown-item" id="globalLogout" style="color:#ff4d4d; border-top:1px solid #eee;"><i class="fas fa-sign-out-alt"></i> ${translations[lang].btn_signout}</a>
             </div>
@@ -180,7 +194,6 @@ function showLanguagePopup() {
     `;
     document.body.appendChild(modal);
     
-    // Set language and Refresh so index.html detects the change immediately
     document.getElementById('btn-en').onclick = () => { 
         localStorage.setItem('preferred_language', 'en'); 
         sessionStorage.setItem('lang_picked_this_session', 'true'); 
