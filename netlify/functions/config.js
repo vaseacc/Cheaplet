@@ -1,18 +1,23 @@
 exports.handler = async function(event, context) {
   return {
     statusCode: 200,
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+    },
     body: JSON.stringify({
       firebaseConfig: {
-        apiKey: "PASTE_YOUR_REAL_API_KEY_HERE",
-        projectId: "chaeplet", // Use the spelling from your error log
-        authDomain: "chaeplet.firebaseapp.com",
-        storageBucket: "chaeplet.firebasestorage.app",
-        messagingSenderId: "1060739540468",
-        appId: "1:1060739540468:web:414048cdc72864b66dc5a1"
+        apiKey: process.env.VITE_FIREBASE_API_KEY,
+        authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
+        projectId: process.env.VITE_FIREBASE_PROJECT_ID,
+        storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+        appId: process.env.VITE_FIREBASE_APP_ID,
+        measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID
       },
       cloudinary: {
-        cloudName: "delh8lebq",
-        uploadPreset: "Cheaplet"
+        cloudName: process.env.VITE_CLOUDINARY_CLOUD_NAME,
+        uploadPreset: process.env.VITE_CLOUDINARY_UPLOAD_PRESET
       }
     })
   };
