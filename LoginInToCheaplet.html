@@ -24,13 +24,16 @@
         .auth-card h2 { color: #2E7D32; margin-bottom: 10px; font-size: 1.7rem; }
         .auth-card p { color: #666; margin-bottom: 25px; font-size: 0.95rem; }
         
-        /* STUDENT TIP BOX */
         .student-tip { background-color: #e8f5e9; border: 1px solid #c8e6c9; color: #2E7D32; padding: 12px 15px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; text-align: left; font-size: 0.85rem; line-height: 1.4; display: none; }
         .student-tip i { font-size: 1.5rem; flex-shrink: 0; }
 
         input[type="text"], input[type="email"], input[type="password"] { width: 100%; padding: 12px; margin-bottom: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; outline: none; }
         input:focus { border-color: #4CAF50; }
         
+        /* FORGOT PASSWORD LINK */
+        .forgot-pass-link { display: block; text-align: right; font-size: 0.85rem; color: #2E7D32; cursor: pointer; margin-top: -5px; margin-bottom: 15px; font-weight: 600; }
+        .forgot-pass-link:hover { text-decoration: underline; }
+
         .btn-submit { background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); color: #333; border: none; padding: 14px; width: 100%; border-radius: 8px; font-weight: bold; font-size: 1.1rem; cursor: pointer; margin-top: 5px; }
         
         .separator { display: flex; align-items: center; text-align: center; margin: 15px 0; color: #888; font-size: 0.85rem; }
@@ -77,7 +80,6 @@
             
             <div id="auth-error" class="error-message"></div>
 
-            <!-- THE NEW STUDENT TIP BOX -->
             <div class="student-tip" id="student-tip">
                 <i class="fas fa-graduation-cap"></i>
                 <span id="student-tip-text">Use your school email (or school Google/Microsoft account) to automatically get a <strong>Verified Student</strong> badge!</span>
@@ -90,6 +92,10 @@
                 </div>
                 <input type="email" id="email" placeholder="Email Address" required>
                 <input type="password" id="password" placeholder="Password" required>
+                
+                <!-- NEW: Forgot Password Link -->
+                <a id="forgot-password-link" class="forgot-pass-link">Forgot Password?</a>
+
                 <button type="submit" class="btn-submit" id="submit-btn">Log In</button>
             </form>
             
@@ -110,7 +116,8 @@
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendEmailVerification, onAuthStateChanged, GoogleAuthProvider, OAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        // 🔥 NEW: Imported sendPasswordResetEmail
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged, GoogleAuthProvider, OAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
@@ -128,6 +135,8 @@
             const submitBtn = document.getElementById('submit-btn');
             const loadingOverlay = document.getElementById('loading-overlay');
             const studentTip = document.getElementById('student-tip');
+            const forgotPasswordLink = document.getElementById('forgot-password-link');
+            const authError = document.getElementById('auth-error');
 
             let isLoginMode = true;
             let isRegistering = false;
@@ -143,7 +152,8 @@
                     studentTip: "Use your school email (or link your school's Google/Microsoft account) to automatically get a <strong>Verified Student</strong> badge!",
                     placeFirst: "First Name", placeLast: "Last Name", placeEmail: "Email Address", placePass: "Password",
                     google: "Continue with Google", microsoft: "Continue with Microsoft", or: "OR", back: "Back", verify: "Verifying...",
-                    errBanned: "Account banned.", errVerify: "Please verify your email first!", errSent: "Verification email sent! Please check your inbox."
+                    errBanned: "Account banned.", errVerify: "Please verify your email first!", errSent: "Verification email sent! Please check your inbox.",
+                    forgotPass: "Forgot Password?", enterEmailFirst: "Please enter your email address to reset your password.", resetSent: "Password reset email sent! Check your inbox."
                 },
                 fr: {
                     loginTitle: "Bon retour", loginSub: "Connectez-vous pour continuer vos achats et ventes.",
@@ -153,7 +163,8 @@
                     studentTip: "Utilisez votre courriel scolaire (ou un compte Google/Microsoft de l'école) pour obtenir automatiquement le badge <strong>Étudiant vérifié</strong> !",
                     placeFirst: "Prénom", placeLast: "Nom de famille", placeEmail: "Adresse e-mail", placePass: "Mot de passe",
                     google: "Continuer avec Google", microsoft: "Continuer avec Microsoft", or: "OU", back: "Retour", verify: "Vérification...",
-                    errBanned: "Compte banni.", errVerify: "Veuillez d'abord vérifier votre e-mail !", errSent: "E-mail de vérification envoyé ! Vérifiez votre boîte de réception."
+                    errBanned: "Compte banni.", errVerify: "Veuillez d'abord vérifier votre e-mail !", errSent: "E-mail de vérification envoyé ! Vérifiez votre boîte de réception.",
+                    forgotPass: "Mot de passe oublié ?", enterEmailFirst: "Veuillez entrer votre adresse e-mail pour réinitialiser le mot de passe.", resetSent: "E-mail de réinitialisation envoyé ! Vérifiez votre boîte de réception."
                 }
             };
 
@@ -172,6 +183,7 @@
             document.getElementById('or-text').textContent = strings[lang].or;
             document.getElementById('back-btn-text').textContent = strings[lang].back;
             document.getElementById('loading-text').textContent = strings[lang].verify;
+            forgotPasswordLink.textContent = strings[lang].forgotPass;
 
             const schoolDomains = ["@cegepat.qc.ca", "@cegeptr.qc.ca", "@cegep-rimouski.qc.ca", "@cegep-rdl.qc.ca", "@cegep-matane.qc.ca", "@cegepbaiecomeau.ca", "@cegep-chicoutimi.qc.ca", "@cegepjonquiere.ca", "@cegepsth.qc.ca", "@cegepgranby.qc.ca", "@cegepdrummond.ca", "@cegepsherbrooke.qc.ca", "@cegepshawinigan.ca", "@cegepsoreltracy.qc.ca", "@cegepstlaurent.ca", "@cegepsl.qc.ca", "@cegeplimoilou.ca", "@cegepgarneau.ca", "@cegep-ste-foy.qc.ca", "@cegeplevis.ca", "@cegepoutaouais.qc.ca", "@cegepheritage.qc.ca", "@cegep-st-jean.qc.ca", "@cegep-st-jerome.qc.ca", "@cegep-edouard-montpetit.qc.ca", "@montmorency.qc.ca", "@gerald-godin.qc.ca", "@crosemont.qc.ca", "@cmaisonneuve.qc.ca", "@cvm.qc.ca", "@ahuntsic.qc.ca", "@boisdeboulogne.qc.ca", "@claurendeau.qc.ca", "@cegepba.qc.ca", "@cegepthetford.ca", "@cegepstfelicien.ca", "@cegepseptiles.ca", "@cegepvicto.ca", "@cegep-lanaudiere.qc.ca", "@cegep-gaspesie.qc.ca", "@cegeplapocatiere.qc.ca", "@cegep-limoilou.ca", "@dawsoncollege.qc.ca", "@vaniercollege.qc.ca", "@johnabbott.qc.ca", "@champlaincollege.qc.ca", "@slc.qc.ca", "@lennoxville.qc.ca", "@heritagec.qc.ca", "@brebeuf.qc.ca", "@andregrasset.qc.ca", "@marianopolis.edu", "@merici.ca", "@collegenotredame.qc.ca", "@cndf.qc.ca", "@campusnotredamefoy.com", "@collegelafleche.qc.ca", "@lasallecollege.com", "@collegebart.ca", "@collegeuniversel.ca", "@sram.qc.ca", "@sracq.qc.ca", "@srasl.qc.ca", "@cegepsquebec.ca", "@fedecegeps.ca", "@cegepbc.ca", "@crcmail.net", "@cgodin.qc.ca", "@cstjean.qc.ca", "@cstj.qc.ca", "@cll.qc.ca", "@clg.qc.ca", "@collegemv.qc.ca", "@cmontmorency.qc.ca", "@cegep-sept-iles.qc.ca", "@cegepshawinigan.qc.ca", "@colval.qc.ca", "@concordia.ca", "@mcgill.ca", "@umontreal.ca", "@uqam.ca"];
 
@@ -202,13 +214,33 @@
                 }
             });
 
+            // FORGOT PASSWORD LOGIC
+            forgotPasswordLink.onclick = async () => {
+                const emailVal = document.getElementById('email').value.trim();
+                if (!emailVal) {
+                    authError.textContent = strings[lang].enterEmailFirst;
+                    authError.style.display = 'block';
+                    return;
+                }
+                
+                try {
+                    await sendPasswordResetEmail(auth, emailVal);
+                    authError.style.display = 'none';
+                    alert(strings[lang].resetSent);
+                } catch (error) {
+                    authError.textContent = error.message;
+                    authError.style.display = 'block';
+                }
+            };
+
             // TOGGLE BETWEEN LOGIN AND REGISTER
             toggleLink.onclick = () => {
                 isLoginMode = !isLoginMode;
                 document.getElementById('register-fields').style.display = isLoginMode ? 'none' : 'block';
                 
-                // Show Student Tip ONLY in Register mode
                 studentTip.style.display = isLoginMode ? 'none' : 'flex';
+                forgotPasswordLink.style.display = isLoginMode ? 'block' : 'none'; // Hide forgot pass in register mode
+                authError.style.display = 'none'; // Clear any errors when switching
                 
                 formTitle.textContent = isLoginMode ? strings[lang].loginTitle : strings[lang].regTitle;
                 document.getElementById('form-subtitle').textContent = isLoginMode ? strings[lang].loginSub : strings[lang].regSub;
@@ -216,14 +248,15 @@
                 toggleLink.textContent = isLoginMode ? strings[lang].toggleToReg : strings[lang].toggleToLogin;
             };
 
-            document.getElementById('google-btn').onclick = async () => { try { await signInWithPopup(auth, googleProvider); } catch (e) { alert(e.message); } };
-            document.getElementById('microsoft-btn').onclick = async () => { try { await signInWithPopup(auth, msProvider); } catch (e) { alert(e.message); } };
+            document.getElementById('google-btn').onclick = async () => { try { await signInWithPopup(auth, googleProvider); } catch (e) { authError.textContent = e.message; authError.style.display = 'block'; } };
+            document.getElementById('microsoft-btn').onclick = async () => { try { await signInWithPopup(auth, msProvider); } catch (e) { authError.textContent = e.message; authError.style.display = 'block'; } };
 
             authForm.onsubmit = async (e) => {
                 e.preventDefault();
                 submitBtn.disabled = true;
                 const email = document.getElementById('email').value.toLowerCase();
                 const pass = document.getElementById('password').value;
+                authError.style.display = 'none';
 
                 try {
                     if (isLoginMode) {
@@ -244,7 +277,11 @@
                         alert(strings[lang].errSent);
                         location.reload();
                     }
-                } catch (err) { alert(err.message); isRegistering = false; }
+                } catch (err) { 
+                    authError.textContent = err.message; 
+                    authError.style.display = 'block'; 
+                    isRegistering = false; 
+                }
                 submitBtn.disabled = false;
             };
 
