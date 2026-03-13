@@ -2,16 +2,17 @@ exports.handler = async function(event, context) {
   return {
     statusCode: 200,
     body: JSON.stringify({
-      // This will show us if Netlify even sees the keys at all
-      debug: {
-        hasApiKey: !!process.env.FIREBASE_API_KEY,
-        hasProjectId: !!process.env.FIREBASE_PROJECT_ID,
-        allKeys: Object.keys(process.env).filter(k => k.includes("FIREBASE"))
-      },
       firebaseConfig: {
-        apiKey: process.env.FIREBASE_API_KEY || "NOT_FOUND",
-        projectId: process.env.FIREBASE_PROJECT_ID || "NOT_FOUND",
-        // ... add the rest if you want
+        apiKey: "PASTE_YOUR_REAL_API_KEY_HERE",
+        projectId: "chaeplet", // Use the spelling from your error log
+        authDomain: "chaeplet.firebaseapp.com",
+        storageBucket: "chaeplet.firebasestorage.app",
+        messagingSenderId: "1060739540468",
+        appId: "1:1060739540468:web:414048cdc72864b66dc5a1"
+      },
+      cloudinary: {
+        cloudName: "delh8lebq",
+        uploadPreset: "Cheaplet"
       }
     })
   };
