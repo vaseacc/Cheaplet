@@ -54,11 +54,18 @@ window.applyLanguage = (lang) => {
 // --- 3. GLOBAL CSS (INK & GOLD THEME) ---
 const globalStyle = document.createElement('style');
 globalStyle.innerHTML = `
+    /* Header centering and spacing */
+    .header-inner, .header-content { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    nav { flex-grow: 1; display: flex; justify-content: center; }
+    nav ul { display: flex; list-style: none; gap: 28px; padding: 0; margin: 0; }
+    nav ul li a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; white-space: nowrap; }
+    nav ul li a:hover { color: #FFFFFF; }
+
     .btn { background: linear-gradient(135deg, #C8A96E 0%, #ddb97a 100%) !important; color: #0C1446 !important; border: none !important; padding: 0 18px !important; height: 38px !important; line-height: 38px !important; border-radius: 20px !important; font-weight: bold !important; cursor: pointer !important; transition: transform 0.2s !important; font-size: 0.85rem !important; display: inline-flex !important; align-items: center; justify-content: center; text-decoration: none !important; }
     .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(200,169,110,0.3) !important; }
     
-    .profile-menu-container { position: relative; display: flex; align-items: center; }
-    .profile-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: rgba(255,255,255,0.1); border: 2px solid #C8A96E; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; background-size: cover; background-position: center; }
+    .profile-menu-container { position: relative; display: flex; align-items: center; z-index: 1001; }
+    .profile-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: #1a2a4a; border: 2px solid #C8A96E; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; background-size: cover; background-position: center; overflow: hidden; }
     
     .dropdown-menu { position: absolute; top: 50px; right: 0; width: 220px; background: white; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); display: none; flex-direction: column; overflow: hidden; color: #333; z-index: 1000; border: 1px solid #eee; }
     .dropdown-menu.show { display: flex; }
@@ -75,12 +82,13 @@ globalStyle.innerHTML = `
     .lang-btn:hover { border-color: #C8A96E; background: #fdfaf4; }
 
     .terms-banner { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(12, 20, 70, 0.98); color: #fff; padding: 15px 25px; display: flex; justify-content: center; align-items: center; gap: 25px; z-index: 99999; font-size: 0.85rem; backdrop-filter: blur(10px); border-top: 1px solid rgba(200,169,110,0.3); }
-    .btn-accept-terms { background: #C8A96E; color: #0C1446; border: none; padding: 8px 30px; border-radius: 20px; font-weight: 800; cursor: pointer; transition: transform 0.2s; }
+    .btn-accept-terms { background: #C8A96E; color: #0C1446; border: none; padding: 8px 30px; border-radius: 20px; font-weight: 800; cursor: pointer; }
 
     .desktop-only { display: inline-flex; }
     .mobile-link { display: none; }
 
     @media (max-width: 767px) {
+        nav { display: none !important; }
         .msg-btn-mobile { display: flex; }
         .desktop-only { display: none !important; }
         .mobile-link { display: flex; }
@@ -133,44 +141,52 @@ function refreshUI() {
 }
 
 function updateHeaderToLoggedIn(userData) {
-    const container = document.querySelector('.header-right');
+    const lang = localStorage.getItem('preferred_language') || 'en';
+    
+    // --- 1. GLOBAL NAV LINKS (Injects on all pages) ---
+    const navUl = document.querySelector('nav ul');
+    if (navUl) {
+        navUl.innerHTML = `
+            <li><a href="/search.html">${translations[lang].nav_browse}</a></li>
+            <li><a href="/my-listings.html">${translations[lang].nav_listings}</a></li>
+            <li><a href="/messages.html">${translations[lang].nav_messages}</a></li>
+        `;
+    }
+
+    // --- 2. RIGHT SIDE AUTH SECTION ---
+    const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
     if (!container) return;
+    
     const name = userData.displayName || 'User';
     const photoStyle = userData.photoURL ? `background-image: url('${userData.photoURL}');` : '';
     const avatarContent = userData.photoURL ? '' : name.charAt(0).toUpperCase();
-    const lang = localStorage.getItem('preferred_language') || 'en';
 
     container.innerHTML = `
-        <!-- 🔥 RESTORED: List an Item button for Desktop -->
         <button class="btn desktop-only" id="globalListBtn" style="margin-right: 15px;">${translations[lang].btn_list}</button>
-        
         <a href="/messages.html" class="msg-btn-mobile"><i class="fas fa-envelope"></i></a>
-        
         <div class="profile-menu-container">
             <div class="profile-avatar" style="${photoStyle}">${avatarContent}</div>
             <div class="dropdown-menu" id="globalDropdown">
                 <div class="dropdown-header"><span>${name}</span></div>
-                
-                <!-- Mobile only links inside dropdown -->
                 <a href="/listanitem.html" class="dropdown-item mobile-link" style="color:#2B5C92; font-weight:bold;"><i class="fas fa-plus-circle"></i> ${translations[lang].btn_list}</a>
                 <a href="/search.html" class="dropdown-item mobile-link"><i class="fas fa-search"></i> ${translations[lang].nav_browse}</a>
                 <a href="/my-listings.html" class="dropdown-item mobile-link"><i class="fas fa-book"></i> ${translations[lang].nav_listings}</a>
-                
                 <a href="/profile.html" class="dropdown-item"><i class="fas fa-user-circle"></i> ${translations[lang].nav_profile}</a>
                 <a href="#" class="dropdown-item" id="globalLogout" style="color:#ff4d4d; border-top:1px solid #eee;"><i class="fas fa-sign-out-alt"></i> ${translations[lang].btn_signout}</a>
             </div>
         </div>
     `;
     
-    // Add logic to the new Desktop Button
     const listBtn = document.getElementById('globalListBtn');
     if(listBtn) listBtn.onclick = () => window.location.href = '/listanitem.html';
 
     const avatar = container.querySelector('.profile-avatar');
     const menu = document.getElementById('globalDropdown');
-    avatar.onclick = (e) => { e.stopPropagation(); menu.classList.toggle('show'); };
+    if(avatar) avatar.onclick = (e) => { e.stopPropagation(); menu.classList.toggle('show'); };
     document.addEventListener('click', () => { if(menu) menu.classList.remove('show'); });
-    document.getElementById('globalLogout').onclick = (e) => { 
+    
+    const logoutBtn = document.getElementById('globalLogout');
+    if(logoutBtn) logoutBtn.onclick = (e) => { 
         e.preventDefault();
         signOut(auth).then(() => {
             sessionStorage.clear();
@@ -180,9 +196,15 @@ function updateHeaderToLoggedIn(userData) {
 }
 
 function updateHeaderToLoggedOut() {
-    const container = document.querySelector('.header-right');
-    if (!container) return;
     const lang = localStorage.getItem('preferred_language') || 'en';
+    
+    const navUl = document.querySelector('nav ul');
+    if (navUl) {
+        navUl.innerHTML = `<li><a href="/search.html">${translations[lang].nav_browse}</a></li>`;
+    }
+
+    const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
+    if (!container) return;
     container.innerHTML = `<button class="btn" onclick="window.location.href='/LoginInToCheaplet.html'">${translations[lang].btn_login}</button>`;
 }
 
@@ -193,6 +215,7 @@ function showLanguagePopup() {
     modal.innerHTML = `
         <div class="lang-modal">
             <h2 style="color:#0C1446; margin-bottom:10px;">Welcome / Bienvenue</h2>
+            <p style="color:#6b84a3; margin-bottom:20px; font-size:0.9rem;">Please select your preferred language.</p>
             <button class="lang-btn" id="btn-en">English</button>
             <button class="lang-btn" id="btn-fr">Français</button>
         </div>
