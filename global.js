@@ -51,7 +51,7 @@ window.applyLanguage = (lang) => {
     localStorage.setItem('preferred_language', lang);
 };
 
-// --- 3. GLOBAL CSS (INK & GOLD THEME + MOBILE RESTORED) ---
+// --- 3. GLOBAL CSS (INK & GOLD THEME) ---
 const globalStyle = document.createElement('style');
 globalStyle.innerHTML = `
     .btn { background: linear-gradient(135deg, #C8A96E 0%, #ddb97a 100%) !important; color: #0C1446 !important; border: none !important; padding: 0 18px !important; height: 38px !important; line-height: 38px !important; border-radius: 20px !important; font-weight: bold !important; cursor: pointer !important; transition: transform 0.2s !important; font-size: 0.85rem !important; display: inline-flex !important; align-items: center; justify-content: center; text-decoration: none !important; }
@@ -67,7 +67,6 @@ globalStyle.innerHTML = `
     .dropdown-item { padding: 12px 15px; text-decoration: none; color: #333; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.9rem; transition: background 0.2s; }
     .dropdown-item:hover { background-color: #f4f7fc; color: #2B5C92; }
     
-    /* MOBILE MESSAGE BUTTON STYLE */
     .msg-btn-mobile { background: #C8A96E; color: #0C1446; width: 36px; height: 36px; border-radius: 50%; display: none; align-items: center; justify-content: center; text-decoration: none; margin-right: 12px; font-size: 1rem; }
     
     .lang-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(12,20,70,0.85); z-index: 10000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
@@ -76,15 +75,14 @@ globalStyle.innerHTML = `
     .lang-btn:hover { border-color: #C8A96E; background: #fdfaf4; }
 
     .terms-banner { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(12, 20, 70, 0.98); color: #fff; padding: 15px 25px; display: flex; justify-content: center; align-items: center; gap: 25px; z-index: 99999; font-size: 0.85rem; backdrop-filter: blur(10px); border-top: 1px solid rgba(200,169,110,0.3); }
-    .terms-banner a { color: #C8A96E; text-decoration: none; font-weight: bold; }
-    .terms-banner a:hover { text-decoration: underline; }
     .btn-accept-terms { background: #C8A96E; color: #0C1446; border: none; padding: 8px 30px; border-radius: 20px; font-weight: 800; cursor: pointer; transition: transform 0.2s; }
-    .btn-accept-terms:hover { transform: scale(1.05); }
 
+    .desktop-only { display: inline-flex; }
     .mobile-link { display: none; }
 
     @media (max-width: 767px) {
         .msg-btn-mobile { display: flex; }
+        .desktop-only { display: none !important; }
         .mobile-link { display: flex; }
         .terms-banner { flex-direction: column; text-align: center; padding-bottom: max(20px, env(safe-area-inset-bottom)); gap: 12px; }
     }
@@ -143,16 +141,20 @@ function updateHeaderToLoggedIn(userData) {
     const lang = localStorage.getItem('preferred_language') || 'en';
 
     container.innerHTML = `
+        <!-- 🔥 RESTORED: List an Item button for Desktop -->
+        <button class="btn desktop-only" id="globalListBtn" style="margin-right: 15px;">${translations[lang].btn_list}</button>
+        
         <a href="/messages.html" class="msg-btn-mobile"><i class="fas fa-envelope"></i></a>
+        
         <div class="profile-menu-container">
             <div class="profile-avatar" style="${photoStyle}">${avatarContent}</div>
             <div class="dropdown-menu" id="globalDropdown">
                 <div class="dropdown-header"><span>${name}</span></div>
                 
-                <!-- MOBILE ONLY LINKS -->
+                <!-- Mobile only links inside dropdown -->
+                <a href="/listanitem.html" class="dropdown-item mobile-link" style="color:#2B5C92; font-weight:bold;"><i class="fas fa-plus-circle"></i> ${translations[lang].btn_list}</a>
                 <a href="/search.html" class="dropdown-item mobile-link"><i class="fas fa-search"></i> ${translations[lang].nav_browse}</a>
                 <a href="/my-listings.html" class="dropdown-item mobile-link"><i class="fas fa-book"></i> ${translations[lang].nav_listings}</a>
-                <a href="/messages.html" class="dropdown-item mobile-link"><i class="fas fa-envelope"></i> ${translations[lang].nav_messages}</a>
                 
                 <a href="/profile.html" class="dropdown-item"><i class="fas fa-user-circle"></i> ${translations[lang].nav_profile}</a>
                 <a href="#" class="dropdown-item" id="globalLogout" style="color:#ff4d4d; border-top:1px solid #eee;"><i class="fas fa-sign-out-alt"></i> ${translations[lang].btn_signout}</a>
@@ -160,6 +162,10 @@ function updateHeaderToLoggedIn(userData) {
         </div>
     `;
     
+    // Add logic to the new Desktop Button
+    const listBtn = document.getElementById('globalListBtn');
+    if(listBtn) listBtn.onclick = () => window.location.href = '/listanitem.html';
+
     const avatar = container.querySelector('.profile-avatar');
     const menu = document.getElementById('globalDropdown');
     avatar.onclick = (e) => { e.stopPropagation(); menu.classList.toggle('show'); };
@@ -187,43 +193,25 @@ function showLanguagePopup() {
     modal.innerHTML = `
         <div class="lang-modal">
             <h2 style="color:#0C1446; margin-bottom:10px;">Welcome / Bienvenue</h2>
-            <p style="color:#6b84a3; margin-bottom:20px; font-size:0.9rem;">Please select your preferred language.</p>
             <button class="lang-btn" id="btn-en">English</button>
             <button class="lang-btn" id="btn-fr">Français</button>
         </div>
     `;
     document.body.appendChild(modal);
     
-    document.getElementById('btn-en').onclick = () => { 
-        localStorage.setItem('preferred_language', 'en'); 
-        sessionStorage.setItem('lang_picked_this_session', 'true'); 
-        location.reload(); 
-    };
-    document.getElementById('btn-fr').onclick = () => { 
-        localStorage.setItem('preferred_language', 'fr'); 
-        sessionStorage.setItem('lang_picked_this_session', 'true'); 
-        location.reload(); 
-    };
+    document.getElementById('btn-en').onclick = () => { localStorage.setItem('preferred_language', 'en'); sessionStorage.setItem('lang_picked_this_session', 'true'); location.reload(); };
+    document.getElementById('btn-fr').onclick = () => { localStorage.setItem('preferred_language', 'fr'); sessionStorage.setItem('lang_picked_this_session', 'true'); location.reload(); };
 }
 
 function showTermsBanner() {
     if (localStorage.getItem('cheaplet_terms_accepted') === 'true' || document.getElementById('terms-banner-global') || document.getElementById('lang-modal')) return;
-    
     const lang = localStorage.getItem('preferred_language') || 'en';
     const banner = document.createElement('div');
     banner.id = 'terms-banner-global'; banner.className = 'terms-banner';
-    
-    const textHtml = lang === 'fr' 
-        ? `En utilisant ce site, vous acceptez nos <a href="/terms.html">Conditions</a>, notre <a href="/privacy.html">Confidentialité</a> et notre <a href="/safety.html">Sécurité</a>.`
-        : `By using this site, you accept our <a href="/terms.html">Terms</a>, <a href="/privacy.html">Privacy</a>, and <a href="/safety.html">Safety</a> guidelines.`;
-
-    banner.innerHTML = `<div>${textHtml}</div><button class="btn-accept-terms" id="accept-terms-btn">ok</button>`;
+    const text = lang === 'fr' ? 'En utilisant ce site, vous acceptez nos conditions.' : 'By using this site, you accept our terms.';
+    banner.innerHTML = `<div>${text}</div><button class="btn-accept-terms" id="accept-terms-btn">ok</button>`;
     document.body.appendChild(banner);
-    
-    document.getElementById('accept-terms-btn').onclick = () => { 
-        localStorage.setItem('cheaplet_terms_accepted', 'true'); 
-        banner.remove(); 
-    };
+    document.getElementById('accept-terms-btn').onclick = () => { localStorage.setItem('cheaplet_terms_accepted', 'true'); banner.remove(); };
 }
 
 document.addEventListener('DOMContentLoaded', () => {
