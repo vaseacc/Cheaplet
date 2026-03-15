@@ -42,11 +42,12 @@ const translations = {
         "tour_desc_3": "Click the bookmark icon on any listing to save it. You can easily find your saved items later in <b>My Profile</b>.",
         "tour_title_4": "Personalize Your Profile",
         "tour_desc_4": "Set your display name and add a photo! (If you skip the photo, we'll generate a unique retro avatar for you).",
-        "tour_name": "Display Name",
+        "tour_name": "First and Last Name",
         "tour_upload": "Choose Photo",
         "tour_next": "Next",
         "tour_start": "Finish & Explore",
-        "tour_saving": "Saving..."
+        "tour_saving": "Saving...",
+        "tour_name_err": "Please enter a valid First and Last name to continue."
     },
     "fr": { 
         "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", 
@@ -63,11 +64,12 @@ const translations = {
         "tour_desc_3": "Cliquez sur l'icône de signet pour sauvegarder une annonce. Retrouvez-les facilement dans <b>Mon Profil</b>.",
         "tour_title_4": "Personnalisez votre profil",
         "tour_desc_4": "Définissez votre nom et ajoutez une photo ! (Si vous ignorez la photo, nous créerons un avatar rétro unique pour vous).",
-        "tour_name": "Nom d'affichage",
+        "tour_name": "Prénom et Nom de famille",
         "tour_upload": "Choisir une photo",
         "tour_next": "Suivant",
         "tour_start": "Terminer & Explorer",
-        "tour_saving": "Enregistrement..."
+        "tour_saving": "Enregistrement...",
+        "tour_name_err": "Veuillez entrer un prénom et un nom valides pour continuer."
     }
 };
 
@@ -198,8 +200,6 @@ function updateHeaderToLoggedIn(userData) {
     
     const name = userData.displayName || 'User';
     
-    // 🔥 THE FIX: Strictly enforce Identicons! 
-    // We ignore the default Google/Microsoft photoURL if it comes from googleusercontent or live.com
     let finalPhotoURL = userData.photoURL;
     if (!finalPhotoURL || finalPhotoURL.includes("googleusercontent.com") || finalPhotoURL.includes("live.com")) {
         finalPhotoURL = `https://api.dicebear.com/7.x/identicon/svg?seed=${userData.uid}&backgroundColor=EBF2FA`;
@@ -273,7 +273,6 @@ function showWelcomeTour() {
     overlay.className = 'lang-modal-overlay';
     overlay.style.zIndex = '10005';
     
-    // 🔥 FIXED: Generate Identicon by default for the tour preview
     const defaultPfpUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
 
     overlay.innerHTML = `
@@ -304,7 +303,7 @@ function showWelcomeTour() {
                 <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">${t.tour_title_4}</h2>
                 <p style="color:#6b84a3; margin-bottom:20px; line-height:1.4; font-size:0.85rem;">${t.tour_desc_4}</p>
                 
-                <input type="text" id="tour-name-input" class="tour-input" value="${user.displayName || 'User'}" placeholder="${t.tour_name}">
+                <input type="text" id="tour-name-input" class="tour-input" value="${user.displayName || ''}" placeholder="${t.tour_name}">
                 
                 <input type="file" id="tour-file-input" accept="image/*" style="display:none;">
                 <label for="tour-file-input" style="display:block; cursor:pointer; color:#2B5C92; font-weight:bold; margin-bottom:25px; text-decoration:underline;">
@@ -336,12 +335,20 @@ function showWelcomeTour() {
     };
 
     document.getElementById('tour-btn-4').onclick = async () => {
+        let newName = document.getElementById('tour-name-input').value.trim();
+        
+        // 🔥 STRICT NAME VALIDATION: Must be at least 2 words, length 4+, and contain letters
+        const nameParts = newName.split(' ').filter(p => p.length > 0);
+        if (nameParts.length < 2 || newName.length < 4 || !/[a-zA-Z]/.test(newName)) {
+            alert(t.tour_name_err);
+            return;
+        }
+
         const btn = document.getElementById('tour-btn-4');
         btn.disabled = true;
         btn.textContent = t.tour_saving;
         
-        let newName = document.getElementById('tour-name-input').value.trim() || 'User';
-        let finalPhoto = defaultPfpUrl; // Start with the Identicon
+        let finalPhoto = defaultPfpUrl;
 
         try {
             if (selectedFile) {
@@ -357,7 +364,6 @@ function showWelcomeTour() {
                 if (res.secure_url) finalPhoto = res.secure_url;
             }
 
-            // Save new photo (or Identicon) and flag to Firebase
             await updateProfile(user, { displayName: newName, photoURL: finalPhoto });
             await updateDoc(doc(db, "users", user.uid), { displayName: newName, photoURL: finalPhoto, hasSeenTour: true });
             
