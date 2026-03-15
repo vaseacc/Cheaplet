@@ -19,6 +19,8 @@ exports.handler = async function(event, context) {
         cloudName: process.env.VITE_CLOUDINARY_CLOUD_NAME,
         uploadPreset: process.env.VITE_CLOUDINARY_UPLOAD_PRESET
       }
+      // Change this line to include your NEW URL
+const isAllowed = referer.includes("cheaplett.netlify.app") || referer.includes("localhost");
     })
   };
 };
