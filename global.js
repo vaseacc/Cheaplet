@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+// 🔥 FIXED: Added updateDoc to imports so we can save the tour status to the database!
+import { getFirestore, doc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
 // --- 0. AUTO-IMPORT ICONS & FAVICON ---
 if (!document.querySelector('link[href*="font-awesome"]')) {
@@ -32,14 +33,34 @@ const translations = {
         "btn_login": "Login / Register", "btn_list": "List an Item", "btn_signout": "Sign Out", 
         "verified_student": "Verified Student",
         "ban_title": "ACCESS DENIED",
-        "ban_text": "This account has been permanently banned."
+        "ban_text": "This account has been permanently banned.",
+        
+        // 🔥 NEW: Welcome Tour Translations
+        "tour_title_1": "Welcome to Cheaplet!",
+        "tour_desc_1": "Your campus marketplace for textbooks and essentials. Buy cheaply, sell quickly, and save money every semester.",
+        "tour_title_2": "Trust & Safety",
+        "tour_desc_2": "Look for the <span style='color:#2E7D32; font-weight:bold;'><i class='fas fa-graduation-cap'></i> Verified Student</span> badge. It means the user registered with an official college email.",
+        "tour_title_3": "Smart Features",
+        "tour_desc_3": "Click the bookmark icon on any listing to save it. You can easily find your saved items later in <b>My Profile</b>.",
+        "tour_next": "Next",
+        "tour_start": "Get Started"
     },
     "fr": { 
         "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", 
         "btn_login": "Connexion", "btn_list": "Vendre", "btn_signout": "Déconnexion", 
         "verified_student": "Étudiant vérifié",
         "ban_title": "ACCÈS REFUSÉ",
-        "ban_text": "Ce compte a été définitivement banni."
+        "ban_text": "Ce compte a été définitivement banni.",
+
+        // 🔥 NEW: Welcome Tour Translations
+        "tour_title_1": "Bienvenue sur Cheaplet !",
+        "tour_desc_1": "Votre marché étudiant pour les manuels et articles essentiels. Achetez à bas prix, vendez rapidement et économisez.",
+        "tour_title_2": "Confiance et Sécurité",
+        "tour_desc_2": "Recherchez le badge <span style='color:#2E7D32; font-weight:bold;'><i class='fas fa-graduation-cap'></i> Étudiant vérifié</span>. Il indique une inscription avec un courriel scolaire officiel.",
+        "tour_title_3": "Fonctionnalités",
+        "tour_desc_3": "Cliquez sur l'icône de signet pour sauvegarder une annonce. Retrouvez-les facilement dans <b>Mon Profil</b>.",
+        "tour_next": "Suivant",
+        "tour_start": "Commencer"
     }
 };
 
@@ -54,7 +75,6 @@ window.applyLanguage = (lang) => {
 // --- 3. GLOBAL CSS (INK & GOLD THEME) ---
 const globalStyle = document.createElement('style');
 globalStyle.innerHTML = `
-    /* Header centering and spacing */
     .header-inner, .header-content { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
     nav { flex-grow: 1; display: flex; justify-content: center; }
     nav ul { display: flex; list-style: none; gap: 28px; padding: 0; margin: 0; }
@@ -81,8 +101,12 @@ globalStyle.innerHTML = `
     .lang-btn { display: block; width: 100%; padding: 16px; margin: 12px 0; border: 2px solid #EBF2FA; border-radius: 12px; background: white; font-weight: bold; cursor: pointer; font-size: 1.1rem; transition: all 0.2s; color: #0C1446; }
     .lang-btn:hover { border-color: #C8A96E; background: #fdfaf4; }
 
+    /* 🔥 NEW: Tour Dots CSS */
+    .tour-dot { width: 8px; height: 8px; border-radius: 50%; background: #e0e0e0; transition: 0.3s; }
+    .tour-dot.active { background: #C8A96E; width: 24px; border-radius: 10px; }
+
     .terms-banner { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(12, 20, 70, 0.98); color: #fff; padding: 15px 25px; display: flex; justify-content: center; align-items: center; gap: 25px; z-index: 99999; font-size: 0.85rem; backdrop-filter: blur(10px); border-top: 1px solid rgba(200,169,110,0.3); }
-    .btn-accept-terms { background: #C8A96E; color: #0C1446; border: none; padding: 8px 30px; border-radius: 20px; font-weight: 800; cursor: pointer; }
+    .btn-accept-terms { background: #C8A96E; color: #0C1446; border: none; padding: 8px 30px; border-radius: 20px; font-weight: 800; cursor: pointer; transition: transform 0.2s; }
 
     .desktop-only { display: inline-flex; }
     .mobile-link { display: none; }
@@ -129,8 +153,10 @@ function triggerHardLockdown() {
 }
 
 function refreshUI() {
-    if (currentUserData) updateHeaderToLoggedIn(currentUserData);
-    else {
+    if (currentUserData) {
+        updateHeaderToLoggedIn(currentUserData);
+        showWelcomeTour(); // 🔥 NEW: Triggers the tour if they are logged in and haven't seen it
+    } else {
         updateHeaderToLoggedOut();
         if (globalSettings.enableLanguagePrompt && !sessionStorage.getItem('lang_picked_this_session')) { 
             showLanguagePopup(); 
@@ -143,7 +169,6 @@ function refreshUI() {
 function updateHeaderToLoggedIn(userData) {
     const lang = localStorage.getItem('preferred_language') || 'en';
     
-    // --- 1. GLOBAL NAV LINKS (Injects on all pages) ---
     const navUl = document.querySelector('nav ul');
     if (navUl) {
         navUl.innerHTML = `
@@ -153,7 +178,6 @@ function updateHeaderToLoggedIn(userData) {
         `;
     }
 
-    // --- 2. RIGHT SIDE AUTH SECTION ---
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
     if (!container) return;
     
@@ -208,13 +232,100 @@ function updateHeaderToLoggedOut() {
     container.innerHTML = `<button class="btn" onclick="window.location.href='/LoginInToCheaplet.html'">${translations[lang].btn_login}</button>`;
 }
 
+// --- 🔥 NEW: WELCOME TOUR LOGIC ---
+function showWelcomeTour() {
+    // 1. Check if they already saw it on this device OR in their database profile
+    if (localStorage.getItem('cheaplet_tour_seen') === 'true') return;
+    if (currentUserData && currentUserData.hasSeenTour) {
+        // Sync local storage so we don't query it again
+        localStorage.setItem('cheaplet_tour_seen', 'true');
+        return;
+    }
+    
+    // 2. Prevent overlapping with the language popup
+    if (document.getElementById('lang-modal')) return;
+
+    const lang = localStorage.getItem('preferred_language') || 'en';
+    const t = translations[lang];
+
+    const overlay = document.createElement('div');
+    overlay.className = 'lang-modal-overlay';
+    overlay.style.zIndex = '10005'; // Higher than the header
+    
+    overlay.innerHTML = `
+        <div class="lang-modal" style="padding: 40px 30px;">
+            <!-- Step 1 -->
+            <div id="tour-step-1">
+                <i class="fas fa-handshake fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
+                <h2 style="color:#0C1446; margin-bottom:15px; font-family:'Playfair Display', serif;">${t.tour_title_1}</h2>
+                <p style="color:#6b84a3; margin-bottom:30px; line-height:1.6; font-size:0.95rem;">${t.tour_desc_1}</p>
+                <button class="btn" id="tour-btn-1" style="width:100%;">${t.tour_next}</button>
+            </div>
+            <!-- Step 2 -->
+            <div id="tour-step-2" style="display:none;">
+                <i class="fas fa-shield-alt fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
+                <h2 style="color:#0C1446; margin-bottom:15px; font-family:'Playfair Display', serif;">${t.tour_title_2}</h2>
+                <p style="color:#6b84a3; margin-bottom:30px; line-height:1.6; font-size:0.95rem;">${t.tour_desc_2}</p>
+                <button class="btn" id="tour-btn-2" style="width:100%;">${t.tour_next}</button>
+            </div>
+            <!-- Step 3 -->
+            <div id="tour-step-3" style="display:none;">
+                <i class="fas fa-bookmark fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
+                <h2 style="color:#0C1446; margin-bottom:15px; font-family:'Playfair Display', serif;">${t.tour_title_3}</h2>
+                <p style="color:#6b84a3; margin-bottom:30px; line-height:1.6; font-size:0.95rem;">${t.tour_desc_3}</p>
+                <button class="btn" id="tour-btn-3" style="width:100%;">${t.tour_start}</button>
+            </div>
+            
+            <!-- Progress Dots -->
+            <div style="display:flex; justify-content:center; gap:8px; margin-top:25px;">
+                <div class="tour-dot active" id="dot-1"></div>
+                <div class="tour-dot" id="dot-2"></div>
+                <div class="tour-dot" id="dot-3"></div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+
+    // Flow Logic
+    document.getElementById('tour-btn-1').onclick = () => {
+        document.getElementById('tour-step-1').style.display = 'none';
+        document.getElementById('tour-step-2').style.display = 'block';
+        document.getElementById('dot-1').classList.remove('active');
+        document.getElementById('dot-2').classList.add('active');
+    };
+
+    document.getElementById('tour-btn-2').onclick = () => {
+        document.getElementById('tour-step-2').style.display = 'none';
+        document.getElementById('tour-step-3').style.display = 'block';
+        document.getElementById('dot-2').classList.remove('active');
+        document.getElementById('dot-3').classList.add('active');
+    };
+
+    document.getElementById('tour-btn-3').onclick = async () => {
+        // Remove overlay instantly so user isn't waiting
+        overlay.remove();
+        
+        // Save locally for this browser
+        localStorage.setItem('cheaplet_tour_seen', 'true');
+        
+        // Save to Firebase so it syncs across their devices
+        try {
+            if (auth.currentUser) {
+                await updateDoc(doc(db, "users", auth.currentUser.uid), { hasSeenTour: true });
+            }
+        } catch(e) { console.error("Error saving tour state", e); }
+    };
+}
+// --- END WELCOME TOUR LOGIC ---
+
 function showLanguagePopup() {
     if (document.getElementById('lang-modal')) return;
     const modal = document.createElement('div');
     modal.id = 'lang-modal'; modal.className = 'lang-modal-overlay';
     modal.innerHTML = `
         <div class="lang-modal">
-            <h2 style="color:#0C1446; margin-bottom:10px;">Welcome / Bienvenue</h2>
+            <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">Welcome / Bienvenue</h2>
             <p style="color:#6b84a3; margin-bottom:20px; font-size:0.9rem;">Please select your preferred language.</p>
             <button class="lang-btn" id="btn-en">English</button>
             <button class="lang-btn" id="btn-fr">Français</button>
