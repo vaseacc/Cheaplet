@@ -198,8 +198,12 @@ function updateHeaderToLoggedIn(userData) {
     
     const name = userData.displayName || 'User';
     
-    // Generate GitHub-style Identicon if no photo exists
-    const finalPhotoURL = userData.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${userData.uid}&backgroundColor=EBF2FA`;
+    // 🔥 THE FIX: Strictly enforce Identicons! 
+    // We ignore the default Google/Microsoft photoURL if it comes from googleusercontent or live.com
+    let finalPhotoURL = userData.photoURL;
+    if (!finalPhotoURL || finalPhotoURL.includes("googleusercontent.com") || finalPhotoURL.includes("live.com")) {
+        finalPhotoURL = `https://api.dicebear.com/7.x/identicon/svg?seed=${userData.uid}&backgroundColor=EBF2FA`;
+    }
     
     container.innerHTML = `
         <button class="btn desktop-only" id="globalListBtn" style="margin-right: 15px;">${translations[lang].btn_list}</button>
@@ -248,13 +252,11 @@ function updateHeaderToLoggedOut() {
     container.innerHTML = `<button class="btn" onclick="window.location.href='/LoginInToCheaplet.html'">${translations[lang].btn_login}</button>`;
 }
 
-// --- 🔥 NEW: WELCOME TOUR LOGIC ---
+// --- 🔥 WELCOME TOUR & PROFILE PERSONALIZATION ---
 function showWelcomeTour() {
     const user = auth.currentUser;
     if (!user) return;
 
-    // 🔥 FIXED: Tie the local storage key directly to the User ID!
-    // This way, if they switch accounts on the same computer, the new account gets the tour!
     const tourKey = `cheaplet_tour_seen_${user.uid}`;
     
     if (localStorage.getItem(tourKey) === 'true') return;
@@ -271,7 +273,8 @@ function showWelcomeTour() {
     overlay.className = 'lang-modal-overlay';
     overlay.style.zIndex = '10005';
     
-    const defaultPfpUrl = user.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
+    // 🔥 FIXED: Generate Identicon by default for the tour preview
+    const defaultPfpUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
 
     overlay.innerHTML = `
         <div class="lang-modal" style="padding: 40px 30px;">
@@ -338,7 +341,7 @@ function showWelcomeTour() {
         btn.textContent = t.tour_saving;
         
         let newName = document.getElementById('tour-name-input').value.trim() || 'User';
-        let finalPhoto = defaultPfpUrl;
+        let finalPhoto = defaultPfpUrl; // Start with the Identicon
 
         try {
             if (selectedFile) {
@@ -354,6 +357,7 @@ function showWelcomeTour() {
                 if (res.secure_url) finalPhoto = res.secure_url;
             }
 
+            // Save new photo (or Identicon) and flag to Firebase
             await updateProfile(user, { displayName: newName, photoURL: finalPhoto });
             await updateDoc(doc(db, "users", user.uid), { displayName: newName, photoURL: finalPhoto, hasSeenTour: true });
             
