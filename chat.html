@@ -36,7 +36,6 @@
         .chat-window { flex-grow: 1; display: flex; flex-direction: column; background: white; position: relative; overflow: hidden; }
         .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; background: #fff; display: flex; align-items: center; gap: 15px; z-index: 10; flex-shrink: 0; }
         
-        /* 🔥 NEW: Clickable Header Styles */
         #chat-header-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: #eee; display: none; border: 1px solid #ddd; cursor: pointer; transition: transform 0.2s; }
         #chat-header-avatar:hover { transform: scale(1.05); }
         #chat-header-name { font-weight: 700; color: #050505; font-size: 1.1rem; cursor: pointer; transition: color 0.2s; }
@@ -123,7 +122,6 @@
                         <img id="chat-header-avatar" src="" title="View Profile">
                         <div style="display: flex; flex-direction: column;">
                             <span id="chat-header-name" title="View Profile">Chat</span>
-                            <!-- 🔥 NEW: Rating and Student Badge Container -->
                             <div id="chat-header-meta"></div>
                         </div>
                     </div>
@@ -191,9 +189,6 @@
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`;
-            const UPLOAD_PRESET = config.cloudinary.uploadPreset;
-
             const sidebar = document.getElementById('chat-sidebar');
             const sidebarList = document.getElementById('sidebar-list');
             const chatActiveUI = document.getElementById('chat-active-ui');
@@ -229,8 +224,8 @@
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = { 
-                en: { imageSent: "Sent a photo", sold: "SOLD", reportSuccess: "Report submitted.", soldBanner: "Listing Sold - Chat Disabled", rateText: "Rate your experience", rateSuccess: "Thanks for rating!", verifiedStudent: "Verified Student", noRatings: "No ratings yet" }, 
-                fr: { imageSent: "A envoyé une photo", sold: "VENDU", reportSuccess: "Signalement envoyé.", soldBanner: "Annonce vendue - Chat désactivé", rateText: "Évaluez votre expérience", rateSuccess: "Merci pour votre évaluation !", verifiedStudent: "Étudiant vérifié", noRatings: "Aucune évaluation" } 
+                en: { imageSent: "Sent a photo", sold: "SOLD", reportSuccess: "Report submitted.", soldBanner: "Listing Sold - Chat Disabled", rateText: "Rate your experience", rateSuccess: "Thanks for rating!", verifiedStudent: "Verified Student", noRatings: "No ratings yet", uploadFail: "Image upload failed." }, 
+                fr: { imageSent: "A envoyé une photo", sold: "VENDU", reportSuccess: "Signalement envoyé.", soldBanner: "Annonce vendue - Chat désactivé", rateText: "Évaluez votre expérience", rateSuccess: "Merci pour votre évaluation !", verifiedStudent: "Étudiant vérifié", noRatings: "Aucune évaluation", uploadFail: "Échec du téléchargement." } 
             };
 
             const userCache = {};
@@ -277,7 +272,11 @@
                             getDoc(doc(db, 'users', otherId)).then(uSnap => {
                                 if(uSnap.exists()) {
                                     userCache[otherId] = uSnap.data();
-                                    if(userCache[otherId].photoURL) avatarDiv.innerHTML = `<img src="${userCache[otherId].photoURL}">`;
+                                    let finalUrl = userCache[otherId].photoURL;
+                                    if (!finalUrl || finalUrl.includes("googleusercontent.com") || finalUrl.includes("live.com")) {
+                                        finalUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${otherId}&backgroundColor=EBF2FA`;
+                                    }
+                                    avatarDiv.innerHTML = `<img src="${finalUrl}">`;
                                 }
                             });
                         }
@@ -309,22 +308,20 @@
                 document.getElementById('sold-text').textContent = strings[lang].soldBanner;
                 document.getElementById('rate-title').textContent = strings[lang].rateText;
 
-                // 🔥 NEW: Fetch user info, add clickable profile links, and display rating/badge
                 const uSnap = await getDoc(doc(db, "users", otherId));
                 if (uSnap.exists()) {
                     const uData = uSnap.data();
                     
-                    if (uData.photoURL) {
-                        currentOtherPhotoUrl = uData.photoURL;
-                        chatHeaderAvatar.src = currentOtherPhotoUrl;
-                        chatHeaderAvatar.style.display = 'block';
+                    currentOtherPhotoUrl = uData.photoURL;
+                    if (!currentOtherPhotoUrl || currentOtherPhotoUrl.includes("googleusercontent.com") || currentOtherPhotoUrl.includes("live.com")) {
+                        currentOtherPhotoUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${otherId}&backgroundColor=EBF2FA`;
                     }
+                    chatHeaderAvatar.src = currentOtherPhotoUrl;
+                    chatHeaderAvatar.style.display = 'block';
 
-                    // Make avatar and name clickable to view profile
                     chatHeaderAvatar.onclick = () => window.location.href = `/user.html?id=${otherId}`;
                     chatHeaderName.onclick = () => window.location.href = `/user.html?id=${otherId}`;
 
-                    // Build Rating and Verified Student Badge
                     let metaHtml = "";
                     if (uData.ratingCount && uData.ratingCount > 0) {
                         const avg = (uData.ratingSum / uData.ratingCount).toFixed(1);
@@ -332,11 +329,7 @@
                     } else {
                         metaHtml += `<span>${strings[lang].noRatings}</span>`;
                     }
-                    
-                    if (uData.isStudent) {
-                        metaHtml += ` <span style="margin: 0 6px; color:#ccc;">&bull;</span> <span style="color:#2E7D32; font-weight:bold;"><i class="fas fa-graduation-cap"></i> ${strings[lang].verifiedStudent}</span>`;
-                    }
-                    
+                    if (uData.isStudent) metaHtml += ` <span style="margin: 0 6px; color:#ccc;">&bull;</span> <span style="color:#2E7D32; font-weight:bold;"><i class="fas fa-graduation-cap"></i> ${strings[lang].verifiedStudent}</span>`;
                     chatHeaderMeta.innerHTML = metaHtml;
                 }
 
@@ -351,10 +344,7 @@
                                 lpPrice.style.display = 'none'; lpStatus.textContent = strings[lang].sold; lpStatus.style.display = 'inline-block';
                                 messageForm.style.display = 'none';
                                 soldBanner.style.display = 'block';
-                                
-                                if (!d.ratedBy || !d.ratedBy.includes(currentUser.uid)) {
-                                    ratingContainer.style.display = 'flex';
-                                }
+                                if (!d.ratedBy || !d.ratedBy.includes(currentUser.uid)) ratingContainer.style.display = 'flex';
                             } else { 
                                 lpStatus.style.display = 'none'; lpPrice.style.display = 'block'; lpPrice.textContent = `$${ld.price.toFixed(2)}`; 
                             }
@@ -392,13 +382,36 @@
                 };
 
                 imgBtn.onclick = () => fileInput.click();
+
+                // 🔥 FIXED: Added Signed Uploads Logic for Chat Images
                 fileInput.onchange = async (e) => {
                     const file = e.target.files[0];
                     if (!file) return;
-                    const formData = new FormData(); formData.append('file', file); formData.append('upload_preset', UPLOAD_PRESET);
-                    const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: formData }).then(r => r.json());
-                    await addDoc(collection(db, 'chats', chatId, 'messages'), { imageUrl: res.secure_url, senderId: currentUser.uid, timestamp: serverTimestamp() });
-                    await updateDoc(chatRef, { lastMessage: `📷 ${strings[lang].imageSent}`, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
+                    
+                    try {
+                        const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('api_key', signRes.apiKey);
+                        formData.append('timestamp', signRes.timestamp);
+                        formData.append('signature', signRes.signature);
+                        formData.append('upload_preset', signRes.uploadPreset);
+
+                        const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { 
+                            method: 'POST', 
+                            body: formData 
+                        }).then(r => r.json());
+
+                        if (res.secure_url) {
+                            await addDoc(collection(db, 'chats', chatId, 'messages'), { imageUrl: res.secure_url, senderId: currentUser.uid, timestamp: serverTimestamp() });
+                            await updateDoc(chatRef, { lastMessage: `📷 ${strings[lang].imageSent}`, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
+                        } else {
+                            throw new Error("Upload response invalid.");
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        alert(strings[lang].uploadFail);
+                    }
                 };
 
                 stars.forEach(star => {
@@ -429,7 +442,7 @@
                 row.className = `message-row ${isSent ? 'sent' : 'received'}`;
                 let avatarHtml = '';
                 if (!isSent) {
-                    const avatarSrc = otherPhotoUrl || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ccc"><circle cx="12" cy="12" r="12"/></svg>';
+                    const avatarSrc = otherPhotoUrl || `https://api.dicebear.com/7.x/identicon/svg?seed=fallback&backgroundColor=EBF2FA`;
                     avatarHtml = `<img src="${avatarSrc}" class="chat-avatar">`;
                 }
                 const bubble = document.createElement('div');
