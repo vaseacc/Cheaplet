@@ -4,105 +4,361 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Listing Details - Cheaplet</title>
-    <!-- GLOBAL BRAIN -->
     <script type="module" src="global.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,700;0,900;1,700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f8f9fa; color: #333; min-height: 100vh; display: flex; flex-direction: column; overflow-y: auto; }
-        
-        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; height: 60px; padding: 0 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: space-between; z-index: 100; flex-shrink: 0; position: sticky; top: 0; }
-        .header-left { display: flex; align-items: center; gap: 20px; }
-        .logo { font-size: 24px; font-weight: bold; color: white; text-decoration: none; display: flex; align-items: center; }
-        .logo span { color: #FFD700; }
-        nav ul { display: flex; list-style: none; margin: 0; padding: 0; gap: 20px; }
-        .header-right { display: flex; align-items: center; gap: 15px; }
+        :root {
+            --ink:       #0C1446;
+            --deep:      #2B5C92;
+            --mist:      #B3CDE0;
+            --white:     #FFFFFF;
+            --off-white: #F4F7FC;
+            --surface:   #EBF2FA;
+            --text-body: #1a2a4a;
+            --text-muted:#6b84a3;
+            --gold:      #C8A96E;
+            --green:     #2E7D5E;
+            --red:       #C0392B;
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --shadow-sm: 0 2px 12px rgba(12,20,70,0.08);
+            --shadow-md: 0 8px 32px rgba(12,20,70,0.13);
+            --font-display: 'Source Serif 4', Georgia, serif;
+            --font-body:    'Source Sans 3', sans-serif;
+        }
 
-        .main-wrapper { display: flex; flex-shrink: 0; height: calc(100vh - 60px); overflow: hidden; }
-        .image-stage { flex: 1; background-color: #000; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
-        .blurred-bg { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-size: cover; background-position: center; filter: blur(40px) brightness(0.5); z-index: 1; transition: background-image 0.3s ease-in-out; transform: scale(1.1); }
-        
-        .main-image-container { position: relative; z-index: 2; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .main-image { display: block; width: 100%; height: 100%; object-fit: contain; box-shadow: 0 10px 30px rgba(0,0,0,0.6); border-radius: 4px; }
-        
-        .nav-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; border-radius: 50%; background-color: rgba(60, 60, 60, 0.6); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; border: none; z-index: 10; }
-        .nav-arrow:hover { background-color: rgba(60, 60, 60, 0.9); }
-        .nav-prev { left: 20px; } .nav-next { right: 20px; }
-        .thumbnails-overlay { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 10; padding: 5px; }
-        .thumb { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; cursor: pointer; opacity: 0.6; border: 2px solid white; transition: all 0.2s; }
-        .thumb.active { opacity: 1; border-color: #FFD700; transform: scale(1.15); }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font-body);
+            background: var(--off-white);
+            color: var(--text-body);
+            min-height: 100vh;
+            display: flex; flex-direction: column;
+        }
 
-        .details-panel { width: 420px; background-color: white; border-left: 1px solid #ddd; overflow-y: auto; display: flex; flex-direction: column; padding: 25px; flex-shrink: 0; }
-        h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 5px; color: #050505; overflow-wrap: break-word; word-break: break-word; }
+        /* ── ANIMATIONS ── */
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        @keyframes imagePop {
+            from { opacity: 0; transform: scale(0.97); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+
+        /* ── HEADER ── */
+        header {
+            position: sticky; top: 0; z-index: 200;
+            background: rgba(12, 20, 70, 0.97);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(179,205,224,0.15);
+            animation: slideDown 0.4s ease both;
+            flex-shrink: 0;
+        }
+        .header-inner {
+            max-width: 1280px; margin: 0 auto;
+            padding: 0 28px; height: 68px;
+            display: flex; align-items: center; justify-content: space-between; gap: 20px;
+        }
+        .logo {
+            font-family: var(--font-display);
+            font-size: 1.6rem; font-weight: 900;
+            color: var(--white); text-decoration: none; letter-spacing: -0.5px;
+        }
+        .logo em { color: var(--gold); font-style: normal; }
+        nav ul { display: flex; list-style: none; gap: 28px; }
+        nav ul li a {
+            color: rgba(255,255,255,0.75);
+            text-decoration: none; font-size: 0.9rem; font-weight: 500;
+            transition: color 0.2s;
+        }
+        nav ul li a:hover { color: var(--white); }
+        .header-right { display: flex; align-items: center; gap: 10px; }
+
+        /* ── MAIN LAYOUT ── */
+        .main-wrapper {
+            display: flex; flex: 1;
+            height: calc(100vh - 68px);
+            overflow: hidden;
+        }
+
+        /* ── IMAGE STAGE ── */
+        .image-stage {
+            flex: 1; background: #05091f;
+            position: relative; display: flex;
+            flex-direction: column; align-items: center; justify-content: center;
+            overflow: hidden;
+            animation: fadeIn 0.5s ease both;
+        }
+        .blurred-bg {
+            position: absolute; inset: 0;
+            background-size: cover; background-position: center;
+            filter: blur(40px) brightness(0.4);
+            z-index: 1; transform: scale(1.1);
+            transition: background-image 0.35s ease;
+        }
+        .main-image-container {
+            position: relative; z-index: 2;
+            width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .main-image {
+            display: block; width: 100%; height: 100%;
+            object-fit: contain;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.7);
+            border-radius: 6px;
+            animation: imagePop 0.4s ease both;
+        }
+        .nav-arrow {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            width: 46px; height: 46px; border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 16px; z-index: 10;
+            transition: background 0.2s, transform 0.2s;
+        }
+        .nav-arrow:hover { background: rgba(255,255,255,0.22); transform: translateY(-50%) scale(1.08); }
+        .nav-prev { left: 16px; } .nav-next { right: 16px; }
+        .thumbnails-overlay {
+            position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 8px; z-index: 10; padding: 6px 10px;
+            background: rgba(0,0,0,0.35); border-radius: 50px;
+            backdrop-filter: blur(6px);
+        }
+        .thumb {
+            width: 46px; height: 46px; border-radius: 6px;
+            object-fit: cover; cursor: pointer; opacity: 0.55;
+            border: 2px solid transparent; transition: all 0.2s;
+        }
+        .thumb:hover { opacity: 0.85; }
+        .thumb.active { opacity: 1; border-color: var(--gold); transform: scale(1.1); }
+
+        /* ── DETAILS PANEL ── */
+        .details-panel {
+            width: 420px; flex-shrink: 0;
+            background: var(--white);
+            border-left: 1px solid rgba(179,205,224,0.4);
+            overflow-y: auto; display: flex; flex-direction: column;
+            padding: 28px 24px;
+            animation: fadeUp 0.5s 0.1s ease both; opacity: 0;
+            animation-fill-mode: forwards;
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: 1.6rem; font-weight: 900;
+            color: var(--ink); margin-bottom: 8px;
+            line-height: 1.2; overflow-wrap: break-word; word-break: break-word;
+            letter-spacing: -0.3px;
+        }
         .price-container { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-        .price { font-size: 1.5rem; font-weight: 700; color: #2E7D32; }
-        .original-price { font-size: 1.1rem; color: #999; text-decoration: line-through; }
-        
-        .meta-info { font-size: 0.85rem; color: #65676b; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
-        .action-buttons { display: flex; gap: 10px; margin-bottom: 25px; }
-        .btn-primary { flex: 1; background-color: #4CAF50; color: white; border: none; border-radius: 6px; font-weight: 600; padding: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 1rem; }
-        .btn-icon { width: 45px; height: 42px; background-color: #f0f0f0; border-radius: 6px; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
-        .btn-report { color: #ff5252; }
+        .price { font-size: 1.5rem; font-weight: 800; color: var(--green); font-family: var(--font-display); }
+        .original-price { font-size: 1rem; color: var(--text-muted); text-decoration: line-through; }
+        .meta-info {
+            font-size: 0.82rem; color: var(--text-muted);
+            margin-bottom: 20px; padding-bottom: 16px;
+            border-bottom: 1px solid rgba(179,205,224,0.4);
+        }
 
-        .section-header { font-weight: 700; font-size: 1.1rem; margin-top: 15px; margin-bottom: 10px; color: #050505; }
-        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.95rem; gap: 10px; }
-        .info-label { font-weight: 600; color: #555; flex-shrink: 0; }
-        .info-value { color: #333; text-align: right; overflow-wrap: break-word; word-break: break-word; }
-        .description-text { font-size: 0.95rem; line-height: 1.6; color: #444; white-space: pre-wrap; margin-bottom: 20px; overflow-wrap: break-word; }
-        
-        .seller-section { display: flex; align-items: center; gap: 12px; margin-top: 10px; padding: 10px 0; border-top: 1px solid #eee; border-bottom: 1px solid #eee; }
-        #seller-avatar-small { width: 45px; height: 45px; border-radius: 50%; background: #ddd; background-size: cover; background-position: center; border: 1px solid #eee; }
-        .seller-name { font-weight: 600; color: #050505; text-decoration: none; }
-        
-        .seller-rating-display { color: #FFD700; font-size: 0.85rem; margin-top: 2px; }
-        .verified-student-badge { display: inline-flex; align-items: center; gap: 5px; background: #e8f5e9; color: #2E7D32; font-size: 0.75rem; font-weight: bold; padding: 2px 8px; border-radius: 12px; border: 1px solid #c8e6c9; margin-top: 3px; }
+        /* ── ACTION BUTTONS ── */
+        .action-buttons { display: flex; gap: 10px; margin-bottom: 24px; }
+        .btn-primary {
+            flex: 1; background: var(--ink); color: var(--white);
+            border: none; border-radius: var(--radius-sm);
+            font-family: var(--font-body); font-weight: 600;
+            padding: 11px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            font-size: 0.95rem; transition: background 0.2s, transform 0.15s;
+        }
+        .btn-primary:hover { background: var(--deep); transform: translateY(-1px); }
+        .btn-icon {
+            width: 44px; height: 44px;
+            background: var(--surface); border-radius: var(--radius-sm);
+            border: 1.5px solid rgba(179,205,224,0.5);
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 16px; color: var(--text-muted);
+            transition: background 0.18s, color 0.18s, transform 0.15s;
+        }
+        .btn-icon:hover { background: var(--mist); color: var(--ink); transform: translateY(-1px); }
+        .btn-report:hover { color: var(--red) !important; background: #fdecea !important; }
 
-        .quick-message-container { margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
-        .btn-send { background-color: #4CAF50; color: white; width: 100%; border: none; border-radius: 6px; height: 40px; font-weight: 600; cursor: pointer; }
+        /* ── SECTION HEADERS ── */
+        .section-header {
+            font-family: var(--font-display);
+            font-weight: 700; font-size: 1rem;
+            color: var(--ink); margin-top: 18px; margin-bottom: 10px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid var(--surface);
+        }
+        .info-row {
+            display: flex; justify-content: space-between;
+            margin-bottom: 7px; font-size: 0.88rem; gap: 10px;
+        }
+        .info-label { font-weight: 600; color: var(--text-muted); flex-shrink: 0; }
+        .info-value { color: var(--text-body); text-align: right; overflow-wrap: break-word; word-break: break-word; }
+        .description-text {
+            font-size: 0.9rem; line-height: 1.65;
+            color: var(--text-body); white-space: pre-wrap;
+            margin-bottom: 20px; overflow-wrap: break-word;
+        }
 
-        .related-section { margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; padding-bottom: 40px; }
-        .related-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
-        .related-card { background: white; text-decoration: none; color: inherit; display: block; overflow: hidden; }
-        .related-img { width: 100%; height: 120px; background-color: #eee; background-size: cover; background-position: center; border-radius: 8px; margin-bottom: 8px; }
-        .related-title { font-size: 0.85rem; font-weight: 600; height: 2.4em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.2; color: #050505; }
-        .related-price { font-weight: bold; color: #4CAF50; font-size: 0.95rem; margin-top: 4px; }
+        /* ── SELLER ── */
+        .seller-section {
+            display: flex; align-items: center; gap: 14px;
+            margin-top: 10px; padding: 14px 0;
+            border-top: 1px solid rgba(179,205,224,0.4);
+            border-bottom: 1px solid rgba(179,205,224,0.4);
+        }
+        #seller-avatar-small {
+            width: 46px; height: 46px; border-radius: 50%;
+            background: var(--surface); background-size: cover; background-position: center;
+            border: 2px solid var(--mist); flex-shrink: 0;
+        }
+        .seller-name {
+            font-weight: 700; color: var(--ink); text-decoration: none; font-size: 0.95rem;
+            transition: color 0.2s;
+        }
+        .seller-name:hover { color: var(--deep); }
+        .seller-rating-display { color: var(--gold); font-size: 0.82rem; margin-top: 3px; }
+        .verified-student-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: rgba(46,125,94,0.1); color: var(--green);
+            font-size: 0.73rem; font-weight: 700; padding: 2px 9px;
+            border-radius: 50px; border: 1px solid rgba(46,125,94,0.25); margin-top: 4px;
+        }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: none; justify-content: center; align-items: center; }
-        .modal-card { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        .modal-card select, .modal-card textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
-        .modal-card textarea { height: 100px; resize: none; }
+        /* ── QUICK MESSAGE ── */
+        .quick-message-container {
+            margin-top: 24px;
+            border-top: 1px solid rgba(179,205,224,0.4);
+            padding-top: 18px;
+        }
+        .quick-msg-label {
+            font-size: 0.82rem; font-weight: 600;
+            color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: 0.5px; margin-bottom: 8px;
+        }
+        .quick-msg-input {
+            width: 100%; padding: 10px 14px;
+            border: 1.5px solid rgba(179,205,224,0.5);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-body); font-size: 0.9rem;
+            color: var(--text-body); resize: none; height: 70px;
+            background: var(--surface); margin-bottom: 8px;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+        .quick-msg-input:focus { border-color: var(--deep); background: var(--white); }
+        .btn-send {
+            background: var(--deep); color: var(--white);
+            width: 100%; border: none; border-radius: var(--radius-sm);
+            height: 40px; font-family: var(--font-body); font-weight: 600;
+            cursor: pointer; font-size: 0.9rem;
+            transition: background 0.2s, transform 0.15s;
+        }
+        .btn-send:hover { background: var(--ink); transform: translateY(-1px); }
+
+        /* ── RELATED ── */
+        .related-section { margin-top: 32px; padding-top: 18px; padding-bottom: 40px; border-top: 1px solid rgba(179,205,224,0.4); }
+        .related-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .related-card {
+            background: var(--off-white); text-decoration: none; color: inherit;
+            display: block; overflow: hidden; border-radius: var(--radius-sm);
+            border: 1px solid rgba(179,205,224,0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .related-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+        .related-img { width: 100%; height: 110px; background-color: var(--surface); background-size: cover; background-position: center; border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+        .related-info { padding: 8px 10px; }
+        .related-title { font-size: 0.82rem; font-weight: 600; height: 2.4em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.2; color: var(--text-body); }
+        .related-price { font-weight: 800; color: var(--green); font-size: 0.9rem; margin-top: 4px; font-family: var(--font-display); }
+
+        /* ── ADMIN ── */
+        .admin-controls { margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(179,205,224,0.4); }
+        .btn-delete {
+            background: #fdecea; color: var(--red);
+            border: 1px solid rgba(192,57,43,0.3); border-radius: var(--radius-sm);
+            padding: 8px 18px; font-family: var(--font-body); font-weight: 600;
+            font-size: 0.88rem; cursor: pointer; transition: background 0.2s;
+        }
+        .btn-delete:hover { background: #f8c8c3; }
+
+        /* ── MODAL ── */
+        .modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(12,20,70,0.6);
+            backdrop-filter: blur(4px);
+            z-index: 10000; display: none;
+            justify-content: center; align-items: center;
+        }
+        .modal-card {
+            background: var(--white); padding: 28px;
+            border-radius: var(--radius-md); width: 90%; max-width: 440px;
+            box-shadow: var(--shadow-md);
+            animation: fadeUp 0.3s ease both;
+        }
+        .modal-card h2 { font-family: var(--font-display); color: var(--ink); margin-bottom: 6px; }
+        .modal-card p { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 16px; }
+        .modal-card select, .modal-card textarea {
+            width: 100%; padding: 10px 14px; margin-bottom: 12px;
+            border: 1.5px solid rgba(179,205,224,0.5); border-radius: var(--radius-sm);
+            font-family: var(--font-body); font-size: 0.9rem; color: var(--text-body);
+            background: var(--surface); outline: none;
+        }
+        .modal-card textarea { height: 90px; resize: none; }
         .modal-buttons { display: flex; gap: 10px; }
-        .modal-buttons button { flex: 1; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; }
-        .btn-submit-red { background: #d32f2f; color: white; }
-        .btn-cancel-gray { background: #eee; color: #333; }
+        .modal-buttons button { flex: 1; padding: 11px; border-radius: var(--radius-sm); font-family: var(--font-body); font-weight: 700; cursor: pointer; border: none; transition: opacity 0.2s; }
+        .modal-buttons button:hover { opacity: 0.85; }
+        .btn-submit-red { background: var(--red); color: var(--white); }
+        .btn-cancel-gray { background: var(--surface); color: var(--text-body); }
 
-        @media (max-width: 900px) { 
-            .main-wrapper { flex-direction: column; overflow-y: auto; height: auto; } 
-            .image-stage { height: 350px; flex: none; width: 100%; } 
-            .main-image-container { padding: 10px; } 
-            .details-panel { width: 100%; border-left: none; height: auto; padding-bottom: 50px; } 
-            nav { display: none; } 
+        /* ── MOBILE ── */
+        @media (max-width: 900px) {
+            .main-wrapper { flex-direction: column; overflow-y: auto; height: auto; }
+            .image-stage { height: 320px; flex: none; width: 100%; }
+            .main-image-container { padding: 10px; }
+            .details-panel { width: 100%; border-left: none; height: auto; padding-bottom: 50px; }
+            nav { display: none; }
         }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="header-left">
-            <a href="/index.html" class="logo">Cheap<span>let</span></a>
-            <nav><ul></ul></nav>
+        <div class="header-inner">
+            <a href="/index.html" class="logo">Cheap<em>let</em></a>
+            <nav>
+                <ul>
+                    <li><a href="/search.html">Browse</a></li>
+                    <li><a href="/my-listings.html">My Listings</a></li>
+                    <li><a href="/messages.html">Messages</a></li>
+                </ul>
+            </nav>
+            <div class="header-right"></div>
         </div>
-        <div class="header-right"></div>
     </header>
 
     <div class="main-wrapper">
         <div class="image-stage">
             <div class="blurred-bg" id="blur-bg"></div>
             <div class="main-image-container">
-                <!-- 🔥 FIXED: Buttons hidden by default -->
-                <button class="nav-arrow nav-prev" id="prev-img-btn" style="display: none;"><i class="fas fa-chevron-left"></i></button>
+                <button class="nav-arrow nav-prev" id="prev-img-btn" style="display:none;"><i class="fas fa-chevron-left"></i></button>
                 <img src="" alt="Listing Item" class="main-image" id="main-image">
-                <button class="nav-arrow nav-next" id="next-img-btn" style="display: none;"><i class="fas fa-chevron-right"></i></button>
+                <button class="nav-arrow nav-next" id="next-img-btn" style="display:none;"><i class="fas fa-chevron-right"></i></button>
             </div>
             <div class="thumbnails-overlay" id="thumbnail-container"></div>
         </div>
@@ -117,11 +373,11 @@
 
             <div class="action-buttons" id="main-action-buttons">
                 <button class="btn-primary" id="btn-message-seller">
-                    <i class="fas fa-paper-plane"></i> &nbsp; <span data-i18n="btn_message">Message</span>
+                    <i class="fas fa-paper-plane"></i><span data-i18n="btn_message">Message</span>
                 </button>
                 <button class="btn-icon" id="btn-save" title="Save"><i class="far fa-bookmark"></i></button>
                 <button class="btn-icon" id="btn-share" title="Share"><i class="fas fa-share-alt"></i></button>
-                <button class="btn-icon btn-report" id="btn-report-listing" title="Report" style="display: none;"><i class="fas fa-flag"></i></button>
+                <button class="btn-icon btn-report" id="btn-report-listing" title="Report" style="display:none;"><i class="fas fa-flag"></i></button>
             </div>
 
             <div class="section-header" data-i18n="details_title">Details</div>
@@ -142,7 +398,7 @@
                 <div>
                     <a href="#" id="seller-name-link" class="seller-name">Loading...</a>
                     <div id="seller-rating-container" class="seller-rating-display"></div>
-                    <div id="seller-badge-container" style="font-size: 0.8rem; color: #65676b;">Cheaplet Member</div>
+                    <div id="seller-badge-container" style="font-size:0.8rem; color:var(--text-muted);">Cheaplet Member</div>
                 </div>
             </div>
 
@@ -152,13 +408,13 @@
                 <button class="btn-send" id="btn-quick-send" data-i18n="btn_send">Send</button>
             </div>
 
-            <div class="related-section" id="related-section" style="display: none;">
+            <div class="related-section" id="related-section" style="display:none;">
                 <div class="section-header" data-i18n="related_title">Related Items</div>
                 <div class="related-grid" id="related-grid"></div>
             </div>
 
             <div class="admin-controls" id="admin-controls" style="display:none;">
-                <p style="color: #d32f2f; font-weight: bold; font-size: 0.9rem; margin-bottom: 5px;">Admin Zone</p>
+                <p style="color:var(--red); font-weight:bold; font-size:0.85rem; margin-bottom:8px;">Admin Zone</p>
                 <button class="btn-delete" id="delete-listing-btn">Delete Listing</button>
             </div>
         </div>
@@ -167,10 +423,18 @@
     <div class="modal-overlay" id="report-modal">
         <div class="modal-card">
             <h2 id="modal-title">Report Listing</h2>
-            <p style="margin-bottom: 15px; font-size: 0.9rem; color: #666;" id="modal-desc">Why are you reporting this listing?</p>
-            <select id="report-reason"><option value="Inappropriate Content">Inappropriate Content</option><option value="Scam or Fraud">Scam or Fraud</option><option value="Sold or Unavailable">Sold or Unavailable</option><option value="Other">Other</option></select>
+            <p id="modal-desc">Why are you reporting this listing?</p>
+            <select id="report-reason">
+                <option value="Inappropriate Content">Inappropriate Content</option>
+                <option value="Scam or Fraud">Scam or Fraud</option>
+                <option value="Sold or Unavailable">Sold or Unavailable</option>
+                <option value="Other">Other</option>
+            </select>
             <textarea id="report-details" placeholder="Provide more details..."></textarea>
-            <div class="modal-buttons"><button class="btn-submit-red" id="submit-report-btn">Submit</button><button class="btn-cancel-gray" id="close-report-btn">Cancel</button></div>
+            <div class="modal-buttons">
+                <button class="btn-submit-red" id="submit-report-btn">Submit</button>
+                <button class="btn-cancel-gray" id="close-report-btn">Cancel</button>
+            </div>
         </div>
     </div>
 
@@ -190,7 +454,7 @@
             const UPLOAD_PRESET = config.cloudinary.uploadPreset;
 
             const mainImage = document.getElementById('main-image');
-            const blurBg = document.getElementById('blur-bg'); 
+            const blurBg = document.getElementById('blur-bg');
             const thumbnailContainer = document.getElementById('thumbnail-container');
             const saveBtn = document.getElementById('btn-save');
             const shareBtn = document.getElementById('btn-share');
@@ -199,13 +463,13 @@
             const nextBtn = document.getElementById('next-img-btn');
             const sellerBadgeContainer = document.getElementById('seller-badge-container');
             const sellerRatingContainer = document.getElementById('seller-rating-container');
-            
+
             let currentUser = null;
             let currentListingData = null;
             let currentListingId = null;
             let currentImageIndex = 0;
             let imageUrls = [];
-            let isSaved = false; 
+            let isSaved = false;
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = {
@@ -251,19 +515,19 @@
 
                     document.getElementById('listing-title').textContent = data.title;
                     if (data.status === 'sold') {
-                        document.getElementById('listing-price').innerHTML = `<span style="color: #d32f2f; font-weight: 800;">${strings[lang].sold}</span>`;
+                        document.getElementById('listing-price').innerHTML = `<span style="color:var(--red); font-weight:800;">${strings[lang].sold}</span>`;
                         document.getElementById('original-price-display').style.display = 'none';
                         document.getElementById('btn-message-seller').style.display = 'none';
                         document.getElementById('btn-save').style.display = 'none';
                         document.getElementById('quick-message-area').style.display = 'none';
                     } else {
                         document.getElementById('listing-price').textContent = `$${data.price.toFixed(2)}`;
-                        if (data.originalPrice) { 
-                            document.getElementById('original-price-display').textContent = `$${data.originalPrice.toFixed(2)}`; 
-                            document.getElementById('original-price-display').style.display = 'block'; 
+                        if (data.originalPrice) {
+                            document.getElementById('original-price-display').textContent = `$${data.originalPrice.toFixed(2)}`;
+                            document.getElementById('original-price-display').style.display = 'block';
                         } else { document.getElementById('original-price-display').style.display = 'none'; }
                     }
-                    
+
                     const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : '';
                     const metaPrefix = lang === 'fr' ? 'Publié le' : 'Listed';
                     document.getElementById('listing-meta').textContent = `${metaPrefix} ${date} • ${translateData(data.location)}`;
@@ -277,52 +541,48 @@
                     document.getElementById('listing-description').textContent = data.description;
                     document.getElementById('seller-name-link').textContent = data.posterDisplayName || "User";
                     document.getElementById('seller-name-link').href = `/user.html?id=${data.posterUid}`;
-                    
+
                     if (data.posterUid) {
                         try {
                             const sellerDoc = await getDoc(doc(db, "users", data.posterUid));
                             if (sellerDoc.exists()) {
                                 const sellerData = sellerDoc.data();
                                 if (sellerData.photoURL) document.getElementById('seller-avatar-small').style.backgroundImage = `url('${sellerData.photoURL}')`;
-                                
                                 if (sellerData.ratingCount && sellerData.ratingCount > 0) {
                                     const avg = (sellerData.ratingSum / sellerData.ratingCount).toFixed(1);
                                     let starsHtml = '';
-                                    for(let i=1; i<=5; i++) {
+                                    for (let i = 1; i <= 5; i++) {
                                         if (avg >= i) starsHtml += '<i class="fas fa-star"></i>';
                                         else if (avg >= i - 0.5) starsHtml += '<i class="fas fa-star-half-alt"></i>';
                                         else starsHtml += '<i class="far fa-star"></i>';
                                     }
-                                    sellerRatingContainer.innerHTML = `${starsHtml} <span style="color:#888; font-size:0.8rem;">(${avg})</span>`;
+                                    sellerRatingContainer.innerHTML = `${starsHtml} <span style="color:var(--text-muted); font-size:0.8rem;">(${avg})</span>`;
                                 } else {
-                                    sellerRatingContainer.innerHTML = `<span style="color:#888;">${strings[lang].noRatings}</span>`;
+                                    sellerRatingContainer.innerHTML = `<span style="color:var(--text-muted);">${strings[lang].noRatings}</span>`;
                                 }
-
                                 if (sellerData.isStudent) sellerBadgeContainer.innerHTML = `<span class="verified-student-badge"><i class="fas fa-graduation-cap"></i> ${strings[lang].verifiedStudent}</span>`;
                                 else sellerBadgeContainer.textContent = strings[lang].cheapletMember;
                             }
-                        } catch(e) { console.error(e); }
+                        } catch (e) { console.error(e); }
                     }
 
                     imageUrls = data.imageUrls || [];
                     if (imageUrls.length > 0) {
-                        updateMainImage(0); 
+                        updateMainImage(0);
                         thumbnailContainer.innerHTML = '';
-                        
-                        // 🔥 FIXED: Hide arrows and thumbnails if only 1 image exists
                         if (imageUrls.length > 1) {
-                            document.getElementById('prev-img-btn').style.display = 'flex';
-                            document.getElementById('next-img-btn').style.display = 'flex';
+                            prevBtn.style.display = 'flex';
+                            nextBtn.style.display = 'flex';
                             thumbnailContainer.style.display = 'flex';
-                            
                             imageUrls.forEach((url, index) => {
-                                const img = document.createElement('img'); img.src = url; img.className = `thumb ${index === 0 ? 'active' : ''}`; img.onclick = () => updateMainImage(index);
+                                const img = document.createElement('img');
+                                img.src = url; img.className = `thumb ${index === 0 ? 'active' : ''}`;
+                                img.onclick = () => updateMainImage(index);
                                 thumbnailContainer.appendChild(img);
                             });
                         } else {
-                            // Enforce hidden state for single images
-                            document.getElementById('prev-img-btn').style.display = 'none';
-                            document.getElementById('next-img-btn').style.display = 'none';
+                            prevBtn.style.display = 'none';
+                            nextBtn.style.display = 'none';
                             thumbnailContainer.style.display = 'none';
                         }
                     }
@@ -345,7 +605,8 @@
             }
 
             async function fetchRelatedListings(tags, currentId) {
-                const grid = document.getElementById('related-grid'); const section = document.getElementById('related-section');
+                const grid = document.getElementById('related-grid');
+                const section = document.getElementById('related-section');
                 const searchTags = tags.slice(0, 10);
                 const q = query(collection(db, "listings"), where("tags", "array-contains-any", searchTags), limit(6));
                 const snap = await getDocs(q);
@@ -354,8 +615,9 @@
                     section.style.display = 'block'; grid.innerHTML = '';
                     related.forEach(rdoc => {
                         const rd = rdoc.data();
-                        const rLink = document.createElement('a'); rLink.className = 'related-card'; rLink.href = `/listing.html?id=${rdoc.id}`;
-                        rLink.innerHTML = `<div class="related-img" style="background-image: url('${rd.imageUrls?.[0] || ''}')"></div><div class="related-title">${rd.title}</div><div class="related-price">$${rd.price.toFixed(2)}</div>`;
+                        const rLink = document.createElement('a');
+                        rLink.className = 'related-card'; rLink.href = `/listing.html?id=${rdoc.id}`;
+                        rLink.innerHTML = `<div class="related-img" style="background-image:url('${rd.imageUrls?.[0] || ''}')"></div><div class="related-info"><div class="related-title">${rd.title}</div><div class="related-price">$${rd.price.toFixed(2)}</div></div>`;
                         grid.appendChild(rLink);
                     });
                 }
@@ -363,69 +625,58 @@
 
             const reportModal = document.getElementById('report-modal');
             document.getElementById('btn-report-listing').onclick = () => {
-                document.getElementById('modal-title').textContent = strings[lang].reportTitle; document.getElementById('modal-desc').textContent = strings[lang].reportDesc; document.getElementById('report-details').placeholder = strings[lang].reportPlaceholder;
-                const opts = document.getElementById('report-reason').options; opts[0].text = strings[lang].opt1; opts[1].text = strings[lang].opt2; opts[2].text = strings[lang].opt3; opts[3].text = strings[lang].opt4; reportModal.style.display = 'flex';
+                document.getElementById('modal-title').textContent = strings[lang].reportTitle;
+                document.getElementById('modal-desc').textContent = strings[lang].reportDesc;
+                document.getElementById('report-details').placeholder = strings[lang].reportPlaceholder;
+                const opts = document.getElementById('report-reason').options;
+                opts[0].text = strings[lang].opt1; opts[1].text = strings[lang].opt2;
+                opts[2].text = strings[lang].opt3; opts[3].text = strings[lang].opt4;
+                reportModal.style.display = 'flex';
             };
             document.getElementById('close-report-btn').onclick = () => reportModal.style.display = 'none';
             document.getElementById('submit-report-btn').onclick = async () => {
-                const reason = document.getElementById('report-reason').value; const details = document.getElementById('report-details').value.trim();
+                const reason = document.getElementById('report-reason').value;
+                const details = document.getElementById('report-details').value.trim();
                 await addDoc(collection(db, "reports"), { reporterUid: currentUser.uid, reporterName: currentUser.displayName, targetUid: currentListingData.posterUid, targetUserName: currentListingData.posterDisplayName, reason: "Listing: " + reason, details: `Item: ${currentListingData.title} (${currentListingId})\n\n${details}`, timestamp: serverTimestamp() });
                 alert(strings[lang].reportSuccess); reportModal.style.display = 'none';
             };
 
             function updateMainImage(index) {
-                currentImageIndex = index; const url = imageUrls[index];
-                if(url) { mainImage.src = url; blurBg.style.backgroundImage = `url('${url}')`; }
+                currentImageIndex = index;
+                const url = imageUrls[index];
+                if (url) {
+                    mainImage.style.animation = 'none';
+                    mainImage.offsetHeight; // reflow
+                    mainImage.style.animation = 'imagePop 0.3s ease both';
+                    mainImage.src = url;
+                    blurBg.style.backgroundImage = `url('${url}')`;
+                }
                 document.querySelectorAll('.thumb').forEach((thumb, i) => { thumb.classList.toggle('active', i === index); });
             }
 
-            prevBtn.onclick = () => { if (imageUrls.length <= 1) return; let newIndex = currentImageIndex - 1; if (newIndex < 0) newIndex = imageUrls.length - 1; updateMainImage(newIndex); };
-            nextBtn.onclick = () => { if (imageUrls.length <= 1) return; let newIndex = currentImageIndex + 1; if (newIndex >= imageUrls.length) newIndex = 0; updateMainImage(newIndex); };
+            prevBtn.onclick = () => { if (imageUrls.length <= 1) return; let n = currentImageIndex - 1; if (n < 0) n = imageUrls.length - 1; updateMainImage(n); };
+            nextBtn.onclick = () => { if (imageUrls.length <= 1) return; let n = currentImageIndex + 1; if (n >= imageUrls.length) n = 0; updateMainImage(n); };
 
-            // 🔥 FIXED: Quick Message Initial Text Database Sync
             async function createChat(posterUid, posterName, initialMessage = null) {
                 if (!currentUser) { window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`; return; }
-                
                 const uids = [currentUser.uid, posterUid].sort();
                 const chatId = uids.join('_') + '_' + currentListingId;
                 const chatRef = doc(db, 'chats', chatId);
-                
                 try {
                     const chatSnap = await getDoc(chatRef);
                     const myName = currentUser.displayName || "User";
-                    
-                    if (!chatSnap.exists()) { 
-                        await setDoc(chatRef, { 
-                            participants: uids, 
-                            participantInfo: { [currentUser.uid]: myName, [posterUid]: posterName }, 
-                            lastUpdate: serverTimestamp(), 
-                            lastMessage: initialMessage || "", 
-                            listingId: currentListingId, 
-                            listingTitle: currentListingData.title 
-                        }); 
+                    if (!chatSnap.exists()) {
+                        await setDoc(chatRef, { participants: uids, participantInfo: { [currentUser.uid]: myName, [posterUid]: posterName }, lastUpdate: serverTimestamp(), lastMessage: initialMessage || "", listingId: currentListingId, listingTitle: currentListingData.title });
                     }
-                    
                     if (initialMessage) {
-                        await addDoc(collection(db, 'chats', chatId, 'messages'), { 
-                            text: initialMessage, 
-                            senderId: currentUser.uid, 
-                            timestamp: serverTimestamp() 
-                        });
-                        await updateDoc(chatRef, { 
-                            lastMessage: initialMessage, 
-                            lastUpdate: serverTimestamp(), 
-                            lastSenderId: currentUser.uid 
-                        });
+                        await addDoc(collection(db, 'chats', chatId, 'messages'), { text: initialMessage, senderId: currentUser.uid, timestamp: serverTimestamp() });
+                        await updateDoc(chatRef, { lastMessage: initialMessage, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
                     }
-                    
                     window.location.href = `/chat.html?id=${chatId}`;
                 } catch (error) { console.error(error); alert("Error starting chat."); }
             }
 
-            document.getElementById('btn-message-seller').onclick = () => {
-                createChat(currentListingData.posterUid, currentListingData.posterDisplayName);
-            };
-
+            document.getElementById('btn-message-seller').onclick = () => createChat(currentListingData.posterUid, currentListingData.posterDisplayName);
             document.getElementById('btn-quick-send').onclick = () => {
                 const msg = document.getElementById('quick-msg-text').value.trim();
                 createChat(currentListingData.posterUid, currentListingData.posterDisplayName, msg !== "" ? msg : null);
@@ -433,8 +684,8 @@
 
             function updateSaveIcon() {
                 const icon = saveBtn.querySelector('i');
-                if (isSaved) { icon.classList.replace('far', 'fas'); icon.style.color = '#4CAF50'; }
-                else { icon.classList.replace('fas', 'far'); icon.style.color = '#555'; }
+                if (isSaved) { icon.classList.replace('far', 'fas'); icon.style.color = '#2B5C92'; }
+                else { icon.classList.replace('fas', 'far'); icon.style.color = ''; }
             }
 
             saveBtn.onclick = async () => {
@@ -446,12 +697,13 @@
             };
 
             shareBtn.onclick = async () => {
-                const url = window.location.href; const copyMsg = lang === 'fr' ? "Lien copié !" : "Link copied!";
-                if (navigator.share) { try { await navigator.share({ title: currentListingData.title, url: url }); } catch (err) { await navigator.clipboard.writeText(url); alert(copyMsg); } }
+                const url = window.location.href;
+                const copyMsg = lang === 'fr' ? "Lien copié !" : "Link copied!";
+                if (navigator.share) { try { await navigator.share({ title: currentListingData.title, url }); } catch { await navigator.clipboard.writeText(url); alert(copyMsg); } }
                 else { await navigator.clipboard.writeText(url); alert(copyMsg); }
             };
 
-            async function deleteListing(docId, isAdmin) { if (confirm("Delete listing?")) { await deleteDoc(doc(db, 'listings', docId)); window.location.href = '/index.html'; } }
+            async function deleteListing(docId) { if (confirm("Delete listing?")) { await deleteDoc(doc(db, 'listings', docId)); window.location.href = '/index.html'; } }
         }
         main();
     </script>
