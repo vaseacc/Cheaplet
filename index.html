@@ -7,8 +7,7 @@
     <script type="module" src="global.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- FONT CHANGE: Replaced Playfair Display + DM Sans with Source Serif 4 + Source Sans 3 -->
-    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,700;0,900;1,700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
@@ -29,8 +28,8 @@
             --shadow-sm: 0 2px 12px rgba(12,20,70,0.08);
             --shadow-md: 0 8px 32px rgba(12,20,70,0.13);
             --shadow-lg: 0 20px 60px rgba(12,20,70,0.18);
-            --font-display: 'Source Serif 4', Georgia, serif;
-            --font-body:    'Source Sans 3', sans-serif;
+            --font-display: 'Playfair Display', Georgia, serif;
+            --font-body:    'DM Sans', sans-serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -271,13 +270,8 @@
     <header>
         <div class="header-inner">
             <a href="/index.html" class="logo">Cheap<em>let</em></a>
-            <nav>
-                <ul>
-                    <li><a href="/search.html" id="nav-browse-link" data-i18n="nav_browse">Browse</a></li>
-                    <li><a href="/my-listings.html" id="nav-listings-link" data-i18n="nav_listings">My Listings</a></li>
-                    <li><a href="/messages.html" id="nav-messages-link" data-i18n="nav_messages">Messages</a></li>
-                </ul>
-            </nav>
+            <!-- 🔥 Nav links replaced with global.js injection target -->
+            <nav><ul></ul></nav>
             <div class="header-right"></div>
         </div>
     </header>
@@ -337,12 +331,7 @@
                 <h2 class="section-title" id="tags-title">Browse by Subject</h2>
                 <a href="/tag.html" class="section-link" id="tags-view-all">View all →</a>
             </div>
-            <div class="tags-grid" id="tags-grid-container">
-                <!-- Skeletons preserved -->
-                <div class="tag-pill skeleton" style="width:90px; height:38px;"></div>
-                <div class="tag-pill skeleton" style="width:110px; height:38px;"></div>
-                <div class="tag-pill skeleton" style="width:80px; height:38px;"></div>
-            </div>
+            <div class="tags-grid" id="tags-grid-container"></div>
         </section>
 
         <section>
@@ -350,16 +339,7 @@
                 <h2 class="section-title" id="listings-title">Featured Listings</h2>
                 <span class="item-count" id="itemCount">Loading…</span>
             </div>
-            <div class="listings-grid" id="listings-container">
-                <!-- Skeletons preserved -->
-                <div style="border-radius:16px; overflow:hidden; background:#fff; box-shadow:0 2px 8px rgba(12,20,70,0.07);">
-                    <div class="skeleton" style="height:190px;"></div>
-                    <div style="padding:16px;">
-                        <div class="skeleton" style="height:20px; width:60%; margin-bottom:10px;"></div>
-                        <div class="skeleton" style="height:14px; width:90%; margin-bottom:6px;"></div>
-                    </div>
-                </div>
-            </div>
+            <div class="listings-grid" id="listings-container"></div>
         </section>
     </div>
 
@@ -411,7 +391,7 @@
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const db = getFirestore(app);
 
-            // 🔥 BILINGUAL TRANSLATION 
+            // 🔥 BILINGUAL TRANSLATION (Removed nav links as global.js handles them)
             const lang = localStorage.getItem('preferred_language') || 'en';
             const uiStrings = {
                 en: {
@@ -419,7 +399,6 @@
                     h1: "Buy &amp; Sell<br><span>Used Books</span><br>for Less.",
                     sub: "The smartest campus marketplace. Save on textbooks, find course reads, and earn back cash on books you've already finished.",
                     btnB: "Browse Books", btnL: "List a Book",
-                    navB: "Browse", navL: "My Listings", navM: "Messages",
                     statB: "BOOKS LISTED", statS: "AVG. SAVINGS", statSt: "STUDENTS",
                     searchPl: "Search by title, author, ISBN, or course code…", searchBtn: "Search",
                     sortNew: "Newest First", sortLow: "Price: Low to High", sortHigh: "Price: High to Low",
@@ -435,7 +414,6 @@
                     h1: "Achetez &amp; Vendez<br><span>Livres Usagés</span><br>à bas prix.",
                     sub: "Le marché étudiant intelligent. Économisez sur les manuels, trouvez vos lectures de cours et récupérez de l'argent sur vos anciens livres.",
                     btnB: "Parcourir les livres", btnL: "Publier un livre",
-                    navB: "Parcourir", navL: "Mes Annonces", navM: "Messages",
                     statB: "LIVRES PUBLIÉS", statS: "ÉCONOMIE MOY.", statSt: "ÉTUDIANTS",
                     searchPl: "Rechercher par titre, auteur, ISBN ou sigle de cours…", searchBtn: "Rechercher",
                     sortNew: "Plus récents", sortLow: "Prix : Croissant", sortHigh: "Prix : Décroissant",
@@ -450,10 +428,6 @@
 
             const ui = uiStrings[lang];
             
-            document.getElementById('nav-browse-link').textContent = ui.navB;
-            document.getElementById('nav-listings-link').textContent = ui.navL;
-            document.getElementById('nav-messages-link').textContent = ui.navM;
-
             document.getElementById('hero-badge').innerHTML = ui.badge;
             document.getElementById('hero-title').innerHTML = ui.h1;
             document.getElementById('hero-sub').innerHTML = ui.sub;
@@ -572,9 +546,6 @@
                         listingsContainer.innerHTML = '';
                         listingsContainer.appendChild(frag);
                         
-                    }, (error) => {
-                        console.error("Error listening to listings:", error);
-                        listingsContainer.innerHTML = `<p style="grid-column:1/-1; text-align:center; color:red;">Failed to load listings.</p>`;
                     });
                 } catch (err) {
                     console.error("Firestore initialization error:", err);
