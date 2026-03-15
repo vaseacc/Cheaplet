@@ -4,54 +4,252 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Messages - Cheaplet</title>
-    <!-- GLOBAL BRAIN -->
     <script type="module" src="global.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,700;0,900;1,700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
-        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+        :root {
+            --ink:       #0C1446;
+            --deep:      #2B5C92;
+            --mist:      #B3CDE0;
+            --white:     #FFFFFF;
+            --off-white: #F4F7FC;
+            --surface:   #EBF2FA;
+            --text-body: #1a2a4a;
+            --text-muted:#6b84a3;
+            --gold:      #C8A96E;
+            --unread:    #E53E3E;
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --shadow-sm: 0 2px 12px rgba(12,20,70,0.08);
+            --shadow-md: 0 8px 32px rgba(12,20,70,0.13);
+            --font-display: 'Source Serif 4', Georgia, serif;
+            --font-body:    'Source Sans 3', sans-serif;
+        }
 
-        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
-        .header-content { display: flex; justify-content: space-between; align-items: center; }
-        .header-left { display: flex; align-items: center; gap: 20px; }
-        .logo { font-size: 24px; font-weight: bold; color: white; text-decoration: none; }
-        .logo span { color: #FFD700; }
-        nav ul { display: flex; list-style: none; margin: 0; padding: 0; gap: 20px; }
-        .header-right { display: flex; align-items: center; gap: 15px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body { font-family: var(--font-body); background: var(--off-white); color: var(--text-body); }
 
-        .page-header { padding: 40px 0 20px; border-bottom: 1px solid #ddd; margin-bottom: 30px; }
-        .page-header h1 { font-size: 2rem; }
+        /* ── ANIMATIONS ── */
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50%       { transform: scale(1.25); }
+        }
+        @keyframes shimmer {
+            0%  { background-position: 200% 0; }
+            100%{ background-position: -200% 0; }
+        }
 
-        #inbox-container { max-width: 800px; margin: 0 auto; background: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); overflow: hidden; }
-        .conversation-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; transition: background-color 0.3s; text-decoration: none; color: inherit; }
+        /* ── HEADER ── */
+        header {
+            position: sticky; top: 0; z-index: 200;
+            background: rgba(12, 20, 70, 0.97);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(179,205,224,0.15);
+            animation: slideDown 0.4s ease both;
+        }
+        .header-inner {
+            max-width: 1280px; margin: 0 auto;
+            padding: 0 28px; height: 68px;
+            display: flex; align-items: center; justify-content: space-between; gap: 20px;
+        }
+        .logo {
+            font-family: var(--font-display);
+            font-size: 1.6rem; font-weight: 900;
+            color: var(--white); text-decoration: none; letter-spacing: -0.5px;
+        }
+        .logo em { color: var(--gold); font-style: normal; }
+        nav ul { display: flex; list-style: none; gap: 28px; }
+        nav ul li a {
+            color: rgba(255,255,255,0.75);
+            text-decoration: none; font-size: 0.9rem; font-weight: 500;
+            transition: color 0.2s;
+        }
+        nav ul li a:hover { color: var(--white); }
+        .header-right { display: flex; align-items: center; gap: 10px; }
+
+        /* ── PAGE HEADER ── */
+        .page-header {
+            background: linear-gradient(135deg, var(--ink) 0%, var(--deep) 60%, #4a7db5 100%);
+            padding: 40px 28px 36px;
+            position: relative; overflow: hidden;
+        }
+        .page-header::after {
+            content: ''; position: absolute; inset: 0;
+            background-image: linear-gradient(rgba(179,205,224,0.06) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(179,205,224,0.06) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+        }
+        .page-header-inner {
+            max-width: 1280px; margin: 0 auto;
+            position: relative; z-index: 1;
+            animation: fadeUp 0.5s ease both;
+        }
+        .page-header h1 {
+            font-family: var(--font-display);
+            font-size: clamp(1.6rem, 4vw, 2.2rem);
+            font-weight: 900; color: var(--white);
+            letter-spacing: -0.5px; margin-bottom: 6px;
+        }
+        .page-header p { color: rgba(255,255,255,0.6); font-size: 0.92rem; }
+
+        /* ── MAIN ── */
+        .main-wrap { max-width: 860px; margin: 0 auto; padding: 36px 28px; }
+
+        /* ── INFO / STATES ── */
+        .info-message {
+            text-align: center; padding: 80px 20px;
+            color: var(--text-muted); font-size: 1rem;
+            animation: fadeIn 0.4s ease both;
+        }
+        .info-message i { display: block; font-size: 2.5rem; color: var(--mist); margin-bottom: 16px; }
+
+        /* ── INBOX ── */
+        #inbox-container {
+            background: var(--white);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(179,205,224,0.3);
+            overflow: hidden;
+        }
+
+        /* ── CONVERSATION ITEM ── */
+        .conversation-item {
+            display: flex; align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(179,205,224,0.25);
+            cursor: pointer; text-decoration: none; color: inherit;
+            transition: background 0.18s;
+            position: relative;
+            animation: fadeUp 0.35s ease both;
+        }
         .conversation-item:last-child { border-bottom: none; }
-        .conversation-item:hover { background-color: #f8f9fa; }
+        .conversation-item:hover { background: var(--surface); }
 
-        .avatar { width: 50px; height: 50px; border-radius: 50%; background-color: #4CAF50; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; margin-right: 15px; flex-shrink: 0; overflow: hidden; }
+        /* unread left bar */
+        .conversation-item.unread::before {
+            content: '';
+            position: absolute; left: 0; top: 0; bottom: 0;
+            width: 3px; background: var(--deep);
+            border-radius: 0 2px 2px 0;
+        }
+
+        /* ── AVATAR ── */
+        .avatar-wrap { position: relative; margin-right: 16px; flex-shrink: 0; }
+        .avatar {
+            width: 48px; height: 48px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--ink), var(--deep));
+            color: var(--white);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 1.1rem;
+            overflow: hidden;
+            border: 2px solid var(--surface);
+        }
         .avatar img { width: 100%; height: 100%; object-fit: cover; }
-        
+
+        /* ── RED DOT ── */
+        .unread-dot {
+            position: absolute; top: 0; right: 0;
+            width: 12px; height: 12px;
+            background: var(--unread);
+            border-radius: 50%;
+            border: 2px solid var(--white);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        /* ── CONVERSATION DETAILS ── */
         .conversation-details { flex-grow: 1; overflow: hidden; }
-        .participant-name { font-weight: 600; }
-        .last-message { color: #777; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .info-message { text-align: center; padding: 100px 0; font-size: 1.2rem; color: #777; }
-        
-        @media (max-width: 767px) { nav { display: none; } }
+        .convo-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 3px; }
+        .participant-name {
+            font-weight: 600; font-size: 0.95rem; color: var(--text-body);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .conversation-item.unread .participant-name { color: var(--ink); font-weight: 700; }
+        .listing-tag {
+            font-size: 0.72rem; color: var(--deep); font-weight: 600;
+            background: var(--surface); padding: 2px 8px; border-radius: 50px;
+            border: 1px solid var(--mist); white-space: nowrap; flex-shrink: 0;
+        }
+        .last-message {
+            color: var(--text-muted); font-size: 0.86rem;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .conversation-item.unread .last-message { color: var(--text-body); font-weight: 500; }
+
+        .convo-arrow {
+            color: var(--mist); font-size: 0.75rem; flex-shrink: 0;
+            margin-left: 12px; transition: transform 0.2s, color 0.2s;
+        }
+        .conversation-item:hover .convo-arrow { transform: translateX(3px); color: var(--deep); }
+
+        /* ── SKELETON ── */
+        .skeleton-item {
+            display: flex; align-items: center; padding: 16px 20px;
+            border-bottom: 1px solid rgba(179,205,224,0.25);
+            animation: fadeIn 0.3s ease both;
+        }
+        .skeleton {
+            background: linear-gradient(90deg, var(--surface) 25%, var(--mist) 50%, var(--surface) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.4s infinite;
+            border-radius: var(--radius-sm);
+        }
+        .sk-avatar { width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0; margin-right: 16px; }
+        .sk-lines { flex: 1; }
+        .sk-line { height: 13px; margin-bottom: 8px; border-radius: 4px; }
+
+        /* ── MOBILE ── */
+        @media (max-width: 767px) {
+            nav { display: none; }
+            .page-header { padding: 28px 16px; }
+            .main-wrap { padding: 20px 12px; }
+            .conversation-item { padding: 14px 16px; }
+        }
     </style>
 </head>
 <body>
+
     <header>
-        <div class="container header-content">
-            <div class="header-left"><a href="/index.html" class="logo">Cheap<span>let</span></a><nav><ul></ul></nav></div>
+        <div class="header-inner">
+            <a href="/index.html" class="logo">Cheap<em>let</em></a>
+            <nav>
+                <ul>
+                    <li><a href="/search.html" id="nav-browse-link">Browse</a></li>
+                    <li><a href="/my-listings.html" id="nav-listings-link">My Listings</a></li>
+                    <li><a href="/messages.html" id="nav-messages-link">Messages</a></li>
+                </ul>
+            </nav>
             <div class="header-right"></div>
         </div>
     </header>
 
-    <main class="container">
-        <div class="page-header"><h1 data-i18n="nav_messages">My Messages</h1></div>
-        <div id="info-container"><p class="info-message">...</p></div>
+    <div class="page-header">
+        <div class="page-header-inner">
+            <h1 data-i18n="nav_messages">My Messages</h1>
+            <p id="page-sub">Your conversations with buyers and sellers.</p>
+        </div>
+    </div>
+
+    <div class="main-wrap">
+        <div id="info-container"></div>
         <div id="inbox-container"></div>
-    </main>
+    </div>
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
@@ -70,47 +268,84 @@
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = {
-                en: { loading: "Loading conversations...", empty: "You have no messages yet.", login: "Please log in to view messages." },
-                fr: { loading: "Chargement des conversations...", empty: "Vous n'avez pas encore de messages.", login: "Veuillez vous connecter pour voir vos messages." }
+                en: {
+                    loading: "Loading conversations…",
+                    empty: "You have no messages yet.",
+                    login: "Please log in to view messages.",
+                    pageSub: "Your conversations with buyers and sellers.",
+                    navB: "Browse", navL: "My Listings", navM: "Messages"
+                },
+                fr: {
+                    loading: "Chargement des conversations…",
+                    empty: "Vous n'avez pas encore de messages.",
+                    login: "Veuillez vous connecter pour voir vos messages.",
+                    pageSub: "Vos conversations avec acheteurs et vendeurs.",
+                    navB: "Parcourir", navL: "Mes Annonces", navM: "Messages"
+                }
             };
+
+            const ui = strings[lang];
+            document.getElementById('nav-browse-link').textContent = ui.navB;
+            document.getElementById('nav-listings-link').textContent = ui.navL;
+            document.getElementById('nav-messages-link').textContent = ui.navM;
+            document.getElementById('page-sub').textContent = ui.pageSub;
 
             const userCache = {};
             let unsubscribe = null;
 
+            // Show skeleton loaders while waiting
+            function showSkeletons() {
+                inboxContainer.innerHTML = [1,2,3].map((_, i) => `
+                    <div class="skeleton-item" style="animation-delay:${i*0.07}s">
+                        <div class="skeleton sk-avatar"></div>
+                        <div class="sk-lines">
+                            <div class="skeleton sk-line" style="width:${40+i*15}%"></div>
+                            <div class="skeleton sk-line" style="width:${60+i*10}%; opacity:0.6"></div>
+                        </div>
+                    </div>`).join('');
+            }
+
             onAuthStateChanged(auth, user => {
                 const isOAuth = user && user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
                 if (user && (user.emailVerified || isOAuth)) {
+                    showSkeletons();
                     fetchConversations(user);
                 } else {
                     if (unsubscribe) unsubscribe();
                     inboxContainer.innerHTML = '';
-                    infoContainer.innerHTML = `<p class="info-message">${strings[lang].login}</p>`;
+                    infoContainer.innerHTML = `
+                        <div class="info-message">
+                            <i class="fas fa-lock"></i>
+                            ${ui.login}
+                        </div>`;
                 }
             });
 
             function fetchConversations(currentUser) {
-                const q = query(collection(db, "chats"), where("participants", "array-contains", currentUser.uid), orderBy("lastUpdate", "desc"));
-                infoContainer.innerHTML = `<p class="info-message">${strings[lang].loading}</p>`;
+                const q = query(
+                    collection(db, "chats"),
+                    where("participants", "array-contains", currentUser.uid),
+                    orderBy("lastUpdate", "desc")
+                );
 
                 unsubscribe = onSnapshot(q, (snapshot) => {
                     inboxContainer.innerHTML = '';
+                    infoContainer.innerHTML = '';
                     let hasVisibleChats = false;
 
                     snapshot.forEach((docSnap) => {
                         const chatData = docSnap.data();
-                        
-                        // 🔥 THE FIX: Hide chats that have no messages!
                         if (!chatData.lastMessage || chatData.lastMessage.trim() === "") return;
-                        
                         hasVisibleChats = true;
                         inboxContainer.appendChild(renderConversation(docSnap, currentUser));
                     });
 
-                    // If all chats were empty/ghosts, show the empty message
                     if (!hasVisibleChats) {
-                        infoContainer.innerHTML = `<p class="info-message">${strings[lang].empty}</p>`;
-                    } else {
-                        infoContainer.innerHTML = ''; 
+                        infoContainer.innerHTML = `
+                            <div class="info-message">
+                                <i class="fas fa-comment-slash"></i>
+                                ${ui.empty}
+                            </div>`;
                     }
                 });
             }
@@ -118,25 +353,42 @@
             function renderConversation(docSnap, currentUser) {
                 const chatData = docSnap.data();
                 const otherId = chatData.participants.find(p => p !== currentUser.uid);
-                const displayName = chatData.participantInfo ? chatData.participantInfo[otherId] || 'User' : 'User';
-                const itemTitle = chatData.listingTitle ? `<span style="font-size:0.8rem; color:#4CAF50; font-weight:normal;">(${chatData.listingTitle})</span>` : '';
+                const displayName = chatData.participantInfo?.[otherId] || 'User';
+
+                // 🔴 Unread detection: check if lastSenderId is not currentUser and chat has unreadBy field
+                const isUnread = chatData.unreadBy && chatData.unreadBy.includes(currentUser.uid);
 
                 const link = document.createElement('a');
                 link.href = `/chat.html?id=${docSnap.id}`;
-                link.className = 'conversation-item';
+                link.className = 'conversation-item' + (isUnread ? ' unread' : '');
                 const avatarId = `msg-avatar-${docSnap.id}`;
-                
-                link.innerHTML = `
-                    <div class="avatar" id="${avatarId}">${displayName.charAt(0).toUpperCase()}</div>
-                    <div class="conversation-details">
-                        <p class="participant-name">${displayName} ${itemTitle}</p>
-                        <p class="last-message">${chatData.lastMessage}</p>
-                    </div>`;
 
+                const listingTag = chatData.listingTitle
+                    ? `<span class="listing-tag">${chatData.listingTitle}</span>`
+                    : '';
+
+                const unreadDot = isUnread
+                    ? `<span class="unread-dot" title="New message"></span>`
+                    : '';
+
+                link.innerHTML = `
+                    <div class="avatar-wrap">
+                        <div class="avatar" id="${avatarId}">${displayName.charAt(0).toUpperCase()}</div>
+                        ${unreadDot}
+                    </div>
+                    <div class="conversation-details">
+                        <div class="convo-top">
+                            <span class="participant-name">${displayName}</span>
+                            ${listingTag}
+                        </div>
+                        <p class="last-message">${chatData.lastMessage}</p>
+                    </div>
+                    <i class="fas fa-chevron-right convo-arrow"></i>`;
+
+                // Load avatar photo
                 if (userCache[otherId]) {
                     if (userCache[otherId].photoURL) {
-                        const avatarDiv = link.querySelector(`#${avatarId}`);
-                        if (avatarDiv) avatarDiv.innerHTML = `<img src="${userCache[otherId].photoURL}">`;
+                        link.querySelector(`#${avatarId}`).innerHTML = `<img src="${userCache[otherId].photoURL}">`;
                     }
                 } else {
                     getDoc(doc(db, 'users', otherId)).then(uSnap => {
