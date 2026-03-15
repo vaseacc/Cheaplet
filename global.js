@@ -42,12 +42,13 @@ const translations = {
         "tour_desc_3": "Click the bookmark icon on any listing to save it. You can easily find your saved items later in <b>My Profile</b>.",
         "tour_title_4": "Personalize Your Profile",
         "tour_desc_4": "Set your display name and add a photo! (If you skip the photo, we'll generate a unique retro avatar for you).",
-        "tour_name": "First and Last Name",
+        "tour_first_name": "First Name (Min. 4 letters)",
+        "tour_last_name": "Last Name (Min. 4 letters)",
         "tour_upload": "Choose Photo",
         "tour_next": "Next",
         "tour_start": "Finish & Explore",
         "tour_saving": "Saving...",
-        "tour_name_err": "Please enter a valid First and Last name to continue."
+        "tour_name_err": "Please ensure both your First and Last name contain at least 4 letters."
     },
     "fr": { 
         "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", 
@@ -64,12 +65,13 @@ const translations = {
         "tour_desc_3": "Cliquez sur l'icône de signet pour sauvegarder une annonce. Retrouvez-les facilement dans <b>Mon Profil</b>.",
         "tour_title_4": "Personnalisez votre profil",
         "tour_desc_4": "Définissez votre nom et ajoutez une photo ! (Si vous ignorez la photo, nous créerons un avatar rétro unique pour vous).",
-        "tour_name": "Prénom et Nom de famille",
+        "tour_first_name": "Prénom (Min. 4 lettres)",
+        "tour_last_name": "Nom (Min. 4 lettres)",
         "tour_upload": "Choisir une photo",
         "tour_next": "Suivant",
         "tour_start": "Terminer & Explorer",
         "tour_saving": "Enregistrement...",
-        "tour_name_err": "Veuillez entrer un prénom et un nom valides pour continuer."
+        "tour_name_err": "Veuillez vous assurer que votre prénom et votre nom contiennent au moins 4 lettres."
     }
 };
 
@@ -115,7 +117,7 @@ globalStyle.innerHTML = `
     .tour-dot { width: 8px; height: 8px; border-radius: 50%; background: #e0e0e0; transition: 0.3s; }
     .tour-dot.active { background: #C8A96E; width: 24px; border-radius: 10px; }
 
-    .tour-input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 8px; margin-bottom: 15px; font-size: 1rem; outline: none; transition: border-color 0.2s; text-align: center; font-weight: bold; color: #0C1446; }
+    .tour-input { width: 100%; padding: 10px 12px; border: 2px solid #eee; border-radius: 8px; margin-bottom: 12px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; text-align: center; font-weight: bold; color: #0C1446; }
     .tour-input:focus { border-color: #C8A96E; }
     
     .tour-pfp-preview { width: 80px; height: 80px; border-radius: 50%; background: #eee; margin: 0 auto 15px; border: 3px solid #C8A96E; object-fit: cover; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #aaa; overflow: hidden; }
@@ -274,6 +276,14 @@ function showWelcomeTour() {
     overlay.style.zIndex = '10005';
     
     const defaultPfpUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
+    
+    let existingFirstName = "";
+    let existingLastName = "";
+    if (user.displayName) {
+        const parts = user.displayName.split(' ');
+        existingFirstName = parts[0] || "";
+        existingLastName = parts.length > 1 ? parts.slice(1).join(' ') : "";
+    }
 
     overlay.innerHTML = `
         <div class="lang-modal" style="padding: 40px 30px;">
@@ -301,12 +311,14 @@ function showWelcomeTour() {
             <div id="tour-step-4" style="display:none;">
                 <div class="tour-pfp-preview" id="tour-pfp-box"><img src="${defaultPfpUrl}"></div>
                 <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">${t.tour_title_4}</h2>
-                <p style="color:#6b84a3; margin-bottom:20px; line-height:1.4; font-size:0.85rem;">${t.tour_desc_4}</p>
+                <p style="color:#6b84a3; margin-bottom:15px; line-height:1.4; font-size:0.85rem;">${t.tour_desc_4}</p>
                 
-                <input type="text" id="tour-name-input" class="tour-input" value="${user.displayName || ''}" placeholder="${t.tour_name}">
+                <!-- 🔥 FIXED: Split into First and Last Name -->
+                <input type="text" id="tour-fname-input" class="tour-input" value="${existingFirstName}" placeholder="${t.tour_first_name}">
+                <input type="text" id="tour-lname-input" class="tour-input" value="${existingLastName}" placeholder="${t.tour_last_name}">
                 
                 <input type="file" id="tour-file-input" accept="image/*" style="display:none;">
-                <label for="tour-file-input" style="display:block; cursor:pointer; color:#2B5C92; font-weight:bold; margin-bottom:25px; text-decoration:underline;">
+                <label for="tour-file-input" style="display:block; cursor:pointer; color:#2B5C92; font-weight:bold; margin-bottom:20px; text-decoration:underline;">
                     <i class="fas fa-camera"></i> ${t.tour_upload}
                 </label>
 
@@ -335,20 +347,23 @@ function showWelcomeTour() {
     };
 
     document.getElementById('tour-btn-4').onclick = async () => {
-        let newName = document.getElementById('tour-name-input').value.trim();
+        const fname = document.getElementById('tour-fname-input').value.trim();
+        const lname = document.getElementById('tour-lname-input').value.trim();
         
-        // 🔥 STRICT NAME VALIDATION: Must be at least 2 words, length 4+, and contain letters
-        const nameParts = newName.split(' ').filter(p => p.length > 0);
-        if (nameParts.length < 2 || newName.length < 4 || !/[a-zA-Z]/.test(newName)) {
+        // 🔥 STRICT VALIDATION: Both names must have at least 4 letters
+        const validRegex = /[a-zA-Z]/; // Ensures they don't just type numbers
+        if (fname.length < 4 || lname.length < 4 || !validRegex.test(fname) || !validRegex.test(lname)) {
             alert(t.tour_name_err);
             return;
         }
+        
+        const newName = `${fname} ${lname}`;
 
         const btn = document.getElementById('tour-btn-4');
         btn.disabled = true;
         btn.textContent = t.tour_saving;
         
-        let finalPhoto = defaultPfpUrl;
+        let finalPhoto = defaultPfpUrl; 
 
         try {
             if (selectedFile) {
