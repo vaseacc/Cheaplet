@@ -1,6 +1,5 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-// 🔥 FIXED: Added updateDoc to imports so we can save the tour status to the database!
+import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
 // --- 0. AUTO-IMPORT ICONS & FAVICON ---
@@ -35,15 +34,19 @@ const translations = {
         "ban_title": "ACCESS DENIED",
         "ban_text": "This account has been permanently banned.",
         
-        // 🔥 NEW: Welcome Tour Translations
         "tour_title_1": "Welcome to Cheaplet!",
         "tour_desc_1": "Your campus marketplace for textbooks and essentials. Buy cheaply, sell quickly, and save money every semester.",
         "tour_title_2": "Trust & Safety",
         "tour_desc_2": "Look for the <span style='color:#2E7D32; font-weight:bold;'><i class='fas fa-graduation-cap'></i> Verified Student</span> badge. It means the user registered with an official college email.",
         "tour_title_3": "Smart Features",
         "tour_desc_3": "Click the bookmark icon on any listing to save it. You can easily find your saved items later in <b>My Profile</b>.",
+        "tour_title_4": "Personalize Your Profile",
+        "tour_desc_4": "Set your display name and add a photo! (If you skip the photo, we'll generate a unique retro avatar for you).",
+        "tour_name": "Display Name",
+        "tour_upload": "Choose Photo",
         "tour_next": "Next",
-        "tour_start": "Get Started"
+        "tour_start": "Finish & Explore",
+        "tour_saving": "Saving..."
     },
     "fr": { 
         "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", 
@@ -52,15 +55,19 @@ const translations = {
         "ban_title": "ACCÈS REFUSÉ",
         "ban_text": "Ce compte a été définitivement banni.",
 
-        // 🔥 NEW: Welcome Tour Translations
         "tour_title_1": "Bienvenue sur Cheaplet !",
         "tour_desc_1": "Votre marché étudiant pour les manuels et articles essentiels. Achetez à bas prix, vendez rapidement et économisez.",
         "tour_title_2": "Confiance et Sécurité",
         "tour_desc_2": "Recherchez le badge <span style='color:#2E7D32; font-weight:bold;'><i class='fas fa-graduation-cap'></i> Étudiant vérifié</span>. Il indique une inscription avec un courriel scolaire officiel.",
         "tour_title_3": "Fonctionnalités",
         "tour_desc_3": "Cliquez sur l'icône de signet pour sauvegarder une annonce. Retrouvez-les facilement dans <b>Mon Profil</b>.",
+        "tour_title_4": "Personnalisez votre profil",
+        "tour_desc_4": "Définissez votre nom et ajoutez une photo ! (Si vous ignorez la photo, nous créerons un avatar rétro unique pour vous).",
+        "tour_name": "Nom d'affichage",
+        "tour_upload": "Choisir une photo",
         "tour_next": "Suivant",
-        "tour_start": "Commencer"
+        "tour_start": "Terminer & Explorer",
+        "tour_saving": "Enregistrement..."
     }
 };
 
@@ -83,9 +90,11 @@ globalStyle.innerHTML = `
 
     .btn { background: linear-gradient(135deg, #C8A96E 0%, #ddb97a 100%) !important; color: #0C1446 !important; border: none !important; padding: 0 18px !important; height: 38px !important; line-height: 38px !important; border-radius: 20px !important; font-weight: bold !important; cursor: pointer !important; transition: transform 0.2s !important; font-size: 0.85rem !important; display: inline-flex !important; align-items: center; justify-content: center; text-decoration: none !important; }
     .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(200,169,110,0.3) !important; }
+    .btn:disabled { opacity: 0.7; cursor: not-allowed !important; transform: none !important; }
     
     .profile-menu-container { position: relative; display: flex; align-items: center; z-index: 1001; }
     .profile-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: #1a2a4a; border: 2px solid #C8A96E; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; background-size: cover; background-position: center; overflow: hidden; }
+    .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
     
     .dropdown-menu { position: absolute; top: 50px; right: 0; width: 220px; background: white; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); display: none; flex-direction: column; overflow: hidden; color: #333; z-index: 1000; border: 1px solid #eee; }
     .dropdown-menu.show { display: flex; }
@@ -101,9 +110,14 @@ globalStyle.innerHTML = `
     .lang-btn { display: block; width: 100%; padding: 16px; margin: 12px 0; border: 2px solid #EBF2FA; border-radius: 12px; background: white; font-weight: bold; cursor: pointer; font-size: 1.1rem; transition: all 0.2s; color: #0C1446; }
     .lang-btn:hover { border-color: #C8A96E; background: #fdfaf4; }
 
-    /* 🔥 NEW: Tour Dots CSS */
     .tour-dot { width: 8px; height: 8px; border-radius: 50%; background: #e0e0e0; transition: 0.3s; }
     .tour-dot.active { background: #C8A96E; width: 24px; border-radius: 10px; }
+
+    .tour-input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 8px; margin-bottom: 15px; font-size: 1rem; outline: none; transition: border-color 0.2s; text-align: center; font-weight: bold; color: #0C1446; }
+    .tour-input:focus { border-color: #C8A96E; }
+    
+    .tour-pfp-preview { width: 80px; height: 80px; border-radius: 50%; background: #eee; margin: 0 auto 15px; border: 3px solid #C8A96E; object-fit: cover; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #aaa; overflow: hidden; }
+    .tour-pfp-preview img { width: 100%; height: 100%; object-fit: cover; }
 
     .terms-banner { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(12, 20, 70, 0.98); color: #fff; padding: 15px 25px; display: flex; justify-content: center; align-items: center; gap: 25px; z-index: 99999; font-size: 0.85rem; backdrop-filter: blur(10px); border-top: 1px solid rgba(200,169,110,0.3); }
     .btn-accept-terms { background: #C8A96E; color: #0C1446; border: none; padding: 8px 30px; border-radius: 20px; font-weight: 800; cursor: pointer; transition: transform 0.2s; }
@@ -117,6 +131,7 @@ globalStyle.innerHTML = `
         .desktop-only { display: none !important; }
         .mobile-link { display: flex; }
         .terms-banner { flex-direction: column; text-align: center; padding-bottom: max(20px, env(safe-area-inset-bottom)); gap: 12px; }
+        .lang-modal { padding: 30px 20px; }
     }
 `;
 document.head.appendChild(globalStyle);
@@ -155,7 +170,7 @@ function triggerHardLockdown() {
 function refreshUI() {
     if (currentUserData) {
         updateHeaderToLoggedIn(currentUserData);
-        showWelcomeTour(); // 🔥 NEW: Triggers the tour if they are logged in and haven't seen it
+        showWelcomeTour();
     } else {
         updateHeaderToLoggedOut();
         if (globalSettings.enableLanguagePrompt && !sessionStorage.getItem('lang_picked_this_session')) { 
@@ -182,14 +197,15 @@ function updateHeaderToLoggedIn(userData) {
     if (!container) return;
     
     const name = userData.displayName || 'User';
-    const photoStyle = userData.photoURL ? `background-image: url('${userData.photoURL}');` : '';
-    const avatarContent = userData.photoURL ? '' : name.charAt(0).toUpperCase();
-
+    
+    // Generate GitHub-style Identicon if no photo exists
+    const finalPhotoURL = userData.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${userData.uid}&backgroundColor=EBF2FA`;
+    
     container.innerHTML = `
         <button class="btn desktop-only" id="globalListBtn" style="margin-right: 15px;">${translations[lang].btn_list}</button>
         <a href="/messages.html" class="msg-btn-mobile"><i class="fas fa-envelope"></i></a>
         <div class="profile-menu-container">
-            <div class="profile-avatar" style="${photoStyle}">${avatarContent}</div>
+            <div class="profile-avatar"><img src="${finalPhotoURL}" alt="Profile"></div>
             <div class="dropdown-menu" id="globalDropdown">
                 <div class="dropdown-header"><span>${name}</span></div>
                 <a href="/listanitem.html" class="dropdown-item mobile-link" style="color:#2B5C92; font-weight:bold;"><i class="fas fa-plus-circle"></i> ${translations[lang].btn_list}</a>
@@ -232,92 +248,124 @@ function updateHeaderToLoggedOut() {
     container.innerHTML = `<button class="btn" onclick="window.location.href='/LoginInToCheaplet.html'">${translations[lang].btn_login}</button>`;
 }
 
-// --- 🔥 NEW: WELCOME TOUR LOGIC ---
+// --- 🔥 WELCOME TOUR & PROFILE PERSONALIZATION ---
 function showWelcomeTour() {
-    // 1. Check if they already saw it on this device OR in their database profile
     if (localStorage.getItem('cheaplet_tour_seen') === 'true') return;
     if (currentUserData && currentUserData.hasSeenTour) {
-        // Sync local storage so we don't query it again
         localStorage.setItem('cheaplet_tour_seen', 'true');
         return;
     }
-    
-    // 2. Prevent overlapping with the language popup
     if (document.getElementById('lang-modal')) return;
 
     const lang = localStorage.getItem('preferred_language') || 'en';
     const t = translations[lang];
+    const user = auth.currentUser;
 
     const overlay = document.createElement('div');
     overlay.className = 'lang-modal-overlay';
-    overlay.style.zIndex = '10005'; // Higher than the header
+    overlay.style.zIndex = '10005';
     
+    // Default PFP is the Identicon
+    const defaultPfpUrl = user.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
+
     overlay.innerHTML = `
         <div class="lang-modal" style="padding: 40px 30px;">
-            <!-- Step 1 -->
             <div id="tour-step-1">
                 <i class="fas fa-handshake fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
                 <h2 style="color:#0C1446; margin-bottom:15px; font-family:'Playfair Display', serif;">${t.tour_title_1}</h2>
                 <p style="color:#6b84a3; margin-bottom:30px; line-height:1.6; font-size:0.95rem;">${t.tour_desc_1}</p>
                 <button class="btn" id="tour-btn-1" style="width:100%;">${t.tour_next}</button>
             </div>
-            <!-- Step 2 -->
+            
             <div id="tour-step-2" style="display:none;">
                 <i class="fas fa-shield-alt fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
                 <h2 style="color:#0C1446; margin-bottom:15px; font-family:'Playfair Display', serif;">${t.tour_title_2}</h2>
                 <p style="color:#6b84a3; margin-bottom:30px; line-height:1.6; font-size:0.95rem;">${t.tour_desc_2}</p>
                 <button class="btn" id="tour-btn-2" style="width:100%;">${t.tour_next}</button>
             </div>
-            <!-- Step 3 -->
+            
             <div id="tour-step-3" style="display:none;">
                 <i class="fas fa-bookmark fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
                 <h2 style="color:#0C1446; margin-bottom:15px; font-family:'Playfair Display', serif;">${t.tour_title_3}</h2>
                 <p style="color:#6b84a3; margin-bottom:30px; line-height:1.6; font-size:0.95rem;">${t.tour_desc_3}</p>
-                <button class="btn" id="tour-btn-3" style="width:100%;">${t.tour_start}</button>
+                <button class="btn" id="tour-btn-3" style="width:100%;">${t.tour_next}</button>
+            </div>
+
+            <!-- 🔥 NEW: Step 4 Personalize -->
+            <div id="tour-step-4" style="display:none;">
+                <div class="tour-pfp-preview" id="tour-pfp-box"><img src="${defaultPfpUrl}"></div>
+                <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">${t.tour_title_4}</h2>
+                <p style="color:#6b84a3; margin-bottom:20px; line-height:1.4; font-size:0.85rem;">${t.tour_desc_4}</p>
+                
+                <input type="text" id="tour-name-input" class="tour-input" value="${user.displayName || 'User'}" placeholder="${t.tour_name}">
+                
+                <input type="file" id="tour-file-input" accept="image/*" style="display:none;">
+                <label for="tour-file-input" style="display:block; cursor:pointer; color:#2B5C92; font-weight:bold; margin-bottom:25px; text-decoration:underline;">
+                    <i class="fas fa-camera"></i> ${t.tour_upload}
+                </label>
+
+                <button class="btn" id="tour-btn-4" style="width:100%;">${t.tour_start}</button>
             </div>
             
-            <!-- Progress Dots -->
-            <div style="display:flex; justify-content:center; gap:8px; margin-top:25px;">
-                <div class="tour-dot active" id="dot-1"></div>
-                <div class="tour-dot" id="dot-2"></div>
-                <div class="tour-dot" id="dot-3"></div>
+            <div style="display:flex; justify-content:center; gap:8px; margin-top:25px;" id="tour-dots">
+                <div class="tour-dot active" id="dot-1"></div><div class="tour-dot" id="dot-2"></div>
+                <div class="tour-dot" id="dot-3"></div><div class="tour-dot" id="dot-4"></div>
             </div>
         </div>
     `;
     
     document.body.appendChild(overlay);
 
-    // Flow Logic
-    document.getElementById('tour-btn-1').onclick = () => {
-        document.getElementById('tour-step-1').style.display = 'none';
-        document.getElementById('tour-step-2').style.display = 'block';
-        document.getElementById('dot-1').classList.remove('active');
-        document.getElementById('dot-2').classList.add('active');
+    document.getElementById('tour-btn-1').onclick = () => { document.getElementById('tour-step-1').style.display = 'none'; document.getElementById('tour-step-2').style.display = 'block'; document.getElementById('dot-1').classList.remove('active'); document.getElementById('dot-2').classList.add('active'); };
+    document.getElementById('tour-btn-2').onclick = () => { document.getElementById('tour-step-2').style.display = 'none'; document.getElementById('tour-step-3').style.display = 'block'; document.getElementById('dot-2').classList.remove('active'); document.getElementById('dot-3').classList.add('active'); };
+    document.getElementById('tour-btn-3').onclick = () => { document.getElementById('tour-step-3').style.display = 'none'; document.getElementById('tour-step-4').style.display = 'block'; document.getElementById('dot-3').classList.remove('active'); document.getElementById('dot-4').classList.add('active'); };
+
+    let selectedFile = null;
+    document.getElementById('tour-file-input').onchange = (e) => {
+        if(e.target.files[0]) {
+            selectedFile = e.target.files[0];
+            document.getElementById('tour-pfp-box').innerHTML = `<img src="${URL.createObjectURL(selectedFile)}">`;
+        }
     };
 
-    document.getElementById('tour-btn-2').onclick = () => {
-        document.getElementById('tour-step-2').style.display = 'none';
-        document.getElementById('tour-step-3').style.display = 'block';
-        document.getElementById('dot-2').classList.remove('active');
-        document.getElementById('dot-3').classList.add('active');
-    };
+    document.getElementById('tour-btn-4').onclick = async () => {
+        const btn = document.getElementById('tour-btn-4');
+        btn.disabled = true;
+        btn.textContent = t.tour_saving;
+        
+        let newName = document.getElementById('tour-name-input').value.trim() || 'User';
+        let finalPhoto = defaultPfpUrl;
 
-    document.getElementById('tour-btn-3').onclick = async () => {
-        // Remove overlay instantly so user isn't waiting
-        overlay.remove();
-        
-        // Save locally for this browser
-        localStorage.setItem('cheaplet_tour_seen', 'true');
-        
-        // Save to Firebase so it syncs across their devices
         try {
-            if (auth.currentUser) {
-                await updateDoc(doc(db, "users", auth.currentUser.uid), { hasSeenTour: true });
+            // Upload to Cloudinary securely if they picked a file
+            if (selectedFile) {
+                const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                formData.append('api_key', signRes.apiKey);
+                formData.append('timestamp', signRes.timestamp);
+                formData.append('signature', signRes.signature);
+                formData.append('upload_preset', signRes.uploadPreset);
+                
+                const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { method: 'POST', body: formData }).then(r => r.json());
+                if (res.secure_url) finalPhoto = res.secure_url;
             }
-        } catch(e) { console.error("Error saving tour state", e); }
+
+            // Save to Firebase
+            await updateProfile(user, { displayName: newName, photoURL: finalPhoto });
+            await updateDoc(doc(db, "users", user.uid), { displayName: newName, photoURL: finalPhoto, hasSeenTour: true });
+            
+            localStorage.setItem('cheaplet_tour_seen', 'true');
+            overlay.remove();
+            location.reload(); // Instantly apply changes to header
+            
+        } catch(e) { 
+            console.error("Tour save error", e); 
+            localStorage.setItem('cheaplet_tour_seen', 'true');
+            overlay.remove(); // Failsafe so they aren't trapped
+        }
     };
 }
-// --- END WELCOME TOUR LOGIC ---
 
 function showLanguagePopup() {
     if (document.getElementById('lang-modal')) return;
