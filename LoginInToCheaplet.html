@@ -30,7 +30,6 @@
         input[type="text"], input[type="email"], input[type="password"] { width: 100%; padding: 12px; margin-bottom: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; outline: none; }
         input:focus { border-color: #4CAF50; }
         
-        /* FORGOT PASSWORD LINK */
         .forgot-pass-link { display: block; text-align: right; font-size: 0.85rem; color: #2E7D32; cursor: pointer; margin-top: -5px; margin-bottom: 15px; font-weight: 600; }
         .forgot-pass-link:hover { text-decoration: underline; }
 
@@ -93,7 +92,6 @@
                 <input type="email" id="email" placeholder="Email Address" required>
                 <input type="password" id="password" placeholder="Password" required>
                 
-                <!-- NEW: Forgot Password Link -->
                 <a id="forgot-password-link" class="forgot-pass-link">Forgot Password?</a>
 
                 <button type="submit" class="btn-submit" id="submit-btn">Log In</button>
@@ -116,7 +114,6 @@
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        // 🔥 NEW: Imported sendPasswordResetEmail
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged, GoogleAuthProvider, OAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
@@ -141,7 +138,6 @@
             let isLoginMode = true;
             let isRegistering = false;
 
-            // --- BILINGUAL STRINGS ---
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = {
                 en: {
@@ -168,7 +164,6 @@
                 }
             };
 
-            // Initialize Language Text
             formTitle.textContent = strings[lang].loginTitle;
             document.getElementById('form-subtitle').textContent = strings[lang].loginSub;
             submitBtn.textContent = strings[lang].loginBtn;
@@ -185,7 +180,28 @@
             document.getElementById('loading-text').textContent = strings[lang].verify;
             forgotPasswordLink.textContent = strings[lang].forgotPass;
 
-            const schoolDomains = ["@cegepat.qc.ca", "@cegeptr.qc.ca", "@cegep-rimouski.qc.ca", "@cegep-rdl.qc.ca", "@cegep-matane.qc.ca", "@cegepbaiecomeau.ca", "@cegep-chicoutimi.qc.ca", "@cegepjonquiere.ca", "@cegepsth.qc.ca", "@cegepgranby.qc.ca", "@cegepdrummond.ca", "@cegepsherbrooke.qc.ca", "@cegepshawinigan.ca", "@cegepsoreltracy.qc.ca", "@cegepstlaurent.ca", "@cegepsl.qc.ca", "@cegeplimoilou.ca", "@cegepgarneau.ca", "@cegep-ste-foy.qc.ca", "@cegeplevis.ca", "@cegepoutaouais.qc.ca", "@cegepheritage.qc.ca", "@cegep-st-jean.qc.ca", "@cegep-st-jerome.qc.ca", "@cegep-edouard-montpetit.qc.ca", "@montmorency.qc.ca", "@gerald-godin.qc.ca", "@crosemont.qc.ca", "@cmaisonneuve.qc.ca", "@cvm.qc.ca", "@ahuntsic.qc.ca", "@boisdeboulogne.qc.ca", "@claurendeau.qc.ca", "@cegepba.qc.ca", "@cegepthetford.ca", "@cegepstfelicien.ca", "@cegepseptiles.ca", "@cegepvicto.ca", "@cegep-lanaudiere.qc.ca", "@cegep-gaspesie.qc.ca", "@cegeplapocatiere.qc.ca", "@cegep-limoilou.ca", "@dawsoncollege.qc.ca", "@vaniercollege.qc.ca", "@johnabbott.qc.ca", "@champlaincollege.qc.ca", "@slc.qc.ca", "@lennoxville.qc.ca", "@heritagec.qc.ca", "@brebeuf.qc.ca", "@andregrasset.qc.ca", "@marianopolis.edu", "@merici.ca", "@collegenotredame.qc.ca", "@cndf.qc.ca", "@campusnotredamefoy.com", "@collegelafleche.qc.ca", "@lasallecollege.com", "@collegebart.ca", "@collegeuniversel.ca", "@sram.qc.ca", "@sracq.qc.ca", "@srasl.qc.ca", "@cegepsquebec.ca", "@fedecegeps.ca", "@cegepbc.ca", "@crcmail.net", "@cgodin.qc.ca", "@cstjean.qc.ca", "@cstj.qc.ca", "@cll.qc.ca", "@clg.qc.ca", "@collegemv.qc.ca", "@cmontmorency.qc.ca", "@cegep-sept-iles.qc.ca", "@cegepshawinigan.qc.ca", "@colval.qc.ca", "@concordia.ca", "@mcgill.ca", "@umontreal.ca", "@uqam.ca"];
+            // 🔥 NEW: School Domains Dictionary Mapping
+            const schoolDomains = {
+                "@etu.cegepjonquiere.ca": "Cégep de Jonquière",
+                "@cegep-lanaudiere.qc.ca": "Cégep de Lanaudière",
+                "@etu.cegep-lanaudiere.qc.ca": "Cégep de Lanaudière",
+                "@crosemont.qc.ca": "Cégep de Rosemont",
+                "@cmaisonneuve.qc.ca": "Cégep Maisonneuve",
+                "@cegepmv.qc.ca": "Cégep Marie-Victorin",
+                "@collegeahuntsic.qc.ca": "Collège Ahuntsic",
+                "@dawsoncollege.qc.ca": "Dawson College",
+                "@usherbrooke.ca": "Université de Sherbrooke",
+                "@ulaval.ca": "Université Laval"
+            };
+
+            // Helper function to extract school info from email
+            function getSchoolInfo(email) {
+                const domain = email.substring(email.lastIndexOf("@")).toLowerCase();
+                if (schoolDomains[domain]) {
+                    return { isStudent: true, schoolName: schoolDomains[domain] };
+                }
+                return { isStudent: false, schoolName: null };
+            }
 
             async function handleLoginSuccess(user) {
                 loadingOverlay.style.display = 'flex';
@@ -193,14 +209,30 @@
                     const userDocRef = doc(db, "users", user.uid);
                     const userDoc = await getDoc(userDocRef);
                     const email = user.email.toLowerCase();
-                    const isStudent = schoolDomains.some(domain => email.endsWith(domain));
+                    
+                    const schoolInfo = getSchoolInfo(email);
 
                     if (!userDoc.exists()) {
-                        await setDoc(userDocRef, { uid: user.uid, displayName: user.displayName, email: user.email, role: 'user', isStudent: isStudent });
-                    } else if (userDoc.data().role === 'banned') {
-                        await signOut(auth); alert(strings[lang].errBanned); window.location.reload(); return;
-                    } else if (isStudent && !userDoc.data().isStudent) {
-                        await updateDoc(userDocRef, { isStudent: true });
+                        await setDoc(userDocRef, { 
+                            uid: user.uid, 
+                            displayName: user.displayName, 
+                            email: user.email, 
+                            role: 'user', 
+                            isStudent: schoolInfo.isStudent,
+                            schoolName: schoolInfo.schoolName
+                        });
+                    } else {
+                        const data = userDoc.data();
+                        if (data.role === 'banned') {
+                            await signOut(auth); alert(strings[lang].errBanned); window.location.reload(); return;
+                        } 
+                        // Update legacy accounts if they match the new school list but aren't flagged yet
+                        else if (schoolInfo.isStudent && (!data.isStudent || !data.schoolName)) {
+                            await updateDoc(userDocRef, { 
+                                isStudent: true, 
+                                schoolName: schoolInfo.schoolName 
+                            });
+                        }
                     }
                     window.location.href = new URLSearchParams(window.location.search).get('redirect') || '/index.html';
                 } catch (e) { window.location.href = '/index.html'; }
@@ -214,7 +246,6 @@
                 }
             });
 
-            // FORGOT PASSWORD LOGIC
             forgotPasswordLink.onclick = async () => {
                 const emailVal = document.getElementById('email').value.trim();
                 if (!emailVal) {
@@ -222,7 +253,6 @@
                     authError.style.display = 'block';
                     return;
                 }
-                
                 try {
                     await sendPasswordResetEmail(auth, emailVal);
                     authError.style.display = 'none';
@@ -233,14 +263,12 @@
                 }
             };
 
-            // TOGGLE BETWEEN LOGIN AND REGISTER
             toggleLink.onclick = () => {
                 isLoginMode = !isLoginMode;
                 document.getElementById('register-fields').style.display = isLoginMode ? 'none' : 'block';
-                
                 studentTip.style.display = isLoginMode ? 'none' : 'flex';
-                forgotPasswordLink.style.display = isLoginMode ? 'block' : 'none'; // Hide forgot pass in register mode
-                authError.style.display = 'none'; // Clear any errors when switching
+                forgotPasswordLink.style.display = isLoginMode ? 'block' : 'none'; 
+                authError.style.display = 'none'; 
                 
                 formTitle.textContent = isLoginMode ? strings[lang].loginTitle : strings[lang].regTitle;
                 document.getElementById('form-subtitle').textContent = isLoginMode ? strings[lang].loginSub : strings[lang].regSub;
@@ -266,10 +294,18 @@
                         isRegistering = true;
                         const cred = await createUserWithEmailAndPassword(auth, email, pass);
                         const name = `${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`;
-                        const isStudent = schoolDomains.some(domain => email.endsWith(domain));
+                        
+                        const schoolInfo = getSchoolInfo(email);
                         
                         await updateProfile(cred.user, { displayName: name });
-                        await setDoc(doc(db, "users", cred.user.uid), { uid: cred.user.uid, displayName: name, email: email, role: 'user', isStudent: isStudent });
+                        await setDoc(doc(db, "users", cred.user.uid), { 
+                            uid: cred.user.uid, 
+                            displayName: name, 
+                            email: email, 
+                            role: 'user', 
+                            isStudent: schoolInfo.isStudent,
+                            schoolName: schoolInfo.schoolName
+                        });
                         await sendEmailVerification(cred.user);
                         
                         await signOut(auth);
