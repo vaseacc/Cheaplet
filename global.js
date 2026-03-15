@@ -170,7 +170,7 @@ function triggerHardLockdown() {
 function refreshUI() {
     if (currentUserData) {
         updateHeaderToLoggedIn(currentUserData);
-        showWelcomeTour();
+        showWelcomeTour(); 
     } else {
         updateHeaderToLoggedOut();
         if (globalSettings.enableLanguagePrompt && !sessionStorage.getItem('lang_picked_this_session')) { 
@@ -248,24 +248,29 @@ function updateHeaderToLoggedOut() {
     container.innerHTML = `<button class="btn" onclick="window.location.href='/LoginInToCheaplet.html'">${translations[lang].btn_login}</button>`;
 }
 
-// --- 🔥 WELCOME TOUR & PROFILE PERSONALIZATION ---
+// --- 🔥 NEW: WELCOME TOUR LOGIC ---
 function showWelcomeTour() {
-    if (localStorage.getItem('cheaplet_tour_seen') === 'true') return;
+    const user = auth.currentUser;
+    if (!user) return;
+
+    // 🔥 FIXED: Tie the local storage key directly to the User ID!
+    // This way, if they switch accounts on the same computer, the new account gets the tour!
+    const tourKey = `cheaplet_tour_seen_${user.uid}`;
+    
+    if (localStorage.getItem(tourKey) === 'true') return;
     if (currentUserData && currentUserData.hasSeenTour) {
-        localStorage.setItem('cheaplet_tour_seen', 'true');
+        localStorage.setItem(tourKey, 'true');
         return;
     }
     if (document.getElementById('lang-modal')) return;
 
     const lang = localStorage.getItem('preferred_language') || 'en';
     const t = translations[lang];
-    const user = auth.currentUser;
 
     const overlay = document.createElement('div');
     overlay.className = 'lang-modal-overlay';
     overlay.style.zIndex = '10005';
     
-    // Default PFP is the Identicon
     const defaultPfpUrl = user.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
 
     overlay.innerHTML = `
@@ -291,7 +296,6 @@ function showWelcomeTour() {
                 <button class="btn" id="tour-btn-3" style="width:100%;">${t.tour_next}</button>
             </div>
 
-            <!-- 🔥 NEW: Step 4 Personalize -->
             <div id="tour-step-4" style="display:none;">
                 <div class="tour-pfp-preview" id="tour-pfp-box"><img src="${defaultPfpUrl}"></div>
                 <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">${t.tour_title_4}</h2>
@@ -337,7 +341,6 @@ function showWelcomeTour() {
         let finalPhoto = defaultPfpUrl;
 
         try {
-            // Upload to Cloudinary securely if they picked a file
             if (selectedFile) {
                 const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
                 const formData = new FormData();
@@ -351,18 +354,17 @@ function showWelcomeTour() {
                 if (res.secure_url) finalPhoto = res.secure_url;
             }
 
-            // Save to Firebase
             await updateProfile(user, { displayName: newName, photoURL: finalPhoto });
             await updateDoc(doc(db, "users", user.uid), { displayName: newName, photoURL: finalPhoto, hasSeenTour: true });
             
-            localStorage.setItem('cheaplet_tour_seen', 'true');
+            localStorage.setItem(tourKey, 'true');
             overlay.remove();
-            location.reload(); // Instantly apply changes to header
+            location.reload(); 
             
         } catch(e) { 
             console.error("Tour save error", e); 
-            localStorage.setItem('cheaplet_tour_seen', 'true');
-            overlay.remove(); // Failsafe so they aren't trapped
+            localStorage.setItem(tourKey, 'true');
+            overlay.remove(); 
         }
     };
 }
