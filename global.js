@@ -83,33 +83,38 @@ window.applyLanguage = (lang) => {
     localStorage.setItem('preferred_language', lang);
 };
 
-// --- 3. GLOBAL CSS (INK & GOLD THEME) ---
+// --- 3. GLOBAL CSS ---
 const globalStyle = document.createElement('style');
 globalStyle.innerHTML = `
-    .header-inner, .header-content { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    /* Header Structure Fix */
+    .header-inner, .header-content { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 15px !important; flex-direction: row !important; }
+    
     nav { flex-grow: 1; display: flex; justify-content: center; }
-    nav ul { display: flex; list-style: none; gap: 28px; padding: 0; margin: 0; }
+    nav ul { display: flex; list-style: none; gap: 28px; padding: 0; margin: 0; align-items: center; }
     nav ul li a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; white-space: nowrap; }
     nav ul li a:hover { color: #FFFFFF; }
 
-    .btn { background: linear-gradient(135deg, #C8A96E 0%, #ddb97a 100%) !important; color: #0C1446 !important; border: none !important; padding: 0 18px !important; height: 38px !important; line-height: 38px !important; border-radius: 20px !important; font-weight: bold !important; cursor: pointer !important; transition: transform 0.2s !important; font-size: 0.85rem !important; display: inline-flex !important; align-items: center; justify-content: center; text-decoration: none !important; }
+    /* 🔥 FIXED: Profile & Button Alignment */
+    .header-right { display: flex !important; align-items: center !important; gap: 12px !important; flex-shrink: 0 !important; flex-direction: row !important; }
+    
+    .btn { background: linear-gradient(135deg, #C8A96E 0%, #ddb97a 100%) !important; color: #0C1446 !important; border: none !important; padding: 0 18px !important; height: 38px !important; line-height: 38px !important; border-radius: 20px !important; font-weight: bold !important; cursor: pointer !important; transition: all 0.2s !important; font-size: 0.82rem !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; text-decoration: none !important; white-space: nowrap !important; }
     .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(200,169,110,0.3) !important; }
     .btn:disabled { opacity: 0.7; cursor: not-allowed !important; transform: none !important; }
     
     .profile-menu-container { position: relative; display: flex; align-items: center; z-index: 1001; }
-    .profile-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: #1a2a4a; border: 2px solid #C8A96E; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; background-size: cover; background-position: center; overflow: hidden; }
-    .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .profile-avatar { width: 38px; height: 38px; border-radius: 50%; background-color: #1a2a4a; border: 2px solid #C8A96E; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; overflow: hidden; flex-shrink: 0; }
+    .profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
     
-    .dropdown-menu { position: absolute; top: 50px; right: 0; width: 220px; background: white; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); display: none; flex-direction: column; overflow: hidden; color: #333; z-index: 1000; border: 1px solid #eee; }
+    .dropdown-menu { position: absolute; top: 48px; right: 0; width: 220px; background: white; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); display: none; flex-direction: column; overflow: hidden; color: #333; z-index: 1000; border: 1px solid #eee; }
     .dropdown-menu.show { display: flex; }
-    .dropdown-header { padding: 15px; border-bottom: 1px solid #eee; background: #f9f9f9; font-weight: bold; color: #0C1446; font-size: 0.9rem; display: flex; flex-direction: column; gap: 4px; }
+    .dropdown-header { padding: 15px; border-bottom: 1px solid #eee; background: #f9f9f9; font-weight: bold; color: #0C1446; font-size: 0.9rem; }
     
     .dropdown-item { padding: 12px 15px; text-decoration: none; color: #333; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.9rem; transition: background 0.2s; }
     .dropdown-item:hover { background-color: #f4f7fc; color: #2B5C92; }
     
     .msg-btn-mobile { background: #C8A96E; color: #0C1446; width: 36px; height: 36px; border-radius: 50%; display: none; align-items: center; justify-content: center; text-decoration: none; margin-right: 12px; font-size: 1rem; position: relative; }
     
-    /* 🔥 UNREAD BADGES */
+    /* UNREAD BADGES */
     .badge-container { position: relative; display: inline-block; }
     .unread-badge {
         position: absolute; top: -6px; right: -12px;
@@ -137,7 +142,7 @@ globalStyle.innerHTML = `
     .tour-pfp-preview img { width: 100%; height: 100%; object-fit: cover; }
 
     .terms-banner { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(12, 20, 70, 0.98); color: #fff; padding: 15px 25px; display: flex; justify-content: center; align-items: center; gap: 25px; z-index: 99999; font-size: 0.85rem; backdrop-filter: blur(10px); border-top: 1px solid rgba(200,169,110,0.3); }
-    .btn-accept-terms { background: #C8A96E; color: #0C1446; border: none; padding: 8px 30px; border-radius: 20px; font-weight: 800; cursor: pointer; transition: transform 0.2s; }
+    .btn-accept-terms { background: #C8A96E; color: #0C1446; border: none; padding: 8px 30px; border-radius: 20px; font-weight: 800; cursor: pointer; }
 
     .desktop-only { display: inline-flex; }
     .mobile-link { display: none; }
@@ -199,7 +204,6 @@ function refreshUI() {
     showTermsBanner();
 }
 
-// 🔥 FIXED: UNREAD MESSAGES LISTENER
 function listenToUnreadMessages(uid) {
     if (unsubscribeChats) unsubscribeChats();
     const q = query(collection(db, "chats"), where("participants", "array-contains", uid));
@@ -208,21 +212,11 @@ function listenToUnreadMessages(uid) {
         let unreadCount = 0;
         snapshot.forEach(docSnap => {
             const d = docSnap.data();
-            
-            // 1. Ignore empty ghost chats
             if (!d.lastMessage || d.lastMessage.trim() === "") return;
-            
-            // 2. Count unread accurately based on arrays or fallback
-            if (d.unreadBy !== undefined) {
-                if (d.unreadBy.includes(uid)) unreadCount++;
-            } else {
-                if (d.lastSenderId && d.lastSenderId !== uid) unreadCount++;
-            }
+            if (d.unreadBy && d.unreadBy.includes(uid)) unreadCount++;
         });
-        
         const deskBadge = document.getElementById('desktop-unread-badge');
         const mobBadge = document.getElementById('mobile-unread-badge');
-        
         if (unreadCount > 0) {
             if (deskBadge) { deskBadge.textContent = unreadCount; deskBadge.style.display = 'flex'; }
             if (mobBadge) { mobBadge.textContent = unreadCount; mobBadge.style.display = 'flex'; }
@@ -236,6 +230,7 @@ function listenToUnreadMessages(uid) {
 function updateHeaderToLoggedIn(userData) {
     const lang = localStorage.getItem('preferred_language') || 'en';
     
+    // --- 1. GLOBAL NAV LINKS (Injects on all pages) ---
     const navUl = document.querySelector('nav ul');
     if (navUl) {
         navUl.innerHTML = `
@@ -245,6 +240,7 @@ function updateHeaderToLoggedIn(userData) {
         `;
     }
 
+    // --- 2. RIGHT SIDE AUTH SECTION ---
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
     if (!container) return;
     
@@ -291,7 +287,6 @@ function updateHeaderToLoggedIn(userData) {
 }
 
 function updateHeaderToLoggedOut() {
-    if (unsubscribeChats) { unsubscribeChats(); unsubscribeChats = null; }
     const lang = localStorage.getItem('preferred_language') || 'en';
     const navUl = document.querySelector('nav ul');
     if (navUl) {
@@ -306,7 +301,6 @@ function updateHeaderToLoggedOut() {
 function showWelcomeTour() {
     const user = auth.currentUser;
     if (!user) return;
-
     const tourKey = `cheaplet_tour_seen_${user.uid}`;
     if (localStorage.getItem(tourKey) === 'true') return;
     if (currentUserData && currentUserData.hasSeenTour) {
@@ -323,7 +317,6 @@ function showWelcomeTour() {
     overlay.style.zIndex = '10005';
     
     const defaultPfpUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
-    
     let existingFirstName = "";
     let existingLastName = "";
     if (user.displayName) {
@@ -340,44 +333,36 @@ function showWelcomeTour() {
                 <p style="color:#6b84a3; margin-bottom:30px; line-height:1.6; font-size:0.95rem;">${t.tour_desc_1}</p>
                 <button class="btn" id="tour-btn-1" style="width:100%;">${t.tour_next}</button>
             </div>
-            
             <div id="tour-step-2" style="display:none;">
                 <i class="fas fa-shield-alt fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
                 <h2 style="color:#0C1446; margin-bottom:15px; font-family:'Playfair Display', serif;">${t.tour_title_2}</h2>
                 <p style="color:#6b84a3; margin-bottom:30px; line-height:1.6; font-size:0.95rem;">${t.tour_desc_2}</p>
                 <button class="btn" id="tour-btn-2" style="width:100%;">${t.tour_next}</button>
             </div>
-            
             <div id="tour-step-3" style="display:none;">
                 <i class="fas fa-bookmark fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
                 <h2 style="color:#0C1446; margin-bottom:15px; font-family:'Playfair Display', serif;">${t.tour_title_3}</h2>
                 <p style="color:#6b84a3; margin-bottom:30px; line-height:1.6; font-size:0.95rem;">${t.tour_desc_3}</p>
                 <button class="btn" id="tour-btn-3" style="width:100%;">${t.tour_next}</button>
             </div>
-
             <div id="tour-step-4" style="display:none;">
                 <div class="tour-pfp-preview" id="tour-pfp-box"><img src="${defaultPfpUrl}"></div>
                 <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">${t.tour_title_4}</h2>
-                <p style="color:#6b84a3; margin-bottom:20px; line-height:1.4; font-size:0.85rem;">${t.tour_desc_4}</p>
-                
+                <p style="color:#6b84a3; margin-bottom:15px; line-height:1.4; font-size:0.85rem;">${t.tour_desc_4}</p>
                 <input type="text" id="tour-fname-input" class="tour-input" value="${existingFirstName}" placeholder="${t.tour_first_name}">
                 <input type="text" id="tour-lname-input" class="tour-input" value="${existingLastName}" placeholder="${t.tour_last_name}">
-                
                 <input type="file" id="tour-file-input" accept="image/*" style="display:none;">
-                <label for="tour-file-input" style="display:block; cursor:pointer; color:#2B5C92; font-weight:bold; margin-bottom:25px; text-decoration:underline;">
+                <label for="tour-file-input" style="display:block; cursor:pointer; color:#2B5C92; font-weight:bold; margin-bottom:20px; text-decoration:underline;">
                     <i class="fas fa-camera"></i> ${t.tour_upload}
                 </label>
-
                 <button class="btn" id="tour-btn-4" style="width:100%;">${t.tour_start}</button>
             </div>
-            
             <div style="display:flex; justify-content:center; gap:8px; margin-top:25px;" id="tour-dots">
                 <div class="tour-dot active" id="dot-1"></div><div class="tour-dot" id="dot-2"></div>
                 <div class="tour-dot" id="dot-3"></div><div class="tour-dot" id="dot-4"></div>
             </div>
         </div>
     `;
-    
     document.body.appendChild(overlay);
 
     document.getElementById('tour-btn-1').onclick = () => { document.getElementById('tour-step-1').style.display = 'none'; document.getElementById('tour-step-2').style.display = 'block'; document.getElementById('dot-1').classList.remove('active'); document.getElementById('dot-2').classList.add('active'); };
@@ -395,21 +380,13 @@ function showWelcomeTour() {
     document.getElementById('tour-btn-4').onclick = async () => {
         const fname = document.getElementById('tour-fname-input').value.trim();
         const lname = document.getElementById('tour-lname-input').value.trim();
-        
-        const validRegex = /[a-zA-Z]/;
-        if (fname.length < 4 || lname.length < 4 || !validRegex.test(fname) || !validRegex.test(lname)) {
-            alert(t.tour_name_err);
-            return;
+        if (fname.length < 4 || lname.length < 4 || !/[a-zA-Z]/.test(fname) || !/[a-zA-Z]/.test(lname)) {
+            alert(t.tour_name_err); return;
         }
-        
         const newName = `${fname} ${lname}`;
-
         const btn = document.getElementById('tour-btn-4');
-        btn.disabled = true;
-        btn.textContent = t.tour_saving;
-        
+        btn.disabled = true; btn.textContent = t.tour_saving;
         let finalPhoto = defaultPfpUrl; 
-
         try {
             if (selectedFile) {
                 const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
@@ -419,23 +396,14 @@ function showWelcomeTour() {
                 formData.append('timestamp', signRes.timestamp);
                 formData.append('signature', signRes.signature);
                 formData.append('upload_preset', signRes.uploadPreset);
-                
                 const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { method: 'POST', body: formData }).then(r => r.json());
                 if (res.secure_url) finalPhoto = res.secure_url;
             }
-
             await updateProfile(user, { displayName: newName, photoURL: finalPhoto });
             await updateDoc(doc(db, "users", user.uid), { displayName: newName, photoURL: finalPhoto, hasSeenTour: true });
-            
             localStorage.setItem(tourKey, 'true');
-            overlay.remove();
-            location.reload(); 
-            
-        } catch(e) { 
-            console.error("Tour save error", e); 
-            localStorage.setItem(tourKey, 'true');
-            overlay.remove(); 
-        }
+            overlay.remove(); location.reload(); 
+        } catch(e) { console.error(e); localStorage.setItem(tourKey, 'true'); overlay.remove(); }
     };
 }
 
@@ -452,7 +420,6 @@ function showLanguagePopup() {
         </div>
     `;
     document.body.appendChild(modal);
-    
     document.getElementById('btn-en').onclick = () => { localStorage.setItem('preferred_language', 'en'); sessionStorage.setItem('lang_picked_this_session', 'true'); location.reload(); };
     document.getElementById('btn-fr').onclick = () => { localStorage.setItem('preferred_language', 'fr'); sessionStorage.setItem('lang_picked_this_session', 'true'); location.reload(); };
 }
