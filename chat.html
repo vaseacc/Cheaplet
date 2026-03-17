@@ -379,7 +379,13 @@ await updateDoc(chatRef, { unreadBy: arrayRemove(currentUser.uid) });
                     messageInput.value = '';
                     messageInput.blur(); 
                     await addDoc(collection(db, 'chats', chatId, 'messages'), { text, senderId: currentUser.uid, timestamp: serverTimestamp() });
-                    await updateDoc(chatRef, { lastMessage: text, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
+                    // Tell the DB the other person hasn't read it yet
+await updateDoc(chatRef, { 
+    lastMessage: text, 
+    lastUpdate: serverTimestamp(), 
+    lastSenderId: currentUser.uid,
+    unreadBy: arrayUnion(otherId) // Add the other person's ID to unreadBy
+});
                 };
 
                 imgBtn.onclick = () => fileInput.click();
