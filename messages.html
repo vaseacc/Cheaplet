@@ -142,7 +142,6 @@
         .conversation-item:last-child { border-bottom: none; }
         .conversation-item:hover { background: var(--surface); }
 
-        /* unread left bar */
         .conversation-item.unread::before {
             content: '';
             position: absolute; left: 0; top: 0; bottom: 0;
@@ -186,9 +185,14 @@
             background: var(--surface); padding: 2px 8px; border-radius: 50px;
             border: 1px solid var(--mist); white-space: nowrap; flex-shrink: 0;
         }
+        
+        /* 🔥 FIXED: Made text and status icon flex nicely */
         .last-message {
             color: var(--text-muted); font-size: 0.86rem;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            display: flex; align-items: center;
+        }
+        .last-message-text {
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;
         }
         .conversation-item.unread .last-message { color: var(--text-body); font-weight: 500; }
 
@@ -267,20 +271,24 @@
             const inboxContainer = document.getElementById('inbox-container');
 
             const lang = localStorage.getItem('preferred_language') || 'en';
+            
+            // 🔥 ADDED "Sent" and "Seen" translations
             const strings = {
                 en: {
                     loading: "Loading conversations…",
                     empty: "You have no messages yet.",
                     login: "Please log in to view messages.",
                     pageSub: "Your conversations with buyers and sellers.",
-                    navB: "Browse", navL: "My Listings", navM: "Messages"
+                    navB: "Browse", navL: "My Listings", navM: "Messages",
+                    sent: "Sent", seen: "Seen"
                 },
                 fr: {
                     loading: "Chargement des conversations…",
                     empty: "Vous n'avez pas encore de messages.",
                     login: "Veuillez vous connecter pour voir vos messages.",
                     pageSub: "Vos conversations avec acheteurs et vendeurs.",
-                    navB: "Parcourir", navL: "Mes Annonces", navM: "Messages"
+                    navB: "Parcourir", navL: "Mes Annonces", navM: "Messages",
+                    sent: "Envoyé", seen: "Vu"
                 }
             };
 
@@ -293,7 +301,6 @@
             const userCache = {};
             let unsubscribe = null;
 
-            // Show skeleton loaders while waiting
             function showSkeletons() {
                 inboxContainer.innerHTML = [1,2,3].map((_, i) => `
                     <div class="skeleton-item" style="animation-delay:${i*0.07}s">
@@ -355,8 +362,32 @@
                 const otherId = chatData.participants.find(p => p !== currentUser.uid);
                 const displayName = chatData.participantInfo?.[otherId] || 'User';
 
-                // 🔴 Unread detection: check if lastSenderId is not currentUser and chat has unreadBy field
-                const isUnread = chatData.unreadBy && chatData.unreadBy.includes(currentUser.uid);
+                // 🔥 UNREAD LOGIC: If they sent the last message and we haven't seen it
+                let isUnread = false;
+                if (chatData.unreadBy) {
+                    isUnread = chatData.unreadBy.includes(currentUser.uid);
+                } else {
+                    // Fallback for older chats: if they sent the last message, assume unread
+                    isUnread = chatData.lastSenderId && chatData.lastSenderId !== currentUser.uid;
+                }
+
+                // 🔥 SENT / SEEN LOGIC
+                let readStatusHtml = '';
+                if (chatData.lastSenderId === currentUser.uid) {
+                    // I sent the last message. Has the OTHER person seen it?
+                    let isSeen = true; 
+                    if (chatData.unreadBy) {
+                        isSeen = !chatData.unreadBy.includes(otherId);
+                    }
+                    
+                    if (isSeen) {
+                        // Double Blue/Deep Checkmark (Seen)
+                        readStatusHtml = `<span style="color: var(--deep); font-size: 0.75rem; margin-right: 6px;" title="${ui.seen}"><i class="fas fa-check-double"></i></span>`;
+                    } else {
+                        // Single Grey Checkmark (Sent)
+                        readStatusHtml = `<span style="color: var(--text-muted); font-size: 0.75rem; margin-right: 6px;" title="${ui.sent}"><i class="fas fa-check"></i></span>`;
+                    }
+                }
 
                 const link = document.createElement('a');
                 link.href = `/chat.html?id=${docSnap.id}`;
@@ -381,7 +412,10 @@
                             <span class="participant-name">${displayName}</span>
                             ${listingTag}
                         </div>
-                        <p class="last-message">${chatData.lastMessage}</p>
+                        <p class="last-message">
+                            ${readStatusHtml}
+                            <span class="last-message-text">${chatData.lastMessage}</span>
+                        </p>
                     </div>
                     <i class="fas fa-chevron-right convo-arrow"></i>`;
 
