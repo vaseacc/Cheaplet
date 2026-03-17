@@ -1,474 +1,566 @@
-import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, onSnapshot, updateDoc, collection, query, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
-
-// --- 0. AUTO-IMPORT ICONS & FAVICON ---
-if (!document.querySelector('link[href*="font-awesome"]')) {
-    const faLink = document.createElement('link');
-    faLink.rel = 'stylesheet';
-    faLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
-    document.head.appendChild(faLink);
-}
-
-if (!document.querySelector('link[rel="icon"]')) {
-    const favicon = document.createElement('link');
-    favicon.rel = 'icon';
-    favicon.type = 'image/svg+xml';
-    favicon.href = '/favicon.svg';
-    document.head.appendChild(favicon);
-}
-
-// --- 1. INITIALIZE CONFIG ---
-const response = await fetch('/.netlify/functions/config');
-const config = await response.json();
-const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-// --- 2. TRANSLATION DICTIONARY ---
-const translations = {
-    "en": { 
-        "nav_browse": "Browse", "nav_listings": "My Listings", "nav_messages": "Messages", "nav_profile": "My Profile", 
-        "btn_login": "Login / Register", "btn_list": "List an Item", "btn_signout": "Sign Out", 
-        "verified_student": "Verified Student",
-        "ban_title": "ACCESS DENIED",
-        "ban_text": "This account has been permanently banned.",
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <title>Chat - Cheaplet</title>
+    <!-- GLOBAL BRAIN -->
+    <script type="module" src="global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         
-        "tour_title_1": "Welcome to Cheaplet!",
-        "tour_desc_1": "Your campus marketplace for textbooks and essentials. Buy cheaply, sell quickly, and save money every semester.",
-        "tour_title_2": "Trust & Safety",
-        "tour_desc_2": "Look for the <span style='color:#2E7D32; font-weight:bold;'><i class='fas fa-graduation-cap'></i> Verified Student</span> badge. It means the user registered with an official college email.",
-        "tour_title_3": "Smart Features",
-        "tour_desc_3": "Click the bookmark icon on any listing to save it. You can easily find your saved items later in <b>My Profile</b>.",
-        "tour_title_4": "Personalize Your Profile",
-        "tour_desc_4": "Set your display name and add a photo! (If you skip the photo, we'll generate a unique retro avatar for you).",
-        "tour_first_name": "First Name (Min. 4 letters)",
-        "tour_last_name": "Last Name (Min. 4 letters)",
-        "tour_upload": "Choose Photo",
-        "tour_next": "Next",
-        "tour_start": "Finish & Explore",
-        "tour_saving": "Saving...",
-        "tour_name_err": "Please ensure both your First and Last name contain at least 4 letters."
-    },
-    "fr": { 
-        "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", 
-        "btn_login": "Connexion", "btn_list": "Vendre", "btn_signout": "Déconnexion", 
-        "verified_student": "Étudiant vérifié",
-        "ban_title": "ACCÈS REFUSÉ",
-        "ban_text": "Ce compte a été définitivement banni.",
-
-        "tour_title_1": "Bienvenue sur Cheaplet !",
-        "tour_desc_1": "Votre marché étudiant pour les manuels et articles essentiels. Achetez à bas prix, vendez rapidement et économisez.",
-        "tour_title_2": "Confiance et Sécurité",
-        "tour_desc_2": "Recherchez le badge <span style='color:#2E7D32; font-weight:bold;'><i class='fas fa-graduation-cap'></i> Étudiant vérifié</span>. Il indique une inscription avec un courriel scolaire officiel.",
-        "tour_title_3": "Fonctionnalités",
-        "tour_desc_3": "Cliquez sur l'icône de signet pour sauvegarder une annonce. Retrouvez-les facilement dans <b>Mon Profil</b>.",
-        "tour_title_4": "Personnalisez votre profil",
-        "tour_desc_4": "Définissez votre nom et ajoutez une photo ! (Si vous ignorez la photo, nous créerons un avatar rétro unique pour vous).",
-        "tour_first_name": "Prénom (Min. 4 lettres)",
-        "tour_last_name": "Nom (Min. 4 lettres)",
-        "tour_upload": "Choisir une photo",
-        "tour_next": "Suivant",
-        "tour_start": "Terminer & Explorer",
-        "tour_saving": "Enregistrement...",
-        "tour_name_err": "Veuillez vous assurer que votre prénom et votre nom contiennent au moins 4 lettres."
-    }
-};
-
-window.applyLanguage = (lang) => {
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (translations[lang] && translations[lang][key]) el.textContent = translations[lang][key];
-    });
-    localStorage.setItem('preferred_language', lang);
-};
-
-// --- 3. GLOBAL CSS (INK & GOLD THEME) ---
-const globalStyle = document.createElement('style');
-globalStyle.innerHTML = `
-    .header-inner, .header-content { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-    nav { flex-grow: 1; display: flex; justify-content: center; }
-    nav ul { display: flex; list-style: none; gap: 28px; padding: 0; margin: 0; }
-    nav ul li a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; white-space: nowrap; }
-    nav ul li a:hover { color: #FFFFFF; }
-
-    .btn { background: linear-gradient(135deg, #C8A96E 0%, #ddb97a 100%) !important; color: #0C1446 !important; border: none !important; padding: 0 18px !important; height: 38px !important; line-height: 38px !important; border-radius: 20px !important; font-weight: bold !important; cursor: pointer !important; transition: transform 0.2s !important; font-size: 0.85rem !important; display: inline-flex !important; align-items: center; justify-content: center; text-decoration: none !important; }
-    .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(200,169,110,0.3) !important; }
-    .btn:disabled { opacity: 0.7; cursor: not-allowed !important; transform: none !important; }
-    
-    .profile-menu-container { position: relative; display: flex; align-items: center; z-index: 1001; }
-    .profile-avatar { width: 40px; height: 40px; border-radius: 50%; background-color: #1a2a4a; border: 2px solid #C8A96E; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; background-size: cover; background-position: center; overflow: hidden; }
-    .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
-    
-    .dropdown-menu { position: absolute; top: 50px; right: 0; width: 220px; background: white; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); display: none; flex-direction: column; overflow: hidden; color: #333; z-index: 1000; border: 1px solid #eee; }
-    .dropdown-menu.show { display: flex; }
-    .dropdown-header { padding: 15px; border-bottom: 1px solid #eee; background: #f9f9f9; font-weight: bold; color: #0C1446; font-size: 0.9rem; display: flex; flex-direction: column; gap: 4px; }
-    
-    .dropdown-item { padding: 12px 15px; text-decoration: none; color: #333; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.9rem; transition: background 0.2s; }
-    .dropdown-item:hover { background-color: #f4f7fc; color: #2B5C92; }
-    
-    .msg-btn-mobile { background: #C8A96E; color: #0C1446; width: 36px; height: 36px; border-radius: 50%; display: none; align-items: center; justify-content: center; text-decoration: none; margin-right: 12px; font-size: 1rem; position: relative; }
-    
-    /* 🔥 UNREAD BADGES */
-    .badge-container { position: relative; display: inline-block; }
-    .unread-badge {
-        position: absolute; top: -6px; right: -12px;
-        background-color: #C0392B; color: white;
-        font-size: 0.65rem; font-weight: bold;
-        padding: 2px 5px; border-radius: 10px;
-        display: none; align-items: center; justify-content: center;
-        z-index: 10; min-width: 18px; text-align: center;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
-    .msg-btn-mobile .unread-badge { top: -2px; right: -4px; border: 2px solid #C8A96E; }
-
-    .lang-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(12,20,70,0.85); z-index: 10000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
-    .lang-modal { background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
-    .lang-btn { display: block; width: 100%; padding: 16px; margin: 12px 0; border: 2px solid #EBF2FA; border-radius: 12px; background: white; font-weight: bold; cursor: pointer; font-size: 1.1rem; transition: all 0.2s; color: #0C1446; }
-    .lang-btn:hover { border-color: #C8A96E; background: #fdfaf4; }
-
-    .tour-dot { width: 8px; height: 8px; border-radius: 50%; background: #e0e0e0; transition: 0.3s; }
-    .tour-dot.active { background: #C8A96E; width: 24px; border-radius: 10px; }
-
-    .tour-input { width: 100%; padding: 10px 12px; border: 2px solid #eee; border-radius: 8px; margin-bottom: 12px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; text-align: center; font-weight: bold; color: #0C1446; }
-    .tour-input:focus { border-color: #C8A96E; }
-    
-    .tour-pfp-preview { width: 80px; height: 80px; border-radius: 50%; background: #eee; margin: 0 auto 15px; border: 3px solid #C8A96E; object-fit: cover; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #aaa; overflow: hidden; }
-    .tour-pfp-preview img { width: 100%; height: 100%; object-fit: cover; }
-
-    .terms-banner { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(12, 20, 70, 0.98); color: #fff; padding: 15px 25px; display: flex; justify-content: center; align-items: center; gap: 25px; z-index: 99999; font-size: 0.85rem; backdrop-filter: blur(10px); border-top: 1px solid rgba(200,169,110,0.3); }
-    .btn-accept-terms { background: #C8A96E; color: #0C1446; border: none; padding: 8px 30px; border-radius: 20px; font-weight: 800; cursor: pointer; transition: transform 0.2s; }
-
-    .desktop-only { display: inline-flex; }
-    .mobile-link { display: none; }
-
-    @media (max-width: 767px) {
-        nav { display: none !important; }
-        .msg-btn-mobile { display: flex; }
-        .desktop-only { display: none !important; }
-        .mobile-link { display: flex; }
-        .terms-banner { flex-direction: column; text-align: center; padding-bottom: max(20px, env(safe-area-inset-bottom)); gap: 12px; }
-        .lang-modal { padding: 30px 20px; }
-    }
-`;
-document.head.appendChild(globalStyle);
-
-// --- 4. STATE & LISTENERS ---
-let globalSettings = {};
-let currentUserData = null;
-let unsubscribeChats = null;
-
-onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
-    if (docSnap.exists()) { globalSettings = docSnap.data(); refreshUI(); }
-});
-
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        onSnapshot(doc(db, "users", user.uid), (docSnap) => {
-            if (docSnap.exists()) {
-                currentUserData = docSnap.data();
-                if (currentUserData.role === 'banned') { triggerHardLockdown(); return; }
-                if (currentUserData.language) localStorage.setItem('preferred_language', currentUserData.language);
-                refreshUI();
-            }
-        });
-    } else { currentUserData = null; refreshUI(); }
-});
-
-function triggerHardLockdown() {
-    const lang = localStorage.getItem('preferred_language') || 'en';
-    document.body.innerHTML = `<div style="height:100vh; background:#0C1446; color:#ff4d4d; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif; text-align:center; padding:20px;">
-        <i class="fas fa-user-slash fa-4x" style="margin-bottom:20px;"></i>
-        <h1>${translations[lang].ban_title}</h1>
-        <p>${translations[lang].ban_text}</p>
-    </div>`;
-    setTimeout(() => { signOut(auth).then(() => { window.location.href = '/LoginInToCheaplet.html'; }); }, 3000);
-}
-
-function refreshUI() {
-    if (currentUserData) {
-        updateHeaderToLoggedIn(currentUserData);
-        showWelcomeTour(); 
-    } else {
-        updateHeaderToLoggedOut();
-        if (globalSettings.enableLanguagePrompt && !sessionStorage.getItem('lang_picked_this_session')) { 
-            showLanguagePopup(); 
+        /* 🔥 THE MOBILE FIX: Lock body to viewport and flex everything */
+        html, body { 
+            height: 100%; 
+            height: 100dvh; /* Adapts to mobile URL bar disappearing */
+            overflow: hidden; /* Prevents the whole page from scrolling */
+            background-color: var(--off-white, #f8f9fa); 
+            color: var(--text-body, #333); 
+            display: flex; 
+            flex-direction: column; 
         }
-    }
-    window.applyLanguage(localStorage.getItem('preferred_language') || 'en');
-    showTermsBanner();
-}
 
-// 🔥 FIXED: UNREAD MESSAGES LISTENER
-function listenToUnreadMessages(uid) {
-    if (unsubscribeChats) unsubscribeChats();
-    const q = query(collection(db, "chats"), where("participants", "array-contains", uid));
-    
-    unsubscribeChats = onSnapshot(q, (snapshot) => {
-        let unreadCount = 0;
-        snapshot.forEach(docSnap => {
-            const d = docSnap.data();
-            
-            // 1. Ignore empty ghost chats
-            if (!d.lastMessage || d.lastMessage.trim() === "") return;
-            
-            // 2. Count unread accurately based on arrays or fallback
-            if (d.unreadBy !== undefined) {
-                if (d.unreadBy.includes(uid)) unreadCount++;
-            } else {
-                if (d.lastSenderId && d.lastSenderId !== uid) unreadCount++;
-            }
-        });
-        
-        const deskBadge = document.getElementById('desktop-unread-badge');
-        const mobBadge = document.getElementById('mobile-unread-badge');
-        
-        if (unreadCount > 0) {
-            if (deskBadge) { deskBadge.textContent = unreadCount; deskBadge.style.display = 'flex'; }
-            if (mobBadge) { mobBadge.textContent = unreadCount; mobBadge.style.display = 'flex'; }
-        } else {
-            if (deskBadge) deskBadge.style.display = 'none';
-            if (mobBadge) mobBadge.style.display = 'none';
+        header { 
+            background: rgba(12, 20, 70, 0.97); 
+            color: white; 
+            padding: 15px 0; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+            z-index: 100; 
+            flex-shrink: 0; /* Never shrink header */
         }
-    });
-}
+        .header-content { display: flex; justify-content: space-between; align-items: center; padding: 0 15px; max-width: 1300px; margin: 0 auto; }
+        .logo { font-size: 24px; font-weight: bold; color: white; text-decoration: none; font-family: 'Source Serif 4', serif; }
+        .logo span, .logo em { color: #C8A96E; font-style: normal; }
+        nav ul { display: flex; list-style: none; gap: 20px; }
+        .header-right { display: flex; align-items: center; gap: 15px; }
 
-function updateHeaderToLoggedIn(userData) {
-    const lang = localStorage.getItem('preferred_language') || 'en';
-    
-    const navUl = document.querySelector('nav ul');
-    if (navUl) {
-        navUl.innerHTML = `
-            <li><a href="/search.html">${translations[lang].nav_browse}</a></li>
-            <li><a href="/my-listings.html">${translations[lang].nav_listings}</a></li>
-            <li><a href="/messages.html" class="badge-container">${translations[lang].nav_messages}<span class="unread-badge" id="desktop-unread-badge"></span></a></li>
-        `;
-    }
+        /* Container that holds sidebar + chat */
+        .chat-main-wrapper { 
+            display: flex; 
+            flex-grow: 1; 
+            width: 100%; 
+            max-width: 1300px; 
+            margin: 0 auto; 
+            background: white; 
+            border-left: 1px solid #eee; 
+            border-right: 1px solid #eee; 
+            overflow: hidden; /* Lock wrapper */
+        }
+        
+        /* SIDEBAR */
+        .chat-sidebar { width: 320px; border-right: 1px solid #eee; display: flex; flex-direction: column; background: #fdfdfd; flex-shrink: 0; transition: 0.3s ease; }
+        .sidebar-header { padding: 20px; font-weight: 800; font-size: 1.2rem; border-bottom: 1px solid #eee; color: #2B5C92; flex-shrink: 0; }
+        #sidebar-list { flex-grow: 1; overflow-y: auto; }
+        
+        .side-conv-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f9f9f9; text-decoration: none; color: inherit; position: relative; }
+        .side-conv-item:hover { background: #f1f8e9; }
+        .side-conv-item.active { background: #e8f5e9; border-left: 4px solid #2B5C92; }
+        .side-avatar { width: 45px; height: 45px; border-radius: 50%; background: #2B5C92; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px; flex-shrink: 0; overflow: hidden; }
+        .side-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .side-info { overflow: hidden; flex-grow: 1; }
+        .side-name { font-weight: 600; font-size: 0.95rem; }
+        .side-msg { font-size: 0.8rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .unread-dot { width: 10px; height: 10px; background-color: #C0392B; border-radius: 50%; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); display: none; }
+        .side-conv-item.is-new .unread-dot { display: block; }
+        .side-conv-item.is-new .side-name { font-weight: 800; color: #000; }
 
-    const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
-    if (!container) return;
-    
-    const name = userData.displayName || 'User';
-    let finalPhotoURL = userData.photoURL;
-    if (!finalPhotoURL || finalPhotoURL.includes("googleusercontent.com") || finalPhotoURL.includes("live.com")) {
-        finalPhotoURL = `https://api.dicebear.com/7.x/identicon/svg?seed=${userData.uid}&backgroundColor=EBF2FA`;
-    }
-    
-    container.innerHTML = `
-        <button class="btn desktop-only" id="globalListBtn" style="margin-right: 15px;">${translations[lang].btn_list}</button>
-        <a href="/messages.html" class="msg-btn-mobile"><i class="fas fa-envelope"></i><span class="unread-badge" id="mobile-unread-badge"></span></a>
-        <div class="profile-menu-container">
-            <div class="profile-avatar"><img src="${finalPhotoURL}" alt="Profile"></div>
-            <div class="dropdown-menu" id="globalDropdown">
-                <div class="dropdown-header"><span>${name}</span></div>
-                <a href="/listanitem.html" class="dropdown-item mobile-link" style="color:#2B5C92; font-weight:bold;"><i class="fas fa-plus-circle"></i> ${translations[lang].btn_list}</a>
-                <a href="/search.html" class="dropdown-item mobile-link"><i class="fas fa-search"></i> ${translations[lang].nav_browse}</a>
-                <a href="/my-listings.html" class="dropdown-item mobile-link"><i class="fas fa-book"></i> ${translations[lang].nav_listings}</a>
-                <a href="/profile.html" class="dropdown-item"><i class="fas fa-user-circle"></i> ${translations[lang].nav_profile}</a>
-                <a href="#" class="dropdown-item" id="globalLogout" style="color:#ff4d4d; border-top:1px solid #eee;"><i class="fas fa-sign-out-alt"></i> ${translations[lang].btn_signout}</a>
-            </div>
+        /* CHAT WINDOW */
+        .chat-window { flex-grow: 1; display: flex; flex-direction: column; background: white; position: relative; overflow: hidden; }
+        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; background: #fff; display: flex; align-items: center; gap: 15px; z-index: 10; flex-shrink: 0; }
+        
+        #chat-header-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: #eee; display: none; border: 1px solid #ddd; cursor: pointer; transition: transform 0.2s; }
+        #chat-header-avatar:hover { transform: scale(1.05); }
+        #chat-header-name { font-weight: 700; color: #050505; font-size: 1.1rem; cursor: pointer; transition: color 0.2s; }
+        #chat-header-name:hover { color: #2B5C92; text-decoration: underline; }
+        #chat-header-meta { font-size: 0.75rem; color: #888; margin-top: 2px; display: flex; align-items: center; gap: 5px; }
+
+        #report-chat-btn { background: none; border: none; color: #ff5252; cursor: pointer; font-size: 1.2rem; display: none; transition: transform 0.2s; }
+        #report-chat-btn:hover { transform: scale(1.1); }
+
+        .listing-preview-banner { display: flex; align-items: center; padding: 10px 20px; background: #EBF2FA; border-bottom: 1px solid #B3CDE0; gap: 12px; flex-shrink: 0; text-decoration: none; color: inherit; transition: background 0.2s; }
+        .lp-img { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; background: #eee; }
+        .lp-info { flex-grow: 1; overflow: hidden; display: flex; flex-direction: column; }
+        .lp-title { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #0C1446; }
+        .lp-price { color: #2E7D5E; font-size: 0.85rem; font-weight: bold; }
+        .lp-status { font-size: 0.75rem; color: #C0392B; font-weight: bold; text-transform: uppercase; }
+
+        #mobile-menu-btn { display: none; background: none; border: none; font-size: 1.2rem; color: #2B5C92; cursor: pointer; }
+
+        /* MESSAGES LIST */
+        #messages-list { 
+            flex-grow: 1; 
+            padding: 20px; 
+            overflow-y: auto; 
+            -webkit-overflow-scrolling: touch; /* Smooth scroll iOS */
+            display: flex; 
+            flex-direction: column; 
+            background-color: #fcfcfc; 
+        }
+        .message-row { display: flex; width: 100%; margin-bottom: 15px; align-items: flex-end; }
+        .message-row.sent { justify-content: flex-end; }
+        .message-row.received { justify-content: flex-start; gap: 8px; }
+        .chat-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #ddd; flex-shrink: 0; margin-bottom: 20px; }
+        
+        /* Message Bubbles */
+        .message-bubble { max-width: 75%; padding: 10px 15px; border-radius: 18px; word-wrap: break-word; position: relative; }
+        .message-bubble.sent { background-color: #2B5C92; color: white; border-bottom-right-radius: 4px; }
+        .message-bubble.received { background-color: #EBF2FA; color: #0C1446; border-bottom-left-radius: 4px; }
+        
+        .message-img { max-width: 100%; border-radius: 12px; display: block; margin-bottom: 5px; cursor: pointer; }
+        .message-timestamp { display: block; font-size: 0.7rem; color: rgba(255,255,255,0.7); margin-top: 4px; text-align: right; }
+        .message-bubble.received .message-timestamp { color: #888; }
+        .date-separator { text-align: center; margin: 20px 0; font-size: 0.8rem; font-weight: bold; color: #888; }
+        .date-separator span { background: #f0f0f0; padding: 4px 12px; border-radius: 12px; }
+
+        /* 🔥 INPUT AREA: Forced to bottom, respects safe areas */
+        .message-form { 
+            display: flex; 
+            align-items: center; 
+            padding: 10px 15px; 
+            padding-bottom: max(10px, env(safe-area-inset-bottom)); 
+            border-top: 1px solid #eee; 
+            background: white; 
+            gap: 10px; 
+            flex-shrink: 0; 
+            width: 100%; 
+        }
+        #img-upload-btn { background: none; border: none; color: #555; cursor: pointer; font-size: 1.1rem; flex-shrink: 0; }
+        #message-input { 
+            flex-grow: 1; 
+            border: 1px solid #ddd; 
+            border-radius: 25px; 
+            padding: 10px 20px; 
+            outline: none; 
+            font-size: 1rem; /* 1rem stops iOS auto-zoom */
+        }
+        #message-input:focus { border-color: #C8A96E; }
+        #send-btn { 
+            border-radius: 50%; width: 40px; height: 40px; padding: 0; 
+            display: flex; align-items: center; justify-content: center; 
+            background: #C8A96E; color: #0C1446; border: none; cursor: pointer; 
+            font-size: 1.1rem; flex-shrink: 0; 
+        }
+
+        .sold-banner { background: #fff3e0; color: #e65100; text-align: center; padding: 12px; font-weight: bold; border-top: 1px solid #ffe0b2; display: none; flex-shrink: 0; }
+        .rating-container { display: flex; flex-direction: column; align-items: center; padding: 15px; padding-bottom: max(15px, env(safe-area-inset-bottom)); background: white; border-top: 1px solid #eee; display: none; flex-shrink: 0; }
+        .stars { display: flex; gap: 10px; font-size: 1.8rem; color: #ddd; cursor: pointer; margin: 10px 0; }
+        .stars .fas.active { color: #FFD700; }
+        .btn-rate { background: #2B5C92; color: white; border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10000; display: none; justify-content: center; align-items: center; }
+        .modal-card { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        .modal-card select, .modal-card textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+        .modal-card textarea { height: 100px; resize: none; }
+        .modal-buttons { display: flex; gap: 10px; }
+        .modal-buttons button { flex: 1; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; }
+        .btn-submit-red { background: #d32f2f; color: white; }
+        .btn-cancel-gray { background: #eee; color: #333; }
+
+        .info-message { text-align: center; padding: 100px 0; font-size: 1.2rem; color: #999; }
+        
+        @media (max-width: 768px) {
+            #mobile-menu-btn { display: block; }
+            .chat-sidebar { position: fixed; left: -100%; top: 68px; height: calc(100vh - 68px); height: calc(100dvh - 68px); z-index: 1000; width: 85%; box-shadow: 10px 0 20px rgba(0,0,0,0.1); }
+            .chat-sidebar.open { left: 0; }
+            nav { display: none; }
+            .chat-main-wrapper { border: none; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <a href="/index.html" class="logo" id="logo-link">Cheap<em>let</em></a>
+            <nav><ul></ul></nav>
+            <div class="header-right"></div> 
         </div>
-    `;
-    
-    const listBtn = document.getElementById('globalListBtn');
-    if(listBtn) listBtn.onclick = () => window.location.href = '/listanitem.html';
+    </header>
 
-    const avatar = container.querySelector('.profile-avatar');
-    const menu = document.getElementById('globalDropdown');
-    if(avatar) avatar.onclick = (e) => { e.stopPropagation(); menu.classList.toggle('show'); };
-    document.addEventListener('click', () => { if(menu) menu.classList.remove('show'); });
-    
-    const logoutBtn = document.getElementById('globalLogout');
-    if(logoutBtn) logoutBtn.onclick = (e) => { 
-        e.preventDefault();
-        signOut(auth).then(() => {
-            sessionStorage.clear();
-            window.location.href = '/index.html';
-        });
-    };
+    <div class="chat-main-wrapper">
+        <aside class="chat-sidebar" id="chat-sidebar">
+            <div class="sidebar-header" data-i18n="nav_messages">Messages</div>
+            <div id="sidebar-list"></div>
+        </aside>
 
-    listenToUnreadMessages(userData.uid);
-}
+        <main class="chat-window">
+            <div id="info-container"><p class="info-message" data-i18n="loading_chat">Loading chat...</p></div>
 
-function updateHeaderToLoggedOut() {
-    if (unsubscribeChats) { unsubscribeChats(); unsubscribeChats = null; }
-    const lang = localStorage.getItem('preferred_language') || 'en';
-    const navUl = document.querySelector('nav ul');
-    if (navUl) {
-        navUl.innerHTML = `<li><a href="/search.html">${translations[lang].nav_browse}</a></li>`;
-    }
-
-    const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
-    if (!container) return;
-    container.innerHTML = `<button class="btn" onclick="window.location.href='/LoginInToCheaplet.html'">${translations[lang].btn_login}</button>`;
-}
-
-function showWelcomeTour() {
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const tourKey = `cheaplet_tour_seen_${user.uid}`;
-    if (localStorage.getItem(tourKey) === 'true') return;
-    if (currentUserData && currentUserData.hasSeenTour) {
-        localStorage.setItem(tourKey, 'true');
-        return;
-    }
-    if (document.getElementById('lang-modal')) return;
-
-    const lang = localStorage.getItem('preferred_language') || 'en';
-    const t = translations[lang];
-
-    const overlay = document.createElement('div');
-    overlay.className = 'lang-modal-overlay';
-    overlay.style.zIndex = '10005';
-    
-    const defaultPfpUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
-    
-    let existingFirstName = "";
-    let existingLastName = "";
-    if (user.displayName) {
-        const parts = user.displayName.split(' ');
-        existingFirstName = parts[0] || "";
-        existingLastName = parts.length > 1 ? parts.slice(1).join(' ') : "";
-    }
-
-    overlay.innerHTML = `
-        <div class="lang-modal" style="padding: 40px 30px;">
-            <div id="tour-step-1">
-                <i class="fas fa-handshake fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
-                <h2 style="color:#0C1446; margin-bottom:15px; font-family:'Playfair Display', serif;">${t.tour_title_1}</h2>
-                <p style="color:#6b84a3; margin-bottom:30px; line-height:1.6; font-size:0.95rem;">${t.tour_desc_1}</p>
-                <button class="btn" id="tour-btn-1" style="width:100%;">${t.tour_next}</button>
-            </div>
-            
-            <div id="tour-step-2" style="display:none;">
-                <i class="fas fa-shield-alt fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
-                <h2 style="color:#0C1446; margin-bottom:15px; font-family:'Playfair Display', serif;">${t.tour_title_2}</h2>
-                <p style="color:#6b84a3; margin-bottom:30px; line-height:1.6; font-size:0.95rem;">${t.tour_desc_2}</p>
-                <button class="btn" id="tour-btn-2" style="width:100%;">${t.tour_next}</button>
-            </div>
-            
-            <div id="tour-step-3" style="display:none;">
-                <i class="fas fa-bookmark fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
-                <h2 style="color:#0C1446; margin-bottom:15px; font-family:'Playfair Display', serif;">${t.tour_title_3}</h2>
-                <p style="color:#6b84a3; margin-bottom:30px; line-height:1.6; font-size:0.95rem;">${t.tour_desc_3}</p>
-                <button class="btn" id="tour-btn-3" style="width:100%;">${t.tour_next}</button>
-            </div>
-
-            <div id="tour-step-4" style="display:none;">
-                <div class="tour-pfp-preview" id="tour-pfp-box"><img src="${defaultPfpUrl}"></div>
-                <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">${t.tour_title_4}</h2>
-                <p style="color:#6b84a3; margin-bottom:20px; line-height:1.4; font-size:0.85rem;">${t.tour_desc_4}</p>
+            <div id="chat-active-ui" style="display: none; flex-direction: column; height: 100%;">
                 
-                <input type="text" id="tour-fname-input" class="tour-input" value="${existingFirstName}" placeholder="${t.tour_first_name}">
-                <input type="text" id="tour-lname-input" class="tour-input" value="${existingLastName}" placeholder="${t.tour_last_name}">
-                
-                <input type="file" id="tour-file-input" accept="image/*" style="display:none;">
-                <label for="tour-file-input" style="display:block; cursor:pointer; color:#2B5C92; font-weight:bold; margin-bottom:25px; text-decoration:underline;">
-                    <i class="fas fa-camera"></i> ${t.tour_upload}
-                </label>
+                <!-- CUSTOM CHAT HEADER -->
+                <div class="chat-header">
+                    <button id="mobile-menu-btn"><i class="fas fa-bars"></i></button>
+                    <div style="display: flex; align-items: center; gap: 12px; flex-grow: 1;">
+                        <img id="chat-header-avatar" src="" title="View Profile">
+                        <div style="display: flex; flex-direction: column;">
+                            <span id="chat-header-name" title="View Profile">Chat</span>
+                            <div id="chat-header-meta"></div>
+                        </div>
+                    </div>
+                    <button id="report-chat-btn" title="Report User"><i class="fas fa-flag"></i></button>
+                </div>
 
-                <button class="btn" id="tour-btn-4" style="width:100%;">${t.tour_start}</button>
+                <!-- LISTING PREVIEW BANNER -->
+                <a href="#" id="listing-preview-banner" class="listing-preview-banner" style="display: none;">
+                    <img src="" class="lp-img" id="lp-image">
+                    <div class="lp-info">
+                        <span class="lp-title" id="lp-title">...</span>
+                        <div><span class="lp-price" id="lp-price"></span><span class="lp-status" id="lp-status"></span></div>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color: #bec3c9; font-size: 0.8rem;"></i>
+                </a>
+
+                <!-- MESSAGES AREA -->
+                <div id="messages-list"></div>
+                
+                <div class="sold-banner" id="sold-banner"><i class="fas fa-lock"></i> <span id="sold-text">Listing Sold - Chat Disabled</span></div>
+
+                <div class="rating-container" id="rating-container">
+                    <div id="rate-title" style="font-weight:bold; color:#555;">Rate your experience</div>
+                    <div class="stars" id="star-rating">
+                        <i class="fas fa-star" data-val="1"></i><i class="fas fa-star" data-val="2"></i>
+                        <i class="fas fa-star" data-val="3"></i><i class="fas fa-star" data-val="4"></i>
+                        <i class="fas fa-star" data-val="5"></i>
+                    </div>
+                    <button class="btn-rate" id="btn-submit-rating">Submit Rating</button>
+                </div>
+
+                <!-- BOTTOM INPUT FORM -->
+                <form id="message-form" class="message-form">
+                    <input type="file" id="hidden-file-input" accept="image/*" style="display: none;">
+                    <button type="button" id="img-upload-btn"><i class="fas fa-camera"></i></button>
+                    <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off">
+                    <button type="submit" id="send-btn">&#10148;</button>
+                </form>
+
             </div>
-            
-            <div style="display:flex; justify-content:center; gap:8px; margin-top:25px;" id="tour-dots">
-                <div class="tour-dot active" id="dot-1"></div><div class="tour-dot" id="dot-2"></div>
-                <div class="tour-dot" id="dot-3"></div><div class="tour-dot" id="dot-4"></div>
-            </div>
+        </main>
+    </div>
+
+    <!-- REPORT MODAL -->
+    <div class="modal-overlay" id="report-modal">
+        <div class="modal-card">
+            <h2 id="modal-title">Report User</h2>
+            <p style="margin-bottom: 15px; font-size: 0.9rem; color: #666;" id="modal-desc">Why are you reporting this chat/user?</p>
+            <select id="report-reason">
+                <option value="Inappropriate Behavior">Inappropriate Behavior</option>
+                <option value="Scam or Fraud">Scam or Fraud</option>
+                <option value="Spam">Spam</option>
+                <option value="Other">Other</option>
+            </select>
+            <textarea id="report-details" placeholder="Provide more details..."></textarea>
+            <div class="modal-buttons"><button class="btn-submit-red" id="submit-report-btn">Submit</button><button class="btn-cancel-gray" id="close-report-btn">Cancel</button></div>
         </div>
-    `;
-    
-    document.body.appendChild(overlay);
+    </div>
 
-    document.getElementById('tour-btn-1').onclick = () => { document.getElementById('tour-step-1').style.display = 'none'; document.getElementById('tour-step-2').style.display = 'block'; document.getElementById('dot-1').classList.remove('active'); document.getElementById('dot-2').classList.add('active'); };
-    document.getElementById('tour-btn-2').onclick = () => { document.getElementById('tour-step-2').style.display = 'none'; document.getElementById('tour-step-3').style.display = 'block'; document.getElementById('dot-2').classList.remove('active'); document.getElementById('dot-3').classList.add('active'); };
-    document.getElementById('tour-btn-3').onclick = () => { document.getElementById('tour-step-3').style.display = 'none'; document.getElementById('tour-step-4').style.display = 'block'; document.getElementById('dot-3').classList.remove('active'); document.getElementById('dot-4').classList.add('active'); };
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, where, increment, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
-    let selectedFile = null;
-    document.getElementById('tour-file-input').onchange = (e) => {
-        if(e.target.files[0]) {
-            selectedFile = e.target.files[0];
-            document.getElementById('tour-pfp-box').innerHTML = `<img src="${URL.createObjectURL(selectedFile)}">`;
-        }
-    };
+        async function main() {
+            const response = await fetch('/.netlify/functions/config');
+            const config = await response.json();
+            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
+            const auth = getAuth(app);
+            const db = getFirestore(app);
 
-    document.getElementById('tour-btn-4').onclick = async () => {
-        const fname = document.getElementById('tour-fname-input').value.trim();
-        const lname = document.getElementById('tour-lname-input').value.trim();
-        
-        const validRegex = /[a-zA-Z]/;
-        if (fname.length < 4 || lname.length < 4 || !validRegex.test(fname) || !validRegex.test(lname)) {
-            alert(t.tour_name_err);
-            return;
-        }
-        
-        const newName = `${fname} ${lname}`;
+            const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`;
+            const UPLOAD_PRESET = config.cloudinary.uploadPreset;
 
-        const btn = document.getElementById('tour-btn-4');
-        btn.disabled = true;
-        btn.textContent = t.tour_saving;
-        
-        let finalPhoto = defaultPfpUrl; 
+            const sidebar = document.getElementById('chat-sidebar');
+            const sidebarList = document.getElementById('sidebar-list');
+            const chatActiveUI = document.getElementById('chat-active-ui');
+            const messagesList = document.getElementById('messages-list');
+            const messageForm = document.getElementById('message-form');
+            const messageInput = document.getElementById('message-input');
+            const chatHeaderName = document.getElementById('chat-header-name');
+            const chatHeaderAvatar = document.getElementById('chat-header-avatar');
+            const chatHeaderMeta = document.getElementById('chat-header-meta');
+            const reportChatBtn = document.getElementById('report-chat-btn');
+            const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+            const imgBtn = document.getElementById('img-upload-btn');
+            const fileInput = document.getElementById('hidden-file-input');
 
-        try {
-            if (selectedFile) {
-                const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
-                const formData = new FormData();
-                formData.append('file', selectedFile);
-                formData.append('api_key', signRes.apiKey);
-                formData.append('timestamp', signRes.timestamp);
-                formData.append('signature', signRes.signature);
-                formData.append('upload_preset', signRes.uploadPreset);
-                
-                const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { method: 'POST', body: formData }).then(r => r.json());
-                if (res.secure_url) finalPhoto = res.secure_url;
+            const lpBanner = document.getElementById('listing-preview-banner');
+            const lpImage = document.getElementById('lp-image');
+            const lpTitle = document.getElementById('lp-title');
+            const lpPrice = document.getElementById('lp-price');
+            const lpStatus = document.getElementById('lp-status');
+
+            const soldBanner = document.getElementById('sold-banner');
+            const ratingContainer = document.getElementById('rating-container');
+            const stars = document.querySelectorAll('#star-rating .fas');
+            const btnSubmitRating = document.getElementById('btn-submit-rating');
+
+            const reportModal = document.getElementById('report-modal');
+            const closeReportBtn = document.getElementById('close-report-btn');
+            const submitReportBtn = document.getElementById('submit-report-btn');
+            let reportTargetUid = null;
+            let reportTargetName = null;
+            let currentOtherPhotoUrl = null;
+            let selectedRating = 0;
+
+            const lang = localStorage.getItem('preferred_language') || 'en';
+            const strings = { 
+                en: { imageSent: "Sent a photo", sold: "SOLD", reportSuccess: "Report submitted.", soldBanner: "Listing Sold - Chat Disabled", rateText: "Rate your experience", rateSuccess: "Thanks for rating!", verifiedStudent: "Verified Student", noRatings: "No ratings yet", uploadFail: "Image upload failed.", sent: "Sent", seen: "Seen", typeMsg: "Type a message..." }, 
+                fr: { imageSent: "A envoyé une photo", sold: "VENDU", reportSuccess: "Signalement envoyé.", soldBanner: "Annonce vendue - Chat désactivé", rateText: "Évaluez votre expérience", rateSuccess: "Merci pour votre évaluation !", verifiedStudent: "Étudiant vérifié", noRatings: "Aucune évaluation", uploadFail: "Échec du téléchargement.", sent: "Envoyé", seen: "Vu", typeMsg: "Écrivez un message..." } 
+            };
+
+            messageInput.placeholder = strings[lang].typeMsg;
+
+            const userCache = {};
+            mobileMenuBtn.onclick = (e) => { e.stopPropagation(); sidebar.classList.toggle('open'); };
+            document.addEventListener('click', (e) => { if (window.innerWidth < 768 && !sidebar.contains(e.target)) sidebar.classList.remove('open'); });
+
+            onAuthStateChanged(auth, user => {
+                const isOAuth = user && user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
+                if (user && (user.emailVerified || isOAuth)) {
+                    loadSidebar(user);
+                    const chatId = new URLSearchParams(window.location.search).get('id');
+                    if (chatId) initializeChat(chatId, user);
+                } else { window.location.href = '/LoginInToCheaplet.html'; }
+            });
+
+            function loadSidebar(currentUser) {
+                const q = query(collection(db, "chats"), where("participants", "array-contains", currentUser.uid), orderBy("lastUpdate", "desc"));
+                onSnapshot(q, (snapshot) => {
+                    sidebarList.innerHTML = '';
+                    snapshot.forEach(docSnap => {
+                        const d = docSnap.data();
+                        const currentChatId = new URLSearchParams(window.location.search).get('id');
+                        
+                        if ((!d.lastMessage || d.lastMessage.trim() === "") && docSnap.id !== currentChatId) return;
+
+                        const otherId = d.participants.find(p => p !== currentUser.uid);
+                        const otherName = d.participantInfo ? d.participantInfo[otherId] : 'User';
+                        const itemTitle = d.listingTitle ? `<span style="font-size:0.75rem; color:#2B5C92;">(${d.listingTitle})</span>` : '';
+                        
+                        let isUnread = false;
+                        if (d.unreadBy) {
+                            isUnread = d.unreadBy.includes(currentUser.uid);
+                        } else {
+                            isUnread = d.lastSenderId && d.lastSenderId !== currentUser.uid;
+                        }
+                        
+                        const item = document.createElement('a');
+                        item.className = `side-conv-item ${docSnap.id === currentChatId ? 'active' : ''} ${isUnread ? 'is-new' : ''}`;
+                        item.href = `?id=${docSnap.id}`;
+                        item.innerHTML = `
+                            <div class="side-avatar" id="side-avatar-${docSnap.id}">${otherName.charAt(0).toUpperCase()}</div>
+                            <div class="side-info"><div class="side-name">${otherName} ${itemTitle}</div><div class="side-msg">${d.lastMessage || '...'}</div></div>
+                            <div class="unread-dot"></div>`;
+                        sidebarList.appendChild(item);
+
+                        const avatarDiv = item.querySelector(`#side-avatar-${docSnap.id}`);
+                        if (userCache[otherId]) {
+                            if(userCache[otherId].photoURL) avatarDiv.innerHTML = `<img src="${userCache[otherId].photoURL}">`;
+                        } else {
+                            getDoc(doc(db, 'users', otherId)).then(uSnap => {
+                                if(uSnap.exists()) {
+                                    userCache[otherId] = uSnap.data();
+                                    let finalUrl = userCache[otherId].photoURL;
+                                    if (!finalUrl || finalUrl.includes("googleusercontent.com") || finalUrl.includes("live.com")) {
+                                        finalUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${otherId}&backgroundColor=EBF2FA`;
+                                    }
+                                    avatarDiv.innerHTML = `<img src="${finalUrl}">`;
+                                }
+                            });
+                        }
+                    });
+                });
             }
 
-            await updateProfile(user, { displayName: newName, photoURL: finalPhoto });
-            await updateDoc(doc(db, "users", user.uid), { displayName: newName, photoURL: finalPhoto, hasSeenTour: true });
+            function getFriendlyDate(dateObj) {
+                const today = new Date(); const yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
+                if (dateObj.toDateString() === today.toDateString()) return lang === 'fr' ? "Aujourd'hui" : "Today";
+                if (dateObj.toDateString() === yesterday.toDateString()) return lang === 'fr' ? "Hier" : "Yesterday";
+                return dateObj.toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            }
+
+            async function initializeChat(chatId, currentUser) {
+                const chatRef = doc(db, 'chats', chatId);
+                const chatSnap = await getDoc(chatRef);
+                if (!chatSnap.exists() || !chatSnap.data().participants.includes(currentUser.uid)) return;
+                
+                document.getElementById('info-container').style.display = 'none';
+                chatActiveUI.style.display = 'flex';
+                
+                const d = chatSnap.data();
+                const otherId = d.participants.find(p => p !== currentUser.uid);
+                reportTargetUid = otherId; reportTargetName = d.participantInfo[otherId];
+                chatHeaderName.textContent = reportTargetName;
+                reportChatBtn.style.display = 'block';
+
+                document.getElementById('sold-text').textContent = strings[lang].soldBanner;
+                document.getElementById('rate-title').textContent = strings[lang].rateText;
+
+                const uSnap = await getDoc(doc(db, "users", otherId));
+                if (uSnap.exists()) {
+                    const uData = uSnap.data();
+                    
+                    currentOtherPhotoUrl = uData.photoURL;
+                    if (!currentOtherPhotoUrl || currentOtherPhotoUrl.includes("googleusercontent.com") || currentOtherPhotoUrl.includes("live.com")) {
+                        currentOtherPhotoUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${otherId}&backgroundColor=EBF2FA`;
+                    }
+                    chatHeaderAvatar.src = currentOtherPhotoUrl;
+                    chatHeaderAvatar.style.display = 'block';
+
+                    chatHeaderAvatar.onclick = () => window.location.href = `/user.html?id=${otherId}`;
+                    chatHeaderName.onclick = () => window.location.href = `/user.html?id=${otherId}`;
+
+                    let metaHtml = "";
+                    if (uData.ratingCount && uData.ratingCount > 0) {
+                        const avg = (uData.ratingSum / uData.ratingCount).toFixed(1);
+                        metaHtml += `<span style="color:#C8A96E; font-weight:bold;"><i class="fas fa-star"></i> ${avg}</span>`;
+                    } else {
+                        metaHtml += `<span>${strings[lang].noRatings}</span>`;
+                    }
+                    if (uData.isStudent) metaHtml += ` <span style="margin: 0 6px; color:#ccc;">&bull;</span> <span style="color:#2E7D32; font-weight:bold;"><i class="fas fa-graduation-cap"></i> ${strings[lang].verifiedStudent}</span>`;
+                    chatHeaderMeta.innerHTML = metaHtml;
+                }
+
+                if (d.listingId) {
+                    onSnapshot(doc(db, 'listings', d.listingId), (lSnap) => {
+                        if (lSnap.exists()) {
+                            const ld = lSnap.data();
+                            lpBanner.style.display = 'flex'; lpBanner.href = `/listing.html?id=${d.listingId}`;
+                            lpImage.src = ld.imageUrls?.[0] || ''; lpTitle.textContent = ld.title;
+                            
+                            if (ld.status === 'sold') { 
+                                lpPrice.style.display = 'none'; lpStatus.textContent = strings[lang].sold; lpStatus.style.display = 'inline-block';
+                                messageForm.style.display = 'none';
+                                soldBanner.style.display = 'block';
+                                
+                                if (!d.ratedBy || !d.ratedBy.includes(currentUser.uid)) {
+                                    ratingContainer.style.display = 'flex';
+                                }
+                            } else { 
+                                lpStatus.style.display = 'none'; lpPrice.style.display = 'block'; lpPrice.textContent = `$${ld.price.toFixed(2)}`; 
+                            }
+                        }
+                    });
+                }
+
+                try {
+                    await updateDoc(chatRef, { unreadBy: arrayRemove(currentUser.uid) });
+                } catch(e) { console.error(e); }
+
+                onSnapshot(query(collection(db, 'chats', chatId, 'messages'), orderBy("timestamp", "asc")), (snapshot) => {
+                    messagesList.innerHTML = '';
+                    let lastDateString = null;
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const dateObj = data.timestamp ? data.timestamp.toDate() : new Date();
+                        const dateString = dateObj.toDateString();
+                        if (dateString !== lastDateString) {
+                            const sep = document.createElement('div'); sep.className = 'date-separator';
+                            sep.innerHTML = `<span>${getFriendlyDate(dateObj)}</span>`;
+                            messagesList.appendChild(sep); lastDateString = dateString;
+                        }
+                        renderMessage(data, currentUser.uid, currentOtherPhotoUrl);
+                    });
+                    // Scroll to bottom securely
+                    setTimeout(() => { messagesList.scrollTop = messagesList.scrollHeight; }, 100);
+                });
+
+                messageForm.onsubmit = async (e) => {
+                    e.preventDefault();
+                    const text = messageInput.value.trim();
+                    if (!text) return;
+                    messageInput.value = '';
+                    // Do not blur to keep keyboard open for rapid messaging
+                    await addDoc(collection(db, 'chats', chatId, 'messages'), { text, senderId: currentUser.uid, timestamp: serverTimestamp() });
+                    await updateDoc(chatRef, { lastMessage: text, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid, unreadBy: arrayUnion(otherId) });
+                    messagesList.scrollTop = messagesList.scrollHeight;
+                };
+
+                imgBtn.onclick = () => fileInput.click();
+                fileInput.onchange = async (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    try {
+                        const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
+                        const formData = new FormData();
+                        formData.append('file', file);
+                        formData.append('api_key', signRes.apiKey);
+                        formData.append('timestamp', signRes.timestamp);
+                        formData.append('signature', signRes.signature);
+                        formData.append('upload_preset', signRes.uploadPreset);
+
+                        const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { method: 'POST', body: formData }).then(r => r.json());
+
+                        if (res.secure_url) {
+                            await addDoc(collection(db, 'chats', chatId, 'messages'), { imageUrl: res.secure_url, senderId: currentUser.uid, timestamp: serverTimestamp() });
+                            await updateDoc(chatRef, { lastMessage: `📷 ${strings[lang].imageSent}`, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid, unreadBy: arrayUnion(otherId) });
+                        } else {
+                            throw new Error("Upload response invalid.");
+                        }
+                    } catch (err) { alert(strings[lang].uploadFail); }
+                };
+
+                stars.forEach(star => {
+                    star.onclick = function() {
+                        selectedRating = parseInt(this.getAttribute('data-val'));
+                        stars.forEach(s => {
+                            if(parseInt(s.getAttribute('data-val')) <= selectedRating) s.classList.add('active');
+                            else s.classList.remove('active');
+                        });
+                    };
+                });
+
+                btnSubmitRating.onclick = async () => {
+                    if (selectedRating === 0) return;
+                    btnSubmitRating.disabled = true;
+                    try {
+                        await updateDoc(doc(db, 'users', otherId), { ratingSum: increment(selectedRating), ratingCount: increment(1) });
+                        await updateDoc(chatRef, { ratedBy: arrayUnion(currentUser.uid) });
+                        ratingContainer.innerHTML = `<div style="color:#4CAF50; font-weight:bold;">${strings[lang].rateSuccess}</div>`;
+                        setTimeout(() => { ratingContainer.style.display = 'none'; }, 3000);
+                    } catch(err) { console.error(err); btnSubmitRating.disabled = false; }
+                };
+            }
+
+            function renderMessage(data, currentUserId, otherPhotoUrl) {
+                const isSent = data.senderId === currentUserId;
+                const row = document.createElement('div');
+                row.className = `message-row ${isSent ? 'sent' : 'received'}`;
+                let avatarHtml = '';
+                if (!isSent) {
+                    const avatarSrc = otherPhotoUrl || `https://api.dicebear.com/7.x/identicon/svg?seed=fallback&backgroundColor=EBF2FA`;
+                    avatarHtml = `<img src="${avatarSrc}" class="chat-avatar">`;
+                }
+                const bubble = document.createElement('div');
+                bubble.className = `message-bubble ${isSent ? 'sent' : 'received'}`;
+                let content = data.imageUrl ? `<img src="${data.imageUrl}" class="message-img" onclick="window.open('${data.imageUrl}', '_blank')">` : '';
+                content += data.text ? `<p>${data.text}</p>` : '';
+                const time = data.timestamp ? data.timestamp.toDate().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+                bubble.innerHTML = `${content}<span class="message-timestamp">${time}</span>`;
+                if(!isSent) row.innerHTML += avatarHtml;
+                row.appendChild(bubble); messagesList.appendChild(row);
+            }
+
+            reportChatBtn.onclick = () => { reportModal.style.display = 'flex'; };
+            closeReportBtn.onclick = () => { reportModal.style.display = 'none'; };
+            submitReportBtn.onclick = async () => {
+                const reason = document.getElementById('report-reason').value;
+                const details = document.getElementById('report-details').value.trim();
+                submitReportBtn.disabled = true;
+                try {
+                    await addDoc(collection(db, "reports"), { reporterUid: auth.currentUser.uid, reporterName: auth.currentUser.displayName, targetUid: reportTargetUid, targetUserName: reportTargetName, reason: "Chat: " + reason, details: details, timestamp: serverTimestamp() });
+                    alert(strings[lang].reportSuccess); reportModal.style.display = 'none';
+                } catch (e) { alert("Error."); } finally { submitReportBtn.disabled = false; }
+            };
             
-            localStorage.setItem(tourKey, 'true');
-            overlay.remove();
-            location.reload(); 
-            
-        } catch(e) { 
-            console.error("Tour save error", e); 
-            localStorage.setItem(tourKey, 'true');
-            overlay.remove(); 
+            // Re-adjust scrolling when keyboard opens/closes
+            window.visualViewport.addEventListener('resize', () => { 
+                if(messagesList) messagesList.scrollTop = messagesList.scrollHeight; 
+            });
         }
-    };
-}
-
-function showLanguagePopup() {
-    if (document.getElementById('lang-modal')) return;
-    const modal = document.createElement('div');
-    modal.id = 'lang-modal'; modal.className = 'lang-modal-overlay';
-    modal.innerHTML = `
-        <div class="lang-modal">
-            <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">Welcome / Bienvenue</h2>
-            <p style="color:#6b84a3; margin-bottom:20px; font-size:0.9rem;">Please select your preferred language.</p>
-            <button class="lang-btn" id="btn-en">English</button>
-            <button class="lang-btn" id="btn-fr">Français</button>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    
-    document.getElementById('btn-en').onclick = () => { localStorage.setItem('preferred_language', 'en'); sessionStorage.setItem('lang_picked_this_session', 'true'); location.reload(); };
-    document.getElementById('btn-fr').onclick = () => { localStorage.setItem('preferred_language', 'fr'); sessionStorage.setItem('lang_picked_this_session', 'true'); location.reload(); };
-}
-
-function showTermsBanner() {
-    if (localStorage.getItem('cheaplet_terms_accepted') === 'true' || document.getElementById('terms-banner-global') || document.getElementById('lang-modal')) return;
-    const lang = localStorage.getItem('preferred_language') || 'en';
-    const banner = document.createElement('div');
-    banner.id = 'terms-banner-global'; banner.className = 'terms-banner';
-    const text = lang === 'fr' ? 'En utilisant ce site, vous acceptez nos conditions.' : 'By using this site, you accept our terms.';
-    banner.innerHTML = `<div>${text}</div><button class="btn-accept-terms" id="accept-terms-btn">ok</button>`;
-    document.body.appendChild(banner);
-    document.getElementById('accept-terms-btn').onclick = () => { localStorage.setItem('cheaplet_terms_accepted', 'true'); banner.remove(); };
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    const logo = document.querySelector('.logo');
-    if (logo) logo.onclick = () => window.location.href = '/index.html';
-});
+        main();
+    </script>
+</body>
+</html>
