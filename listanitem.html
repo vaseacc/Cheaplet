@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>List an Item - Cheaplet</title>
     <script type="module" src="global.js"></script>
+    <!-- 🔥 NEW: Barcode Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -360,7 +361,6 @@
                 }
             };
 
-            // Apply UI strings
             document.getElementById('ui-main-title').textContent = ui[lang].mainTitle;
             document.getElementById('ui-main-subtitle').textContent = ui[lang].mainSub;
             document.getElementById('ui-isbn-title').textContent = ui[lang].isbnTitle;
@@ -424,7 +424,7 @@
                 } else { window.location.href = '/LoginInToCheaplet.html'; }
             });
 
-            // --- 🔥 ENHANCED: BILINGUAL BOOK FETCH ---
+            // --- 🔥 NEW: LIVE BILINGUAL TRANSLATION FOR ISBN ---
             let html5QrCode;
             
             async function fetchBookData(isbn) {
@@ -434,10 +434,7 @@
                 scanBtn.disabled = true; manualBtn.disabled = true;
 
                 try {
-                    // Try fetching French first if language is fr, otherwise default
-                    let fetchUrl = `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`;
-                    
-                    const res = await fetch(fetchUrl);
+                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
                     const data = await res.json();
                     
                     if (data.items && data.items.length > 0) {
@@ -445,27 +442,25 @@
                         const fullTitle = book.title + (book.authors ? ` by ${book.authors.join(', ')}` : '');
                         document.getElementById('listing-title').value = fullTitle;
                         
-                        let combinedDesc = "";
+                        let englishDesc = book.description ? book.description.replace(/<[^>]*>?/gm, '') : '';
                         
-                        // If language is French, we do a second query to try to force Google to return French data
-                        if (lang === 'fr') {
+                        if (englishDesc && lang === 'fr') {
                             try {
-                                const frRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&langRestrict=fr`);
-                                const frData = await frRes.json();
-                                if (frData.items && frData.items[0].volumeInfo.description) {
-                                    combinedDesc += "🇫🇷 " + frData.items[0].volumeInfo.description.replace(/<[^>]*>?/gm, '') + "\n\n";
-                                }
-                            } catch(e) {}
-                        }
-                        
-                        // Always include the default (usually English) description
-                        if (book.description) {
-                            const prefix = lang === 'fr' && combinedDesc ? "🇬🇧 " : "";
-                            combinedDesc += prefix + book.description.replace(/<[^>]*>?/gm, '');
-                        }
-                        
-                        if (combinedDesc) {
-                            document.getElementById('listing-description').value = combinedDesc;
+                                // Use Google's free translation endpoint (used by browser extensions)
+                                const transRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=fr&dt=t&q=${encodeURIComponent(englishDesc)}`);
+                                const transData = await transRes.json();
+                                
+                                // Parse the translation response array
+                                let frenchDesc = transData[0].map(item => item[0]).join('');
+                                
+                                // Inject both French and English
+                                document.getElementById('listing-description').value = "🇫🇷 " + frenchDesc + "\n\n🇬🇧 " + englishDesc;
+                            } catch (e) {
+                                console.error("Live translation failed:", e);
+                                document.getElementById('listing-description').value = englishDesc; // Fallback
+                            }
+                        } else {
+                            document.getElementById('listing-description').value = englishDesc;
                         }
                         
                         document.getElementById('isbn-section').style.display = 'none';
@@ -505,12 +500,10 @@
 
             document.getElementById('manual-isbn-btn').onclick = () => {
                 const val = document.getElementById('manual-isbn-input').value.trim();
-                // 🔥 FIXED: Remove focus from input to hide mobile keyboard
                 document.getElementById('manual-isbn-input').blur(); 
                 if(val) fetchBookData(val);
             };
 
-            // Allow Enter key to trigger manual search and hide keyboard
             document.getElementById('manual-isbn-input').onkeydown = (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -525,8 +518,6 @@
                 document.getElementById('main-form-section').style.display = 'block';
             };
 
-
-            // --- TAGS LOGIC ---
             const tagInput = document.getElementById('tag-input');
             const selectedTagsContainer = document.getElementById('selected-tags');
             const suggestionsBox = document.getElementById('suggestions-box');
@@ -547,9 +538,6 @@
                 if (tags.length >= 15) { alert(ui[lang].tagLimit); return; }
                 if (cleaned && !tags.includes(cleaned)) { tags.push(cleaned); renderTags(); }
                 tagInput.value = ''; suggestionsBox.style.display = 'none';
-                
-                // 🔥 FIXED: Keep focus on input so keyboard stays open on mobile!
-                tagInput.focus();
             }
 
             tagInput.oninput = async (e) => {
@@ -566,9 +554,9 @@
                         div.className = 'suggestion-item';
                         div.innerHTML = `<span>${d.tag}</span><span class="suggestion-count">${d.count || 1} ${ui[lang].tagUses}</span>`;
                         
-                        // Mousedown triggers BEFORE blur, meaning we catch the click before keyboard hides
+                        // 🔥 FIXED: mousedown catches the click before the input loses focus (blur)
                         div.onmousedown = (ev) => {
-                            ev.preventDefault(); // Prevents input from losing focus
+                            ev.preventDefault();
                             addTag(d.tag);
                         };
                         suggestionsBox.appendChild(div);
@@ -588,7 +576,6 @@
             
             tagInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput.value); } };
 
-            // --- IMAGE LOGIC ---
             const imageInput = document.getElementById('listing-image-input');
             const previewContainer = document.getElementById('image-preview-container');
 
@@ -621,7 +608,6 @@
                 }
             };
 
-            // --- SUBMISSION ---
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
                 const title = document.getElementById('listing-title').value;
