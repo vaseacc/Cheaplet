@@ -32,6 +32,7 @@
         .side-msg { font-size: 0.8rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .unread-dot { width: 10px; height: 10px; background-color: #f44336; border-radius: 50%; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); display: none; }
         .side-conv-item.is-new .unread-dot { display: block; }
+        .side-conv-item.is-new .side-name { font-weight: 800; color: #000; }
 
         .chat-window { flex-grow: 1; display: flex; flex-direction: column; background: white; position: relative; overflow: hidden; }
         .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; background: #fff; display: flex; align-items: center; gap: 15px; z-index: 10; flex-shrink: 0; }
@@ -180,7 +181,8 @@
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, where, increment, arrayUnion } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        // 🔥 ADDED: arrayRemove to imports
+        import { getFirestore, doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, where, increment, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -188,6 +190,9 @@
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
+
+            const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`;
+            const UPLOAD_PRESET = config.cloudinary.uploadPreset;
 
             const sidebar = document.getElementById('chat-sidebar');
             const sidebarList = document.getElementById('sidebar-list');
@@ -224,8 +229,8 @@
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = { 
-                en: { imageSent: "Sent a photo", sold: "SOLD", reportSuccess: "Report submitted.", soldBanner: "Listing Sold - Chat Disabled", rateText: "Rate your experience", rateSuccess: "Thanks for rating!", verifiedStudent: "Verified Student", noRatings: "No ratings yet", uploadFail: "Image upload failed." }, 
-                fr: { imageSent: "A envoyé une photo", sold: "VENDU", reportSuccess: "Signalement envoyé.", soldBanner: "Annonce vendue - Chat désactivé", rateText: "Évaluez votre expérience", rateSuccess: "Merci pour votre évaluation !", verifiedStudent: "Étudiant vérifié", noRatings: "Aucune évaluation", uploadFail: "Échec du téléchargement." } 
+                en: { imageSent: "Sent a photo", sold: "SOLD", reportSuccess: "Report submitted.", soldBanner: "Listing Sold - Chat Disabled", rateText: "Rate your experience", rateSuccess: "Thanks for rating!", verifiedStudent: "Verified Student", noRatings: "No ratings yet", uploadFail: "Image upload failed.", sent: "Sent", seen: "Seen" }, 
+                fr: { imageSent: "A envoyé une photo", sold: "VENDU", reportSuccess: "Signalement envoyé.", soldBanner: "Annonce vendue - Chat désactivé", rateText: "Évaluez votre expérience", rateSuccess: "Merci pour votre évaluation !", verifiedStudent: "Étudiant vérifié", noRatings: "Aucune évaluation", uploadFail: "Échec du téléchargement.", sent: "Envoyé", seen: "Vu" } 
             };
 
             const userCache = {};
@@ -253,11 +258,18 @@
 
                         const otherId = d.participants.find(p => p !== currentUser.uid);
                         const otherName = d.participantInfo ? d.participantInfo[otherId] : 'User';
-                        const isNew = d.lastSenderId && d.lastSenderId !== currentUser.uid;
                         const itemTitle = d.listingTitle ? `<span style="font-size:0.75rem; color:#4CAF50;">(${d.listingTitle})</span>` : '';
                         
+                        // 🔥 FIX: Read Unread Status from unreadBy Array for the sidebar
+                        let isUnread = false;
+                        if (d.unreadBy) {
+                            isUnread = d.unreadBy.includes(currentUser.uid);
+                        } else {
+                            isUnread = d.lastSenderId && d.lastSenderId !== currentUser.uid;
+                        }
+                        
                         const item = document.createElement('a');
-                        item.className = `side-conv-item ${docSnap.id === currentChatId ? 'active' : ''} ${isNew ? 'is-new' : ''}`;
+                        item.className = `side-conv-item ${docSnap.id === currentChatId ? 'active' : ''} ${isUnread ? 'is-new' : ''}`;
                         item.href = `?id=${docSnap.id}`;
                         item.innerHTML = `
                             <div class="side-avatar" id="side-avatar-${docSnap.id}">${otherName.charAt(0).toUpperCase()}</div>
@@ -333,6 +345,7 @@
                     chatHeaderMeta.innerHTML = metaHtml;
                 }
 
+                // Listen to listing status
                 if (d.listingId) {
                     onSnapshot(doc(db, 'listings', d.listingId), (lSnap) => {
                         if (lSnap.exists()) {
@@ -344,7 +357,10 @@
                                 lpPrice.style.display = 'none'; lpStatus.textContent = strings[lang].sold; lpStatus.style.display = 'inline-block';
                                 messageForm.style.display = 'none';
                                 soldBanner.style.display = 'block';
-                                if (!d.ratedBy || !d.ratedBy.includes(currentUser.uid)) ratingContainer.style.display = 'flex';
+                                
+                                if (!d.ratedBy || !d.ratedBy.includes(currentUser.uid)) {
+                                    ratingContainer.style.display = 'flex';
+                                }
                             } else { 
                                 lpStatus.style.display = 'none'; lpPrice.style.display = 'block'; lpPrice.textContent = `$${ld.price.toFixed(2)}`; 
                             }
@@ -352,8 +368,10 @@
                     });
                 }
 
-                // Remove my UID from unreadBy array since I am opening the chat!
-await updateDoc(chatRef, { unreadBy: arrayRemove(currentUser.uid) });
+                // 🔥 NEW: Mark the chat as Read when the user opens it
+                try {
+                    await updateDoc(chatRef, { unreadBy: arrayRemove(currentUser.uid) });
+                } catch(e) { console.error(e); }
 
                 onSnapshot(query(collection(db, 'chats', chatId, 'messages'), orderBy("timestamp", "asc")), (snapshot) => {
                     messagesList.innerHTML = '';
@@ -379,18 +397,17 @@ await updateDoc(chatRef, { unreadBy: arrayRemove(currentUser.uid) });
                     messageInput.value = '';
                     messageInput.blur(); 
                     await addDoc(collection(db, 'chats', chatId, 'messages'), { text, senderId: currentUser.uid, timestamp: serverTimestamp() });
-                    // Tell the DB the other person hasn't read it yet
-await updateDoc(chatRef, { 
-    lastMessage: text, 
-    lastUpdate: serverTimestamp(), 
-    lastSenderId: currentUser.uid,
-    unreadBy: arrayUnion(otherId) // Add the other person's ID to unreadBy
-});
+                    
+                    // 🔥 NEW: Mark as unread for the OTHER person when you send a message
+                    await updateDoc(chatRef, { 
+                        lastMessage: text, 
+                        lastUpdate: serverTimestamp(), 
+                        lastSenderId: currentUser.uid,
+                        unreadBy: arrayUnion(otherId) 
+                    });
                 };
 
                 imgBtn.onclick = () => fileInput.click();
-
-                // 🔥 FIXED: Added Signed Uploads Logic for Chat Images
                 fileInput.onchange = async (e) => {
                     const file = e.target.files[0];
                     if (!file) return;
@@ -411,7 +428,14 @@ await updateDoc(chatRef, {
 
                         if (res.secure_url) {
                             await addDoc(collection(db, 'chats', chatId, 'messages'), { imageUrl: res.secure_url, senderId: currentUser.uid, timestamp: serverTimestamp() });
-                            await updateDoc(chatRef, { lastMessage: `📷 ${strings[lang].imageSent}`, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
+                            
+                            // 🔥 NEW: Mark as unread for the OTHER person when you send an image
+                            await updateDoc(chatRef, { 
+                                lastMessage: `📷 ${strings[lang].imageSent}`, 
+                                lastUpdate: serverTimestamp(), 
+                                lastSenderId: currentUser.uid,
+                                unreadBy: arrayUnion(otherId) 
+                            });
                         } else {
                             throw new Error("Upload response invalid.");
                         }
