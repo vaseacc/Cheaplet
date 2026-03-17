@@ -2,398 +2,121 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <title>Cheaplet Campus</title>
-    <!-- GLOBAL BRAIN -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cheaplet Community</title>
     <script type="module" src="global.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <style>
-        /* --- DARK THEME FOR SOCIAL PAGE --- */
         :root {
-            --bg-color: #18191A;
-            --card-color: #242526;
-            --hover-color: #3A3B3C;
-            --text-primary: #E4E6EB;
-            --text-secondary: #B0B3B8;
-            --border-color: #3E4042;
-            --accent: #C8A96E; /* Kept Cheaplet Gold for accents */
-            --radius: 12px;
+            --bg: #0b0e14;
+            --card: #151921;
+            --text: #e2e8f0;
+            --accent: #C8A96E;
+            --muted: #64748b;
         }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'DM Sans', sans-serif; background-color: var(--bg-color); color: var(--text-primary); min-height: 100vh; overflow-y: scroll; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-        /* Override Global Header for Dark Mode */
-        header { background: var(--card-color) !important; border-bottom: 1px solid var(--border-color) !important; }
-        .logo { color: var(--text-primary) !important; }
+        /* ── HEADER (Injected by global.js) ── */
+        header { background: #0b0e14 !important; border-bottom: 1px solid #2d3748 !important; }
 
-        /* --- FACEBOOK STYLE LAYOUT --- */
-        .layout-container {
-            max-width: 1400px; margin: 0 auto;
-            display: grid;
-            grid-template-columns: 280px minmax(400px, 600px) 280px;
-            justify-content: center;
-            gap: 30px;
-            padding: 20px 15px;
-        }
+        .layout { max-width: 900px; margin: 0 auto; padding: 20px; display: grid; grid-template-columns: 200px 1fr; gap: 30px; }
 
-        /* --- LEFT SIDEBAR (Topics) --- */
-        .sidebar { position: sticky; top: 85px; height: calc(100vh - 100px); }
-        .sidebar-menu { list-style: none; display: flex; flex-direction: column; gap: 5px; }
-        .menu-item {
-            display: flex; align-items: center; gap: 12px; padding: 12px 15px;
-            border-radius: var(--radius); cursor: pointer; color: var(--text-primary);
-            font-weight: 500; transition: background 0.2s;
-        }
-        .menu-item:hover { background-color: var(--hover-color); }
-        .menu-item.active { background-color: rgba(200, 169, 110, 0.15); color: var(--accent); }
-        .menu-item i { font-size: 1.2rem; width: 24px; text-align: center; }
+        /* ── SIDEBAR ── */
+        .sidebar { display: flex; flex-direction: column; gap: 20px; position: sticky; top: 100px; }
+        .sidebar-title { font-size: 0.7rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; }
+        .way-item { color: #94a3b8; font-weight: 500; padding: 10px 0; cursor: pointer; transition: 0.2s; }
+        .way-item:hover { color: var(--gold); }
+        .way-item.active { color: var(--gold); font-weight: 700; }
 
-        .section-title { font-size: 1.1rem; font-weight: 700; color: var(--text-secondary); margin: 20px 0 10px 15px; border-top: 1px solid var(--border-color); padding-top: 20px; }
+        /* ── FEED ── */
+        .feed { display: flex; flex-direction: column; gap: 20px; }
+        .composer { background: var(--card); border-radius: 16px; padding: 20px; border: 1px solid #2d3748; }
+        .composer textarea { width: 100%; background: transparent; border: none; color: white; font-size: 1.1rem; outline: none; resize: none; min-height: 60px; }
+        .composer button { background: var(--gold); color: var(--ink); border: none; padding: 8px 20px; border-radius: 20px; font-weight: 700; cursor: pointer; float: right; }
 
-        /* --- MIDDLE COLUMN (Feed) --- */
-        .feed-container { display: flex; flex-direction: column; gap: 20px; }
+        /* ── POSTS ── */
+        .post { background: var(--card); border-radius: 16px; padding: 20px; border: 1px solid #2d3748; }
+        .post-author { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+        .avatar { width: 40px; height: 40px; border-radius: 50%; background: #2d3748; }
+        .author-info { font-size: 0.9rem; }
+        .author-name { font-weight: 700; color: white; display: block; }
+        .post-body { font-size: 1rem; line-height: 1.5; color: #cbd5e1; }
 
-        /* Composer Box */
-        .composer-card { background: var(--card-color); border-radius: var(--radius); padding: 15px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-        .composer-top { display: flex; gap: 10px; margin-bottom: 15px; }
-        .composer-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--border-color); object-fit: cover; flex-shrink: 0; border: 1px solid var(--border-color); }
-        
-        .composer-input-wrapper { flex-grow: 1; background: var(--hover-color); border-radius: 20px; padding: 10px 15px; display: flex; align-items: center; cursor: text; transition: 0.2s; }
-        .composer-input-wrapper:focus-within { background: #303132; }
-        .composer-input { width: 100%; background: transparent; border: none; color: var(--text-primary); font-size: 1.05rem; outline: none; font-family: inherit; resize: none; overflow: hidden; height: 24px; }
-        .composer-input::placeholder { color: var(--text-secondary); }
-        
-        .composer-bottom { border-top: 1px solid var(--border-color); padding-top: 12px; display: flex; justify-content: flex-end; }
-        .btn-post { background: var(--accent); color: #000; border: none; padding: 8px 24px; border-radius: 6px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: 0.2s; }
-        .btn-post:hover { background: #dcb873; transform: scale(1.02); }
-        .btn-post:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-
-        /* Post Card */
-        .post-card { background: var(--card-color); border-radius: var(--radius); padding: 15px 15px 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.2); animation: fadeIn 0.4s ease; }
-        .post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-        .post-author-name { font-weight: 600; color: var(--text-primary); font-size: 0.95rem; text-decoration: none; display: block; }
-        .post-author-name:hover { text-decoration: underline; }
-        .post-meta { font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 5px; }
-        
-        .post-body { font-size: 0.95rem; line-height: 1.5; margin-bottom: 15px; white-space: pre-wrap; word-wrap: break-word; }
-        
-        .post-actions { border-top: 1px solid var(--border-color); padding-top: 5px; display: flex; }
-        .action-btn { flex: 1; background: transparent; border: none; color: var(--text-secondary); font-weight: 600; font-size: 0.9rem; padding: 8px 0; border-radius: 6px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .action-btn:hover { background: var(--hover-color); color: var(--text-primary); }
-        .action-btn.liked { color: var(--accent); }
-
-        /* --- RIGHT SIDEBAR (Widgets) --- */
-        .widget-sidebar { position: sticky; top: 85px; height: calc(100vh - 100px); display: flex; flex-direction: column; gap: 20px; }
-        .widget-card { background: var(--card-color); border-radius: var(--radius); padding: 15px; }
-        .widget-title { font-size: 1rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 15px; }
-        .widget-text { font-size: 0.9rem; color: var(--text-primary); line-height: 1.5; margin-bottom: 10px; }
-
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* --- RESPONSIVE --- */
-        @media (max-width: 1024px) {
-            .layout-container { grid-template-columns: 240px 1fr; }
-            .widget-sidebar { display: none; }
-        }
-        @media (max-width: 767px) {
-            .layout-container { grid-template-columns: 1fr; padding: 10px 0; }
-            .sidebar { display: none; } /* Hide sidebar on mobile, use a top scroller or menu later */
-            .composer-card { border-radius: 0; border-bottom: 1px solid var(--border-color); }
-            .post-card { border-radius: 0; border-bottom: 1px solid var(--border-color); box-shadow: none; }
+        @media (max-width: 768px) {
+            .layout { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
         }
     </style>
 </head>
 <body>
 
-    <header>
-        <div class="header-inner">
-            <a href="/index.html" class="logo">Cheap<em>let</em></a>
-            <nav><ul></ul></nav> <!-- Hidden by global CSS, left for structure -->
-            <div class="header-right"></div> <!-- global.js injects profile here -->
-        </div>
-    </header>
+    <header><div class="header-inner"><a href="/index.html" class="logo">Cheap<em>let</em></a><nav><ul></ul></nav><div class="header-right"></div></div></header>
 
-    <div class="layout-container">
-        
-        <!-- LEFT SIDEBAR -->
+    <div class="layout">
         <aside class="sidebar">
-            <ul class="sidebar-menu">
-                <li class="menu-item active" data-way="general">
-                    <i class="fas fa-globe-americas"></i> <span>General Chat</span>
-                </li>
-                <li class="menu-item" data-way="books">
-                    <i class="fas fa-book"></i> <span>Textbooks</span>
-                </li>
-                <li class="menu-item" data-way="housing">
-                    <i class="fas fa-home"></i> <span>Housing / Sublets</span>
-                </li>
-                <li class="menu-item" data-way="events">
-                    <i class="fas fa-calendar-alt"></i> <span>Campus Events</span>
-                </li>
-            </ul>
-
-            <div class="section-title">Your Shortcuts</div>
-            <ul class="sidebar-menu">
-                <li class="menu-item" onclick="window.location.href='/my-listings.html'">
-                    <i class="fas fa-box-open"></i> <span>My Listings</span>
-                </li>
-                <li class="menu-item" onclick="window.location.href='/messages.html'">
-                    <i class="fas fa-envelope"></i> <span>Messages</span>
-                </li>
-            </ul>
+            <div class="sidebar-title" id="ui-ways-title">Topics</div>
+            <div id="ways-list">
+                <div class="way-item active" onclick="window.selectWay('general')"># General</div>
+            </div>
+            <button id="btn-create-way" style="background:none; border:1px solid var(--gold); color:var(--gold); padding:5px; border-radius:5px; cursor:pointer;">+ New Topic</button>
         </aside>
 
-        <!-- CENTER FEED -->
-        <main class="feed-container">
-            
-            <!-- Composer -->
-            <div class="composer-card">
-                <div class="composer-top">
-                    <img src="https://api.dicebear.com/7.x/identicon/svg?seed=guest" class="composer-avatar" id="my-avatar">
-                    <div class="composer-input-wrapper">
-                        <textarea class="composer-input" id="post-input" placeholder="What's happening on campus, User?"></textarea>
-                    </div>
-                </div>
-                <div class="composer-bottom">
-                    <button class="btn-post" id="btn-submit-post" disabled>Post</button>
-                </div>
+        <section class="feed">
+            <div class="composer">
+                <textarea id="post-input" placeholder="Share something with your campus..."></textarea>
+                <div class="composer-bottom"><button id="btn-send-post">Post</button></div>
             </div>
-
-            <!-- Posts List -->
-            <div id="posts-container">
-                <div style="text-align:center; padding: 40px; color: var(--text-secondary);">
-                    <i class="fas fa-spinner fa-spin fa-2x"></i>
-                    <p style="margin-top: 10px;">Loading feed...</p>
-                </div>
-            </div>
-
-        </main>
-
-        <!-- RIGHT SIDEBAR -->
-        <aside class="widget-sidebar">
-            <div class="widget-card">
-                <div class="widget-title">Community Guidelines</div>
-                <p class="widget-text">1. Be respectful to fellow students.</p>
-                <p class="widget-text">2. No spam or commercial advertising.</p>
-                <p class="widget-text">3. Keep housing and textbook posts in their specific tabs.</p>
-            </div>
-        </aside>
-
+            <div id="posts-container"></div>
+        </section>
     </div>
 
     <script type="module">
-        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getAuth } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 
-        async function main() {
-            const response = await fetch('/.netlify/functions/config');
-            const config = await response.json();
-            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
-            const auth = getAuth(app);
-            const db = getFirestore(app);
+        const db = getFirestore();
+        const auth = getAuth();
+        let currentWay = "general";
 
-            let currentUser = null;
-            let currentWay = "general";
-            const userCache = {}; // Cache to prevent excessive DB calls for avatars
-
-            const postInput = document.getElementById('post-input');
-            const btnSubmitPost = document.getElementById('btn-submit-post');
-            const postsContainer = document.getElementById('posts-container');
-            const myAvatar = document.getElementById('my-avatar');
-
-            // --- AUTO-RESIZE TEXTAREA ---
-            postInput.addEventListener('input', function() {
-                this.style.height = '24px'; // Reset to calculate properly
-                this.style.height = (this.scrollHeight) + 'px';
-                btnSubmitPost.disabled = this.value.trim() === '';
+        // Handle Posting
+        document.getElementById('btn-send-post').onclick = async () => {
+            const input = document.getElementById('post-input');
+            if(!input.value.trim()) return;
+            await addDoc(collection(db, "social_posts"), {
+                text: input.value,
+                wayId: currentWay,
+                authorName: auth.currentUser.displayName,
+                authorUid: auth.currentUser.uid,
+                timestamp: serverTimestamp()
             });
+            input.value = '';
+        };
 
-            // --- AUTH CHECK ---
-            onAuthStateChanged(auth, async (user) => {
-                if (user && user.emailVerified) {
-                    currentUser = user;
-                    
-                    // Set Composer Placeholder and Avatar
-                    postInput.placeholder = `What's happening on campus, ${user.displayName.split(' ')[0]}?`;
-                    
-                    if (user.photoURL && !user.photoURL.includes('googleusercontent.com')) {
-                        myAvatar.src = user.photoURL;
-                    } else {
-                        // Fetch from DB to ensure we get the Cloudinary image if it exists
-                        const uDoc = await getDoc(doc(db, "users", user.uid));
-                        if(uDoc.exists() && uDoc.data().photoURL) myAvatar.src = uDoc.data().photoURL;
-                        else myAvatar.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
-                    }
-
-                    loadPosts(currentWay);
-                } else {
-                    window.location.href = '/LoginInToCheaplet.html';
-                }
-            });
-
-            // --- SIDEBAR TOPIC SWITCHER ---
-            document.querySelectorAll('.menu-item[data-way]').forEach(item => {
-                item.addEventListener('click', () => {
-                    // Update UI
-                    document.querySelectorAll('.menu-item[data-way]').forEach(i => i.classList.remove('active'));
-                    item.classList.add('active');
-                    
-                    // Update Feed
-                    const newWay = item.getAttribute('data-way');
-                    if (currentWay !== newWay) {
-                        currentWay = newWay;
-                        loadPosts(currentWay);
-                    }
+        // Load Feed
+        function loadPosts(way) {
+            currentWay = way;
+            const q = query(collection(db, "social_posts"), where("wayId", "==", way), orderBy("timestamp", "desc"));
+            onSnapshot(q, (snap) => {
+                const container = document.getElementById('posts-container');
+                container.innerHTML = '';
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    container.innerHTML += `
+                        <div class="post">
+                            <div class="post-author">
+                                <div class="avatar"></div>
+                                <div class="author-info"><span class="author-name">${d.authorName}</span></div>
+                            </div>
+                            <p class="post-body">${d.text}</p>
+                        </div>
+                    `;
                 });
             });
-
-            // --- SUBMIT POST ---
-            btnSubmitPost.addEventListener('click', async () => {
-                const text = postInput.value.trim();
-                if(!text || !currentUser) return;
-                
-                btnSubmitPost.disabled = true;
-                btnSubmitPost.textContent = "Posting...";
-
-                try {
-                    await addDoc(collection(db, "social_posts"), {
-                        text: text,
-                        wayId: currentWay,
-                        authorName: currentUser.displayName,
-                        authorUid: currentUser.uid,
-                        timestamp: serverTimestamp()
-                    });
-                    
-                    postInput.value = '';
-                    postInput.style.height = '24px';
-                } catch (e) {
-                    console.error("Error posting:", e);
-                    alert("Failed to post. Please try again.");
-                } finally {
-                    btnSubmitPost.textContent = "Post";
-                    btnSubmitPost.disabled = true; // Disabled because input is empty now
-                }
-            });
-
-            // --- LOAD FEED ---
-            let unsubscribeFeed = null;
-
-            function loadPosts(way) {
-                if (unsubscribeFeed) unsubscribeFeed();
-                
-                postsContainer.innerHTML = `
-                    <div style="text-align:center; padding: 40px; color: var(--text-secondary);">
-                        <i class="fas fa-circle-notch fa-spin fa-2x"></i>
-                    </div>`;
-
-                const q = query(collection(db, "social_posts"), where("wayId", "==", way), orderBy("timestamp", "desc"));
-                
-                unsubscribeFeed = onSnapshot(q, (snapshot) => {
-                    postsContainer.innerHTML = '';
-                    
-                    if (snapshot.empty) {
-                        postsContainer.innerHTML = `
-                            <div style="text-align:center; padding: 40px; background: var(--card-color); border-radius: var(--radius); color: var(--text-secondary);">
-                                <i class="fas fa-comments fa-3x" style="margin-bottom:15px; color:var(--border-color);"></i>
-                                <h3>No posts in #${way} yet</h3>
-                                <p>Be the first to start the conversation!</p>
-                            </div>`;
-                        return;
-                    }
-
-                    snapshot.forEach(docSnap => {
-                        const d = docSnap.data();
-                        const timeString = d.timestamp ? formatTimeAgo(d.timestamp.toDate()) : 'Just now';
-                        
-                        const postCard = document.createElement('div');
-                        postCard.className = 'post-card';
-                        
-                        // Default Avatar
-                        const avatarId = `post-avatar-${docSnap.id}`;
-                        
-                        postCard.innerHTML = `
-                            <div class="post-header">
-                                <img src="https://api.dicebear.com/7.x/identicon/svg?seed=fallback" class="composer-avatar" id="${avatarId}">
-                                <div>
-                                    <a href="/user.html?id=${d.authorUid}" class="post-author-name">${d.authorName}</a>
-                                    <div class="post-meta">
-                                        <span>${timeString}</span>
-                                        <i class="fas fa-globe-americas" style="font-size:0.7rem;"></i>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="post-body">${escapeHTML(d.text)}</div>
-                            <div class="post-actions">
-                                <button class="action-btn" onclick="alert('Liking coming soon!')"><i class="far fa-thumbs-up"></i> Like</button>
-                                <button class="action-btn" onclick="alert('Comments coming soon!')"><i class="far fa-comment"></i> Comment</button>
-                            </div>
-                        `;
-                        
-                        postsContainer.appendChild(postCard);
-
-                        // Async load real avatar
-                        loadAvatarForPost(d.authorUid, avatarId);
-                    });
-                });
-            }
-
-            // --- HELPERS ---
-            async function loadAvatarForPost(uid, elementId) {
-                const imgEl = document.getElementById(elementId);
-                if (!imgEl) return;
-
-                if (userCache[uid]) {
-                    imgEl.src = userCache[uid];
-                    return;
-                }
-
-                try {
-                    const uDoc = await getDoc(doc(db, "users", uid));
-                    if (uDoc.exists() && uDoc.data().photoURL) {
-                        const url = uDoc.data().photoURL;
-                        if (!url.includes('googleusercontent.com')) {
-                            userCache[uid] = url;
-                            imgEl.src = url;
-                            return;
-                        }
-                    }
-                    // Fallback
-                    const fallback = `https://api.dicebear.com/7.x/identicon/svg?seed=${uid}&backgroundColor=EBF2FA`;
-                    userCache[uid] = fallback;
-                    imgEl.src = fallback;
-                } catch(e) { console.error(e); }
-            }
-
-            function formatTimeAgo(date) {
-                const seconds = Math.floor((new Date() - date) / 1000);
-                let interval = seconds / 31536000;
-                if (interval > 1) return Math.floor(interval) + "y";
-                interval = seconds / 2592000;
-                if (interval > 1) return Math.floor(interval) + "mo";
-                interval = seconds / 86400;
-                if (interval > 1) return Math.floor(interval) + "d";
-                interval = seconds / 3600;
-                if (interval > 1) return Math.floor(interval) + "h";
-                interval = seconds / 60;
-                if (interval > 1) return Math.floor(interval) + "m";
-                return "Just now";
-            }
-
-            function escapeHTML(str) {
-                return str.replace(/[&<>'"]/g, 
-                    tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag])
-                );
-            }
         }
-
-        main();
+        window.selectWay = loadPosts;
+        loadPosts("general");
     </script>
 </body>
 </html>
