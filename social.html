@@ -2,51 +2,75 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cheaplet Community</title>
     <script type="module" src="global.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg: #0b0e14;
-            --card: #151921;
-            --text: #e2e8f0;
-            --accent: #C8A96E;
-            --muted: #64748b;
+            --bg: #F4F7FC;
+            --white: #FFFFFF;
+            --ink: #0C1446;
+            --deep: #2B5C92;
+            --gold: #C8A96E;
+            --text-main: #1A202C;
+            --text-muted: #718096;
+            --radius: 16px;
+            --shadow: 0 4px 20px rgba(12, 20, 70, 0.05);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text-main); line-height: 1.5; }
 
-        /* ── HEADER (Injected by global.js) ── */
-        header { background: #0b0e14 !important; border-bottom: 1px solid #2d3748 !important; }
+        /* HEADER FIX: Matching Global Header style */
+        header { position: sticky; top: 0; z-index: 200; background: var(--ink); border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; }
 
-        .layout { max-width: 900px; margin: 0 auto; padding: 20px; display: grid; grid-template-columns: 200px 1fr; gap: 30px; }
+        .layout { max-width: 1000px; margin: 25px auto; display: grid; grid-template-columns: 280px 1fr; gap: 30px; padding: 0 20px; }
 
         /* ── SIDEBAR ── */
-        .sidebar { display: flex; flex-direction: column; gap: 20px; position: sticky; top: 100px; }
-        .sidebar-title { font-size: 0.7rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; }
-        .way-item { color: #94a3b8; font-weight: 500; padding: 10px 0; cursor: pointer; transition: 0.2s; }
-        .way-item:hover { color: var(--gold); }
-        .way-item.active { color: var(--gold); font-weight: 700; }
+        .sidebar { position: sticky; top: 85px; display: flex; flex-direction: column; gap: 15px; }
+        .school-card { background: var(--white); padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid #e2e8f0; }
+        .school-card h2 { font-size: 1.1rem; color: var(--ink); font-weight: 800; display: flex; align-items: center; gap: 10px; }
+        .school-card h2 i { color: var(--gold); }
+        
+        .topics-menu { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid #e2e8f0; padding: 10px; }
+        .topic-title { font-size: 0.75rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; padding: 10px 15px; }
+        .way-item { padding: 12px 15px; border-radius: 10px; cursor: pointer; transition: 0.2s; font-weight: 600; display: flex; align-items: center; gap: 12px; color: var(--text-main); }
+        .way-item:hover { background: #f8fafc; color: var(--deep); }
+        .way-item.active { background: #EBF2FA; color: var(--deep); }
+        .way-item i { width: 20px; text-align: center; color: var(--text-muted); }
+        .way-item.active i { color: var(--deep); }
 
         /* ── FEED ── */
         .feed { display: flex; flex-direction: column; gap: 20px; }
-        .composer { background: var(--card); border-radius: 16px; padding: 20px; border: 1px solid #2d3748; }
-        .composer textarea { width: 100%; background: transparent; border: none; color: white; font-size: 1.1rem; outline: none; resize: none; min-height: 60px; }
-        .composer button { background: var(--gold); color: var(--ink); border: none; padding: 8px 20px; border-radius: 20px; font-weight: 700; cursor: pointer; float: right; }
+        
+        /* ── COMPOSER ── */
+        .composer { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border: 1px solid #e2e8f0; }
+        .composer-top { display: flex; gap: 15px; }
+        .avatar-small { width: 42px; height: 42px; border-radius: 50%; background: #eee; overflow: hidden; border: 2px solid #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); flex-shrink: 0; }
+        .avatar-small img { width: 100%; height: 100%; object-fit: cover; }
+        .composer textarea { flex-grow: 1; border: none; font-family: inherit; font-size: 1.05rem; outline: none; resize: none; min-height: 50px; padding-top: 8px; }
+        .composer-bottom { display: flex; justify-content: flex-end; padding-top: 15px; border-top: 1px solid #f1f5f9; }
+        .btn-post { background: var(--deep); color: white; border: none; padding: 10px 25px; border-radius: 50px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-post:hover { background: var(--ink); transform: translateY(-1px); }
 
         /* ── POSTS ── */
-        .post { background: var(--card); border-radius: 16px; padding: 20px; border: 1px solid #2d3748; }
-        .post-author { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
-        .avatar { width: 40px; height: 40px; border-radius: 50%; background: #2d3748; }
-        .author-info { font-size: 0.9rem; }
-        .author-name { font-weight: 700; color: white; display: block; }
-        .post-body { font-size: 1rem; line-height: 1.5; color: #cbd5e1; }
+        .post { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border: 1px solid #e2e8f0; animation: fadeUp 0.4s ease both; }
+        .post-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
+        .author-name { font-weight: 800; color: var(--ink); font-size: 0.95rem; }
+        .post-time { font-size: 0.75rem; color: var(--text-muted); }
+        .post-body { font-size: 1rem; color: #2d3748; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word; }
+        
+        .post-actions { display: flex; gap: 20px; margin-top: 20px; padding-top: 15px; border-top: 1px solid #f1f5f9; }
+        .action-btn { background: none; border: none; color: var(--text-muted); font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
+        .action-btn:hover { color: var(--deep); }
+        .action-btn.liked { color: #e53e3e; }
+        .action-btn i { font-size: 1.1rem; }
 
         @media (max-width: 768px) {
-            .layout { grid-template-columns: 1fr; }
+            .layout { grid-template-columns: 1fr; margin-top: 0; padding: 15px; }
             .sidebar { display: none; }
+            .composer, .post { border-radius: 12px; }
         }
     </style>
 </head>
@@ -55,68 +79,150 @@
     <header><div class="header-inner"><a href="/index.html" class="logo">Cheap<em>let</em></a><nav><ul></ul></nav><div class="header-right"></div></div></header>
 
     <div class="layout">
+        <!-- SIDEBAR -->
         <aside class="sidebar">
-            <div class="sidebar-title" id="ui-ways-title">Topics</div>
-            <div id="ways-list">
-                <div class="way-item active" onclick="window.selectWay('general')"># General</div>
+            <div class="school-card">
+                <h2 id="school-title"><i class="fas fa-university"></i> <span id="user-school">Loading...</span></h2>
             </div>
-            <button id="btn-create-way" style="background:none; border:1px solid var(--gold); color:var(--gold); padding:5px; border-radius:5px; cursor:pointer;">+ New Topic</button>
+            
+            <div class="topics-menu">
+                <div class="topic-title" id="ui-topics">Campus Topics</div>
+                <div id="ways-list">
+                    <div class="way-item active" onclick="window.selectWay('general')">
+                        <i class="fas fa-hashtag"></i> General
+                    </div>
+                </div>
+                <button onclick="window.triggerNewWay()" style="width:100%; padding:10px; background:none; border:none; color:var(--deep); font-weight:800; cursor:pointer; text-align:left; font-size:0.8rem;">+ NEW TOPIC</button>
+            </div>
         </aside>
 
+        <!-- FEED -->
         <section class="feed">
             <div class="composer">
-                <textarea id="post-input" placeholder="Share something with your campus..."></textarea>
-                <div class="composer-bottom"><button id="btn-send-post">Post</button></div>
+                <div class="composer-top">
+                    <div class="avatar-small"><img id="my-avatar" src=""></div>
+                    <textarea id="post-input" placeholder="What's happening on campus?"></textarea>
+                </div>
+                <div class="composer-bottom">
+                    <button class="btn-post" id="btn-send-post">Post to Campus</button>
+                </div>
             </div>
-            <div id="posts-container"></div>
+
+            <div id="posts-container" style="display:flex; flex-direction:column; gap:15px;"></div>
         </section>
     </div>
 
     <script type="module">
-        import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
-        import { getAuth } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, doc, getDoc, updateDoc, increment, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 
         const db = getFirestore();
         const auth = getAuth();
         let currentWay = "general";
+        let userSchool = "";
+        let currentUser = null;
 
-        // Handle Posting
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const uSnap = await getDoc(doc(db, "users", user.uid));
+                if (uSnap.exists()) {
+                    currentUser = uSnap.data();
+                    userSchool = currentUser.schoolName || "Global Campus";
+                    document.getElementById('user-school').textContent = userSchool;
+                    
+                    let pfp = currentUser.photoURL;
+                    if(!pfp || pfp.includes("googleusercontent") || pfp.includes("live.com")) {
+                        pfp = `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
+                    }
+                    document.getElementById('my-avatar').src = pfp;
+
+                    loadPosts("general");
+                    loadTopics();
+                }
+            } else { window.location.href = '/LoginInToCheaplet.html'; }
+        });
+
+        function loadTopics() {
+            const q = query(collection(db, "social_channels"), where("schoolName", "==", userSchool), orderBy("createdAt", "asc"));
+            onSnapshot(q, (snap) => {
+                const list = document.getElementById('ways-list');
+                list.innerHTML = `<div class="way-item ${currentWay==='general'?'active':''}" onclick="window.selectWay('general')"><i class="fas fa-hashtag"></i> General</div>`;
+                snap.forEach(d => {
+                    const data = d.data();
+                    list.innerHTML += `<div class="way-item ${currentWay===d.id?'active':''}" onclick="window.selectWay('${d.id}')"><i class="fas fa-hashtag"></i> ${data.name}</div>`;
+                });
+            });
+        }
+
+        window.triggerNewWay = async () => {
+            const name = prompt("Enter topic name:");
+            if(name) await addDoc(collection(db, "social_channels"), { name, schoolName: userSchool, createdAt: serverTimestamp() });
+        }
+
+        window.selectWay = (id) => { currentWay = id; loadPosts(id); loadTopics(); };
+
         document.getElementById('btn-send-post').onclick = async () => {
             const input = document.getElementById('post-input');
             if(!input.value.trim()) return;
+            
+            let pfp = currentUser.photoURL;
+            if(!pfp || pfp.includes("googleusercontent") || pfp.includes("live.com")) {
+                pfp = `https://api.dicebear.com/7.x/identicon/svg?seed=${auth.currentUser.uid}&backgroundColor=EBF2FA`;
+            }
+
             await addDoc(collection(db, "social_posts"), {
                 text: input.value,
                 wayId: currentWay,
-                authorName: auth.currentUser.displayName,
+                schoolName: userSchool,
+                authorName: currentUser.displayName,
                 authorUid: auth.currentUser.uid,
+                authorPhoto: pfp,
+                likes: 0,
+                likedBy: [],
                 timestamp: serverTimestamp()
             });
             input.value = '';
         };
 
-        // Load Feed
         function loadPosts(way) {
-            currentWay = way;
-            const q = query(collection(db, "social_posts"), where("wayId", "==", way), orderBy("timestamp", "desc"));
+            const q = query(collection(db, "social_posts"), where("wayId", "==", way), where("schoolName", "==", userSchool), orderBy("timestamp", "desc"));
             onSnapshot(q, (snap) => {
                 const container = document.getElementById('posts-container');
                 container.innerHTML = '';
-                snap.forEach(doc => {
-                    const d = doc.data();
+                snap.forEach(d => {
+                    const data = d.data();
+                    const isLiked = data.likedBy && data.likedBy.includes(auth.currentUser.uid);
+                    
                     container.innerHTML += `
                         <div class="post">
-                            <div class="post-author">
-                                <div class="avatar"></div>
-                                <div class="author-info"><span class="author-name">${d.authorName}</span></div>
+                            <div class="post-header">
+                                <div class="avatar-small"><img src="${data.authorPhoto}"></div>
+                                <div class="author-info">
+                                    <span class="author-name">${data.authorName}</span>
+                                    <span class="post-time">${data.timestamp ? "Just now" : ""}</span>
+                                </div>
                             </div>
-                            <p class="post-body">${d.text}</p>
+                            <p class="post-body">${data.text}</p>
+                            <div class="post-actions">
+                                <button class="action-btn ${isLiked?'liked':''}" onclick="window.likePost('${d.id}', ${isLiked})">
+                                    <i class="${isLiked?'fas':'far'} fa-heart"></i> ${data.likes || 0}
+                                </button>
+                                <button class="action-btn"><i class="far fa-comment"></i> Reply</button>
+                            </div>
                         </div>
                     `;
                 });
             });
         }
-        window.selectWay = loadPosts;
-        loadPosts("general");
+
+        window.likePost = async (id, alreadyLiked) => {
+            const ref = doc(db, "social_posts", id);
+            if(alreadyLiked) {
+                await updateDoc(ref, { likes: increment(-1), likedBy: arrayRemove(auth.currentUser.uid) });
+            } else {
+                await updateDoc(ref, { likes: increment(1), likedBy: arrayUnion(auth.currentUser.uid) });
+            }
+        };
     </script>
 </body>
 </html>
