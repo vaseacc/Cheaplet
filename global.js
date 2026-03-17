@@ -1,6 +1,7 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+// 🔥 ADDED: collection, query, where for the unread messages listener
+import { getFirestore, doc, getDoc, onSnapshot, updateDoc, collection, query, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
 // --- 0. AUTO-IMPORT ICONS & FAVICON ---
 if (!document.querySelector('link[href*="font-awesome"]')) {
@@ -107,8 +108,20 @@ globalStyle.innerHTML = `
     .dropdown-item { padding: 12px 15px; text-decoration: none; color: #333; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.9rem; transition: background 0.2s; }
     .dropdown-item:hover { background-color: #f4f7fc; color: #2B5C92; }
     
-    .msg-btn-mobile { background: #C8A96E; color: #0C1446; width: 36px; height: 36px; border-radius: 50%; display: none; align-items: center; justify-content: center; text-decoration: none; margin-right: 12px; font-size: 1rem; }
+    .msg-btn-mobile { background: #C8A96E; color: #0C1446; width: 36px; height: 36px; border-radius: 50%; display: none; align-items: center; justify-content: center; text-decoration: none; margin-right: 12px; font-size: 1rem; position: relative; }
     
+    /* 🔥 NEW: UNREAD BADGE CSS */
+    .badge-container { position: relative; display: inline-block; }
+    .unread-badge {
+        position: absolute; top: -6px; right: -12px;
+        background-color: #f44336; color: white;
+        font-size: 0.65rem; font-weight: bold;
+        padding: 2px 5px; border-radius: 10px;
+        display: none; align-items: center; justify-content: center;
+        z-index: 10; min-width: 18px; text-align: center;
+    }
+    .msg-btn-mobile .unread-badge { top: -2px; right: -4px; border: 2px solid #C8A96E; }
+
     .lang-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(12,20,70,0.85); z-index: 10000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
     .lang-modal { background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
     .lang-btn { display: block; width: 100%; padding: 16px; margin: 12px 0; border: 2px solid #EBF2FA; border-radius: 12px; background: white; font-weight: bold; cursor: pointer; font-size: 1.1rem; transition: all 0.2s; color: #0C1446; }
@@ -143,6 +156,7 @@ document.head.appendChild(globalStyle);
 // --- 4. STATE & LISTENERS ---
 let globalSettings = {};
 let currentUserData = null;
+let unsubscribeChats = null; // Variable to hold the unread messages listener
 
 onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
     if (docSnap.exists()) { globalSettings = docSnap.data(); refreshUI(); }
@@ -185,6 +199,34 @@ function refreshUI() {
     showTermsBanner();
 }
 
+// 🔥 NEW: UNREAD MESSAGES LISTENER
+function listenToUnreadMessages(uid) {
+    if (unsubscribeChats) unsubscribeChats();
+    const q = query(collection(db, "chats"), where("participants", "array-contains", uid));
+    
+    unsubscribeChats = onSnapshot(q, (snapshot) => {
+        let unreadCount = 0;
+        snapshot.forEach(docSnap => {
+            const d = docSnap.data();
+            // Check if there is a last message, and if we were NOT the last sender
+            if (d.lastSenderId && d.lastSenderId !== uid) {
+                unreadCount++;
+            }
+        });
+        
+        const deskBadge = document.getElementById('desktop-unread-badge');
+        const mobBadge = document.getElementById('mobile-unread-badge');
+        
+        if (unreadCount > 0) {
+            if (deskBadge) { deskBadge.textContent = unreadCount; deskBadge.style.display = 'flex'; }
+            if (mobBadge) { mobBadge.textContent = unreadCount; mobBadge.style.display = 'flex'; }
+        } else {
+            if (deskBadge) deskBadge.style.display = 'none';
+            if (mobBadge) mobBadge.style.display = 'none';
+        }
+    });
+}
+
 function updateHeaderToLoggedIn(userData) {
     const lang = localStorage.getItem('preferred_language') || 'en';
     
@@ -193,7 +235,7 @@ function updateHeaderToLoggedIn(userData) {
         navUl.innerHTML = `
             <li><a href="/search.html">${translations[lang].nav_browse}</a></li>
             <li><a href="/my-listings.html">${translations[lang].nav_listings}</a></li>
-            <li><a href="/messages.html">${translations[lang].nav_messages}</a></li>
+            <li><a href="/messages.html" class="badge-container">${translations[lang].nav_messages}<span class="unread-badge" id="desktop-unread-badge"></span></a></li>
         `;
     }
 
@@ -209,7 +251,7 @@ function updateHeaderToLoggedIn(userData) {
     
     container.innerHTML = `
         <button class="btn desktop-only" id="globalListBtn" style="margin-right: 15px;">${translations[lang].btn_list}</button>
-        <a href="/messages.html" class="msg-btn-mobile"><i class="fas fa-envelope"></i></a>
+        <a href="/messages.html" class="msg-btn-mobile"><i class="fas fa-envelope"></i><span class="unread-badge" id="mobile-unread-badge"></span></a>
         <div class="profile-menu-container">
             <div class="profile-avatar"><img src="${finalPhotoURL}" alt="Profile"></div>
             <div class="dropdown-menu" id="globalDropdown">
@@ -239,11 +281,15 @@ function updateHeaderToLoggedIn(userData) {
             window.location.href = '/index.html';
         });
     };
+
+    // Start listening for unread messages now that UI is drawn
+    listenToUnreadMessages(userData.uid);
 }
 
 function updateHeaderToLoggedOut() {
-    const lang = localStorage.getItem('preferred_language') || 'en';
+    if (unsubscribeChats) { unsubscribeChats(); unsubscribeChats = null; } // Stop listener
     
+    const lang = localStorage.getItem('preferred_language') || 'en';
     const navUl = document.querySelector('nav ul');
     if (navUl) {
         navUl.innerHTML = `<li><a href="/search.html">${translations[lang].nav_browse}</a></li>`;
@@ -311,9 +357,8 @@ function showWelcomeTour() {
             <div id="tour-step-4" style="display:none;">
                 <div class="tour-pfp-preview" id="tour-pfp-box"><img src="${defaultPfpUrl}"></div>
                 <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">${t.tour_title_4}</h2>
-                <p style="color:#6b84a3; margin-bottom:15px; line-height:1.4; font-size:0.85rem;">${t.tour_desc_4}</p>
+                <p style="color:#6b84a3; margin-bottom:20px; line-height:1.4; font-size:0.85rem;">${t.tour_desc_4}</p>
                 
-                <!-- 🔥 FIXED: Split into First and Last Name -->
                 <input type="text" id="tour-fname-input" class="tour-input" value="${existingFirstName}" placeholder="${t.tour_first_name}">
                 <input type="text" id="tour-lname-input" class="tour-input" value="${existingLastName}" placeholder="${t.tour_last_name}">
                 
@@ -350,8 +395,7 @@ function showWelcomeTour() {
         const fname = document.getElementById('tour-fname-input').value.trim();
         const lname = document.getElementById('tour-lname-input').value.trim();
         
-        // 🔥 STRICT VALIDATION: Both names must have at least 4 letters
-        const validRegex = /[a-zA-Z]/; // Ensures they don't just type numbers
+        const validRegex = /[a-zA-Z]/;
         if (fname.length < 4 || lname.length < 4 || !validRegex.test(fname) || !validRegex.test(lname)) {
             alert(t.tour_name_err);
             return;
