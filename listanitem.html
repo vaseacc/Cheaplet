@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>List an Item - Cheaplet</title>
     <script type="module" src="global.js"></script>
-    <!-- 🔥 NEW: Barcode Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -172,7 +171,6 @@
 
     <div class="form-outer">
         
-        <!-- 🔥 NEW: ISBN SCANNER SECTION -->
         <div id="isbn-section" class="form-wrapper" style="text-align: center; margin-bottom: 20px;">
             <div class="section-label" style="justify-content: center;"><i class="fas fa-barcode"></i> <span id="ui-isbn-title">Quick Book Scan</span></div>
             <p id="ui-isbn-desc" style="color: var(--text-muted); margin-bottom: 20px; font-size: 0.9rem;">Scan your book's barcode to automatically fill in the title and description.</p>
@@ -193,12 +191,10 @@
             </button>
         </div>
 
-        <!-- ORIGINAL FORM SECTION (Hidden initially) -->
         <div id="main-form-section" style="display: none;">
             <div class="form-wrapper">
                 <form id="listing-form">
 
-                    <!-- BASIC INFO -->
                     <div class="form-section">
                         <div class="section-label"><i class="fas fa-pen"></i> <span id="ui-sec-basic">Basic Info</span></div>
 
@@ -222,7 +218,6 @@
                         </div>
                     </div>
 
-                    <!-- TAGS -->
                     <div class="form-section">
                         <div class="section-label"><i class="fas fa-tags"></i> <span id="ui-sec-tags">Tags</span></div>
                         <label class="field-label" id="ui-label-tags">Tags (Max 15)</label>
@@ -233,7 +228,6 @@
                         </div>
                     </div>
 
-                    <!-- CONDITION & DETAILS -->
                     <div class="form-section">
                         <div class="section-label"><i class="fas fa-book"></i> <span id="ui-sec-cond">Condition & Details</span></div>
 
@@ -266,7 +260,6 @@
                         </div>
                     </div>
 
-                    <!-- LOCATION -->
                     <div class="form-section">
                         <div class="section-label"><i class="fas fa-location-dot"></i> <span id="ui-sec-loc">Location</span></div>
 
@@ -284,7 +277,6 @@
                         </div>
                     </div>
 
-                    <!-- PHOTOS -->
                     <div class="form-section">
                         <div class="section-label"><i class="fas fa-camera"></i> <span id="ui-sec-photo">Photos</span></div>
                         <label class="field-label" id="ui-label-photos">Photos (Max 5, Max 5MB each)</label>
@@ -298,7 +290,6 @@
                         </div>
                     </div>
 
-                    <!-- BUTTONS -->
                     <div class="form-buttons">
                         <button type="submit" class="btn-submit" id="postListingBtn">
                             <i class="fas fa-paper-plane"></i>
@@ -326,7 +317,6 @@
 
             const lang = localStorage.getItem('preferred_language') || 'en';
 
-            // 🔥 UI Translations updated with Scanner strings
             const ui = {
                 en: {
                     mainTitle: "List an Item", mainSub: "Fill in the details below and your book will be live in seconds.",
@@ -434,7 +424,7 @@
                 } else { window.location.href = '/LoginInToCheaplet.html'; }
             });
 
-            // --- 🔥 NEW: BARCODE SCANNER & FETCH LOGIC ---
+            // --- 🔥 ENHANCED: BILINGUAL BOOK FETCH ---
             let html5QrCode;
             
             async function fetchBookData(isbn) {
@@ -444,22 +434,40 @@
                 scanBtn.disabled = true; manualBtn.disabled = true;
 
                 try {
-                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
+                    // Try fetching French first if language is fr, otherwise default
+                    let fetchUrl = `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`;
+                    
+                    const res = await fetch(fetchUrl);
                     const data = await res.json();
                     
                     if (data.items && data.items.length > 0) {
                         const book = data.items[0].volumeInfo;
-                        
-                        // Populate the form fields
                         const fullTitle = book.title + (book.authors ? ` by ${book.authors.join(', ')}` : '');
                         document.getElementById('listing-title').value = fullTitle;
                         
-                        if (book.description) {
-                            // Strip any weird HTML tags Google Books sometimes returns
-                            document.getElementById('listing-description').value = book.description.replace(/<[^>]*>?/gm, '');
+                        let combinedDesc = "";
+                        
+                        // If language is French, we do a second query to try to force Google to return French data
+                        if (lang === 'fr') {
+                            try {
+                                const frRes = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}&langRestrict=fr`);
+                                const frData = await frRes.json();
+                                if (frData.items && frData.items[0].volumeInfo.description) {
+                                    combinedDesc += "🇫🇷 " + frData.items[0].volumeInfo.description.replace(/<[^>]*>?/gm, '') + "\n\n";
+                                }
+                            } catch(e) {}
                         }
                         
-                        // Automatically show the form
+                        // Always include the default (usually English) description
+                        if (book.description) {
+                            const prefix = lang === 'fr' && combinedDesc ? "🇬🇧 " : "";
+                            combinedDesc += prefix + book.description.replace(/<[^>]*>?/gm, '');
+                        }
+                        
+                        if (combinedDesc) {
+                            document.getElementById('listing-description').value = combinedDesc;
+                        }
+                        
                         document.getElementById('isbn-section').style.display = 'none';
                         document.getElementById('main-form-section').style.display = 'block';
                         
@@ -478,20 +486,17 @@
 
             document.getElementById('start-scan-btn').onclick = () => {
                 if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-                
                 document.getElementById('reader').style.display = 'block';
-                
                 html5QrCode.start(
-                    { facingMode: "environment" }, // Prefer back camera
+                    { facingMode: "environment" },
                     { fps: 10, qrbox: { width: 250, height: 150 } },
                     (decodedText, decodedResult) => {
-                        // Success! Stop camera and fetch
                         html5QrCode.stop().then(() => {
                             document.getElementById('reader').style.display = 'none';
                             fetchBookData(decodedText);
                         });
                     },
-                    (errorMessage) => { /* Ignore background scanning errors */ }
+                    (errorMessage) => { }
                 ).catch(err => {
                     console.error("Camera error:", err);
                     alert("Camera access denied or unavailable.");
@@ -500,7 +505,18 @@
 
             document.getElementById('manual-isbn-btn').onclick = () => {
                 const val = document.getElementById('manual-isbn-input').value.trim();
+                // 🔥 FIXED: Remove focus from input to hide mobile keyboard
+                document.getElementById('manual-isbn-input').blur(); 
                 if(val) fetchBookData(val);
+            };
+
+            // Allow Enter key to trigger manual search and hide keyboard
+            document.getElementById('manual-isbn-input').onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.target.blur();
+                    document.getElementById('manual-isbn-btn').click();
+                }
             };
 
             document.getElementById('skip-scan-btn').onclick = () => {
@@ -531,6 +547,9 @@
                 if (tags.length >= 15) { alert(ui[lang].tagLimit); return; }
                 if (cleaned && !tags.includes(cleaned)) { tags.push(cleaned); renderTags(); }
                 tagInput.value = ''; suggestionsBox.style.display = 'none';
+                
+                // 🔥 FIXED: Keep focus on input so keyboard stays open on mobile!
+                tagInput.focus();
             }
 
             tagInput.oninput = async (e) => {
@@ -546,15 +565,27 @@
                         const div = document.createElement('div');
                         div.className = 'suggestion-item';
                         div.innerHTML = `<span>${d.tag}</span><span class="suggestion-count">${d.count || 1} ${ui[lang].tagUses}</span>`;
-                        div.onclick = () => addTag(d.tag);
+                        
+                        // Mousedown triggers BEFORE blur, meaning we catch the click before keyboard hides
+                        div.onmousedown = (ev) => {
+                            ev.preventDefault(); // Prevents input from losing focus
+                            addTag(d.tag);
+                        };
                         suggestionsBox.appendChild(div);
                     });
                 } else {
                     suggestionsBox.style.display = 'block';
-                    suggestionsBox.innerHTML = `<div class="suggestion-item" onclick="window.addTagManual()">Create: "${tagInput.value}"</div>`;
+                    const div = document.createElement('div');
+                    div.className = 'suggestion-item';
+                    div.innerHTML = `Create: "${tagInput.value}"`;
+                    div.onmousedown = (ev) => {
+                        ev.preventDefault();
+                        addTag(tagInput.value);
+                    };
+                    suggestionsBox.appendChild(div);
                 }
             };
-            window.addTagManual = () => addTag(tagInput.value);
+            
             tagInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput.value); } };
 
             // --- IMAGE LOGIC ---
