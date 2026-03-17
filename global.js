@@ -1,6 +1,5 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-// 🔥 ADDED: collection, query, where for the unread messages listener
 import { getFirestore, doc, getDoc, onSnapshot, updateDoc, collection, query, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
 // --- 0. AUTO-IMPORT ICONS & FAVICON ---
@@ -110,15 +109,16 @@ globalStyle.innerHTML = `
     
     .msg-btn-mobile { background: #C8A96E; color: #0C1446; width: 36px; height: 36px; border-radius: 50%; display: none; align-items: center; justify-content: center; text-decoration: none; margin-right: 12px; font-size: 1rem; position: relative; }
     
-    /* 🔥 NEW: UNREAD BADGE CSS */
+    /* 🔥 UNREAD BADGES */
     .badge-container { position: relative; display: inline-block; }
     .unread-badge {
         position: absolute; top: -6px; right: -12px;
-        background-color: #f44336; color: white;
+        background-color: #C0392B; color: white;
         font-size: 0.65rem; font-weight: bold;
         padding: 2px 5px; border-radius: 10px;
         display: none; align-items: center; justify-content: center;
         z-index: 10; min-width: 18px; text-align: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
     .msg-btn-mobile .unread-badge { top: -2px; right: -4px; border: 2px solid #C8A96E; }
 
@@ -156,7 +156,7 @@ document.head.appendChild(globalStyle);
 // --- 4. STATE & LISTENERS ---
 let globalSettings = {};
 let currentUserData = null;
-let unsubscribeChats = null; // Variable to hold the unread messages listener
+let unsubscribeChats = null;
 
 onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
     if (docSnap.exists()) { globalSettings = docSnap.data(); refreshUI(); }
@@ -199,7 +199,7 @@ function refreshUI() {
     showTermsBanner();
 }
 
-// 🔥 NEW: UNREAD MESSAGES LISTENER
+// 🔥 FIXED: UNREAD MESSAGES LISTENER
 function listenToUnreadMessages(uid) {
     if (unsubscribeChats) unsubscribeChats();
     const q = query(collection(db, "chats"), where("participants", "array-contains", uid));
@@ -208,9 +208,15 @@ function listenToUnreadMessages(uid) {
         let unreadCount = 0;
         snapshot.forEach(docSnap => {
             const d = docSnap.data();
-            // Check if there is a last message, and if we were NOT the last sender
-            if (d.lastSenderId && d.lastSenderId !== uid) {
-                unreadCount++;
+            
+            // 1. Ignore empty ghost chats
+            if (!d.lastMessage || d.lastMessage.trim() === "") return;
+            
+            // 2. Count unread accurately based on arrays or fallback
+            if (d.unreadBy !== undefined) {
+                if (d.unreadBy.includes(uid)) unreadCount++;
+            } else {
+                if (d.lastSenderId && d.lastSenderId !== uid) unreadCount++;
             }
         });
         
@@ -243,7 +249,6 @@ function updateHeaderToLoggedIn(userData) {
     if (!container) return;
     
     const name = userData.displayName || 'User';
-    
     let finalPhotoURL = userData.photoURL;
     if (!finalPhotoURL || finalPhotoURL.includes("googleusercontent.com") || finalPhotoURL.includes("live.com")) {
         finalPhotoURL = `https://api.dicebear.com/7.x/identicon/svg?seed=${userData.uid}&backgroundColor=EBF2FA`;
@@ -282,13 +287,11 @@ function updateHeaderToLoggedIn(userData) {
         });
     };
 
-    // Start listening for unread messages now that UI is drawn
     listenToUnreadMessages(userData.uid);
 }
 
 function updateHeaderToLoggedOut() {
-    if (unsubscribeChats) { unsubscribeChats(); unsubscribeChats = null; } // Stop listener
-    
+    if (unsubscribeChats) { unsubscribeChats(); unsubscribeChats = null; }
     const lang = localStorage.getItem('preferred_language') || 'en';
     const navUl = document.querySelector('nav ul');
     if (navUl) {
@@ -300,13 +303,11 @@ function updateHeaderToLoggedOut() {
     container.innerHTML = `<button class="btn" onclick="window.location.href='/LoginInToCheaplet.html'">${translations[lang].btn_login}</button>`;
 }
 
-// --- 🔥 WELCOME TOUR & PROFILE PERSONALIZATION ---
 function showWelcomeTour() {
     const user = auth.currentUser;
     if (!user) return;
 
     const tourKey = `cheaplet_tour_seen_${user.uid}`;
-    
     if (localStorage.getItem(tourKey) === 'true') return;
     if (currentUserData && currentUserData.hasSeenTour) {
         localStorage.setItem(tourKey, 'true');
@@ -363,7 +364,7 @@ function showWelcomeTour() {
                 <input type="text" id="tour-lname-input" class="tour-input" value="${existingLastName}" placeholder="${t.tour_last_name}">
                 
                 <input type="file" id="tour-file-input" accept="image/*" style="display:none;">
-                <label for="tour-file-input" style="display:block; cursor:pointer; color:#2B5C92; font-weight:bold; margin-bottom:20px; text-decoration:underline;">
+                <label for="tour-file-input" style="display:block; cursor:pointer; color:#2B5C92; font-weight:bold; margin-bottom:25px; text-decoration:underline;">
                     <i class="fas fa-camera"></i> ${t.tour_upload}
                 </label>
 
