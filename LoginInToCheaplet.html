@@ -12,12 +12,10 @@
         body { background-color: #f8f9fa; color: #333; line-height: 1.6; overflow-x: hidden; }
         .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 10px; }
         header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 12px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 100%; }
-        .header-content { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .header-content { display: flex; justify-content: center; align-items: center; gap: 10px; }
         .header-left { display: flex; align-items: center; gap: 10px; flex-shrink: 1; min-width: 0; }
         .logo { font-size: clamp(18px, 4vw, 24px); font-weight: bold; cursor: pointer; text-decoration: none; color: white; white-space: nowrap; }
         .logo span { color: #FFD700; }
-        .header-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-        .btn-back { background: rgba(255, 255, 255, 0.2); color: white; border: none; padding: 6px 10px; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 0.85rem; display: flex; align-items: center; gap: 4px; transition: background 0.3s; white-space: nowrap; }
         
         .auth-wrapper { display: flex; justify-content: center; align-items: center; min-height: 85vh; padding: 15px; }
         .auth-card { background: white; padding: clamp(20px, 5vw, 40px); border-radius: 12px; box-shadow: 0 4px 25px rgba(0,0,0,0.1); width: 100%; max-width: 420px; text-align: center; }
@@ -58,12 +56,8 @@
     <header>
         <div class="container header-content">
             <div class="header-left">
-                <button id="smart-back-btn" class="btn-back">
-                    <i class="fas fa-arrow-left"></i> <span id="back-btn-text">Back</span>
-                </button>
                 <a href="/index.html" class="logo">Cheap<span>let</span></a>
             </div>
-            <div class="header-right"></div>
         </div>
     </header>
 
@@ -86,8 +80,8 @@
 
             <form id="auth-form">
                 <div id="register-fields" style="display:none;">
-                    <input type="text" id="firstName" placeholder="First Name">
-                    <input type="text" id="lastName" placeholder="Last Name">
+                    <input type="text" id="tour-fname-input" placeholder="First Name">
+                    <input type="text" id="tour-lname-input" placeholder="Last Name">
                 </div>
                 <input type="email" id="email" placeholder="Email Address" required>
                 <input type="password" id="password" placeholder="Password" required>
@@ -147,7 +141,7 @@
                     toggleToReg: "New to Cheaplet? Create an account.", toggleToLogin: "Already have an account? Log in.",
                     studentTip: "Use your school email (or link your school's Google/Microsoft account) to automatically get a <strong>Verified Student</strong> badge!",
                     placeFirst: "First Name", placeLast: "Last Name", placeEmail: "Email Address", placePass: "Password",
-                    google: "Continue with Google", microsoft: "Continue with Microsoft", or: "OR", back: "Back", verify: "Verifying...",
+                    google: "Continue with Google", microsoft: "Continue with Microsoft", or: "OR", verify: "Verifying...",
                     errBanned: "Account banned.", errVerify: "Please verify your email first!", errSent: "Verification email sent! Please check your inbox.",
                     forgotPass: "Forgot Password?", enterEmailFirst: "Please enter your email address to reset your password.", resetSent: "Password reset email sent! Check your inbox."
                 },
@@ -158,7 +152,7 @@
                     toggleToReg: "Nouveau sur Cheaplet ? Créez un compte.", toggleToLogin: "Vous avez déjà un compte ? Connectez-vous.",
                     studentTip: "Utilisez votre courriel scolaire (ou un compte Google/Microsoft de l'école) pour obtenir automatiquement le badge <strong>Étudiant vérifié</strong> !",
                     placeFirst: "Prénom", placeLast: "Nom de famille", placeEmail: "Adresse e-mail", placePass: "Mot de passe",
-                    google: "Continuer avec Google", microsoft: "Continuer avec Microsoft", or: "OU", back: "Retour", verify: "Vérification...",
+                    google: "Continuer avec Google", microsoft: "Continuer avec Microsoft", or: "OU", verify: "Vérification...",
                     errBanned: "Compte banni.", errVerify: "Veuillez d'abord vérifier votre e-mail !", errSent: "E-mail de vérification envoyé ! Vérifiez votre boîte de réception.",
                     forgotPass: "Mot de passe oublié ?", enterEmailFirst: "Veuillez entrer votre adresse e-mail pour réinitialiser le mot de passe.", resetSent: "E-mail de réinitialisation envoyé ! Vérifiez votre boîte de réception."
                 }
@@ -169,18 +163,16 @@
             submitBtn.textContent = strings[lang].loginBtn;
             toggleLink.textContent = strings[lang].toggleToReg;
             document.getElementById('student-tip-text').innerHTML = strings[lang].studentTip;
-            document.getElementById('firstName').placeholder = strings[lang].placeFirst;
-            document.getElementById('lastName').placeholder = strings[lang].placeLast;
+            document.getElementById('tour-fname-input').placeholder = strings[lang].placeFirst;
+            document.getElementById('tour-lname-input').placeholder = strings[lang].placeLast;
             document.getElementById('email').placeholder = strings[lang].placeEmail;
             document.getElementById('password').placeholder = strings[lang].placePass;
             document.getElementById('google-btn-text').textContent = strings[lang].google;
             document.getElementById('microsoft-btn-text').textContent = strings[lang].microsoft;
             document.getElementById('or-text').textContent = strings[lang].or;
-            document.getElementById('back-btn-text').textContent = strings[lang].back;
             document.getElementById('loading-text').textContent = strings[lang].verify;
             forgotPasswordLink.textContent = strings[lang].forgotPass;
 
-            // 🔥 NEW: School Domains Dictionary Mapping
             const schoolDomains = {
                 "@etu.cegepjonquiere.ca": "Cégep de Jonquière",
                 "@cegep-lanaudiere.qc.ca": "Cégep de Lanaudière",
@@ -194,7 +186,6 @@
                 "@ulaval.ca": "Université Laval"
             };
 
-            // Helper function to extract school info from email
             function getSchoolInfo(email) {
                 const domain = email.substring(email.lastIndexOf("@")).toLowerCase();
                 if (schoolDomains[domain]) {
@@ -209,29 +200,19 @@
                     const userDocRef = doc(db, "users", user.uid);
                     const userDoc = await getDoc(userDocRef);
                     const email = user.email.toLowerCase();
-                    
                     const schoolInfo = getSchoolInfo(email);
 
                     if (!userDoc.exists()) {
                         await setDoc(userDocRef, { 
-                            uid: user.uid, 
-                            displayName: user.displayName, 
-                            email: user.email, 
-                            role: 'user', 
-                            isStudent: schoolInfo.isStudent,
-                            schoolName: schoolInfo.schoolName
+                            uid: user.uid, displayName: user.displayName, email: user.email, role: 'user', 
+                            isStudent: schoolInfo.isStudent, schoolName: schoolInfo.schoolName 
                         });
                     } else {
                         const data = userDoc.data();
                         if (data.role === 'banned') {
                             await signOut(auth); alert(strings[lang].errBanned); window.location.reload(); return;
-                        } 
-                        // Update legacy accounts if they match the new school list but aren't flagged yet
-                        else if (schoolInfo.isStudent && (!data.isStudent || !data.schoolName)) {
-                            await updateDoc(userDocRef, { 
-                                isStudent: true, 
-                                schoolName: schoolInfo.schoolName 
-                            });
+                        } else if (schoolInfo.isStudent && (!data.isStudent || !data.schoolName)) {
+                            await updateDoc(userDocRef, { isStudent: true, schoolName: schoolInfo.schoolName });
                         }
                     }
                     window.location.href = new URLSearchParams(window.location.search).get('redirect') || '/index.html';
@@ -248,19 +229,8 @@
 
             forgotPasswordLink.onclick = async () => {
                 const emailVal = document.getElementById('email').value.trim();
-                if (!emailVal) {
-                    authError.textContent = strings[lang].enterEmailFirst;
-                    authError.style.display = 'block';
-                    return;
-                }
-                try {
-                    await sendPasswordResetEmail(auth, emailVal);
-                    authError.style.display = 'none';
-                    alert(strings[lang].resetSent);
-                } catch (error) {
-                    authError.textContent = error.message;
-                    authError.style.display = 'block';
-                }
+                if (!emailVal) { alert(strings[lang].enterEmailFirst); return; }
+                try { await sendPasswordResetEmail(auth, emailVal); alert(strings[lang].resetSent); } catch (e) { alert(e.message); }
             };
 
             toggleLink.onclick = () => {
@@ -268,23 +238,20 @@
                 document.getElementById('register-fields').style.display = isLoginMode ? 'none' : 'block';
                 studentTip.style.display = isLoginMode ? 'none' : 'flex';
                 forgotPasswordLink.style.display = isLoginMode ? 'block' : 'none'; 
-                authError.style.display = 'none'; 
-                
                 formTitle.textContent = isLoginMode ? strings[lang].loginTitle : strings[lang].regTitle;
                 document.getElementById('form-subtitle').textContent = isLoginMode ? strings[lang].loginSub : strings[lang].regSub;
                 submitBtn.textContent = isLoginMode ? strings[lang].loginBtn : strings[lang].regBtn;
                 toggleLink.textContent = isLoginMode ? strings[lang].toggleToReg : strings[lang].toggleToLogin;
             };
 
-            document.getElementById('google-btn').onclick = async () => { try { await signInWithPopup(auth, googleProvider); } catch (e) { authError.textContent = e.message; authError.style.display = 'block'; } };
-            document.getElementById('microsoft-btn').onclick = async () => { try { await signInWithPopup(auth, msProvider); } catch (e) { authError.textContent = e.message; authError.style.display = 'block'; } };
+            document.getElementById('google-btn').onclick = async () => { try { await signInWithPopup(auth, googleProvider); } catch (e) { alert(e.message); } };
+            document.getElementById('microsoft-btn').onclick = async () => { try { await signInWithPopup(auth, msProvider); } catch (e) { alert(e.message); } };
 
             authForm.onsubmit = async (e) => {
                 e.preventDefault();
                 submitBtn.disabled = true;
                 const email = document.getElementById('email').value.toLowerCase();
                 const pass = document.getElementById('password').value;
-                authError.style.display = 'none';
 
                 try {
                     if (isLoginMode) {
@@ -293,35 +260,22 @@
                     } else {
                         isRegistering = true;
                         const cred = await createUserWithEmailAndPassword(auth, email, pass);
-                        const name = `${document.getElementById('firstName').value} ${document.getElementById('lastName').value}`;
-                        
+                        const name = `${document.getElementById('tour-fname-input').value} ${document.getElementById('tour-lname-input').value}`;
                         const schoolInfo = getSchoolInfo(email);
-                        
                         await updateProfile(cred.user, { displayName: name });
                         await setDoc(doc(db, "users", cred.user.uid), { 
-                            uid: cred.user.uid, 
-                            displayName: name, 
-                            email: email, 
-                            role: 'user', 
-                            isStudent: schoolInfo.isStudent,
-                            schoolName: schoolInfo.schoolName
+                            uid: cred.user.uid, displayName: name, email: email, role: 'user', 
+                            isStudent: schoolInfo.isStudent, schoolName: schoolInfo.schoolName 
                         });
                         await sendEmailVerification(cred.user);
-                        
                         await signOut(auth);
                         isRegistering = false;
                         alert(strings[lang].errSent);
                         location.reload();
                     }
-                } catch (err) { 
-                    authError.textContent = err.message; 
-                    authError.style.display = 'block'; 
-                    isRegistering = false; 
-                }
+                } catch (err) { alert(err.message); isRegistering = false; }
                 submitBtn.disabled = false;
             };
-
-            document.getElementById('smart-back-btn').onclick = () => window.history.back();
         }
         main();
     </script>
