@@ -103,7 +103,7 @@
         /* ── MARKETPLACE BREAK ── */
         .market-break { margin: 10px 0; padding: 25px; background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); border: var(--border); }
         .break-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .break-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 900; color: var(--ink); }
+        .break-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 900; color: var(--ink); display: flex; align-items: center; gap: 8px; }
         .break-link { color: var(--deep); font-size: 0.85rem; font-weight: 700; text-decoration: none; }
         .break-link:hover { text-decoration: underline; }
         
@@ -121,7 +121,7 @@
         .loader-msg i { font-size: 2rem; color: var(--gold); margin-bottom: 15px; display: block; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* 🔥 CUSTOM MODAL FOR NEW TOPIC */
+        /* ── CUSTOM MODAL ── */
         .modal-overlay { position: fixed; inset: 0; background: rgba(12,20,70,0.8); backdrop-filter: blur(4px); z-index: 10000; display: none; justify-content: center; align-items: center; }
         .modal-card { background: var(--white); padding: 30px; border-radius: var(--radius); width: 90%; max-width: 400px; box-shadow: var(--shadow); animation: fadeUp 0.3s ease; }
         .modal-card h2 { color: var(--ink); margin-bottom: 10px; font-family: 'Playfair Display', serif; }
@@ -186,10 +186,8 @@
                 <button class="btn-new-way" id="btn-create-way"><i class="fas fa-plus"></i> <span data-i18n="topics_new">Create Topic</span></button>
             </div>
 
-            <!-- List Book Button in Sidebar -->
             <button class="btn-action" style="width:100%; margin-top:15px; background:var(--ink); color:white;" onclick="window.location.href='/listanitem.html'" data-i18n="sell">List a Book</button>
 
-            <!-- Mini Legal Footer -->
             <div style="padding: 10px; font-size: 0.75rem; color: var(--text-muted); line-height: 1.6; margin-top: 10px;">
                 <a href="/terms.html" style="color:inherit; text-decoration:none;">Terms</a> · 
                 <a href="/privacy.html" style="color:inherit; text-decoration:none;">Privacy</a> · 
@@ -212,15 +210,15 @@
                 </div>
             </div>
 
-            <!-- FEED CONTAINER (Posts + Books) -->
+            <!-- FEED CONTAINER -->
             <div id="feed-container">
-                <div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i> <span data-i18n="loading_hub">Loading campus hub...</span></div>
+                <div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i> <span id="ui-loading" data-i18n="loading_hub">Loading campus hub...</span></div>
             </div>
 
         </main>
     </div>
 
-    <!-- 🔥 NEW: Custom Create Topic Modal -->
+    <!-- CUSTOM MODAL FOR NEW TOPIC -->
     <div class="modal-overlay" id="topic-modal">
         <div class="modal-card">
             <h2 data-i18n="modal_title">Create New Topic</h2>
@@ -247,25 +245,27 @@
 
             // --- BILINGUAL UI ---
             const lang = localStorage.getItem('preferred_language') || 'en';
-            const ui = {
+            const allStrings = {
                 en: { 
                     topics_public: "Public Channels", topics_campus: "Campus Public", topics_custom: "Custom Topics", topics_new: "Create Topic",
                     post_placeholder: "What's happening on campus?", btn_post: "Post", loading_hub: "Loading campus hub...",
-                    noPosts: "No posts yet. Be the first to share something!", justNow: "Just now", 
-                    suggest: "Campus Marketplace", browse: "Browse All →", guest: "Global Campus", sell: "List a Book",
+                    promptWay: "Enter a name for the new topic:", noPosts: "No posts yet. Be the first to share something!",
+                    justNow: "Just now", suggest: "Campus Marketplace", browse: "Browse All →", guest: "Global Campus", sell: "List a Book",
                     modal_title: "Create New Topic", modal_desc: "Enter a name for the new topic (e.g. Study Groups, Tech):",
                     modal_place: "Topic name...", btn_cancel: "Cancel", btn_create: "Create", err_short: "Name too short."
                 },
                 fr: { 
                     topics_public: "Canaux Publics", topics_campus: "Campus Public", topics_custom: "Sujets Personnalisés", topics_new: "Nouveau Sujet",
                     post_placeholder: "Que se passe-t-il sur le campus ?", btn_post: "Publier", loading_hub: "Chargement du hub...",
-                    noPosts: "Aucune publication. Soyez le premier à partager !", justNow: "À l'instant", 
-                    suggest: "Marché du Campus", browse: "Voir tout →", guest: "Campus Global", sell: "Vendre un livre",
+                    promptWay: "Entrez un nom pour le nouveau sujet :", noPosts: "Aucune publication. Soyez le premier à partager !",
+                    justNow: "À l'instant", suggest: "Marché du Campus", browse: "Voir tout →", guest: "Campus Global", sell: "Vendre un livre",
                     modal_title: "Créer un nouveau sujet", modal_desc: "Entrez un nom pour le sujet (ex: Groupes d'étude, Tech) :",
                     modal_place: "Nom du sujet...", btn_cancel: "Annuler", btn_create: "Créer", err_short: "Nom trop court."
                 }
             };
+            const ui = allStrings[lang] || allStrings['en'];
 
+            // Apply translations to the HTML
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
                 if (ui[key]) el.textContent = ui[key];
