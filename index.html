@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Campus Hub — Cheaplet</title>
+    <title>Campus Hub — Scoralia</title>
     <script type="module" src="global.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,7 +36,7 @@
         /* ── LAYOUT ── */
         .hub-layout { max-width: 1000px; margin: 30px auto; display: grid; grid-template-columns: 260px 1fr; gap: 40px; padding: 0 20px; align-items: start; }
 
-        /* ── SIDEBAR (TOPICS / WAYS) ── */
+        /* ── SIDEBAR (TOPICS) ── */
         .sidebar { position: sticky; top: 100px; display: flex; flex-direction: column; gap: 20px; }
         
         .school-header { margin-bottom: 10px; }
@@ -52,7 +52,6 @@
         .way-item i { width: 20px; text-align: center; color: var(--text-muted); font-size: 1.1rem; }
         .way-item.active i { color: var(--gold); }
         
-        /* 🔥 NEW: Trending Count Badge */
         .way-count { margin-left: auto; font-size: 0.75rem; color: var(--text-muted); background: var(--off-white); padding: 2px 8px; border-radius: 12px; font-weight: 700; }
 
         .btn-new-way { width: 100%; text-align: left; padding: 12px 15px; background: transparent; border: 1.5px dashed #cbd5e1; border-radius: 12px; color: var(--text-muted); font-weight: 600; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 12px; transition: 0.2s; margin-top: 10px; }
@@ -63,7 +62,6 @@
         .mobile-ways-bar::-webkit-scrollbar { display: none; }
         .m-way-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; background: var(--off-white); border-radius: 20px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-right: 10px; cursor: pointer; border: var(--border); transition: 0.2s; }
         .m-way-pill.active { background: var(--ink); color: var(--white); border-color: var(--ink); }
-        .m-way-count { opacity: 0.6; font-size: 0.75rem; margin-left: 4px; }
 
         /* ── FEED COLUMN ── */
         .feed-column { display: flex; flex-direction: column; gap: 24px; padding-bottom: 60px; }
@@ -76,7 +74,6 @@
         .composer-input::placeholder { color: #94a3b8; font-weight: 400; }
         .composer-bottom { display: flex; justify-content: flex-end; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 15px; margin-top: 10px; }
         
-        /* ── BUTTONS ── */
         .btn-action { background: var(--gold); color: var(--ink); border: none; padding: 10px 28px; border-radius: 30px; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(200, 169, 110, 0.2); }
         .btn-action:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(200, 169, 110, 0.4); }
         .btn-action:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
@@ -130,7 +127,6 @@
         .modal-card input:focus { border-color: var(--deep); }
         .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; }
 
-        /* ── MOBILE OPTIMIZATIONS ── */
         @media (max-width: 850px) {
             .hub-layout { grid-template-columns: 1fr; padding: 0; gap: 0; margin-top: 0; }
             .sidebar { display: none; }
@@ -152,7 +148,7 @@
 
     <header>
         <div class="header-inner">
-            <a href="/index.html" class="logo">Cheap<em>let</em></a>
+            <a href="/index.html" class="logo">Scor<em>alia</em></a>
             <div class="header-right"></div>
         </div>
     </header>
@@ -186,13 +182,15 @@
                 <button class="btn-new-way" id="btn-create-way"><i class="fas fa-plus"></i> <span data-i18n="topics_new">Create Topic</span></button>
             </div>
 
+            <!-- List Book Button in Sidebar -->
             <button class="btn-action" style="width:100%; margin-top:15px; background:var(--ink); color:white;" onclick="window.location.href='/listanitem.html'" data-i18n="sell">List a Book</button>
 
+            <!-- Mini Legal Footer -->
             <div style="padding: 10px; font-size: 0.75rem; color: var(--text-muted); line-height: 1.6; margin-top: 10px;">
                 <a href="/terms.html" style="color:inherit; text-decoration:none;">Terms</a> · 
                 <a href="/privacy.html" style="color:inherit; text-decoration:none;">Privacy</a> · 
                 <a href="/safety.html" style="color:inherit; text-decoration:none;">Safety</a><br>
-                © 2025 Cheaplet
+                © 2026 Scoralia
             </div>
         </aside>
 
@@ -210,7 +208,7 @@
                 </div>
             </div>
 
-            <!-- FEED CONTAINER -->
+            <!-- FEED CONTAINER (Posts + Books) -->
             <div id="feed-container">
                 <div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i> <span id="ui-loading" data-i18n="loading_hub">Loading campus hub...</span></div>
             </div>
@@ -233,7 +231,7 @@
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, doc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, limit, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, doc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, limit, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 
         async function main() {
@@ -275,14 +273,15 @@
                 if (ui[key]) el.placeholder = ui[key];
             });
 
-            // Helper to format large numbers (e.g. 1200 -> 1.2k)
+            // Helper to format large numbers
             function formatCount(num) {
                 if (!num) return 0;
                 return num > 999 ? (num / 1000).toFixed(1) + 'k' : num;
             }
 
             let currentUser = null;
-            let userSchool = ui.guest; 
+            // 🔥 FIXED: Internal DB value is always "Global Campus". UI translation handled below.
+            let internalSchoolName = "Global Campus"; 
             let currentWayId = "general";
             let unsubscribePosts = null;
             let listings = []; 
@@ -300,9 +299,10 @@
                     if (uSnap.exists()) {
                         const data = uSnap.data();
                         currentUser = { ...user, ...data };
-                        userSchool = data.schoolName || ui.guest;
+                        internalSchoolName = data.schoolName || "Global Campus";
                         
-                        dSchoolName.textContent = userSchool;
+                        // Handle Display Translation
+                        dSchoolName.textContent = internalSchoolName === "Global Campus" ? ui.guest : internalSchoolName;
                         document.getElementById('composer-card').style.display = 'block';
 
                         let pfpUrl = data.photoURL;
@@ -316,15 +316,16 @@
                     }
                 } else {
                     // GUEST MODE
+                    internalSchoolName = "Global Campus";
                     dSchoolName.textContent = ui.guest;
                     preloadBooksAndLoadFeed("general");
                 }
             });
 
-            // --- 1. LOAD TOPICS (SIDEBAR) WITH TRENDING NUMBERS ---
+            // --- 1. LOAD TOPICS ---
             function loadTopics() {
                 if (!currentUser) return;
-                const q = query(collection(db, "social_channels"), where("schoolName", "==", userSchool), orderBy("postCount", "desc"));
+                const q = query(collection(db, "social_channels"), where("schoolName", "==", internalSchoolName), orderBy("postCount", "desc"));
                 onSnapshot(q, (snapshot) => {
                     desktopWaysList.innerHTML = '';
                     const mGeneral = document.getElementById('m-way-general');
@@ -333,9 +334,18 @@
 
                     snapshot.forEach(docSnap => {
                         const d = docSnap.data();
+                        
+                        // 🔥 AUTO-DELETE CHECK: Hide empty topics unless we are actively looking at them
+                        if (d.postCount === 0 && docSnap.id !== currentWayId) {
+                            // Only delete if the current user is the one who created it (Safety)
+                            if (currentUser && d.createdBy === currentUser.uid) {
+                                deleteDoc(doc(db, "social_channels", docSnap.id)).catch(e=>console.log(e));
+                            }
+                            return; // Skip rendering
+                        }
+
                         const displayCount = formatCount(d.postCount);
                         
-                        // Desktop Item
                         const dItem = document.createElement('div');
                         dItem.className = `way-item ${currentWayId === docSnap.id ? 'active' : ''}`;
                         dItem.id = `d-way-${docSnap.id}`;
@@ -343,7 +353,6 @@
                         dItem.onclick = () => window.selectWay(docSnap.id);
                         desktopWaysList.appendChild(dItem);
 
-                        // Mobile Pill
                         const mItem = document.createElement('div');
                         mItem.className = `m-way-pill ${currentWayId === docSnap.id ? 'active' : ''}`;
                         mItem.id = `m-way-${docSnap.id}`;
@@ -361,6 +370,16 @@
             }
 
             window.selectWay = (wayId) => {
+                // 🔥 AUTO-DELETE ABANDONED TOPIC: Clean up the old topic before moving on
+                if (currentWayId !== 'general' && currentWayId !== wayId) {
+                    const wayToClean = currentWayId;
+                    getDoc(doc(db, "social_channels", wayToClean)).then(d => {
+                        if (d.exists() && d.data().postCount === 0 && d.data().createdBy === currentUser?.uid) {
+                            deleteDoc(doc(db, "social_channels", wayToClean)).catch(e=>console.log(e));
+                        }
+                    });
+                }
+
                 currentWayId = wayId;
                 
                 document.querySelectorAll('.way-item').forEach(el => el.classList.remove('active'));
@@ -374,7 +393,7 @@
                 loadFeed(wayId);
             };
 
-            // --- 🔥 NEW CUSTOM MODAL LOGIC FOR TOPICS ---
+            // --- CUSTOM MODAL FOR TOPICS ---
             const topicModal = document.getElementById('topic-modal');
             const topicInput = document.getElementById('topic-name-input');
             const btnCancelTopic = document.getElementById('btn-cancel-topic');
@@ -398,10 +417,10 @@
                 try {
                     const newRef = await addDoc(collection(db, "social_channels"), {
                         name: wayName.substring(0, 30),
-                        schoolName: userSchool,
+                        schoolName: internalSchoolName,
                         createdBy: currentUser.uid,
                         createdAt: serverTimestamp(),
-                        postCount: 0 // Initialize tracking count
+                        postCount: 0 
                     });
                     topicModal.style.display = 'none';
                     window.selectWay(newRef.id);
@@ -413,9 +432,9 @@
             async function preloadBooksAndLoadFeed(wayId) {
                 let bookQ = query(collection(db, "listings"), where("status", "==", "active"), orderBy("timestamp", "desc"), limit(6));
                 
-                if (currentUser && userSchool !== ui.guest) {
+                if (currentUser && internalSchoolName !== "Global Campus") {
                     try {
-                        const sBookQ = query(collection(db, "listings"), where("location", "==", userSchool), where("status", "==", "active"), limit(6));
+                        const sBookQ = query(collection(db, "listings"), where("location", "==", internalSchoolName), where("status", "==", "active"), limit(6));
                         const bSnap = await getDocs(sBookQ);
                         if (!bSnap.empty) bookQ = sBookQ;
                     } catch(e) {}
@@ -441,8 +460,8 @@
                         feedContainer.innerHTML = '';
                         
                         let filteredDocs = snapshot.docs.filter(d => d.data().wayId === wayId);
-                        if (userSchool !== ui.guest) {
-                            filteredDocs = filteredDocs.filter(d => d.data().schoolName === userSchool);
+                        if (internalSchoolName !== "Global Campus") {
+                            filteredDocs = filteredDocs.filter(d => d.data().schoolName === internalSchoolName);
                         }
 
                         if (filteredDocs.length === 0) {
@@ -458,7 +477,6 @@
                             frag.appendChild(createPostElement(docSnap.id, d));
                             postCounter++;
 
-                            // Inject Marketplace Break after every 3 posts
                             if (postCounter === 3 && listings.length > 0) {
                                 frag.appendChild(createMarketBreak());
                             }
@@ -552,10 +570,10 @@
                         photoToSave = `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
                     }
 
-                    // 1. Add the post
+                    // 1. Add Post
                     await addDoc(collection(db, "social_posts"), {
                         wayId: currentWayId,
-                        schoolName: userSchool,
+                        schoolName: internalSchoolName,
                         text: text,
                         authorUid: currentUser.uid,
                         authorName: currentUser.displayName || "User",
@@ -565,7 +583,7 @@
                         timestamp: serverTimestamp()
                     });
 
-                    // 2. 🔥 Increment the topic's post count for trending!
+                    // 2. Increment Topic Post Count
                     if (currentWayId !== 'general') {
                         await updateDoc(doc(db, "social_channels", currentWayId), {
                             postCount: increment(1)
