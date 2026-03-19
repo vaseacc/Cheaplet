@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Campus Hub — Scoralia</title>
+    <title>Campus Hub — Cheaplet</title>
     <script type="module" src="global.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -52,6 +52,7 @@
         .way-item i { width: 20px; text-align: center; color: var(--text-muted); font-size: 1.1rem; }
         .way-item.active i { color: var(--gold); }
         
+        /* Trending Count Badge */
         .way-count { margin-left: auto; font-size: 0.75rem; color: var(--text-muted); background: var(--off-white); padding: 2px 8px; border-radius: 12px; font-weight: 700; }
 
         .btn-new-way { width: 100%; text-align: left; padding: 12px 15px; background: transparent; border: 1.5px dashed #cbd5e1; border-radius: 12px; color: var(--text-muted); font-weight: 600; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 12px; transition: 0.2s; margin-top: 10px; }
@@ -62,6 +63,7 @@
         .mobile-ways-bar::-webkit-scrollbar { display: none; }
         .m-way-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; background: var(--off-white); border-radius: 20px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-right: 10px; cursor: pointer; border: var(--border); transition: 0.2s; }
         .m-way-pill.active { background: var(--ink); color: var(--white); border-color: var(--ink); }
+        .m-way-count { opacity: 0.6; font-size: 0.75rem; margin-left: 4px; }
 
         /* ── FEED COLUMN ── */
         .feed-column { display: flex; flex-direction: column; gap: 24px; padding-bottom: 60px; }
@@ -127,6 +129,7 @@
         .modal-card input:focus { border-color: var(--deep); }
         .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; }
 
+        /* ── MOBILE OPTIMIZATIONS ── */
         @media (max-width: 850px) {
             .hub-layout { grid-template-columns: 1fr; padding: 0; gap: 0; margin-top: 0; }
             .sidebar { display: none; }
@@ -190,7 +193,7 @@
                 <a href="/terms.html" style="color:inherit; text-decoration:none;">Terms</a> · 
                 <a href="/privacy.html" style="color:inherit; text-decoration:none;">Privacy</a> · 
                 <a href="/safety.html" style="color:inherit; text-decoration:none;">Safety</a><br>
-                © 2026 Scoralia
+                © 2025 Scoralia
             </div>
         </aside>
 
@@ -280,7 +283,6 @@
             }
 
             let currentUser = null;
-            // 🔥 FIXED: Internal DB value is always "Global Campus". UI translation handled below.
             let internalSchoolName = "Global Campus"; 
             let currentWayId = "general";
             let unsubscribePosts = null;
@@ -335,13 +337,9 @@
                     snapshot.forEach(docSnap => {
                         const d = docSnap.data();
                         
-                        // 🔥 AUTO-DELETE CHECK: Hide empty topics unless we are actively looking at them
-                        if (d.postCount === 0 && docSnap.id !== currentWayId) {
-                            // Only delete if the current user is the one who created it (Safety)
-                            if (currentUser && d.createdBy === currentUser.uid) {
-                                deleteDoc(doc(db, "social_channels", docSnap.id)).catch(e=>console.log(e));
-                            }
-                            return; // Skip rendering
+                        // 🔥 SAFE AUTO-DELETE LOGIC: Hide empty topics unless we are viewing them
+                        if (d.postCount === 0 && docSnap.id !== currentWayId && d.createdBy !== currentUser.uid) {
+                            return; // Skip rendering for others
                         }
 
                         const displayCount = formatCount(d.postCount);
@@ -370,7 +368,7 @@
             }
 
             window.selectWay = (wayId) => {
-                // 🔥 AUTO-DELETE ABANDONED TOPIC: Clean up the old topic before moving on
+                // 🔥 CLEANUP: Delete abandoned topics safely when clicking away
                 if (currentWayId !== 'general' && currentWayId !== wayId) {
                     const wayToClean = currentWayId;
                     getDoc(doc(db, "social_channels", wayToClean)).then(d => {
@@ -423,6 +421,9 @@
                         postCount: 0 
                     });
                     topicModal.style.display = 'none';
+                    
+                    // Force the switch immediately so it's ready for the post
+                    currentWayId = newRef.id;
                     window.selectWay(newRef.id);
                 } catch (e) { alert("Error: " + e.message); } 
                 finally { btnConfirmTopic.disabled = false; }
@@ -477,6 +478,7 @@
                             frag.appendChild(createPostElement(docSnap.id, d));
                             postCounter++;
 
+                            // Inject Marketplace Break after every 3 posts
                             if (postCounter === 3 && listings.length > 0) {
                                 frag.appendChild(createMarketBreak());
                             }
@@ -590,7 +592,7 @@
                         });
                     }
 
-                } catch (e) { alert("Error posting."); }
+                } catch (e) { alert("Error posting: " + e.message); }
                 
                 btnSendPost.disabled = false;
             };
