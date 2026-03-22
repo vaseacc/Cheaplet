@@ -196,6 +196,55 @@
         .tag-pill:hover { background: var(--ink); color: var(--white); border-color: var(--ink); transform: translateY(-1px); }
         .tag-pill .tag-count { color: var(--text-muted); font-size: 0.75rem; font-weight: 400; }
 
+        /* ── ACTIVE TOPICS SECTION (NEW) ── */
+        .topics-section {
+            margin-bottom: 40px;
+        }
+        .topics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+        }
+        .topic-card {
+            background: var(--white);
+            border: 1.5px solid var(--mist);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .topic-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--gold);
+            box-shadow: var(--shadow-sm);
+        }
+        .topic-name {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--ink);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .topic-name i {
+            color: var(--gold);
+            font-size: 0.9rem;
+        }
+        .topic-stats {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .topic-stats i {
+            font-size: 0.7rem;
+        }
+
         /* ── LISTINGS ── */
         .listings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .item-count { background: var(--surface); color: var(--deep); padding: 5px 14px; border-radius: 50px; font-size: 0.82rem; font-weight: 600; }
@@ -221,7 +270,7 @@
         .listing-location { font-size: 0.8rem; color: var(--text-muted); margin-top: auto; }
         .listing-location i { margin-right: 4px; color: var(--deep); }
 
-        /* ── CAMPUS BUZZ SECTION (NEW) ── */
+        /* ── CAMPUS BUZZ SECTION ── */
         .campus-buzz-section {
             background: var(--off-white);
             padding: 60px 28px;
@@ -342,6 +391,9 @@
             .listing-title { font-size: 0.85rem; margin-bottom: 6px; }
             .original-price { font-size: 0.75rem; }
             
+            .topics-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .topic-card { padding: 12px; }
+            
             .campus-buzz-section { padding: 40px 15px; }
             .buzz-posts-grid { grid-template-columns: 1fr; gap: 15px; }
             
@@ -440,6 +492,20 @@
             </div>
         </section>
 
+        <!-- NEW: Active Topics Section -->
+        <section class="topics-section">
+            <div class="section-header">
+                <h2 class="section-title" id="topics-title">Active Topics</h2>
+                <a href="/social.html" class="section-link" id="topics-view-all">Join the conversation →</a>
+            </div>
+            <div id="topics-container" class="topics-grid">
+                <div class="topic-card skeleton" style="height:70px;"></div>
+                <div class="topic-card skeleton" style="height:70px;"></div>
+                <div class="topic-card skeleton" style="height:70px;"></div>
+                <div class="topic-card skeleton" style="height:70px;"></div>
+            </div>
+        </section>
+
         <section>
             <div class="listings-header">
                 <h2 class="section-title" id="listings-title">Featured Listings</h2>
@@ -530,6 +596,7 @@
                     searchPl: "Search by title, author, ISBN, or course code…", searchBtn: "Search",
                     sortNew: "Newest First", sortLow: "Price: Low to High", sortHigh: "Price: High to Low",
                     tagT: "Browse by Subject", tagV: "View all →", listT: "Featured Listings", items: "items",
+                    topicsTitle: "Active Topics", topicsViewAll: "Join the conversation →",
                     howT: "How It Works", howS: "Three simple steps to save on every semester.",
                     s1n: "Step 01", s1t: "Create an Account", s1d: "Sign up free with your student email. No fees, no subscriptions.",
                     s2n: "Step 02", s2t: "Post Your Book", s2d: "Snap a photo, set your price, add the course code — done in 60 seconds.",
@@ -546,6 +613,7 @@
                     searchPl: "Rechercher par titre, auteur, ISBN ou sigle de cours…", searchBtn: "Rechercher",
                     sortNew: "Plus récents", sortLow: "Prix : Croissant", sortHigh: "Prix : Décroissant",
                     tagT: "Parcourir par Sujet", tagV: "Voir tout →", listT: "Annonces en vedette", items: "articles",
+                    topicsTitle: "Sujets actifs", topicsViewAll: "Rejoindre la conversation →",
                     howT: "Comment ça marche", howS: "Trois étapes simples pour économiser à chaque session.",
                     s1n: "Étape 01", s1t: "Créer un compte", s1d: "Inscrivez-vous gratuitement avec votre courriel étudiant. Aucun frais.",
                     s2n: "Étape 02", s2t: "Publier votre livre", s2d: "Prenez une photo, fixez votre prix et ajoutez le sigle du cours — en 60 secondes.",
@@ -573,6 +641,8 @@
             document.getElementById('tags-title').textContent = ui.tagT;
             document.getElementById('tags-view-all').textContent = ui.tagV;
             document.getElementById('listings-title').textContent = ui.listT;
+            document.getElementById('topics-title').textContent = ui.topicsTitle;
+            document.getElementById('topics-view-all').textContent = ui.topicsViewAll;
             document.getElementById('how-title').textContent = ui.howT;
             document.getElementById('how-sub').textContent = ui.howS;
             document.getElementById('step1-num').textContent = ui.s1n;
@@ -596,6 +666,7 @@
             const sortFilter        = document.getElementById('sort-filter');
             const searchInput       = document.getElementById('search-input');
             const tagsGridContainer = document.getElementById('tags-grid-container');
+            const topicsContainer   = document.getElementById('topics-container');
 
             let unsubscribeListings = null;
 
@@ -621,6 +692,43 @@
                     tagsGridContainer.innerHTML = '';
                     tagsGridContainer.appendChild(frag);
                 } catch (e) { console.error("Error loading tags:", e); }
+            }
+
+            // NEW: Load top 4 active topics from social_channels
+            async function loadActiveTopics() {
+                try {
+                    const q = query(collection(db, "social_channels"), orderBy("postCount", "desc"), limit(4));
+                    const snapshot = await getDocs(q);
+                    topicsContainer.innerHTML = '';
+                    
+                    if (snapshot.empty) {
+                        topicsContainer.innerHTML = `<div class="topic-card"><p>${lang === 'fr' ? 'Aucun sujet actif.' : 'No active topics.'}</p></div>`;
+                        return;
+                    }
+                    
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const card = document.createElement('a');
+                        card.className = 'topic-card';
+                        card.href = '/social.html';  // Link to social hub (no topic preselection)
+                        const postCount = data.postCount || 0;
+                        const postWord = lang === 'fr' ? (postCount === 1 ? 'message' : 'messages') : (postCount === 1 ? 'post' : 'posts');
+                        card.innerHTML = `
+                            <div class="topic-name">
+                                <i class="fas fa-hashtag"></i>
+                                <span>${data.name}</span>
+                            </div>
+                            <div class="topic-stats">
+                                <i class="fas fa-comment"></i>
+                                <span>${postCount} ${postWord}</span>
+                            </div>
+                        `;
+                        topicsContainer.appendChild(card);
+                    });
+                } catch (e) {
+                    console.error("Error loading active topics:", e);
+                    topicsContainer.innerHTML = `<div class="topic-card"><p>${lang === 'fr' ? 'Impossible de charger les sujets.' : 'Unable to load topics.'}</p></div>`;
+                }
             }
 
             async function loadBuzzPosts() {
@@ -711,17 +819,19 @@
                     unsubscribeListings = onSnapshot(query(collection(db, 'listings'), ...constraints), snapshot => {
                         const activeDocs = snapshot.docs.filter(d => d.data().status !== 'sold');
                         
-                        itemCountSpan.textContent = `${activeDocs.length} ${ui.items}`;
+                        // Limit to 20 listings maximum
+                        const limitedDocs = activeDocs.slice(0, 20);
+                        
+                        itemCountSpan.textContent = `${limitedDocs.length} ${ui.items}`;
                         dynamicBookCount.textContent = activeDocs.length; 
 
-                        if (!activeDocs.length) {
+                        if (!limitedDocs.length) {
                             listingsContainer.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-book"></i><p>No listings yet — be the first to post!</p></div>`;
                             return;
                         }
                         
-                        // 🔥 Use DocumentFragment for blazing fast DOM manipulation
                         const frag = document.createDocumentFragment();
-                        activeDocs.forEach((doc, i) => {
+                        limitedDocs.forEach((doc, i) => {
                             const card = renderListing(doc);
                             card.style.animationDelay = `${i * 0.05}s`;
                             frag.appendChild(card);
@@ -738,8 +848,9 @@
 
             sortFilter.onchange = fetchListings;
             loadGlobalTags();
-            fetchListings();
-            loadBuzzPosts();  // Load the campus buzz section
+            loadActiveTopics();   // Load active topics section
+            loadBuzzPosts();      // Load campus buzz section
+            fetchListings();      // Load listings (limited to 20)
         }
         main();
     </script>
