@@ -172,13 +172,14 @@
             margin-bottom: 5px;
             color: #333;
         }
-        .edit-field input, .edit-field textarea {
+        .edit-field input, .edit-field textarea, .edit-field select {
             width: 100%;
             padding: 12px;
             border: 1px solid #ddd;
             border-radius: 8px;
             font-size: 1rem;
             font-family: inherit;
+            background: white;
         }
         .edit-field textarea {
             resize: vertical;
@@ -325,6 +326,13 @@
                     <label>Bio</label>
                     <textarea id="edit-bio" maxlength="160" placeholder="Tell us a little about yourself..."></textarea>
                 </div>
+                <div class="edit-field">
+                    <label>Language / Langue</label>
+                    <select id="language-select">
+                        <option value="en">English</option>
+                        <option value="fr">Français</option>
+                    </select>
+                </div>
                 <div class="button-group">
                     <button class="btn" id="save-profile-btn">Save Changes</button>
                     <button class="btn-secondary" id="reset-password-btn">Reset Password</button>
@@ -370,6 +378,7 @@
             const editFullname = document.getElementById('edit-fullname');
             const editUsername = document.getElementById('edit-username');
             const editBio = document.getElementById('edit-bio');
+            const languageSelect = document.getElementById('language-select');
             const usernameStatus = document.getElementById('username-status');
             const saveBtn = document.getElementById('save-profile-btn');
             const resetPwdBtn = document.getElementById('reset-password-btn');
@@ -399,7 +408,8 @@
                     usernameAvailable: "✓ Available",
                     usernameInvalid: "Only letters, numbers, underscore",
                     usernameChecking: "Checking...",
-                    usernameHint: "Only letters, numbers, underscore"
+                    usernameHint: "Only letters, numbers, underscore",
+                    languageLabel: "Language / Langue"
                 },
                 fr: {
                     verified: "Étudiant vérifié",
@@ -413,7 +423,8 @@
                     usernameAvailable: "✓ Disponible",
                     usernameInvalid: "Lettres, chiffres, tiret bas uniquement",
                     usernameChecking: "Vérification...",
-                    usernameHint: "Lettres, chiffres, tiret bas uniquement"
+                    usernameHint: "Lettres, chiffres, tiret bas uniquement",
+                    languageLabel: "Langue / Language"
                 }
             };
             const t = translations[lang];
@@ -501,6 +512,7 @@
                 editUsername.value = currentUserData.username || '';
                 originalUsername = currentUserData.username || '';
                 editBio.value = currentUserData.bio || '';
+                languageSelect.value = currentUserData.language || localStorage.getItem('preferred_language') || 'en';
                 
                 // Avatar
                 let photoURL = currentUserData.photoURL;
@@ -589,6 +601,7 @@
                 const newFullname = editFullname.value.trim();
                 const newUsername = editUsername.value.trim().toLowerCase();
                 const newBio = editBio.value.trim();
+                const newLanguage = languageSelect.value;
                 
                 if (!newFullname) {
                     saveFeedback.textContent = 'Full name is required';
@@ -650,7 +663,8 @@
                         displayName: newFullname,
                         username: newUsername,
                         bio: newBio,
-                        photoURL: finalPhotoURL
+                        photoURL: finalPhotoURL,
+                        language: newLanguage
                     };
                     await updateDoc(doc(db, "users", currentUser.uid), updates);
                     
@@ -661,6 +675,12 @@
                         } else {
                             console.warn('updateUserContent not available');
                         }
+                    }
+                    
+                    // Update language in localStorage and refresh UI
+                    localStorage.setItem('preferred_language', newLanguage);
+                    if (window.applyLanguage) {
+                        window.applyLanguage(newLanguage);
                     }
                     
                     // Refresh displayed data
@@ -676,6 +696,9 @@
                     
                     saveFeedback.textContent = t.saveSuccess;
                     saveFeedback.style.color = 'green';
+                    
+                    // Reload page to apply language changes globally (optional but safe)
+                    setTimeout(() => location.reload(), 1000);
                 } catch (err) {
                     console.error(err);
                     saveFeedback.textContent = t.saveError;
