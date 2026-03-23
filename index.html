@@ -217,7 +217,7 @@
         .listing-location { font-size: 0.8rem; color: var(--text-muted); margin-top: auto; }
         .listing-location i { margin-right: 4px; color: var(--deep); }
 
-        /* ── ACTIVE TOPICS SECTION (replaces Campus Buzz) ── */
+        /* ── ACTIVE TOPICS SECTION ── */
         .topics-section {
             padding: 60px 28px;
             border-top: 1px solid rgba(179,205,224,0.4);
@@ -420,7 +420,7 @@
         </section>
     </div>
 
-    <!-- Active Topics Section (replaces Campus Buzz) -->
+    <!-- Active Topics Section -->
     <section class="topics-section">
         <div class="section-header" style="max-width: 1280px; margin: 0 auto 30px;">
             <h2 class="section-title" id="topics-title">Active Topics</h2>
@@ -659,16 +659,26 @@
 
                 try {
                     unsubscribeListings = onSnapshot(query(collection(db, 'listings'), ...constraints), snapshot => {
-                        const activeDocs = snapshot.docs.filter(d => d.data().status !== 'sold');
+                        const term = searchInput.value.toLowerCase().trim();
+                        const allActive = snapshot.docs.filter(d => d.data().status !== 'sold');
                         
-                        // Limit to 20 listings maximum
-                        const limitedDocs = activeDocs.slice(0, 20);
+                        // Filter by search term (title, description, ISBN)
+                        const filteredDocs = term === '' ? allActive : allActive.filter(doc => {
+                            const data = doc.data();
+                            const titleMatch = (data.title || '').toLowerCase().includes(term);
+                            const descMatch = (data.description || '').toLowerCase().includes(term);
+                            const isbnMatch = (data.isbn || '').toLowerCase().includes(term);
+                            return titleMatch || descMatch || isbnMatch;
+                        });
+                        
+                        // Limit to 20 listings
+                        const limitedDocs = filteredDocs.slice(0, 20);
                         
                         itemCountSpan.textContent = `${limitedDocs.length} ${ui.items}`;
-                        dynamicBookCount.textContent = activeDocs.length; 
+                        dynamicBookCount.textContent = allActive.length; 
 
                         if (!limitedDocs.length) {
-                            listingsContainer.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-book"></i><p>No listings yet — be the first to post!</p></div>`;
+                            listingsContainer.innerHTML = `<div class="empty-state" style="grid-column:1/-1;"><i class="fas fa-book"></i><p>${term ? (lang === 'fr' ? 'Aucun résultat pour cette recherche.' : 'No results for this search.') : (lang === 'fr' ? 'Aucune annonce pour le moment.' : 'No listings yet.')}</p></div>`;
                             return;
                         }
                         
@@ -689,9 +699,10 @@
             }
 
             sortFilter.onchange = fetchListings;
+            searchInput.addEventListener('input', fetchListings); // Live filtering
             loadGlobalTags();
-            loadActiveTopics();   // Load active topics section
-            fetchListings();      // Load listings (limited to 20)
+            loadActiveTopics();
+            fetchListings();
         }
         main();
     </script>
