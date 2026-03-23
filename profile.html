@@ -66,24 +66,48 @@
         
         .profile-header-card {
             background: var(--white); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);
-            padding: 0 30px 30px; margin: -70px auto 30px; position: relative; z-index: 10;
-            display: flex; align-items: flex-end; gap: 25px; border: 1px solid rgba(179,205,224,0.3);
+            padding: 0 30px 30px; margin: 0 auto 30px; position: relative; z-index: 10;
+            border: 1px solid rgba(179,205,224,0.3);
         }
 
-        .avatar-wrapper { position: relative; flex-shrink: 0; margin-top: -50px; }
-        .profile-avatar { width: 150px; height: 150px; border-radius: 50%; border: 5px solid var(--white); background: var(--surface); object-fit: cover; box-shadow: var(--shadow-sm); }
+        /* Fixed structural layout for the avatar to prevent squishing */
+        .header-top-row {
+            display: flex;
+            align-items: flex-end;
+            gap: 25px;
+            margin-top: -65px; /* Pulls the row up into the banner */
+            margin-bottom: 20px;
+        }
+
+        .avatar-wrapper { 
+            position: relative; 
+            width: 140px; 
+            height: 140px; 
+            flex-shrink: 0; /* Prevents flexbox from squeezing it */
+        }
+        .profile-avatar { 
+            width: 100%; 
+            height: 100%; 
+            border-radius: 50%; 
+            border: 5px solid var(--white); 
+            background: var(--surface); 
+            object-fit: cover; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+            display: block;
+        }
         
         .edit-avatar-btn {
-            position: absolute; bottom: 5px; right: 5px; width: 40px; height: 40px;
+            position: absolute; bottom: 4px; right: 4px; width: 40px; height: 40px;
             background: var(--gold); color: var(--ink); border: none; border-radius: 50%;
             cursor: pointer; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;
             box-shadow: 0 4px 10px rgba(200,169,110,0.4); transition: transform 0.2s;
         }
         .edit-avatar-btn:hover { transform: scale(1.08); background: #dcb878; }
 
-        .profile-info { flex: 1; padding-top: 20px; }
+        .profile-titles { padding-bottom: 12px; flex-grow: 1; }
         .profile-name { font-family: var(--font-display); font-size: 2.2rem; font-weight: 900; color: var(--ink); line-height: 1.1; margin-bottom: 4px; }
-        .profile-username { font-size: 1.05rem; color: var(--text-muted); font-weight: 500; margin-bottom: 12px; }
+        .profile-username { font-size: 1.05rem; color: var(--text-muted); font-weight: 500; }
+        
         .profile-bio { color: var(--text-body); font-size: 0.95rem; max-width: 600px; line-height: 1.5; margin-bottom: 16px; }
         
         .profile-meta { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -136,11 +160,18 @@
         @media (max-width: 768px) {
             nav { display: none; }
             .profile-banner { height: 140px; border-radius: 0; }
-            .profile-header-card { flex-direction: column; align-items: center; text-align: center; padding: 0 20px 25px; margin: -50px 0 20px; border-radius: 0; border: none; border-bottom: 1px solid var(--mist); box-shadow: none; }
-            .profile-avatar { width: 110px; height: 110px; border-width: 4px; }
-            .edit-avatar-btn { width: 34px; height: 34px; font-size: 1rem; bottom: 0; right: 0; }
+            .profile-header-card { padding: 0 20px 25px; margin: 0 0 20px; border-radius: 0; border: none; border-bottom: 1px solid var(--mist); box-shadow: none; }
+            
+            /* Center elements on mobile */
+            .header-top-row { flex-direction: column; align-items: center; text-align: center; margin-top: -65px; gap: 12px; }
+            .profile-titles { padding-bottom: 0; }
+            
+            .avatar-wrapper { width: 120px; height: 120px; }
+            .profile-avatar { border-width: 4px; }
+            .edit-avatar-btn { width: 36px; height: 36px; font-size: 1rem; bottom: 0; right: 0; }
             .profile-name { font-size: 1.8rem; }
             .profile-meta { justify-content: center; }
+            
             .edit-grid { grid-template-columns: 1fr; }
             .btn-group { flex-direction: column; }
             .btn { width: 100%; }
@@ -167,27 +198,30 @@
             <div class="profile-banner" id="profile-banner"></div>
             
             <div class="profile-header-card">
-                <div class="avatar-wrapper">
-                    <img id="profile-avatar-img" class="profile-avatar" alt="Profile picture" src="">
-                    <button class="edit-avatar-btn" id="edit-avatar-btn" title="Change photo"><i class="fas fa-camera"></i></button>
-                    <input type="file" id="photo-upload-input" accept="image/*" style="display: none;">
+                <div class="header-top-row">
+                    <div class="avatar-wrapper">
+                        <img id="profile-avatar-img" class="profile-avatar" alt="Profile picture" src="">
+                        <button class="edit-avatar-btn" id="edit-avatar-btn" title="Change photo"><i class="fas fa-camera"></i></button>
+                        <input type="file" id="photo-upload-input" accept="image/*" style="display: none;">
+                    </div>
+                    <div class="profile-titles">
+                        <h1 class="profile-name" id="display-name-display"></h1>
+                        <div class="profile-username" id="username-display"></div>
+                    </div>
                 </div>
-                <div class="profile-info">
-                    <h1 class="profile-name" id="display-name-display"></h1>
-                    <div class="profile-username" id="username-display"></div>
-                    <div class="profile-bio" id="bio-display"></div>
-                    
-                    <div class="profile-meta">
-                        <div class="meta-tag rating" id="rating-display"></div>
-                        <div class="meta-tag verified" id="verified-badge" style="display: none;">
-                            <i class="fas fa-graduation-cap"></i> <span id="verified-text">Verified Student</span>
-                        </div>
-                        <div class="meta-tag school">
-                            <i class="fas fa-university"></i> <span id="school-name"></span>
-                        </div>
-                        <div class="meta-tag">
-                            <i class="far fa-calendar-alt"></i> <span id="join-date-display"></span>
-                        </div>
+
+                <div class="profile-bio" id="bio-display"></div>
+                
+                <div class="profile-meta">
+                    <div class="meta-tag rating" id="rating-display"></div>
+                    <div class="meta-tag verified" id="verified-badge" style="display: none;">
+                        <i class="fas fa-graduation-cap"></i> <span id="verified-text">Verified Student</span>
+                    </div>
+                    <div class="meta-tag school">
+                        <i class="fas fa-university"></i> <span id="school-name"></span>
+                    </div>
+                    <div class="meta-tag">
+                        <i class="far fa-calendar-alt"></i> <span id="join-date-display"></span>
                     </div>
                 </div>
             </div>
@@ -411,12 +445,17 @@
                     joinDateSpan.textContent = t.joinPrefix + (lang === 'fr' ? 'récemment' : 'recently');
                 }
                 
-                // Fetch Saved Listings
+                // Fetch Saved Listings (FIXED: Reversing the array to show newest first)
                 if (currentUserData.savedListings && currentUserData.savedListings.length > 0) {
-                    const promises = currentUserData.savedListings.map(id => getDoc(doc(db, "listings", id)));
+                    // Clone and reverse the array so newest saves are at the top
+                    const idsToFetch = [...currentUserData.savedListings].reverse();
+                    
+                    const promises = idsToFetch.map(id => getDoc(doc(db, "listings", id)));
                     const snaps = await Promise.all(promises);
+                    
                     savedListingsContainer.innerHTML = '';
                     let hasItems = false;
+                    
                     snaps.forEach(snap => {
                         if (snap.exists() && snap.data().status !== 'sold') {
                             hasItems = true;
