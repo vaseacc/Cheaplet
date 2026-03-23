@@ -90,9 +90,33 @@
         .composer-pfp { width: 45px; height: 45px; border-radius: 50%; background: #eee; object-fit: cover; border: 2px solid var(--off-white); flex-shrink: 0; }
         .composer-input { flex-grow: 1; border: none; font-family: inherit; font-size: 1.1rem; color: var(--text-main); resize: none; outline: none; padding-top: 10px; min-height: 60px; background: transparent; width: 100%; min-width: 0; }
         .composer-input::placeholder { color: #94a3b8; font-weight: 400; }
-        .composer-bottom { display: flex; justify-content: flex-end; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 15px; margin-top: 10px; width: 100%; }
+        .composer-bottom { 
+            display: none; 
+            justify-content: flex-end; 
+            align-items: center; 
+            border-top: 1px solid #f1f5f9; 
+            padding-top: 15px; 
+            margin-top: 10px; 
+            width: 100%; 
+        }
         
-        .btn-action { background: var(--gold); color: var(--ink); border: none; padding: 10px 28px; border-radius: 30px; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(200, 169, 110, 0.2); flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-action { 
+            background: var(--gold); 
+            color: var(--ink); 
+            border: none; 
+            padding: 10px 28px; 
+            border-radius: 30px; 
+            font-weight: 800; 
+            font-size: 0.95rem; 
+            cursor: pointer; 
+            transition: 0.2s; 
+            box-shadow: 0 4px 12px rgba(200, 169, 110, 0.2); 
+            flex-shrink: 0; 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 8px; 
+        }
         .btn-action:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(200, 169, 110, 0.4); }
         .btn-action:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
         .btn-ghost { background: #f1f5f9; color: var(--text-main); padding: 10px 28px; border-radius: 30px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; flex-shrink: 0; }
@@ -343,8 +367,10 @@
                     <img src="" id="composer-pfp" class="composer-pfp" alt="Avatar">
                     <textarea class="composer-input" id="post-input" data-i18n-placeholder="post_placeholder" placeholder="What's happening on campus?"></textarea>
                 </div>
-                <div class="composer-bottom" id="composer-controls" style="display:none;">
-                    <button class="btn-action" id="btn-send-post"><span data-i18n="btn_post">Post</span></button>
+                <div class="composer-bottom" id="composer-controls">
+                    <button class="btn-action" id="btn-send-post">
+                        <i class="fas fa-paper-plane"></i> <span data-i18n="btn_post">Post</span>
+                    </button>
                 </div>
             </div>
 
@@ -505,6 +531,60 @@
                         }
                         document.getElementById('composer-pfp').src = pfpUrl;
                         
+                        // Initially hide send button
+                        composerControls.style.display = 'none';
+                        
+                        // Show/hide send button based on input
+                        postInput.addEventListener('input', function() {
+                            this.style.height = '60px';
+                            this.style.height = (this.scrollHeight) + 'px';
+                            if (this.value.trim() === '') {
+                                this.style.height = '60px';
+                                composerControls.style.display = 'none';
+                            } else {
+                                composerControls.style.display = 'flex';
+                            }
+                        });
+                        
+                        btnSendPost.onclick = async () => {
+                            const text = postInput.value.trim();
+                            if (!text) return;
+                            
+                            btnSendPost.disabled = true;
+                            postInput.value = '';
+                            postInput.style.height = '60px'; 
+                            postInput.blur(); 
+                            composerControls.style.display = 'none';
+                            
+                            try {
+                                let photoToSave = currentUser.photoURL;
+                                if (!photoToSave || photoToSave.includes("googleusercontent") || photoToSave.includes("live.com")) {
+                                    photoToSave = `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
+                                }
+                                
+                                await addDoc(collection(db, "social_posts"), {
+                                    wayId: currentWayId,
+                                    schoolName: internalSchoolName,
+                                    text: text,
+                                    authorUid: currentUser.uid,
+                                    authorName: currentUser.displayName || "User",
+                                    authorPhoto: photoToSave,
+                                    likes: 0,
+                                    likedBy: [],
+                                    timestamp: serverTimestamp()
+                                });
+                                
+                                if (currentWayId !== 'general') {
+                                    await updateDoc(doc(db, "social_channels", currentWayId), {
+                                        postCount: increment(1)
+                                    });
+                                }
+                                
+                            } catch (e) { alert("Error posting."); }
+                            
+                            btnSendPost.disabled = false;
+                        };
+                        
                         loadTopics();
                         preloadBooksAndLoadFeed(currentWayId);
                     }
@@ -528,9 +608,6 @@
 
                     snapshot.forEach(docSnap => {
                         const d = docSnap.data();
-                        // For custom topics, we show them even if postCount=0? Show all for browsing.
-                        // But we skip empty topics that are not "general" and have no posts? 
-                        // Keep them to encourage creation.
                         const displayCount = formatCount(d.postCount);
                         
                         const dItem = document.createElement('div');
@@ -761,57 +838,6 @@
                     <div class="break-scroll">${bookHtml}</div>
                 `;
                 return breakSection;
-            }
-
-            if (currentUser) {
-                postInput.addEventListener('focus', () => {
-                    composerControls.style.display = 'flex';
-                });
-
-                btnSendPost.onclick = async () => {
-                    const text = postInput.value.trim();
-                    if (!text) return;
-                    
-                    btnSendPost.disabled = true;
-                    postInput.value = '';
-                    postInput.style.height = '60px'; 
-                    postInput.blur(); 
-                    composerControls.style.display = 'none';
-
-                    try {
-                        let photoToSave = currentUser.photoURL;
-                        if (!photoToSave || photoToSave.includes("googleusercontent") || photoToSave.includes("live.com")) {
-                            photoToSave = `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
-                        }
-
-                        await addDoc(collection(db, "social_posts"), {
-                            wayId: currentWayId,
-                            schoolName: internalSchoolName,
-                            text: text,
-                            authorUid: currentUser.uid,
-                            authorName: currentUser.displayName || "User",
-                            authorPhoto: photoToSave,
-                            likes: 0,
-                            likedBy: [],
-                            timestamp: serverTimestamp()
-                        });
-
-                        if (currentWayId !== 'general') {
-                            await updateDoc(doc(db, "social_channels", currentWayId), {
-                                postCount: increment(1)
-                            });
-                        }
-
-                    } catch (e) { alert("Error posting."); }
-                    
-                    btnSendPost.disabled = false;
-                };
-
-                postInput.addEventListener('input', function() {
-                    this.style.height = '60px';
-                    this.style.height = (this.scrollHeight) + 'px';
-                    if (this.value.trim() === '') this.style.height = '60px';
-                });
             }
 
             window.likePost = async (id, alreadyLiked) => {
