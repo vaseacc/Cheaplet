@@ -204,13 +204,6 @@
         .student-tip strong { color: var(--gold-light); font-weight: 600; }
 
         /* ── FIELDS ── */
-        .field-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
         .field-wrap { margin-bottom: 12px; }
 
         .field-label {
@@ -223,7 +216,7 @@
             margin-bottom: 6px;
         }
 
-        /* Single unified rule for ALL inputs — consistent height, padding, radius */
+        /* Unified input styling */
         input[type="text"],
         input[type="email"],
         input[type="password"] {
@@ -239,7 +232,6 @@
             font-size: 14px;
             outline: none;
             transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
-            /* prevent browser from overriding box-sizing on auto-fill */
             box-sizing: border-box;
         }
 
@@ -251,7 +243,7 @@
             box-shadow: 0 0 0 3px rgba(212,176,90,0.08);
         }
 
-        /* Autofill fix — keep dark background */
+        /* Autofill fix */
         input:-webkit-autofill,
         input:-webkit-autofill:focus {
             -webkit-box-shadow: 0 0 0 1000px rgba(20,32,70,0.95) inset !important;
@@ -268,8 +260,28 @@
         }
 
         #register-fields.visible {
-            max-height: 160px;
+            max-height: 200px;
             opacity: 1;
+        }
+
+        /* Username hint & availability */
+        .username-hint {
+            font-size: 10px;
+            color: var(--muted);
+            margin-top: 4px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .username-available {
+            color: #8bc34a;
+        }
+        .username-unavailable {
+            color: #ff8f8f;
+        }
+        .username-loading {
+            color: var(--gold-light);
         }
 
         .forgot-pass-link {
@@ -430,7 +442,6 @@
         @media (max-width: 500px) {
             .auth-card { padding: 32px 22px 28px; border-radius: 16px; }
             .card-title { font-size: 24px; }
-            .field-row { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -469,14 +480,15 @@
 
                     <form id="auth-form">
                         <div id="register-fields">
-                            <div class="field-row">
-                                <div>
-                                    <label class="field-label">First Name</label>
-                                    <input type="text" id="tour-fname-input" placeholder="Jane">
-                                </div>
-                                <div>
-                                    <label class="field-label">Last Name</label>
-                                    <input type="text" id="tour-lname-input" placeholder="Doe">
+                            <div class="field-wrap">
+                                <label class="field-label">Full Name</label>
+                                <input type="text" id="full-name" placeholder="John Doe" autocomplete="name">
+                            </div>
+                            <div class="field-wrap">
+                                <label class="field-label">Username</label>
+                                <input type="text" id="username" placeholder="jhondoe" autocomplete="off">
+                                <div class="username-hint" id="username-status">
+                                    <span id="username-status-text">Only letters, numbers, underscore</span>
                                 </div>
                             </div>
                         </div>
@@ -514,10 +526,9 @@
         </div>
     </main>
 
-    <!-- ── PARTICLE NETWORK + 3D TILT ── -->
     <script>
     (() => {
-        /* ---- Canvas particle network ---- */
+        /* ---- Canvas particle network (unchanged) ---- */
         const canvas = document.getElementById('bg-canvas');
         const ctx = canvas.getContext('2d');
         let W, H, nodes = [];
@@ -550,14 +561,12 @@
         function draw(ts) {
             ctx.clearRect(0, 0, W, H);
 
-            /* subtle deep-navy vignette */
             const vignette = ctx.createRadialGradient(W/2, H/2, H*0.2, W/2, H/2, H*0.85);
             vignette.addColorStop(0, 'rgba(15,29,58,0)');
             vignette.addColorStop(1, 'rgba(8,15,35,0.35)');
             ctx.fillStyle = vignette;
             ctx.fillRect(0, 0, W, H);
 
-            /* update + draw nodes */
             nodes.forEach(n => {
                 n.x += n.vx; n.y += n.vy;
                 if (n.x < 0 || n.x > W) n.vx *= -1;
@@ -571,7 +580,6 @@
                 ctx.fill();
             });
 
-            /* draw links */
             for (let i = 0; i < nodes.length; i++) {
                 for (let j = i + 1; j < nodes.length; j++) {
                     const a = nodes[i], b = nodes[j];
@@ -596,7 +604,6 @@
         init();
         requestAnimationFrame(draw);
 
-        /* Mouse influence on particles */
         let mx = -9999, my = -9999;
         window.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
 
@@ -617,7 +624,6 @@
 
             scene.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
 
-            /* sheen position relative to card */
             const mx = ((e.clientX - rect.left) / rect.width  * 100).toFixed(1);
             const my = ((e.clientY - rect.top)  / rect.height * 100).toFixed(1);
             sheen.style.setProperty('--mx', `${mx}%`);
@@ -632,11 +638,10 @@
     })();
     </script>
 
-    <!-- ── FIREBASE LOGIC (unchanged) ── -->
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged, GoogleAuthProvider, OAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -658,6 +663,8 @@
 
             let isLoginMode = true;
             let isRegistering = false;
+            let usernameCheckTimeout = null;
+            let currentUsernameValid = false;
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = {
@@ -667,10 +674,13 @@
                     loginBtn: "Log In", regBtn: "Create Account",
                     toggleToReg: "New to Scoralia? Create an account.", toggleToLogin: "Already have an account? Log in.",
                     studentTip: "Use your school email (or link your school's Google/Microsoft account) to automatically get a <strong>Verified Student</strong> badge!",
-                    placeFirst: "First Name", placeLast: "Last Name", placeEmail: "Email Address", placePass: "Password",
+                    fullName: "Full Name", username: "Username", usernameHint: "Only letters, numbers, underscore",
+                    usernameAvailable: "✓ Username available", usernameUnavailable: "✗ Username already taken", usernameChecking: "Checking...",
+                    placeEmail: "Email Address", placePass: "Password",
                     google: "Continue with Google", microsoft: "Continue with Microsoft", or: "or", verify: "Verifying...",
                     errBanned: "Account banned.", errVerify: "Please verify your email first!", errSent: "Verification email sent! Please check your inbox.",
-                    forgotPass: "Forgot Password?", enterEmailFirst: "Please enter your email address to reset your password.", resetSent: "Password reset email sent! Check your inbox."
+                    forgotPass: "Forgot Password?", enterEmailFirst: "Please enter your email address to reset your password.", resetSent: "Password reset email sent! Check your inbox.",
+                    usernameInvalid: "Username must contain only letters, numbers, and underscore (no spaces)."
                 },
                 fr: {
                     loginTitle: "Bon retour", loginSub: "Connectez-vous pour continuer vos achats et ventes.",
@@ -678,28 +688,37 @@
                     loginBtn: "Connexion", regBtn: "Créer un compte",
                     toggleToReg: "Nouveau sur Scoralia ? Créez un compte.", toggleToLogin: "Vous avez déjà un compte ? Connectez-vous.",
                     studentTip: "Utilisez votre courriel scolaire (ou un compte Google/Microsoft de l'école) pour obtenir automatiquement le badge <strong>Étudiant vérifié</strong> !",
-                    placeFirst: "Prénom", placeLast: "Nom de famille", placeEmail: "Adresse e-mail", placePass: "Mot de passe",
+                    fullName: "Nom complet", username: "Nom d'utilisateur", usernameHint: "Lettres, chiffres, tiret bas uniquement",
+                    usernameAvailable: "✓ Nom d'utilisateur disponible", usernameUnavailable: "✗ Nom d'utilisateur déjà pris", usernameChecking: "Vérification...",
+                    placeEmail: "Adresse e-mail", placePass: "Mot de passe",
                     google: "Continuer avec Google", microsoft: "Continuer avec Microsoft", or: "ou", verify: "Vérification...",
                     errBanned: "Compte banni.", errVerify: "Veuillez d'abord vérifier votre e-mail !", errSent: "E-mail de vérification envoyé ! Vérifiez votre boîte de réception.",
-                    forgotPass: "Mot de passe oublié ?", enterEmailFirst: "Veuillez entrer votre adresse e-mail pour réinitialiser le mot de passe.", resetSent: "E-mail de réinitialisation envoyé ! Vérifiez votre boîte de réception."
+                    forgotPass: "Mot de passe oublié ?", enterEmailFirst: "Veuillez entrer votre adresse e-mail pour réinitialiser le mot de passe.", resetSent: "E-mail de réinitialisation envoyé ! Vérifiez votre boîte de réception.",
+                    usernameInvalid: "Le nom d'utilisateur ne peut contenir que des lettres, chiffres et tiret bas (pas d'espaces)."
                 }
             };
 
-            formTitle.textContent = strings[lang].loginTitle;
-            document.getElementById('form-subtitle').textContent = strings[lang].loginSub;
-            submitBtn.textContent = strings[lang].loginBtn;
-            toggleLink.textContent = strings[lang].toggleToReg;
-            document.getElementById('student-tip-text').innerHTML = strings[lang].studentTip;
-            document.getElementById('tour-fname-input').placeholder = strings[lang].placeFirst;
-            document.getElementById('tour-lname-input').placeholder = strings[lang].placeLast;
-            document.getElementById('email').placeholder = strings[lang].placeEmail;
-            document.getElementById('password').placeholder = strings[lang].placePass;
-            document.getElementById('google-btn-text').textContent = strings[lang].google;
-            document.getElementById('microsoft-btn-text').textContent = strings[lang].microsoft;
-            document.getElementById('or-text').textContent = strings[lang].or;
-            document.getElementById('loading-text').textContent = strings[lang].verify;
-            forgotPasswordLink.textContent = strings[lang].forgotPass;
+            // Apply translations
+            const applyUIText = () => {
+                formTitle.textContent = isLoginMode ? strings[lang].loginTitle : strings[lang].regTitle;
+                document.getElementById('form-subtitle').textContent = isLoginMode ? strings[lang].loginSub : strings[lang].regSub;
+                submitBtn.textContent = isLoginMode ? strings[lang].loginBtn : strings[lang].regBtn;
+                toggleLink.textContent = isLoginMode ? strings[lang].toggleToReg : strings[lang].toggleToLogin;
+                document.getElementById('student-tip-text').innerHTML = strings[lang].studentTip;
+                document.getElementById('full-name').placeholder = strings[lang].fullName;
+                document.getElementById('username').placeholder = strings[lang].username;
+                document.getElementById('username-status-text').textContent = strings[lang].usernameHint;
+                document.getElementById('email').placeholder = strings[lang].placeEmail;
+                document.getElementById('password').placeholder = strings[lang].placePass;
+                document.getElementById('google-btn-text').textContent = strings[lang].google;
+                document.getElementById('microsoft-btn-text').textContent = strings[lang].microsoft;
+                document.getElementById('or-text').textContent = strings[lang].or;
+                document.getElementById('loading-text').textContent = strings[lang].verify;
+                forgotPasswordLink.textContent = strings[lang].forgotPass;
+            };
+            applyUIText();
 
+            // School domains for verified badge
             const schoolDomains = {
                 "@etu.cegepjonquiere.ca": "Cégep de Jonquière",
                 "@cegep-lanaudiere.qc.ca": "Cégep de Lanaudière",
@@ -720,37 +739,134 @@
                     : { isStudent: false, schoolName: null };
             }
 
+            // Validate username format
+            function isValidUsername(username) {
+                return /^[a-zA-Z0-9_]+$/.test(username);
+            }
+
+            // Check username availability in Firestore
+            async function checkUsernameAvailability(username) {
+                if (!username || username.length < 3) return false;
+                const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
+                const snapshot = await getDocs(q);
+                return snapshot.empty;
+            }
+
+            // Real-time username availability
+            const usernameInput = document.getElementById('username');
+            const usernameStatusSpan = document.getElementById('username-status-text');
+            const usernameStatusDiv = document.getElementById('username-status');
+
+            usernameInput.addEventListener('input', async () => {
+                const username = usernameInput.value.trim();
+                if (usernameCheckTimeout) clearTimeout(usernameCheckTimeout);
+                
+                if (!username) {
+                    usernameStatusSpan.textContent = strings[lang].usernameHint;
+                    usernameStatusSpan.className = '';
+                    currentUsernameValid = false;
+                    return;
+                }
+                
+                if (!isValidUsername(username)) {
+                    usernameStatusSpan.textContent = strings[lang].usernameInvalid;
+                    usernameStatusSpan.className = 'username-unavailable';
+                    currentUsernameValid = false;
+                    return;
+                }
+                
+                usernameStatusSpan.textContent = strings[lang].usernameChecking;
+                usernameStatusSpan.className = 'username-loading';
+                currentUsernameValid = false;
+                
+                usernameCheckTimeout = setTimeout(async () => {
+                    const available = await checkUsernameAvailability(username);
+                    if (available) {
+                        usernameStatusSpan.textContent = strings[lang].usernameAvailable;
+                        usernameStatusSpan.className = 'username-available';
+                        currentUsernameValid = true;
+                    } else {
+                        usernameStatusSpan.textContent = strings[lang].usernameUnavailable;
+                        usernameStatusSpan.className = 'username-unavailable';
+                        currentUsernameValid = false;
+                    }
+                }, 500);
+            });
+
+            // Helper to create user document with username
+            async function createUserDocument(user, displayName, username) {
+                const email = user.email.toLowerCase();
+                const schoolInfo = getSchoolInfo(email);
+                const userRef = doc(db, "users", user.uid);
+                await setDoc(userRef, {
+                    uid: user.uid,
+                    displayName: displayName,
+                    username: username.toLowerCase(),
+                    email: email,
+                    role: 'user',
+                    isStudent: schoolInfo.isStudent,
+                    schoolName: schoolInfo.schoolName,
+                    createdAt: new Date().toISOString()
+                });
+            }
+
             async function handleLoginSuccess(user) {
                 loadingOverlay.style.display = 'flex';
                 try {
                     const userDocRef = doc(db, "users", user.uid);
                     const userDoc = await getDoc(userDocRef);
-                    const email = user.email.toLowerCase();
-                    const schoolInfo = getSchoolInfo(email);
-
+                    
                     if (!userDoc.exists()) {
-                        await setDoc(userDocRef, { uid: user.uid, displayName: user.displayName, email: user.email, role: 'user', isStudent: schoolInfo.isStudent, schoolName: schoolInfo.schoolName });
-                    } else {
-                        const data = userDoc.data();
-                        if (data.role === 'banned') { await signOut(auth); alert(strings[lang].errBanned); window.location.reload(); return; }
-                        else if (schoolInfo.isStudent && (!data.isStudent || !data.schoolName)) { await updateDoc(userDocRef, { isStudent: true, schoolName: schoolInfo.schoolName }); }
+                        // Should not happen for email/password, but for OAuth we might need to prompt for username
+                        await signOut(auth);
+                        alert("Account incomplete. Please register again.");
+                        window.location.reload();
+                        return;
+                    }
+                    
+                    const data = userDoc.data();
+                    if (data.role === 'banned') {
+                        await signOut(auth);
+                        alert(strings[lang].errBanned);
+                        window.location.reload();
+                        return;
                     }
                     window.location.href = new URLSearchParams(window.location.search).get('redirect') || '/index.html';
-                } catch (e) { window.location.href = '/index.html'; }
+                } catch (e) {
+                    console.error(e);
+                    window.location.href = '/index.html';
+                }
             }
 
             onAuthStateChanged(auth, async (user) => {
                 if (user && !isRegistering) {
                     const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
-                    if (user.emailVerified || isOAuth) handleLoginSuccess(user);
-                    else { await signOut(auth); loadingOverlay.style.display = 'none'; }
+                    if (user.emailVerified || isOAuth) {
+                        // For OAuth, we need to check if they have a username; if not, prompt.
+                        const userDoc = await getDoc(doc(db, "users", user.uid));
+                        if (!userDoc.exists() || !userDoc.data().username) {
+                            // Redirect to a username selection page or show modal
+                            // For now, we'll sign them out and ask to register normally
+                            await signOut(auth);
+                            alert("Please register with a username using email/password.");
+                            window.location.href = '/LoginInToCheaplet.html';
+                            return;
+                        }
+                        handleLoginSuccess(user);
+                    } else {
+                        await signOut(auth);
+                        loadingOverlay.style.display = 'none';
+                    }
                 }
             });
 
             forgotPasswordLink.onclick = async () => {
                 const emailVal = document.getElementById('email').value.trim();
                 if (!emailVal) { alert(strings[lang].enterEmailFirst); return; }
-                try { await sendPasswordResetEmail(auth, emailVal); alert(strings[lang].resetSent); } catch (e) { alert(e.message); }
+                try {
+                    await sendPasswordResetEmail(auth, emailVal);
+                    alert(strings[lang].resetSent);
+                } catch (e) { alert(e.message); }
             };
 
             toggleLink.onclick = () => {
@@ -765,38 +881,71 @@
                 }
                 studentTip.style.display = isLoginMode ? 'none' : 'flex';
                 forgotPasswordLink.style.display = isLoginMode ? 'block' : 'none';
-                formTitle.textContent = isLoginMode ? strings[lang].loginTitle : strings[lang].regTitle;
-                document.getElementById('form-subtitle').textContent = isLoginMode ? strings[lang].loginSub : strings[lang].regSub;
-                submitBtn.textContent = isLoginMode ? strings[lang].loginBtn : strings[lang].regBtn;
-                toggleLink.textContent = isLoginMode ? strings[lang].toggleToReg : strings[lang].toggleToLogin;
+                applyUIText();
             };
 
-            document.getElementById('google-btn').onclick = async () => { try { await signInWithPopup(auth, googleProvider); } catch (e) { alert(e.message); } };
-            document.getElementById('microsoft-btn').onclick = async () => { try { await signInWithPopup(auth, msProvider); } catch (e) { alert(e.message); } };
+            document.getElementById('google-btn').onclick = async () => {
+                try {
+                    const result = await signInWithPopup(auth, googleProvider);
+                    // After OAuth, check if username exists; if not, redirect to username picker
+                    const userDoc = await getDoc(doc(db, "users", result.user.uid));
+                    if (!userDoc.exists() || !userDoc.data().username) {
+                        await signOut(auth);
+                        alert("Please complete registration with a username using email/password.");
+                        window.location.href = '/LoginInToCheaplet.html';
+                    }
+                } catch (e) { alert(e.message); }
+            };
+            document.getElementById('microsoft-btn').onclick = async () => {
+                try {
+                    const result = await signInWithPopup(auth, msProvider);
+                    const userDoc = await getDoc(doc(db, "users", result.user.uid));
+                    if (!userDoc.exists() || !userDoc.data().username) {
+                        await signOut(auth);
+                        alert("Please complete registration with a username using email/password.");
+                        window.location.href = '/LoginInToCheaplet.html';
+                    }
+                } catch (e) { alert(e.message); }
+            };
 
             authForm.onsubmit = async (e) => {
                 e.preventDefault();
                 submitBtn.disabled = true;
                 const email = document.getElementById('email').value.toLowerCase();
-                const pass  = document.getElementById('password').value;
+                const pass = document.getElementById('password').value;
                 try {
                     if (isLoginMode) {
                         const cred = await signInWithEmailAndPassword(auth, email, pass);
-                        if (!cred.user.emailVerified) { await signOut(auth); alert(strings[lang].errVerify); }
+                        if (!cred.user.emailVerified) {
+                            await signOut(auth);
+                            alert(strings[lang].errVerify);
+                        }
                     } else {
+                        // Registration
+                        const fullName = document.getElementById('full-name').value.trim();
+                        const username = document.getElementById('username').value.trim().toLowerCase();
+                        
+                        if (!fullName) { alert("Full name is required"); submitBtn.disabled = false; return; }
+                        if (!username) { alert("Username is required"); submitBtn.disabled = false; return; }
+                        if (!isValidUsername(username)) { alert(strings[lang].usernameInvalid); submitBtn.disabled = false; return; }
+                        if (!currentUsernameValid) { alert("Please choose a different username"); submitBtn.disabled = false; return; }
+                        
                         isRegistering = true;
                         const cred = await createUserWithEmailAndPassword(auth, email, pass);
-                        const name = `${document.getElementById('tour-fname-input').value} ${document.getElementById('tour-lname-input').value}`;
-                        const schoolInfo = getSchoolInfo(email);
-                        await updateProfile(cred.user, { displayName: name });
-                        await setDoc(doc(db, "users", cred.user.uid), { uid: cred.user.uid, displayName: name, email, role: 'user', isStudent: schoolInfo.isStudent, schoolName: schoolInfo.schoolName });
+                        // Update display name in Firebase Auth
+                        await updateProfile(cred.user, { displayName: fullName });
+                        // Create user document with username
+                        await createUserDocument(cred.user, fullName, username);
                         await sendEmailVerification(cred.user);
                         await signOut(auth);
                         isRegistering = false;
                         alert(strings[lang].errSent);
                         location.reload();
                     }
-                } catch (err) { alert(err.message); isRegistering = false; }
+                } catch (err) {
+                    alert(err.message);
+                    isRegistering = false;
+                }
                 submitBtn.disabled = false;
             };
         }
