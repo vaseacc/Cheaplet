@@ -689,7 +689,7 @@
                     toggleToReg: "Nouveau sur Scoralia ? Créez un compte.", toggleToLogin: "Vous avez déjà un compte ? Connectez-vous.",
                     studentTip: "Utilisez votre courriel scolaire (ou un compte Google/Microsoft de l'école) pour obtenir automatiquement le badge <strong>Étudiant vérifié</strong> !",
                     fullName: "Nom complet", username: "Nom d'utilisateur", usernameHint: "Lettres, chiffres, tiret bas uniquement",
-                    usernameAvailable: "✓ Nom d'utilisateur disponible", usernameUnavailable: "✗ Nom d'utilisateur déjà pris", usernameChecking: "Vérification...",
+                    usernameAvailable: "✓ Disponible", usernameUnavailable: "✗ Déjà pris", usernameChecking: "Vérification...",
                     placeEmail: "Adresse e-mail", placePass: "Mot de passe",
                     google: "Continuer avec Google", microsoft: "Continuer avec Microsoft", or: "ou", verify: "Vérification...",
                     errBanned: "Compte banni.", errVerify: "Veuillez d'abord vérifier votre e-mail !", errSent: "E-mail de vérification envoyé ! Vérifiez votre boîte de réception.",
@@ -818,14 +818,12 @@
                     
                     if (!userDoc.exists()) {
                         // Should not happen for email/password, but for OAuth we might need to prompt for username
-                        await signOut(auth);
-                        alert("Account incomplete. Please register again.");
-                        window.location.reload();
-                        return;
+                        // Instead of signing out, we'll let global.js handle it via the tour.
+                        // So we'll just redirect.
                     }
                     
                     const data = userDoc.data();
-                    if (data.role === 'banned') {
+                    if (data && data.role === 'banned') {
                         await signOut(auth);
                         alert(strings[lang].errBanned);
                         window.location.reload();
@@ -842,16 +840,7 @@
                 if (user && !isRegistering) {
                     const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
                     if (user.emailVerified || isOAuth) {
-                        // For OAuth, we need to check if they have a username; if not, prompt.
-                        const userDoc = await getDoc(doc(db, "users", user.uid));
-                        if (!userDoc.exists() || !userDoc.data().username) {
-                            // Redirect to a username selection page or show modal
-                            // For now, we'll sign them out and ask to register normally
-                            await signOut(auth);
-                            alert("Please register with a username using email/password.");
-                            window.location.href = '/LoginInToCheaplet.html';
-                            return;
-                        }
+                        // For OAuth, we just proceed; global.js will show the tour if username missing
                         handleLoginSuccess(user);
                     } else {
                         await signOut(auth);
@@ -884,27 +873,17 @@
                 applyUIText();
             };
 
+            // OAuth handlers without username check
             document.getElementById('google-btn').onclick = async () => {
                 try {
-                    const result = await signInWithPopup(auth, googleProvider);
-                    // After OAuth, check if username exists; if not, redirect to username picker
-                    const userDoc = await getDoc(doc(db, "users", result.user.uid));
-                    if (!userDoc.exists() || !userDoc.data().username) {
-                        await signOut(auth);
-                        alert("Please complete registration with a username using email/password.");
-                        window.location.href = '/LoginInToCheaplet.html';
-                    }
+                    await signInWithPopup(auth, googleProvider);
+                    // No further checks; global.js will handle missing username via tour
                 } catch (e) { alert(e.message); }
             };
             document.getElementById('microsoft-btn').onclick = async () => {
                 try {
-                    const result = await signInWithPopup(auth, msProvider);
-                    const userDoc = await getDoc(doc(db, "users", result.user.uid));
-                    if (!userDoc.exists() || !userDoc.data().username) {
-                        await signOut(auth);
-                        alert("Please complete registration with a username using email/password.");
-                        window.location.href = '/LoginInToCheaplet.html';
-                    }
+                    await signInWithPopup(auth, msProvider);
+                    // No further checks; global.js will handle missing username via tour
                 } catch (e) { alert(e.message); }
             };
 
@@ -932,9 +911,7 @@
                         
                         isRegistering = true;
                         const cred = await createUserWithEmailAndPassword(auth, email, pass);
-                        // Update display name in Firebase Auth
                         await updateProfile(cred.user, { displayName: fullName });
-                        // Create user document with username
                         await createUserDocument(cred.user, fullName, username);
                         await sendEmailVerification(cred.user);
                         await signOut(auth);
