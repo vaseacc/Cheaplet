@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, onSnapshot, updateDoc, setDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, onSnapshot, updateDoc, setDoc, collection, query, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
 // --- 0. AUTO-IMPORT ICONS & FAVICON ---
 if (!document.querySelector('link[href*="font-awesome"]')) {
@@ -24,7 +24,7 @@ const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getA
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// --- 2. TRANSLATION DICTIONARY ---
+// --- 2. TRANSLATION DICTIONARY (same as before) ---
 const translations = {
     "en": {
         "nav_browse": "Browse", "nav_listings": "My Listings", "nav_messages": "Messages", "nav_profile": "My Profile",
@@ -90,7 +90,7 @@ window.applyLanguage = (lang) => {
     localStorage.setItem('preferred_language', lang);
 };
 
-// --- 3. GLOBAL CSS (unchanged) ---
+// --- 3. GLOBAL CSS (same as before) ---
 const globalStyle = document.createElement('style');
 globalStyle.innerHTML = `
     .header-inner, .header-content { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 15px !important; flex-direction: row !important; }
@@ -141,7 +141,39 @@ globalStyle.innerHTML = `
 `;
 document.head.appendChild(globalStyle);
 
-// --- 4. STATE & LISTENERS ---
+// --- 4. FUNCTION TO UPDATE USER CONTENT (listings & chats) ---
+async function updateUserContent(uid, newDisplayName) {
+    if (!newDisplayName) return;
+    try {
+        // Update listings
+        const listingsQuery = query(collection(db, "listings"), where("posterUid", "==", uid));
+        const listingsSnap = await getDocs(listingsQuery);
+        const batch = writeBatch(db);
+        listingsSnap.forEach(doc => {
+            batch.update(doc.ref, { posterDisplayName: newDisplayName });
+        });
+        await batch.commit();
+
+        // Update chats
+        const chatsQuery = query(collection(db, "chats"), where("participants", "array-contains", uid));
+        const chatsSnap = await getDocs(chatsQuery);
+        const chatBatch = writeBatch(db);
+        chatsSnap.forEach(doc => {
+            const data = doc.data();
+            const participantInfo = data.participantInfo || {};
+            if (participantInfo[uid] !== newDisplayName) {
+                participantInfo[uid] = newDisplayName;
+                chatBatch.update(doc.ref, { participantInfo });
+            }
+        });
+        await chatBatch.commit();
+    } catch (err) {
+        console.error("Error updating user content:", err);
+    }
+}
+window.updateUserContent = updateUserContent;
+
+// --- 5. STATE & LISTENERS ---
 let globalSettings = {};
 let currentUserData = null;
 let unsubscribeChats = null;
@@ -373,6 +405,7 @@ function showWelcomeTour() {
         }
 
         try {
+            const oldDisplayName = currentUserData?.displayName || '';
             // Update Auth profile
             await updateProfile(user, { displayName: fullname, photoURL: finalPhoto });
             // Update Firestore user doc
@@ -382,6 +415,10 @@ function showWelcomeTour() {
                 photoURL: finalPhoto,
                 hasSeenTour: true
             });
+            // If display name changed, update listings and chats
+            if (fullname !== oldDisplayName) {
+                await updateUserContent(user.uid, fullname);
+            }
             localStorage.setItem(tourKey, 'true');
             overlay.remove();
             refreshUI();
