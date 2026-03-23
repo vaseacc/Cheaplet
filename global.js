@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, onSnapshot, updateDoc, collection, query, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, onSnapshot, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
 // --- 0. AUTO-IMPORT ICONS & FAVICON ---
 if (!document.querySelector('link[href*="font-awesome"]')) {
@@ -34,21 +34,33 @@ const translations = {
         "ban_title": "ACCESS DENIED",
         "ban_text": "This account has been permanently banned.",
         
-        "tour_title_1": "Welcome to Cheaplet!",
+        "tour_title_1": "Welcome to Scoralia!",
         "tour_desc_1": "Your campus marketplace for textbooks and essentials. Buy cheaply, sell quickly, and save money every semester.",
         "tour_title_2": "Trust & Safety",
         "tour_desc_2": "Look for the <span style='color:#2E7D32; font-weight:bold;'><i class='fas fa-graduation-cap'></i> Verified Student</span> badge. It means the user registered with an official college email.",
         "tour_title_3": "Smart Features",
         "tour_desc_3": "Click the bookmark icon on any listing to save it. You can easily find your saved items later in <b>My Profile</b>.",
-        "tour_title_4": "Personalize Your Profile",
-        "tour_desc_4": "Set your display name and add a photo! (If you skip the photo, we'll generate a unique retro avatar for you).",
-        "tour_first_name": "First Name (Min. 4 letters)",
-        "tour_last_name": "Last Name (Min. 4 letters)",
+        "tour_title_4": "Your Profile",
+        "tour_desc_4": "Set your full name and a unique username (e.g., @jhondoe). Add a photo to personalize your account.",
+        "tour_full_name": "Full Name (e.g., John Doe)",
+        "tour_username": "Username (letters, numbers, underscore only)",
         "tour_upload": "Choose Photo",
         "tour_next": "Next",
         "tour_start": "Finish & Explore",
         "tour_saving": "Saving...",
-        "tour_name_err": "Please ensure both your First and Last name contain at least 4 letters."
+        "tour_name_err": "Please enter a valid full name (at least two words).",
+        "tour_username_err": "Username must contain only letters, numbers, underscore, and be at least 3 characters.",
+        "tour_username_taken": "Username already taken. Please choose another.",
+        "username_modal_title": "Complete Your Profile",
+        "username_modal_desc": "Choose a unique username (e.g., @jhondoe). It will be used to identify you on Scoralia.",
+        "username_modal_fullname": "Full Name (optional)",
+        "username_modal_username": "Username",
+        "username_modal_save": "Save",
+        "username_modal_checking": "Checking...",
+        "username_modal_available": "✓ Available",
+        "username_modal_taken": "✗ Already taken",
+        "username_modal_invalid": "Only letters, numbers, underscore",
+        "username_modal_required": "Username is required"
     },
     "fr": { 
         "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", 
@@ -57,21 +69,33 @@ const translations = {
         "ban_title": "ACCÈS REFUSÉ",
         "ban_text": "Ce compte a été définitivement banni.",
 
-        "tour_title_1": "Bienvenue sur Cheaplet !",
+        "tour_title_1": "Bienvenue sur Scoralia !",
         "tour_desc_1": "Votre marché étudiant pour les manuels et articles essentiels. Achetez à bas prix, vendez rapidement et économisez.",
         "tour_title_2": "Confiance et Sécurité",
         "tour_desc_2": "Recherchez le badge <span style='color:#2E7D32; font-weight:bold;'><i class='fas fa-graduation-cap'></i> Étudiant vérifié</span>. Il indique une inscription avec un courriel scolaire officiel.",
         "tour_title_3": "Fonctionnalités",
         "tour_desc_3": "Cliquez sur l'icône de signet pour sauvegarder une annonce. Retrouvez-les facilement dans <b>Mon Profil</b>.",
-        "tour_title_4": "Personnalisez votre profil",
-        "tour_desc_4": "Définissez votre nom et ajoutez une photo ! (Si vous ignorez la photo, nous créerons un avatar rétro unique pour vous).",
-        "tour_first_name": "Prénom (Min. 4 lettres)",
-        "tour_last_name": "Nom (Min. 4 lettres)",
+        "tour_title_4": "Votre profil",
+        "tour_desc_4": "Définissez votre nom complet et un nom d'utilisateur unique (ex: @jhondoe). Ajoutez une photo pour personnaliser votre compte.",
+        "tour_full_name": "Nom complet (ex: Jean Dupont)",
+        "tour_username": "Nom d'utilisateur (lettres, chiffres, tiret bas)",
         "tour_upload": "Choisir une photo",
         "tour_next": "Suivant",
         "tour_start": "Terminer & Explorer",
         "tour_saving": "Enregistrement...",
-        "tour_name_err": "Veuillez vous assurer que votre prénom et votre nom contiennent au moins 4 lettres."
+        "tour_name_err": "Veuillez entrer un nom complet valide (au moins deux mots).",
+        "tour_username_err": "Le nom d'utilisateur ne peut contenir que des lettres, chiffres, tiret bas et au moins 3 caractères.",
+        "tour_username_taken": "Nom d'utilisateur déjà pris. Veuillez en choisir un autre.",
+        "username_modal_title": "Complétez votre profil",
+        "username_modal_desc": "Choisissez un nom d'utilisateur unique (ex: @jhondoe). Il vous identifiera sur Scoralia.",
+        "username_modal_fullname": "Nom complet (optionnel)",
+        "username_modal_username": "Nom d'utilisateur",
+        "username_modal_save": "Enregistrer",
+        "username_modal_checking": "Vérification...",
+        "username_modal_available": "✓ Disponible",
+        "username_modal_taken": "✗ Déjà pris",
+        "username_modal_invalid": "Lettres, chiffres, tiret bas uniquement",
+        "username_modal_required": "Nom d'utilisateur requis"
     }
 };
 
@@ -94,7 +118,7 @@ globalStyle.innerHTML = `
     nav ul li a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; white-space: nowrap; }
     nav ul li a:hover { color: #FFFFFF; }
 
-    /* 🔥 FIXED: Profile & Button Alignment */
+    /* Header Right */
     .header-right { display: flex !important; align-items: center !important; gap: 12px !important; flex-shrink: 0 !important; flex-direction: row !important; }
     
     .btn { background: linear-gradient(135deg, #C8A96E 0%, #ddb97a 100%) !important; color: #0C1446 !important; border: none !important; padding: 0 18px !important; height: 38px !important; line-height: 38px !important; border-radius: 20px !important; font-weight: bold !important; cursor: pointer !important; transition: all 0.2s !important; font-size: 0.82rem !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; text-decoration: none !important; white-space: nowrap !important; }
@@ -105,9 +129,11 @@ globalStyle.innerHTML = `
     .profile-avatar { width: 38px; height: 38px; border-radius: 50%; background-color: #1a2a4a; border: 2px solid #C8A96E; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; overflow: hidden; flex-shrink: 0; }
     .profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
     
-    .dropdown-menu { position: absolute; top: 48px; right: 0; width: 220px; background: white; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); display: none; flex-direction: column; overflow: hidden; color: #333; z-index: 1000; border: 1px solid #eee; }
+    .dropdown-menu { position: absolute; top: 48px; right: 0; width: 260px; background: white; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); display: none; flex-direction: column; overflow: hidden; color: #333; z-index: 1000; border: 1px solid #eee; }
     .dropdown-menu.show { display: flex; }
-    .dropdown-header { padding: 15px; border-bottom: 1px solid #eee; background: #f9f9f9; font-weight: bold; color: #0C1446; font-size: 0.9rem; }
+    .dropdown-header { padding: 15px; border-bottom: 1px solid #eee; background: #f9f9f9; font-weight: bold; color: #0C1446; font-size: 0.9rem; display: flex; flex-direction: column; gap: 4px; }
+    .dropdown-header .display-name { font-weight: 700; }
+    .dropdown-header .username { font-size: 0.75rem; color: #666; font-family: monospace; }
     
     .dropdown-item { padding: 12px 15px; text-decoration: none; color: #333; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.9rem; transition: background 0.2s; }
     .dropdown-item:hover { background-color: #f4f7fc; color: #2B5C92; }
@@ -147,6 +173,24 @@ globalStyle.innerHTML = `
     .desktop-only { display: inline-flex; }
     .mobile-link { display: none; }
 
+    /* Modal for username collection */
+    .username-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(12,20,70,0.9); z-index: 10010; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(6px); }
+    .username-modal-card { background: white; padding: 30px; border-radius: 20px; max-width: 450px; width: 90%; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+    .username-modal-card h2 { margin-bottom: 8px; color: #0C1446; font-family: 'Playfair Display', serif; }
+    .username-modal-card p { margin-bottom: 20px; color: #666; font-size: 0.9rem; }
+    .username-modal-field { margin-bottom: 16px; }
+    .username-modal-field label { display: block; font-weight: 600; margin-bottom: 4px; font-size: 0.8rem; color: #333; }
+    .username-modal-field input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; outline: none; }
+    .username-modal-field input:focus { border-color: #C8A96E; }
+    .username-status { font-size: 0.8rem; margin-top: 4px; display: flex; justify-content: space-between; }
+    .username-status.valid { color: #2E7D32; }
+    .username-status.invalid { color: #d32f2f; }
+    .username-status.checking { color: #ff9800; }
+    .username-modal-buttons { display: flex; gap: 12px; margin-top: 20px; }
+    .username-modal-buttons button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    .username-modal-buttons .btn-save { background: #C8A96E; color: #0C1446; }
+    .username-modal-buttons .btn-cancel { background: #eee; color: #333; }
+
     @media (max-width: 767px) {
         nav { display: none !important; }
         .msg-btn-mobile { display: flex; }
@@ -174,11 +218,156 @@ onAuthStateChanged(auth, (user) => {
                 currentUserData = docSnap.data();
                 if (currentUserData.role === 'banned') { triggerHardLockdown(); return; }
                 if (currentUserData.language) localStorage.setItem('preferred_language', currentUserData.language);
-                refreshUI();
+                
+                // Check if username exists; if not, prompt to set it
+                if (!currentUserData.username) {
+                    showUsernameModal();
+                } else {
+                    refreshUI();
+                }
+            } else {
+                // User document missing (should not happen), maybe create placeholder
+                console.warn("User document missing, attempting to create");
+                createBasicUserDoc(user).then(() => {
+                    showUsernameModal(); // prompt for username
+                });
             }
         });
     } else { currentUserData = null; refreshUI(); }
 });
+
+async function createBasicUserDoc(user) {
+    const userRef = doc(db, "users", user.uid);
+    await setDoc(userRef, {
+        uid: user.uid,
+        displayName: user.displayName || "",
+        email: user.email,
+        role: 'user',
+        createdAt: new Date().toISOString()
+    }, { merge: true });
+}
+
+async function showUsernameModal() {
+    // If modal already open, don't duplicate
+    if (document.querySelector('.username-modal-overlay')) return;
+    
+    const lang = localStorage.getItem('preferred_language') || 'en';
+    const t = translations[lang];
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    const modalDiv = document.createElement('div');
+    modalDiv.className = 'username-modal-overlay';
+    modalDiv.innerHTML = `
+        <div class="username-modal-card">
+            <h2>${t.username_modal_title}</h2>
+            <p>${t.username_modal_desc}</p>
+            <div class="username-modal-field">
+                <label>${t.username_modal_fullname}</label>
+                <input type="text" id="modal-fullname" placeholder="John Doe" value="${currentUserData?.displayName || ''}">
+            </div>
+            <div class="username-modal-field">
+                <label>${t.username_modal_username}</label>
+                <input type="text" id="modal-username" placeholder="jhondoe" autocomplete="off">
+                <div class="username-status" id="username-status-modal"></div>
+            </div>
+            <div class="username-modal-buttons">
+                <button class="btn-cancel" id="modal-cancel">${t.username_modal_save ? 'Cancel' : 'Cancel'}</button>
+                <button class="btn-save" id="modal-save">${t.username_modal_save}</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modalDiv);
+    
+    const usernameInput = modalDiv.querySelector('#modal-username');
+    const statusSpan = modalDiv.querySelector('#username-status-modal');
+    const saveBtn = modalDiv.querySelector('#modal-save');
+    const cancelBtn = modalDiv.querySelector('#modal-cancel');
+    const fullnameInput = modalDiv.querySelector('#modal-fullname');
+    
+    let checkTimeout = null;
+    let isValid = false;
+    
+    function validateUsername(username) {
+        return /^[a-zA-Z0-9_]{3,}$/.test(username);
+    }
+    
+    async function checkAvailability(username) {
+        if (!validateUsername(username)) {
+            statusSpan.textContent = t.username_modal_invalid;
+            statusSpan.className = 'username-status invalid';
+            isValid = false;
+            return;
+        }
+        statusSpan.textContent = t.username_modal_checking;
+        statusSpan.className = 'username-status checking';
+        const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
+        const snap = await getDocs(q);
+        if (snap.empty) {
+            statusSpan.textContent = t.username_modal_available;
+            statusSpan.className = 'username-status valid';
+            isValid = true;
+        } else {
+            statusSpan.textContent = t.username_modal_taken;
+            statusSpan.className = 'username-status invalid';
+            isValid = false;
+        }
+    }
+    
+    usernameInput.addEventListener('input', () => {
+        if (checkTimeout) clearTimeout(checkTimeout);
+        const val = usernameInput.value.trim();
+        if (!val) {
+            statusSpan.textContent = '';
+            isValid = false;
+            return;
+        }
+        checkTimeout = setTimeout(() => checkAvailability(val), 500);
+    });
+    
+    saveBtn.onclick = async () => {
+        const username = usernameInput.value.trim().toLowerCase();
+        if (!username) {
+            statusSpan.textContent = t.username_modal_required;
+            statusSpan.className = 'username-status invalid';
+            return;
+        }
+        if (!validateUsername(username)) {
+            statusSpan.textContent = t.username_modal_invalid;
+            statusSpan.className = 'username-status invalid';
+            return;
+        }
+        if (!isValid) {
+            // re-check availability
+            await checkAvailability(username);
+            if (!isValid) return;
+        }
+        saveBtn.disabled = true;
+        saveBtn.textContent = t.tour_saving;
+        const fullname = fullnameInput.value.trim();
+        const updates = { username: username.toLowerCase() };
+        if (fullname) updates.displayName = fullname;
+        try {
+            await updateDoc(doc(db, "users", user.uid), updates);
+            if (fullname) await updateProfile(user, { displayName: fullname });
+            modalDiv.remove();
+            refreshUI(); // rebuild header
+        } catch (err) {
+            console.error(err);
+            alert("Error saving profile.");
+        } finally {
+            saveBtn.disabled = false;
+        }
+    };
+    
+    cancelBtn.onclick = () => {
+        // Optionally sign out
+        signOut(auth).then(() => {
+            modalDiv.remove();
+            window.location.href = '/index.html';
+        });
+    };
+}
 
 function triggerHardLockdown() {
     const lang = localStorage.getItem('preferred_language') || 'en';
@@ -229,39 +418,42 @@ function listenToUnreadMessages(uid) {
 
 function updateHeaderToLoggedIn(userData) {
     const lang = localStorage.getItem('preferred_language') || 'en';
+    const t = translations[lang];
     
-    // --- 1. GLOBAL NAV LINKS (Injects on all pages) ---
     const navUl = document.querySelector('nav ul');
     if (navUl) {
         navUl.innerHTML = `
-            <li><a href="/search.html">${translations[lang].nav_browse}</a></li>
-            <li><a href="/my-listings.html">${translations[lang].nav_listings}</a></li>
-            <li><a href="/messages.html" class="badge-container">${translations[lang].nav_messages}<span class="unread-badge" id="desktop-unread-badge"></span></a></li>
+            <li><a href="/search.html">${t.nav_browse}</a></li>
+            <li><a href="/my-listings.html">${t.nav_listings}</a></li>
+            <li><a href="/messages.html" class="badge-container">${t.nav_messages}<span class="unread-badge" id="desktop-unread-badge"></span></a></li>
         `;
     }
 
-    // --- 2. RIGHT SIDE AUTH SECTION ---
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
     if (!container) return;
     
     const name = userData.displayName || 'User';
+    const username = userData.username ? `@${userData.username}` : '';
     let finalPhotoURL = userData.photoURL;
     if (!finalPhotoURL || finalPhotoURL.includes("googleusercontent.com") || finalPhotoURL.includes("live.com")) {
         finalPhotoURL = `https://api.dicebear.com/7.x/identicon/svg?seed=${userData.uid}&backgroundColor=EBF2FA`;
     }
     
     container.innerHTML = `
-        <button class="btn desktop-only" id="globalListBtn" style="margin-right: 15px;">${translations[lang].btn_list}</button>
+        <button class="btn desktop-only" id="globalListBtn" style="margin-right: 15px;">${t.btn_list}</button>
         <a href="/messages.html" class="msg-btn-mobile"><i class="fas fa-envelope"></i><span class="unread-badge" id="mobile-unread-badge"></span></a>
         <div class="profile-menu-container">
             <div class="profile-avatar"><img src="${finalPhotoURL}" alt="Profile"></div>
             <div class="dropdown-menu" id="globalDropdown">
-                <div class="dropdown-header"><span>${name}</span></div>
-                <a href="/listanitem.html" class="dropdown-item mobile-link" style="color:#2B5C92; font-weight:bold;"><i class="fas fa-plus-circle"></i> ${translations[lang].btn_list}</a>
-                <a href="/search.html" class="dropdown-item mobile-link"><i class="fas fa-search"></i> ${translations[lang].nav_browse}</a>
-                <a href="/my-listings.html" class="dropdown-item mobile-link"><i class="fas fa-book"></i> ${translations[lang].nav_listings}</a>
-                <a href="/profile.html" class="dropdown-item"><i class="fas fa-user-circle"></i> ${translations[lang].nav_profile}</a>
-                <a href="#" class="dropdown-item" id="globalLogout" style="color:#ff4d4d; border-top:1px solid #eee;"><i class="fas fa-sign-out-alt"></i> ${translations[lang].btn_signout}</a>
+                <div class="dropdown-header">
+                    <div class="display-name">${name}</div>
+                    ${username ? `<div class="username">${username}</div>` : ''}
+                </div>
+                <a href="/listanitem.html" class="dropdown-item mobile-link" style="color:#2B5C92; font-weight:bold;"><i class="fas fa-plus-circle"></i> ${t.btn_list}</a>
+                <a href="/search.html" class="dropdown-item mobile-link"><i class="fas fa-search"></i> ${t.nav_browse}</a>
+                <a href="/my-listings.html" class="dropdown-item mobile-link"><i class="fas fa-book"></i> ${t.nav_listings}</a>
+                <a href="/profile.html" class="dropdown-item"><i class="fas fa-user-circle"></i> ${t.nav_profile}</a>
+                <a href="#" class="dropdown-item" id="globalLogout" style="color:#ff4d4d; border-top:1px solid #eee;"><i class="fas fa-sign-out-alt"></i> ${t.btn_signout}</a>
             </div>
         </div>
     `;
@@ -288,20 +480,21 @@ function updateHeaderToLoggedIn(userData) {
 
 function updateHeaderToLoggedOut() {
     const lang = localStorage.getItem('preferred_language') || 'en';
+    const t = translations[lang];
     const navUl = document.querySelector('nav ul');
     if (navUl) {
-        navUl.innerHTML = `<li><a href="/search.html">${translations[lang].nav_browse}</a></li>`;
+        navUl.innerHTML = `<li><a href="/search.html">${t.nav_browse}</a></li>`;
     }
 
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
     if (!container) return;
-    container.innerHTML = `<button class="btn" onclick="window.location.href='/LoginInToCheaplet.html'">${translations[lang].btn_login}</button>`;
+    container.innerHTML = `<button class="btn" onclick="window.location.href='/LoginInToCheaplet.html'">${t.btn_login}</button>`;
 }
 
 function showWelcomeTour() {
     const user = auth.currentUser;
     if (!user) return;
-    const tourKey = `cheaplet_tour_seen_${user.uid}`;
+    const tourKey = `scoralia_tour_seen_${user.uid}`;
     if (localStorage.getItem(tourKey) === 'true') return;
     if (currentUserData && currentUserData.hasSeenTour) {
         localStorage.setItem(tourKey, 'true');
@@ -311,20 +504,13 @@ function showWelcomeTour() {
 
     const lang = localStorage.getItem('preferred_language') || 'en';
     const t = translations[lang];
+    const defaultPfpUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
+    const existingDisplayName = currentUserData?.displayName || '';
+    const existingUsername = currentUserData?.username || '';
 
     const overlay = document.createElement('div');
     overlay.className = 'lang-modal-overlay';
     overlay.style.zIndex = '10005';
-    
-    const defaultPfpUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
-    let existingFirstName = "";
-    let existingLastName = "";
-    if (user.displayName) {
-        const parts = user.displayName.split(' ');
-        existingFirstName = parts[0] || "";
-        existingLastName = parts.length > 1 ? parts.slice(1).join(' ') : "";
-    }
-
     overlay.innerHTML = `
         <div class="lang-modal" style="padding: 40px 30px;">
             <div id="tour-step-1">
@@ -349,8 +535,9 @@ function showWelcomeTour() {
                 <div class="tour-pfp-preview" id="tour-pfp-box"><img src="${defaultPfpUrl}"></div>
                 <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">${t.tour_title_4}</h2>
                 <p style="color:#6b84a3; margin-bottom:15px; line-height:1.4; font-size:0.85rem;">${t.tour_desc_4}</p>
-                <input type="text" id="tour-fname-input" class="tour-input" value="${existingFirstName}" placeholder="${t.tour_first_name}">
-                <input type="text" id="tour-lname-input" class="tour-input" value="${existingLastName}" placeholder="${t.tour_last_name}">
+                <input type="text" id="tour-fullname" class="tour-input" value="${existingDisplayName}" placeholder="${t.tour_full_name}">
+                <input type="text" id="tour-username" class="tour-input" value="${existingUsername}" placeholder="${t.tour_username}">
+                <div id="tour-username-status" style="font-size:0.75rem; text-align:center; margin-bottom:10px;"></div>
                 <input type="file" id="tour-file-input" accept="image/*" style="display:none;">
                 <label for="tour-file-input" style="display:block; cursor:pointer; color:#2B5C92; font-weight:bold; margin-bottom:20px; text-decoration:underline;">
                     <i class="fas fa-camera"></i> ${t.tour_upload}
@@ -365,9 +552,69 @@ function showWelcomeTour() {
     `;
     document.body.appendChild(overlay);
 
-    document.getElementById('tour-btn-1').onclick = () => { document.getElementById('tour-step-1').style.display = 'none'; document.getElementById('tour-step-2').style.display = 'block'; document.getElementById('dot-1').classList.remove('active'); document.getElementById('dot-2').classList.add('active'); };
-    document.getElementById('tour-btn-2').onclick = () => { document.getElementById('tour-step-2').style.display = 'none'; document.getElementById('tour-step-3').style.display = 'block'; document.getElementById('dot-2').classList.remove('active'); document.getElementById('dot-3').classList.add('active'); };
-    document.getElementById('tour-btn-3').onclick = () => { document.getElementById('tour-step-3').style.display = 'none'; document.getElementById('tour-step-4').style.display = 'block'; document.getElementById('dot-3').classList.remove('active'); document.getElementById('dot-4').classList.add('active'); };
+    let usernameValid = false;
+    let usernameTimeout = null;
+    const usernameInput = overlay.querySelector('#tour-username');
+    const usernameStatus = overlay.querySelector('#tour-username-status');
+
+    async function validateUsername(username) {
+        if (!username) {
+            usernameStatus.textContent = '';
+            usernameValid = false;
+            return false;
+        }
+        if (!/^[a-zA-Z0-9_]{3,}$/.test(username)) {
+            usernameStatus.textContent = t.tour_username_err;
+            usernameStatus.style.color = '#d32f2f';
+            usernameValid = false;
+            return false;
+        }
+        usernameStatus.textContent = t.username_modal_checking;
+        usernameStatus.style.color = '#ff9800';
+        const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
+        const snap = await getDocs(q);
+        if (snap.empty) {
+            usernameStatus.textContent = t.username_modal_available;
+            usernameStatus.style.color = '#2E7D32';
+            usernameValid = true;
+            return true;
+        } else {
+            usernameStatus.textContent = t.tour_username_taken;
+            usernameStatus.style.color = '#d32f2f';
+            usernameValid = false;
+            return false;
+        }
+    }
+
+    usernameInput.addEventListener('input', () => {
+        if (usernameTimeout) clearTimeout(usernameTimeout);
+        const val = usernameInput.value.trim();
+        if (!val) {
+            usernameStatus.textContent = '';
+            usernameValid = false;
+            return;
+        }
+        usernameTimeout = setTimeout(() => validateUsername(val), 500);
+    });
+
+    document.getElementById('tour-btn-1').onclick = () => {
+        document.getElementById('tour-step-1').style.display = 'none';
+        document.getElementById('tour-step-2').style.display = 'block';
+        document.getElementById('dot-1').classList.remove('active');
+        document.getElementById('dot-2').classList.add('active');
+    };
+    document.getElementById('tour-btn-2').onclick = () => {
+        document.getElementById('tour-step-2').style.display = 'none';
+        document.getElementById('tour-step-3').style.display = 'block';
+        document.getElementById('dot-2').classList.remove('active');
+        document.getElementById('dot-3').classList.add('active');
+    };
+    document.getElementById('tour-btn-3').onclick = () => {
+        document.getElementById('tour-step-3').style.display = 'none';
+        document.getElementById('tour-step-4').style.display = 'block';
+        document.getElementById('dot-3').classList.remove('active');
+        document.getElementById('dot-4').classList.add('active');
+    };
 
     let selectedFile = null;
     document.getElementById('tour-file-input').onchange = (e) => {
@@ -378,14 +625,30 @@ function showWelcomeTour() {
     };
 
     document.getElementById('tour-btn-4').onclick = async () => {
-        const fname = document.getElementById('tour-fname-input').value.trim();
-        const lname = document.getElementById('tour-lname-input').value.trim();
-        if (fname.length < 4 || lname.length < 4 || !/[a-zA-Z]/.test(fname) || !/[a-zA-Z]/.test(lname)) {
-            alert(t.tour_name_err); return;
+        const fullname = document.getElementById('tour-fullname').value.trim();
+        const username = document.getElementById('tour-username').value.trim().toLowerCase();
+        if (!fullname || fullname.split(' ').length < 2) {
+            alert(t.tour_name_err);
+            return;
         }
-        const newName = `${fname} ${lname}`;
+        if (!username) {
+            alert(t.tour_username_err);
+            return;
+        }
+        if (!/^[a-zA-Z0-9_]{3,}$/.test(username)) {
+            alert(t.tour_username_err);
+            return;
+        }
+        if (!usernameValid) {
+            await validateUsername(username);
+            if (!usernameValid) {
+                alert(t.tour_username_taken);
+                return;
+            }
+        }
         const btn = document.getElementById('tour-btn-4');
-        btn.disabled = true; btn.textContent = t.tour_saving;
+        btn.disabled = true;
+        btn.textContent = t.tour_saving;
         let finalPhoto = defaultPfpUrl; 
         try {
             if (selectedFile) {
@@ -399,10 +662,16 @@ function showWelcomeTour() {
                 const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { method: 'POST', body: formData }).then(r => r.json());
                 if (res.secure_url) finalPhoto = res.secure_url;
             }
-            await updateProfile(user, { displayName: newName, photoURL: finalPhoto });
-            await updateDoc(doc(db, "users", user.uid), { displayName: newName, photoURL: finalPhoto, hasSeenTour: true });
+            await updateProfile(user, { displayName: fullname, photoURL: finalPhoto });
+            await updateDoc(doc(db, "users", user.uid), { 
+                displayName: fullname, 
+                username: username,
+                photoURL: finalPhoto,
+                hasSeenTour: true 
+            });
             localStorage.setItem(tourKey, 'true');
-            overlay.remove(); location.reload(); 
+            overlay.remove();
+            location.reload(); 
         } catch(e) { console.error(e); localStorage.setItem(tourKey, 'true'); overlay.remove(); }
     };
 }
@@ -425,14 +694,14 @@ function showLanguagePopup() {
 }
 
 function showTermsBanner() {
-    if (localStorage.getItem('cheaplet_terms_accepted') === 'true' || document.getElementById('terms-banner-global') || document.getElementById('lang-modal')) return;
+    if (localStorage.getItem('scoralia_terms_accepted') === 'true' || document.getElementById('terms-banner-global') || document.getElementById('lang-modal')) return;
     const lang = localStorage.getItem('preferred_language') || 'en';
     const banner = document.createElement('div');
     banner.id = 'terms-banner-global'; banner.className = 'terms-banner';
     const text = lang === 'fr' ? 'En utilisant ce site, vous acceptez nos conditions.' : 'By using this site, you accept our terms.';
     banner.innerHTML = `<div>${text}</div><button class="btn-accept-terms" id="accept-terms-btn">ok</button>`;
     document.body.appendChild(banner);
-    document.getElementById('accept-terms-btn').onclick = () => { localStorage.setItem('cheaplet_terms_accepted', 'true'); banner.remove(); };
+    document.getElementById('accept-terms-btn').onclick = () => { localStorage.setItem('scoralia_terms_accepted', 'true'); banner.remove(); };
 }
 
 document.addEventListener('DOMContentLoaded', () => {
