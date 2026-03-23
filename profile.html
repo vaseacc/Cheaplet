@@ -36,7 +36,7 @@
         .profile-banner {
             position: relative;
             background: linear-gradient(135deg, #0C1446, #2B5C92);
-            height: 180px;
+            height: 200px;
             border-radius: 12px 12px 0 0;
             overflow: hidden;
         }
@@ -48,34 +48,50 @@
             background-size: 24px 24px;
             pointer-events: none;
         }
-        .profile-avatar-container {
+        
+        /* Facebook-style profile header */
+        .profile-header {
+            background: white;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+        .profile-header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 30px 20px;
+            display: flex;
+            align-items: flex-end;
+            gap: 30px;
+            flex-wrap: wrap;
             position: relative;
-            margin-top: -70px;
-            text-align: center;
-            z-index: 2;
+            margin-top: -60px;
+        }
+        .profile-avatar-wrapper {
+            flex-shrink: 0;
+            position: relative;
         }
         .profile-avatar {
-            width: 120px;
-            height: 120px;
+            width: 140px;
+            height: 140px;
             border-radius: 50%;
             border: 4px solid white;
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             object-fit: cover;
             background: #fff;
-            margin: 0 auto;
         }
         .edit-avatar-btn {
             position: absolute;
-            bottom: 5px;
-            right: 5px;
+            bottom: 8px;
+            right: 8px;
             background: #C8A96E;
             color: white;
             border: none;
             border-radius: 50%;
-            width: 32px;
-            height: 32px;
+            width: 36px;
+            height: 36px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -86,36 +102,33 @@
             background: #b38f40;
             transform: scale(1.05);
         }
-        
         .profile-info {
-            text-align: center;
-            margin-top: 12px;
-            padding: 0 20px;
+            flex: 1;
+            padding-bottom: 10px;
         }
         .profile-name {
-            font-size: 1.8rem;
+            font-size: 2rem;
             font-weight: 700;
             color: #0C1446;
             margin-bottom: 4px;
         }
         .profile-username {
-            font-size: 1rem;
+            font-size: 1.1rem;
             color: #6b84a3;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
             font-family: monospace;
         }
         .profile-bio {
-            max-width: 600px;
-            margin: 8px auto;
+            margin: 8px 0;
             color: #555;
             font-style: italic;
+            max-width: 600px;
         }
         .profile-meta {
             display: flex;
-            justify-content: center;
-            gap: 20px;
             flex-wrap: wrap;
-            margin: 15px 0;
+            gap: 12px;
+            margin-top: 12px;
         }
         .meta-item {
             background: #f0f0f0;
@@ -136,7 +149,6 @@
         }
         .rating-stars {
             color: #FFD700;
-            font-size: 0.9rem;
         }
         .join-date {
             color: #6b84a3;
@@ -226,8 +238,34 @@
         @media (max-width: 767px) {
             nav { display: none; }
             .profile-banner { height: 140px; }
-            .profile-avatar { width: 90px; height: 90px; margin-top: -45px; }
-            .profile-name { font-size: 1.4rem; }
+            .profile-header-content {
+                padding: 0 20px 20px;
+                gap: 20px;
+                margin-top: -40px;
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+            .profile-avatar {
+                width: 100px;
+                height: 100px;
+            }
+            .edit-avatar-btn {
+                width: 30px;
+                height: 30px;
+                font-size: 12px;
+                bottom: 4px;
+                right: 4px;
+            }
+            .profile-name {
+                font-size: 1.5rem;
+            }
+            .profile-meta {
+                justify-content: center;
+            }
+            .profile-info {
+                text-align: center;
+            }
         }
     </style>
 </head>
@@ -249,23 +287,25 @@
             <!-- Banner -->
             <div class="profile-banner" id="profile-banner"></div>
             
-            <!-- Avatar + edit -->
-            <div class="profile-avatar-container">
-                <img id="profile-avatar-img" class="profile-avatar" alt="Profile picture">
-                <button class="edit-avatar-btn" id="edit-avatar-btn" title="Change photo"><i class="fas fa-camera"></i></button>
-                <input type="file" id="photo-upload-input" accept="image/*" style="display: none;">
-            </div>
-            
-            <!-- Info area -->
-            <div class="profile-info">
-                <h1 class="profile-name" id="display-name-display"></h1>
-                <div class="profile-username" id="username-display"></div>
-                <div class="profile-bio" id="bio-display"></div>
-                <div class="profile-meta">
-                    <div class="meta-item rating-stars" id="rating-display"></div>
-                    <div class="meta-item verified-badge" id="verified-badge" style="display: none;"><i class="fas fa-graduation-cap"></i> <span id="verified-text">Verified Student</span></div>
-                    <div class="meta-item school-badge" id="school-badge"><i class="fas fa-university"></i> <span id="school-name"></span></div>
-                    <div class="meta-item join-date" id="join-date-display"></div>
+            <!-- Facebook-style header -->
+            <div class="profile-header">
+                <div class="profile-header-content">
+                    <div class="profile-avatar-wrapper">
+                        <img id="profile-avatar-img" class="profile-avatar" alt="Profile picture">
+                        <button class="edit-avatar-btn" id="edit-avatar-btn" title="Change photo"><i class="fas fa-camera"></i></button>
+                        <input type="file" id="photo-upload-input" accept="image/*" style="display: none;">
+                    </div>
+                    <div class="profile-info">
+                        <h1 class="profile-name" id="display-name-display"></h1>
+                        <div class="profile-username" id="username-display"></div>
+                        <div class="profile-bio" id="bio-display"></div>
+                        <div class="profile-meta">
+                            <div class="meta-item rating-stars" id="rating-display"></div>
+                            <div class="meta-item verified-badge" id="verified-badge" style="display: none;"><i class="fas fa-graduation-cap"></i> <span id="verified-text">Verified Student</span></div>
+                            <div class="meta-item school-badge" id="school-badge"><i class="fas fa-university"></i> <span id="school-name"></span></div>
+                            <div class="meta-item join-date" id="join-date-display"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -403,7 +443,6 @@
                 if (!isValidUsernameFormat(username)) return false;
                 const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
                 const snap = await getDocs(q);
-                // If no docs, or the only doc is the current user's, it's available.
                 if (snap.empty) return true;
                 if (snap.docs.length === 1 && snap.docs[0].id === currentUid) return true;
                 return false;
@@ -490,7 +529,7 @@
                 
                 // Verified badge
                 if (currentUserData.isStudent) {
-                    document.getElementById('verified-badge').style.display = 'flex';
+                    document.getElementById('verified-badge').style.display = 'inline-flex';
                     document.getElementById('verified-text').textContent = t.verified;
                 } else {
                     document.getElementById('verified-badge').style.display = 'none';
@@ -570,7 +609,6 @@
                     return;
                 }
                 if (newUsername !== originalUsername && !isUsernameValid) {
-                    // Re-check availability
                     const available = await checkUsernameAvailability(newUsername, currentUser.uid);
                     if (!available) {
                         saveFeedback.textContent = t.usernameTaken;
@@ -668,8 +706,6 @@
             deleteBtn.onclick = async () => {
                 if (confirm(t.deleteConfirm)) {
                     try {
-                        // Delete user document and listings? For simplicity, we just delete auth and user doc.
-                        // In production, you'd also delete listings, chats, etc.
                         await deleteDoc(doc(db, "users", currentUser.uid));
                         await deleteUser(currentUser);
                         window.location.href = '/index.html';
