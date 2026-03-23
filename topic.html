@@ -90,7 +90,7 @@
         .action-btn.liked i { animation: popHeart 0.3s ease; }
         @keyframes popHeart { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
 
-        /* Comments */
+        /* Comments System */
         .comments-section { display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #e2e8f0; }
         .comment-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 15px; max-height: 350px; overflow-y: auto; padding-right: 5px; }
         .comment-list::-webkit-scrollbar { width: 6px; }
@@ -110,6 +110,19 @@
         .btn-comment-send { background: var(--deep); color: white; border: none; width: 42px; height: 42px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; flex-shrink: 0; }
         .btn-comment-send:hover:not(:disabled) { background: var(--ink); transform: translateY(-2px); }
         .btn-comment-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .market-break { margin: 10px 0; padding: 25px; background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); border: var(--border); width: 100%; overflow-x: auto; overflow-y: visible; }
+        .break-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px; width: 100%; flex-wrap: wrap; }
+        .break-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 900; color: var(--ink); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+        .break-link { color: var(--deep); font-size: 0.85rem; font-weight: 700; text-decoration: none; white-space: nowrap; flex-shrink: 0; }
+        .break-link:hover { text-decoration: underline; }
+        .break-scroll { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x mandatory; width: 100%; -webkit-overflow-scrolling: touch; }
+        .mini-book-card { flex: 0 0 160px; background: var(--white); border-radius: 12px; overflow: hidden; text-decoration: none; color: var(--text-main); scroll-snap-align: start; border: var(--border); transition: 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.04); display: flex; flex-direction: column; flex-shrink: 0; }
+        .mini-book-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
+        .mini-img { height: 130px; background-size: cover; background-position: center; background-color: #f1f5f9; flex-shrink: 0; }
+        .mini-info { padding: 12px; flex-grow: 1; display: flex; flex-direction: column; }
+        .mini-price { font-weight: 800; font-size: 1rem; color: var(--deep); margin-bottom: 4px; }
+        .mini-title { font-size: 0.8rem; font-weight: 600; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 
         .loader-msg { text-align: center; padding: 50px; color: var(--text-muted); font-size: 1.1rem; font-weight: 500; }
         .loader-msg i { font-size: 2rem; color: var(--gold); margin-bottom: 15px; display: block; }
@@ -140,6 +153,7 @@
             .composer { padding: 15px; margin-bottom: 0; border-radius: 0; border-left: none; border-right: none; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; box-shadow: none; width: 100%; }
             .composer-input { font-size: 1rem; min-height: 40px; }
             .post-card { padding: 16px 15px; border-radius: 0; border-left: none; border-right: none; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; box-shadow: none; margin-bottom: 0; width: 100%; }
+            .market-break { padding: 20px 15px; margin: 0; border-radius: 0; border-left: none; border-right: none; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; box-shadow: none; width: 100%; }
         }
     </style>
 </head>
@@ -153,11 +167,7 @@
     </header>
 
     <!-- MOBILE TOPICS BAR -->
-    <div class="mobile-ways-bar" id="mobile-ways-list">
-        <a href="/social.html" class="m-way-pill">
-            <i class="fas fa-globe-americas"></i> <span data-i18n="topics_campus">Campus Public</span>
-        </a>
-    </div>
+    <div class="mobile-ways-bar" id="mobile-ways-list"></div>
 
     <div class="hub-layout">
         
@@ -194,7 +204,6 @@
         <!-- MAIN FEED -->
         <main class="feed-column">
             
-            <!-- Specific Topic Header -->
             <div class="topic-header">
                 <i class="fas fa-hashtag"></i> <span id="ui-topic-name">Loading...</span>
             </div>
@@ -218,7 +227,7 @@
         </main>
     </div>
 
-    <!-- MODAL FOR LOGIN/REGISTER -->
+    <!-- LOGIN MODAL -->
     <div id="login-modal" class="login-modal-overlay" style="display: none;">
         <div class="login-modal-card">
             <span class="close-modal" id="close-login-modal">&times;</span>
@@ -231,7 +240,7 @@
         </div>
     </div>
 
-    <!-- CUSTOM MODAL FOR NEW TOPIC -->
+    <!-- NEW TOPIC MODAL -->
     <div class="modal-overlay" id="topic-modal">
         <div class="modal-card">
             <h2 data-i18n="modal_title">Create New Topic</h2>
@@ -246,7 +255,7 @@
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, doc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, limit, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, doc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, limit, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 
         async function main() {
@@ -289,36 +298,22 @@
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { if (ui[el.getAttribute('data-i18n-placeholder')]) el.placeholder = ui[el.getAttribute('data-i18n-placeholder')]; });
 
             // Fetch Topic Name
-            let currentTopicName = "Topic";
             try {
                 const tDoc = await getDoc(doc(db, "social_channels", topicId));
                 if (!tDoc.exists()) { window.location.href = '/social.html'; return; }
-                currentTopicName = tDoc.data().name;
-                document.getElementById('ui-topic-name').textContent = currentTopicName;
-                document.getElementById('post-input').placeholder = `${ui.post_in}${currentTopicName}...`;
-            } catch(e) {
-                window.location.href = '/social.html'; return;
-            }
+                const name = tDoc.data().name;
+                document.getElementById('ui-topic-name').textContent = name;
+                document.getElementById('post-input').placeholder = `${ui.post_in}${name}...`;
+            } catch(e) { window.location.href = '/social.html'; return; }
 
             const loginModal = document.getElementById('login-modal');
-            let pendingTopicId = null;
-
             window.showLoginModal = (tId) => {
-                pendingTopicId = tId;
+                const redirect = tId ? `/topic.html?id=${tId}` : `/topic.html?id=${topicId}`;
+                document.getElementById('modal-login-btn').onclick = () => window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(redirect)}`;
+                document.getElementById('modal-register-btn').onclick = () => window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(redirect)}`;
                 loginModal.style.display = 'flex';
             };
-
-            document.getElementById('close-login-modal').onclick = () => { loginModal.style.display = 'none'; pendingTopicId = null; };
-            window.addEventListener('click', (e) => { if (e.target === loginModal) { loginModal.style.display = 'none'; pendingTopicId = null; } });
-
-            document.getElementById('modal-login-btn').onclick = () => {
-                const redirect = pendingTopicId ? `/topic.html?id=${pendingTopicId}` : `/topic.html?id=${topicId}`;
-                window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(redirect)}`;
-            };
-            document.getElementById('modal-register-btn').onclick = () => {
-                const redirect = pendingTopicId ? `/topic.html?id=${pendingTopicId}` : `/topic.html?id=${topicId}`;
-                window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(redirect)}`;
-            };
+            document.getElementById('close-login-modal').onclick = () => { loginModal.style.display = 'none'; };
 
             function formatCount(num) { return !num ? 0 : (num > 999 ? (num / 1000).toFixed(1) + 'k' : num); }
 
@@ -326,14 +321,7 @@
             let internalSchoolName = "Global Campus"; 
             let unsubscribePosts = null;
             let commentUnsubscribes = {}; 
-
-            const dSchoolName = document.getElementById('d-user-school');
-            const desktopWaysList = document.getElementById('desktop-ways-list');
-            const mobileWaysList = document.getElementById('mobile-ways-list');
-            const feedContainer = document.getElementById('feed-container');
-            const postInput = document.getElementById('post-input');
-            const composerControls = document.getElementById('composer-controls');
-            const btnSendPost = document.getElementById('btn-send-post');
+            let listings = []; 
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
@@ -342,330 +330,177 @@
                         const data = uSnap.data();
                         currentUser = { ...user, ...data };
                         internalSchoolName = data.schoolName || "Global Campus";
-                        
-                        dSchoolName.textContent = internalSchoolName === "Global Campus" ? ui.guest : internalSchoolName;
+                        document.getElementById('d-user-school').textContent = internalSchoolName === "Global Campus" ? ui.guest : internalSchoolName;
                         document.getElementById('composer-card').style.display = 'block';
-
-                        let pfpUrl = data.photoURL;
-                        if (!pfpUrl || pfpUrl.includes("googleusercontent") || pfpUrl.includes("live.com")) {
-                            pfpUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
-                        }
-                        document.getElementById('composer-pfp').src = pfpUrl;
-                        
+                        document.getElementById('composer-pfp').src = data.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
                         loadTopics();
-                        loadFeed();
+                        preloadBooksAndLoadFeed();
                     }
                 } else {
                     internalSchoolName = "Global Campus";
-                    dSchoolName.textContent = ui.guest;
+                    document.getElementById('d-user-school').textContent = ui.guest;
                     loadTopics();
-                    loadFeed();
+                    preloadBooksAndLoadFeed();
                 }
             });
 
             function loadTopics() {
                 const q = query(collection(db, "social_channels"), orderBy("postCount", "desc"));
                 onSnapshot(q, (snapshot) => {
-                    desktopWaysList.innerHTML = '';
-                    // Re-render mobile list (keep general, remove old ones)
-                    const mGeneral = document.getElementById('m-way-general');
-                    mobileWaysList.innerHTML = '';
-                    if(mGeneral) mobileWaysList.appendChild(mGeneral);
+                    const deskList = document.getElementById('desktop-ways-list');
+                    const mobList = document.getElementById('mobile-ways-list');
+                    deskList.innerHTML = '';
+                    mobList.innerHTML = '';
+
+                    const mGeneral = document.createElement('a');
+                    mGeneral.className = 'm-way-pill'; mGeneral.href = '/social.html';
+                    mGeneral.innerHTML = `<i class="fas fa-globe-americas"></i> ${ui.topics_campus}`;
+                    mobList.appendChild(mGeneral);
 
                     snapshot.forEach(docSnap => {
                         const d = docSnap.data();
                         const displayCount = formatCount(d.postCount);
+                        const isActive = topicId === docSnap.id;
                         
-                        // Desktop Item
                         const dItem = document.createElement('a');
-                        dItem.className = `way-item ${topicId === docSnap.id ? 'active' : ''}`;
+                        dItem.className = `way-item ${isActive ? 'active' : ''}`;
                         dItem.href = `/topic.html?id=${docSnap.id}`;
                         dItem.innerHTML = `<i class="fas fa-hashtag"></i> <span style="flex-grow:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${d.name}</span> <span class="way-count">${displayCount}</span>`;
-                        dItem.onclick = (e) => {
-                            if (!currentUser) { e.preventDefault(); showLoginModal(docSnap.id); }
-                        };
-                        desktopWaysList.appendChild(dItem);
+                        deskList.appendChild(dItem);
 
-                        // Mobile Item
                         const mItem = document.createElement('a');
-                        mItem.className = `m-way-pill ${topicId === docSnap.id ? 'active' : ''}`;
+                        mItem.className = `m-way-pill ${isActive ? 'active' : ''}`;
                         mItem.href = `/topic.html?id=${docSnap.id}`;
                         mItem.innerHTML = `<i class="fas fa-hashtag"></i> ${d.name} <span class="m-way-count">${displayCount}</span>`;
-                        mItem.onclick = (e) => {
-                            if (!currentUser) { e.preventDefault(); showLoginModal(docSnap.id); }
-                        };
-                        mobileWaysList.appendChild(mItem);
+                        mobList.appendChild(mItem);
                     });
 
                     const mNew = document.createElement('div');
-                    mNew.className = 'm-way-pill';
-                    mNew.innerHTML = `<i class="fas fa-plus"></i> ${ui.topics_new}`;
-                    mNew.onclick = triggerNewWay;
-                    mobileWaysList.appendChild(mNew);
+                    mNew.className = 'm-way-pill'; mNew.innerHTML = `<i class="fas fa-plus"></i> ${ui.topics_new}`;
+                    mNew.onclick = triggerNewWay; mobList.appendChild(mNew);
                 });
             }
 
             const topicModal = document.getElementById('topic-modal');
             const topicInput = document.getElementById('topic-name-input');
-            const btnCancelTopic = document.getElementById('btn-cancel-topic');
-            const btnConfirmTopic = document.getElementById('btn-confirm-topic');
-
-            const triggerNewWay = () => {
-                if (!currentUser) { showLoginModal(null); return; }
-                topicModal.style.display = 'flex';
-                topicInput.value = '';
-                topicInput.focus();
-            };
+            const triggerNewWay = () => { if (!currentUser) { showLoginModal(null); return; } topicModal.style.display = 'flex'; topicInput.value = ''; topicInput.focus(); };
             document.getElementById('btn-create-way').onclick = triggerNewWay;
+            document.getElementById('btn-cancel-topic').onclick = () => { topicModal.style.display = 'none'; };
 
-            btnCancelTopic.onclick = () => { topicModal.style.display = 'none'; };
-
-            btnConfirmTopic.onclick = async () => {
+            document.getElementById('btn-confirm-topic').onclick = async () => {
                 if (!currentUser) return;
                 const wayName = topicInput.value.trim();
                 if (!wayName || wayName.length < 2) { alert(ui.err_short); return; }
-
-                btnConfirmTopic.disabled = true;
                 try {
-                    const newRef = await addDoc(collection(db, "social_channels"), {
-                        name: wayName.substring(0, 30),
-                        schoolName: internalSchoolName,
-                        createdBy: currentUser.uid,
-                        createdAt: serverTimestamp(),
-                        postCount: 0 
-                    });
-                    topicModal.style.display = 'none';
-                    window.location.href = `/topic.html?id=${newRef.id}`;
-                } catch (e) { alert("Error: " + e.message); } 
-                finally { btnConfirmTopic.disabled = false; }
+                    const newRef = await addDoc(collection(db, "social_channels"), { name: wayName.substring(0, 30), schoolName: internalSchoolName, createdBy: currentUser.uid, createdAt: serverTimestamp(), postCount: 0 });
+                    topicModal.style.display = 'none'; window.location.href = `/topic.html?id=${newRef.id}`;
+                } catch (e) { alert("Error."); }
             };
+
+            async function preloadBooksAndLoadFeed() {
+                try {
+                    const snap = await getDocs(query(collection(db, "listings"), where("status", "==", "active"), limit(6)));
+                    listings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                } catch (e) {}
+                loadFeed();
+            }
 
             function loadFeed() {
                 if (unsubscribePosts) unsubscribePosts();
-                
                 Object.values(commentUnsubscribes).forEach(unsub => unsub());
                 commentUnsubscribes = {};
 
-                feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub}</span></div>`;
+                const container = document.getElementById('feed-container');
+                container.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub}</span></div>`;
 
-                let q = query(collection(db, "social_posts"), orderBy("timestamp", "desc"), limit(15));
-                
-                try {
-                    unsubscribePosts = onSnapshot(q, (snapshot) => {
-                        feedContainer.innerHTML = '';
-                        
-                        let filteredDocs = snapshot.docs.filter(d => d.data().wayId === topicId);
-
-                        if (filteredDocs.length === 0) {
-                            feedContainer.innerHTML = `<div class="loader-msg">${ui.noPosts}</div>`;
-                            return;
-                        }
-
-                        const frag = document.createDocumentFragment();
-
-                        filteredDocs.forEach(docSnap => {
-                            const d = docSnap.data();
-                            frag.appendChild(createPostElement(docSnap.id, d));
-                        });
-
-                        feedContainer.appendChild(frag);
+                unsubscribePosts = onSnapshot(query(collection(db, "social_posts"), where("wayId", "==", topicId), orderBy("timestamp", "desc"), limit(20)), (snapshot) => {
+                    container.innerHTML = '';
+                    if (snapshot.empty) { container.innerHTML = `<div class="loader-msg">${ui.noPosts}</div>`; return; }
+                    snapshot.forEach(docSnap => {
+                        container.appendChild(createPostElement(docSnap.id, docSnap.data()));
                     });
-                } catch (e) { console.error(e); }
+                });
             }
 
             function createPostElement(id, d) {
-                let pfp = d.authorPhoto;
-                if (!pfp || pfp.includes("googleusercontent") || pfp.includes("live.com")) {
-                    pfp = `https://api.dicebear.com/7.x/identicon/svg?seed=${d.authorUid}&backgroundColor=EBF2FA`;
-                }
-
-                let timeStr = ui.justNow;
-                if (d.timestamp) {
-                    const dateObj = d.timestamp.toDate();
-                    const diffMins = Math.round((new Date() - dateObj) / 60000);
-                    if (diffMins < 60) timeStr = lang === 'fr' ? `Il y a ${diffMins} min` : `${diffMins}m`;
-                    else if (diffMins < 1440) timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/60)} h` : `${Math.round(diffMins/60)}h`;
-                    else timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/1440)} j` : `${Math.round(diffMins/1440)}d`;
-                }
-
+                let pfp = d.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${d.authorUid}&backgroundColor=EBF2FA`;
+                let timeStr = d.timestamp ? formatTime(d.timestamp.toDate()) : ui.justNow;
                 const isLiked = currentUser && d.likedBy && d.likedBy.includes(currentUser.uid);
-                const commentCount = d.commentCount || 0;
 
                 const card = document.createElement('div');
                 card.className = 'post-card';
                 card.innerHTML = `
                     <a href="/user.html?id=${d.authorUid}" class="post-author-link">
-                        <img src="${pfp}" class="post-avatar" alt="Avatar">
-                        <div class="post-meta">
-                            <span class="post-author">${d.authorName}</span>
-                            <span class="post-time">${timeStr}</span>
-                        </div>
+                        <img src="${pfp}" class="post-avatar">
+                        <div class="post-meta"><span class="post-author">${d.authorName}</span><span class="post-time">${timeStr}</span></div>
                     </a>
                     <div class="post-body">${d.text}</div>
-                    
                     <div class="post-actions">
-                        <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="window.likePost('${id}', ${isLiked})">
-                            <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i> ${d.likes || 0}
-                        </button>
-                        <button class="action-btn" onclick="window.toggleComments('${id}')">
-                            <i class="far fa-comment"></i> ${commentCount}
-                        </button>
+                        <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="window.likePost('${id}', ${isLiked})"><i class="${isLiked ? 'fas' : 'far'} fa-heart"></i> ${d.likes || 0}</button>
+                        <button class="action-btn" onclick="window.toggleComments('${id}')"><i class="far fa-comment"></i> ${d.commentCount || 0}</button>
                     </div>
-
                     <div class="comments-section" id="comments-section-${id}">
-                        <div class="comment-list" id="comment-list-${id}">
-                            <div style="text-align:center; font-size:0.8rem; color:#888;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
-                        </div>
+                        <div class="comment-list" id="comment-list-${id}"></div>
                         <div class="comment-input-wrapper">
                             <textarea class="comment-input" id="comment-input-${id}" placeholder="${ui.comment_placeholder}"></textarea>
                             <button class="btn-comment-send" onclick="window.postComment('${id}')" id="btn-send-comment-${id}"><i class="fas fa-paper-plane"></i></button>
                         </div>
-                    </div>
-                `;
+                    </div>`;
                 return card;
             }
 
-            window.likePost = async (id, alreadyLiked) => {
-                if (!currentUser) { window.showLoginModal(topicId); return; }
+            function formatTime(date) {
+                const diff = Math.round((new Date() - date) / 60000);
+                if (diff < 60) return lang === 'fr' ? `Il y a ${diff} min` : `${diff}m`;
+                if (diff < 1440) return lang === 'fr' ? `${Math.round(diff/60)} h` : `${Math.round(diff/60)}h`;
+                return lang === 'fr' ? `${Math.round(diff/1440)} j` : `${Math.round(diff/1440)}d`;
+            }
+
+            window.likePost = async (id, liked) => {
+                if (!currentUser) { showLoginModal(topicId); return; }
                 const ref = doc(db, "social_posts", id);
-                if(alreadyLiked) {
-                    await updateDoc(ref, { likes: increment(-1), likedBy: arrayRemove(currentUser.uid) });
-                } else {
-                    await updateDoc(ref, { likes: increment(1), likedBy: arrayUnion(currentUser.uid) });
-                }
+                await updateDoc(ref, { likes: increment(liked ? -1 : 1), likedBy: liked ? arrayRemove(currentUser.uid) : arrayUnion(currentUser.uid) });
             };
 
-            window.toggleComments = (postId) => {
-                const section = document.getElementById(`comments-section-${postId}`);
-                if (section.style.display === 'block') {
-                    section.style.display = 'none';
-                    if (commentUnsubscribes[postId]) {
-                        commentUnsubscribes[postId]();
-                        delete commentUnsubscribes[postId];
-                    }
-                } else {
-                    section.style.display = 'block';
-                    loadCommentsForPost(postId);
-                }
+            window.toggleComments = (id) => {
+                const sec = document.getElementById(`comments-section-${id}`);
+                if (sec.style.display === 'block') { sec.style.display = 'none'; if(commentUnsubscribes[id]) commentUnsubscribes[id](); }
+                else { sec.style.display = 'block'; loadComments(id); }
             };
 
-            function loadCommentsForPost(postId) {
-                const listEl = document.getElementById(`comment-list-${postId}`);
-                const q = query(collection(db, "social_posts", postId, "comments"), orderBy("timestamp", "asc"));
-                
-                commentUnsubscribes[postId] = onSnapshot(q, (snap) => {
-                    listEl.innerHTML = '';
-                    if (snap.empty) {
-                        listEl.innerHTML = `<div style="text-align:center; font-size:0.85rem; color:var(--text-muted);">${ui.no_comments}</div>`;
-                        return;
-                    }
-                    
+            function loadComments(postId) {
+                const list = document.getElementById(`comment-list-${postId}`);
+                commentUnsubscribes[postId] = onSnapshot(query(collection(db, "social_posts", postId, "comments"), orderBy("timestamp", "asc")), (snap) => {
+                    list.innerHTML = snap.empty ? `<div style="text-align:center; font-size:0.85rem; color:#888;">${ui.no_comments}</div>` : '';
                     snap.forEach(doc => {
                         const c = doc.data();
-                        let timeStr = ui.justNow;
-                        if (c.timestamp) {
-                            const diffMins = Math.round((new Date() - c.timestamp.toDate()) / 60000);
-                            if (diffMins < 60) timeStr = lang === 'fr' ? `Il y a ${diffMins}m` : `${diffMins}m`;
-                            else if (diffMins < 1440) timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/60)}h` : `${Math.round(diffMins/60)}h`;
-                            else timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/1440)}j` : `${Math.round(diffMins/1440)}d`;
-                        }
-                        let pfp = c.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${c.authorUid}&backgroundColor=EBF2FA`;
-                        
+                        const pfp = c.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${c.authorUid}&backgroundColor=EBF2FA`;
                         const div = document.createElement('div');
                         div.className = 'comment-item';
-                        div.innerHTML = `
-                            <a href="/user.html?id=${c.authorUid}"><img src="${pfp}" class="comment-avatar"></a>
-                            <div class="comment-content">
-                                <a href="/user.html?id=${c.authorUid}" class="comment-author-link"><div class="comment-author">${c.authorName}</div></a>
-                                <div class="comment-text">${c.text}</div>
-                                <div class="comment-time">${timeStr}</div>
-                            </div>
-                        `;
-                        listEl.appendChild(div);
+                        div.innerHTML = `<a href="/user.html?id=${c.authorUid}"><img src="${pfp}" class="comment-avatar"></a><div class="comment-content"><a href="/user.html?id=${c.authorUid}" class="comment-author-link"><div class="comment-author">${c.authorName}</div></a><div class="comment-text">${c.text}</div></div>`;
+                        list.appendChild(div);
                     });
-                    listEl.scrollTop = listEl.scrollHeight;
+                    list.scrollTop = list.scrollHeight;
                 });
             }
 
             window.postComment = async (postId) => {
-                if (!currentUser) { window.showLoginModal(topicId); return; }
-                const inputEl = document.getElementById(`comment-input-${postId}`);
-                const btnEl = document.getElementById(`btn-send-comment-${postId}`);
-                const text = inputEl.value.trim();
-                
-                if (!text) return;
-                
-                btnEl.disabled = true;
-                inputEl.value = '';
-                
-                let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
-
-                try {
-                    await addDoc(collection(db, "social_posts", postId, "comments"), {
-                        text: text,
-                        authorUid: currentUser.uid,
-                        authorName: currentUser.displayName || "User",
-                        authorPhoto: photoToSave,
-                        timestamp: serverTimestamp()
-                    });
-                    await updateDoc(doc(db, "social_posts", postId), { commentCount: increment(1) });
-                } catch(e) { console.error(e); alert("Error posting comment."); } 
-                finally { btnEl.disabled = false; }
+                if (!currentUser) { showLoginModal(topicId); return; }
+                const input = document.getElementById(`comment-input-${postId}`);
+                const text = input.value.trim(); if (!text) return;
+                input.value = '';
+                await addDoc(collection(db, "social_posts", postId, "comments"), { text, authorUid: currentUser.uid, authorName: currentUser.displayName, authorPhoto: currentUser.photoURL, timestamp: serverTimestamp() });
+                await updateDoc(doc(db, "social_posts", postId), { commentCount: increment(1) });
             };
 
-            document.body.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && e.target.classList.contains('comment-input')) {
-                    e.preventDefault();
-                    const postId = e.target.id.replace('comment-input-', '');
-                    window.postComment(postId);
-                }
-            });
-
-            if (currentUser) {
-                postInput.addEventListener('focus', () => { composerControls.style.display = 'flex'; });
-
-                btnSendPost.onclick = async () => {
-                    const text = postInput.value.trim();
-                    if (!text) return;
-                    
-                    btnSendPost.disabled = true;
-                    postInput.value = '';
-                    postInput.style.height = '60px'; 
-                    postInput.blur(); 
-                    composerControls.style.display = 'none';
-
-                    try {
-                        let photoToSave = currentUser.photoURL;
-                        if (!photoToSave || photoToSave.includes("googleusercontent") || photoToSave.includes("live.com")) {
-                            photoToSave = `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
-                        }
-
-                        await addDoc(collection(db, "social_posts"), {
-                            wayId: topicId,
-                            schoolName: internalSchoolName,
-                            text: text,
-                            authorUid: currentUser.uid,
-                            authorName: currentUser.displayName || "User",
-                            authorPhoto: photoToSave,
-                            likes: 0,
-                            likedBy: [],
-                            commentCount: 0,
-                            timestamp: serverTimestamp()
-                        });
-
-                        await updateDoc(doc(db, "social_channels", topicId), { postCount: increment(1) });
-
-                    } catch (e) { alert("Error posting."); }
-                    
-                    btnSendPost.disabled = false;
-                };
-
-                postInput.addEventListener('input', function() {
-                    this.style.height = '60px';
-                    this.style.height = (this.scrollHeight) + 'px';
-                    if (this.value.trim() === '') this.style.height = '60px';
-                });
-            }
+            const postInput = document.getElementById('post-input');
+            postInput.onfocus = () => document.getElementById('composer-controls').style.display = 'flex';
+            document.getElementById('btn-send-post').onclick = async () => {
+                const text = postInput.value.trim(); if (!text) return;
+                postInput.value = ''; document.getElementById('composer-controls').style.display = 'none';
+                await addDoc(collection(db, "social_posts"), { wayId: topicId, schoolName: internalSchoolName, text, authorUid: currentUser.uid, authorName: currentUser.displayName, authorPhoto: currentUser.photoURL, likes: 0, commentCount: 0, timestamp: serverTimestamp() });
+                await updateDoc(doc(db, "social_channels", topicId), { postCount: increment(1) });
+            };
         }
         main();
     </script>
