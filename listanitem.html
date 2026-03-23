@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>List an Item - Cheaplet</title>
+    <title>List an Item - Scoralia</title>
     <script type="module" src="global.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -125,7 +125,7 @@
         .form-buttons { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
         .btn-submit { flex: 1; min-width: 140px; background: var(--ink); color: var(--white); border: none; border-radius: var(--radius-sm); padding: 12px 20px; font-family: var(--font-body); font-size: 0.95rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s, transform 0.15s; }
         .btn-submit:hover:not(:disabled) { background: var(--deep); transform: translateY(-1px); }
-        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
         .btn-cancel { flex: 1; min-width: 120px; background: var(--surface); color: var(--text-muted); border: 1.5px solid rgba(179,205,224,0.5); border-radius: var(--radius-sm); padding: 12px 20px; font-family: var(--font-body); font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s, color 0.2s; }
         .btn-cancel:hover { background: var(--mist); color: var(--ink); }
 
@@ -142,7 +142,7 @@
 <body>
 
     <div id="page-loader">
-        <div class="loader-logo">Cheap<em>let</em></div>
+        <div class="loader-logo">Scor<em>alia</em></div>
         <div class="loader-dots">
             <span></span><span></span><span></span>
         </div>
@@ -150,7 +150,7 @@
 
     <header>
         <div class="header-inner">
-            <a href="/index.html" class="logo">Cheap<em>let</em></a>
+            <a href="/index.html" class="logo">Scor<em>alia</em></a>
             <nav>
                 <ul>
                     <li><a href="/search.html">Browse</a></li>
@@ -194,6 +194,9 @@
         <div id="main-form-section" style="display: none;">
             <div class="form-wrapper">
                 <form id="listing-form">
+
+                    <!-- Hidden ISBN field -->
+                    <input type="hidden" id="listing-isbn" value="">
 
                     <div class="form-section">
                         <div class="section-label"><i class="fas fa-pen"></i> <span id="ui-sec-basic">Basic Info</span></div>
@@ -403,6 +406,7 @@
             let currentUser = null;
             let selectedFiles = [];
             let tags = [];
+            let currentISBN = null;  // Store the ISBN for the listing
             const pageLoader = document.getElementById('page-loader');
             const loaderTimeout = setTimeout(() => { pageLoader.style.display = 'none'; }, 4000);
 
@@ -423,7 +427,6 @@
                 } else { window.location.href = '/LoginInToCheaplet.html'; }
             });
 
-            // --- 🔥 ALWAYS TRANSLATE TO FRENCH FIRST, ENGLISH SECOND ---
             let html5QrCode;
             
             async function fetchBookData(isbn) {
@@ -459,6 +462,10 @@
                                 document.getElementById('listing-description').value = originalDesc; 
                             }
                         }
+                        
+                        // Store the ISBN
+                        currentISBN = isbn;
+                        document.getElementById('listing-isbn').value = isbn;
                         
                         document.getElementById('isbn-section').style.display = 'none';
                         document.getElementById('main-form-section').style.display = 'block';
@@ -612,6 +619,7 @@
                 const price = parseFloat(document.getElementById('listing-price').value);
                 const originalPriceVal = document.getElementById('listing-original-price').value;
                 const originalPrice = originalPriceVal ? parseFloat(originalPriceVal) : null;
+                const isbn = document.getElementById('listing-isbn').value.trim() || null;
 
                 if (title.length > 80 || desc.length > 1500 || meet.length > 60) { alert(ui[lang].lenErr); return; }
                 if (price > 1200) { alert(ui[lang].priceErr); return; }
@@ -668,6 +676,7 @@
                         imageUrls: imageUrls,
                         posterUid: currentUser.uid,
                         posterDisplayName: displayName,
+                        isbn: isbn,          // Store the ISBN
                         status: 'active',
                         timestamp: serverTimestamp()
                     });
