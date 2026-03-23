@@ -165,14 +165,12 @@
         </div>
     </header>
 
-    <div class="mobile-ways-bar" id="mobile-ways-list">
-        <a href="/social.html" class="m-way-pill active">
-            <i class="fas fa-globe-americas"></i> <span data-i18n="topics_campus">Campus Public</span>
-        </a>
-    </div>
+    <!-- MOBILE TOPICS BAR -->
+    <div class="mobile-ways-bar" id="mobile-ways-list"></div>
 
     <div class="hub-layout">
         
+        <!-- DESKTOP SIDEBAR -->
         <aside class="sidebar">
             <div class="school-header">
                 <div class="school-name" id="d-user-school">Campus</div>
@@ -202,8 +200,10 @@
             </div>
         </aside>
 
+        <!-- MAIN FEED -->
         <main class="feed-column">
             
+            <!-- COMPOSER -->
             <div class="composer" id="composer-card" style="display: none;">
                 <div class="composer-top">
                     <img src="" id="composer-pfp" class="composer-pfp" alt="Avatar">
@@ -214,6 +214,7 @@
                 </div>
             </div>
 
+            <!-- FEED CONTAINER -->
             <div id="feed-container">
                 <div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i> <br><span id="ui-loading" data-i18n="loading_hub">Loading campus hub...</span></div>
             </div>
@@ -259,13 +260,15 @@
             const auth = getAuth(app);
             const db = getFirestore(app);
 
+            // --- BILINGUAL UI ---
             const lang = localStorage.getItem('preferred_language') || 'en';
             const allStrings = {
                 en: { 
                     topics_public: "Public Channels", topics_campus: "Campus Public", topics_custom: "Custom Topics", topics_new: "Create Topic",
                     post_placeholder: "What's happening on campus?", btn_post: "Post", loading_hub: "Loading campus hub...",
-                    noPosts: "No posts yet. Be the first to share something!", justNow: "Just now", suggest: "Campus Marketplace", browse: "Browse All →", 
-                    guest: "Campus Hub", sell: "List a Book", modal_title: "Create New Topic", modal_desc: "Enter a name for the new topic (e.g. Study Groups, Tech):",
+                    promptWay: "Enter a name for the new topic:", noPosts: "No posts yet. Be the first to share something!",
+                    justNow: "Just now", suggest: "Campus Marketplace", browse: "Browse All →", guest: "Campus Hub", sell: "List a Book",
+                    modal_title: "Create New Topic", modal_desc: "Enter a name for the new topic (e.g. Study Groups, Tech):",
                     modal_place: "Topic name...", btn_cancel: "Cancel", btn_create: "Create", err_short: "Name too short.",
                     loginTitle: "Join the Conversation", loginDesc: "Sign in to access this custom topic and share your thoughts.",
                     loginBtn: "Log In", registerBtn: "Register", comment_placeholder: "Write a comment...", no_comments: "No comments yet."
@@ -273,8 +276,9 @@
                 fr: { 
                     topics_public: "Canaux Publics", topics_campus: "Campus Public", topics_custom: "Sujets Personnalisés", topics_new: "Nouveau Sujet",
                     post_placeholder: "Que se passe-t-il sur le campus ?", btn_post: "Publier", loading_hub: "Chargement du hub...",
-                    noPosts: "Aucune publication. Soyez le premier à partager !", justNow: "À l'instant", suggest: "Marché du Campus", browse: "Voir tout →", 
-                    guest: "Hub Campus", sell: "Vendre un livre", modal_title: "Créer un nouveau sujet", modal_desc: "Entrez un nom pour le sujet (ex: Groupes d'étude, Tech) :",
+                    promptWay: "Entrez un nom pour le nouveau sujet :", noPosts: "Aucune publication. Soyez le premier à partager !",
+                    justNow: "À l'instant", suggest: "Marché du Campus", browse: "Voir tout →", guest: "Hub Campus", sell: "Vendre un livre",
+                    modal_title: "Créer un nouveau sujet", modal_desc: "Entrez un nom pour le sujet (ex: Groupes d'étude, Tech) :",
                     modal_place: "Nom du sujet...", btn_cancel: "Annuler", btn_create: "Créer", err_short: "Nom trop court.",
                     loginTitle: "Rejoindre la conversation", loginDesc: "Connectez-vous pour accéder à ce sujet personnalisé et partager vos idées.",
                     loginBtn: "Connexion", registerBtn: "S'inscrire", comment_placeholder: "Écrire un commentaire...", no_comments: "Aucun commentaire pour le moment."
@@ -282,10 +286,28 @@
             };
             const ui = allStrings[lang] || allStrings['en'];
 
-            document.querySelectorAll('[data-i18n]').forEach(el => { if (ui[el.getAttribute('data-i18n')]) el.textContent = ui[el.getAttribute('data-i18n')]; });
-            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { if (ui[el.getAttribute('data-i18n-placeholder')]) el.placeholder = ui[el.getAttribute('data-i18n-placeholder')]; });
+            // Apply translations safely
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (ui[key]) el.textContent = ui[key];
+            });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (ui[key]) el.placeholder = ui[key];
+            });
 
+            // Modal login elements
             const loginModal = document.getElementById('login-modal');
+            const modalLoginTitle = document.getElementById('modal-login-title');
+            const modalLoginDesc = document.getElementById('modal-login-desc');
+            const modalLoginBtn = document.getElementById('modal-login-btn');
+            const modalRegisterBtn = document.getElementById('modal-register-btn');
+            const closeModalBtn = document.getElementById('close-login-modal');
+            modalLoginTitle.textContent = ui.loginTitle;
+            modalLoginDesc.textContent = ui.loginDesc;
+            modalLoginBtn.textContent = ui.loginBtn;
+            modalRegisterBtn.textContent = ui.registerBtn;
+
             let pendingTopicId = null;
 
             window.showLoginModal = (topicId) => {
@@ -293,23 +315,34 @@
                 loginModal.style.display = 'flex';
             };
 
-            document.getElementById('close-login-modal').onclick = () => { loginModal.style.display = 'none'; pendingTopicId = null; };
-            window.addEventListener('click', (e) => { if (e.target === loginModal) { loginModal.style.display = 'none'; pendingTopicId = null; } });
+            closeModalBtn.onclick = () => {
+                loginModal.style.display = 'none';
+                pendingTopicId = null;
+            };
+            window.addEventListener('click', (e) => {
+                if (e.target === loginModal) {
+                    loginModal.style.display = 'none';
+                    pendingTopicId = null;
+                }
+            });
 
-            document.getElementById('modal-login-btn').onclick = () => {
+            modalLoginBtn.onclick = () => {
                 const redirect = pendingTopicId ? `/topic.html?id=${pendingTopicId}` : '/social.html';
                 window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(redirect)}`;
             };
-            document.getElementById('modal-register-btn').onclick = () => {
+            modalRegisterBtn.onclick = () => {
                 const redirect = pendingTopicId ? `/topic.html?id=${pendingTopicId}` : '/social.html';
                 window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(redirect)}`;
             };
 
-            function formatCount(num) { return !num ? 0 : (num > 999 ? (num / 1000).toFixed(1) + 'k' : num); }
+            function formatCount(num) {
+                if (!num) return 0;
+                return num > 999 ? (num / 1000).toFixed(1) + 'k' : num;
+            }
 
             let currentUser = null;
             let internalSchoolName = "Global Campus"; 
-            const currentWayId = "general"; // SOCIAL.HTML is ONLY for general.
+            const currentWayId = "general"; // For social.html it's ALWAYS general
             let unsubscribePosts = null;
             let commentUnsubscribes = {}; 
             let listings = []; 
@@ -354,9 +387,13 @@
                 const q = query(collection(db, "social_channels"), orderBy("postCount", "desc"));
                 onSnapshot(q, (snapshot) => {
                     desktopWaysList.innerHTML = '';
-                    // Keep the first item (Campus Public) in mobile
-                    const mGeneral = document.getElementById('m-way-general');
+                    
+                    // RE-INJECT GENERAL TOPIC TO MOBILE BAR TO PREVENT NULL ERROR
                     mobileWaysList.innerHTML = '';
+                    const mGeneral = document.createElement('a');
+                    mGeneral.className = 'm-way-pill active';
+                    mGeneral.href = '/social.html';
+                    mGeneral.innerHTML = `<i class="fas fa-globe-americas"></i> ${ui.topics_campus}`;
                     mobileWaysList.appendChild(mGeneral);
 
                     snapshot.forEach(docSnap => {
@@ -365,7 +402,7 @@
                         
                         // Desktop Item
                         const dItem = document.createElement('a');
-                        dItem.className = 'way-item'; // NO ACTIVE CLASS because this is social.html (general is active)
+                        dItem.className = 'way-item'; // NOT active, social.html is only general
                         dItem.href = `/topic.html?id=${docSnap.id}`;
                         dItem.innerHTML = `<i class="fas fa-hashtag"></i> <span style="flex-grow:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${d.name}</span> <span class="way-count">${displayCount}</span>`;
                         dItem.onclick = (e) => {
@@ -375,7 +412,7 @@
 
                         // Mobile Item
                         const mItem = document.createElement('a');
-                        mItem.className = 'm-way-pill';
+                        mItem.className = 'm-way-pill'; // NOT active
                         mItem.href = `/topic.html?id=${docSnap.id}`;
                         mItem.innerHTML = `<i class="fas fa-hashtag"></i> ${d.name} <span class="m-way-count">${displayCount}</span>`;
                         mItem.onclick = (e) => {
@@ -384,6 +421,7 @@
                         mobileWaysList.appendChild(mItem);
                     });
 
+                    // Add "Create Topic" to mobile
                     const mNew = document.createElement('div');
                     mNew.className = 'm-way-pill';
                     mNew.innerHTML = `<i class="fas fa-plus"></i> ${ui.topics_new}`;
@@ -398,7 +436,10 @@
             const btnConfirmTopic = document.getElementById('btn-confirm-topic');
 
             const triggerNewWay = () => {
-                if (!currentUser) { showLoginModal(null); return; }
+                if (!currentUser) {
+                    showLoginModal(null);
+                    return;
+                }
                 topicModal.style.display = 'flex';
                 topicInput.value = '';
                 topicInput.focus();
@@ -422,7 +463,6 @@
                         postCount: 0 
                     });
                     topicModal.style.display = 'none';
-                    // Redirect to the new topic
                     window.location.href = `/topic.html?id=${newRef.id}`;
                 } catch (e) { alert("Error: " + e.message); } 
                 finally { btnConfirmTopic.disabled = false; }
@@ -450,6 +490,7 @@
             function loadFeed() {
                 if (unsubscribePosts) unsubscribePosts();
                 
+                // Clear comment listeners to avoid memory leak
                 Object.values(commentUnsubscribes).forEach(unsub => unsub());
                 commentUnsubscribes = {};
 
@@ -532,6 +573,7 @@
                         </button>
                     </div>
 
+                    <!-- COMMENTS SECTION -->
                     <div class="comments-section" id="comments-section-${id}">
                         <div class="comment-list" id="comment-list-${id}">
                             <div style="text-align:center; font-size:0.8rem; color:#888;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
@@ -572,6 +614,7 @@
                 return breakSection;
             }
 
+            // --- LIKE LOGIC ---
             window.likePost = async (id, alreadyLiked) => {
                 if (!currentUser) { window.showLoginModal(null); return; }
                 const ref = doc(db, "social_posts", id);
@@ -582,6 +625,7 @@
                 }
             };
 
+            // --- COMMENT LOGIC ---
             window.toggleComments = (postId) => {
                 const section = document.getElementById(`comments-section-${postId}`);
                 if (section.style.display === 'block') {
@@ -609,6 +653,7 @@
                     
                     snap.forEach(doc => {
                         const c = doc.data();
+                        
                         let timeStr = ui.justNow;
                         if (c.timestamp) {
                             const diffMins = Math.round((new Date() - c.timestamp.toDate()) / 60000);
@@ -616,6 +661,7 @@
                             else if (diffMins < 1440) timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/60)}h` : `${Math.round(diffMins/60)}h`;
                             else timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/1440)}j` : `${Math.round(diffMins/1440)}d`;
                         }
+                        
                         let pfp = c.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${c.authorUid}&backgroundColor=EBF2FA`;
                         
                         const div = document.createElement('div');
@@ -630,12 +676,15 @@
                         `;
                         listEl.appendChild(div);
                     });
+                    
+                    // Scroll to the bottom of the comments list
                     listEl.scrollTop = listEl.scrollHeight;
                 });
             }
 
             window.postComment = async (postId) => {
                 if (!currentUser) { window.showLoginModal(null); return; }
+                
                 const inputEl = document.getElementById(`comment-input-${postId}`);
                 const btnEl = document.getElementById(`btn-send-comment-${postId}`);
                 const text = inputEl.value.trim();
@@ -655,11 +704,21 @@
                         authorPhoto: photoToSave,
                         timestamp: serverTimestamp()
                     });
-                    await updateDoc(doc(db, "social_posts", postId), { commentCount: increment(1) });
-                } catch(e) { console.error(e); alert("Error posting comment."); } 
-                finally { btnEl.disabled = false; }
+                    
+                    // Increment the comment counter on the parent post
+                    await updateDoc(doc(db, "social_posts", postId), {
+                        commentCount: increment(1)
+                    });
+                    
+                } catch(e) {
+                    console.error(e);
+                    alert("Error posting comment.");
+                } finally {
+                    btnEl.disabled = false;
+                }
             };
 
+            // Allow hitting "Enter" to submit comment
             document.body.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && e.target.classList.contains('comment-input')) {
                     e.preventDefault();
@@ -669,7 +728,9 @@
             });
 
             if (currentUser) {
-                postInput.addEventListener('focus', () => { composerControls.style.display = 'flex'; });
+                postInput.addEventListener('focus', () => {
+                    composerControls.style.display = 'flex';
+                });
 
                 btnSendPost.onclick = async () => {
                     const text = postInput.value.trim();
