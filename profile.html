@@ -71,25 +71,19 @@
             display: flex; flex-direction: column; align-items: center; text-align: center;
         }
 
-        /* FIXED: Renamed classes to avoid global.js conflicts, made it huge and centered */
+        .header-top-row {
+            display: flex; align-items: flex-end; gap: 25px;
+            margin-top: -65px; margin-bottom: 20px;
+        }
+
         .main-avatar-wrapper { 
-            position: relative; 
-            width: 160px; 
-            height: 160px; 
-            margin-top: -80px; /* Pulls exactly half the avatar up into the banner */
-            margin-bottom: 20px;
-            flex-shrink: 0;
+            position: relative; width: 160px; height: 160px; 
+            margin-top: -80px; margin-bottom: 20px; flex-shrink: 0;
         }
         
         .main-profile-photo { 
-            width: 100%; 
-            height: 100%; 
-            border-radius: 50%; 
-            border: 6px solid var(--white); 
-            background: var(--surface); 
-            object-fit: cover; 
-            box-shadow: 0 8px 24px rgba(0,0,0,0.12); 
-            display: block;
+            width: 100%; height: 100%; border-radius: 50%; border: 6px solid var(--white); 
+            background: var(--surface); object-fit: cover; box-shadow: 0 8px 24px rgba(0,0,0,0.12); display: block;
         }
         
         .edit-avatar-btn {
@@ -99,7 +93,9 @@
             box-shadow: 0 4px 12px rgba(200,169,110,0.4); transition: transform 0.2s;
         }
         .edit-avatar-btn:hover { transform: scale(1.1); background: #dcb878; }
+        .edit-avatar-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
 
+        .profile-titles { padding-bottom: 12px; flex-grow: 1; }
         .profile-name { font-family: var(--font-display); font-size: 2.6rem; font-weight: 900; color: var(--ink); line-height: 1.1; margin-bottom: 4px; }
         .profile-username { font-size: 1.1rem; color: var(--text-muted); font-weight: 500; margin-bottom: 16px; }
         .profile-bio { color: var(--text-body); font-size: 1rem; max-width: 600px; line-height: 1.6; margin-bottom: 20px; }
@@ -156,11 +152,16 @@
             .profile-banner { height: 160px; border-radius: 0; }
             .profile-header-card { margin: -65px 0 20px; padding: 0 20px 30px; border-radius: 0; border-left: none; border-right: none; box-shadow: none; border-bottom: 1px solid var(--mist); }
             
+            .header-top-row { flex-direction: column; align-items: center; text-align: center; margin-top: -65px; gap: 12px; }
+            .profile-titles { padding-bottom: 0; }
+            
             .main-avatar-wrapper { width: 130px; height: 130px; margin-top: -65px; }
             .main-profile-photo { border-width: 4px; }
             .edit-avatar-btn { width: 38px; height: 38px; font-size: 1rem; bottom: 4px; right: 4px; }
             
             .profile-name { font-size: 2rem; }
+            .profile-meta { justify-content: center; }
+            
             .edit-grid { grid-template-columns: 1fr; }
             .btn-group { flex-direction: column; }
             .btn { width: 100%; }
@@ -178,7 +179,7 @@
 
     <main class="main-wrapper">
         <div id="info-container">
-            <p class="info-message"><i class="fas fa-circle-notch fa-spin"></i> Loading profile...</p>
+            <p class="info-message"><i class="fas fa-circle-notch fa-spin"></i> <span id="ui-loading">Loading profile...</span></p>
         </div>
 
         <div id="profile-container" style="display: none;">
@@ -188,14 +189,18 @@
             
             <!-- Centered Header Card -->
             <div class="profile-header-card">
-                <div class="main-avatar-wrapper">
-                    <img id="profile-avatar-img" class="main-profile-photo" alt="Profile picture" src="">
-                    <button class="edit-avatar-btn" id="edit-avatar-btn" title="Change photo"><i class="fas fa-camera"></i></button>
-                    <input type="file" id="photo-upload-input" accept="image/*" style="display: none;">
+                <div class="header-top-row">
+                    <div class="main-avatar-wrapper">
+                        <img id="profile-avatar-img" class="main-profile-photo" alt="Profile picture" src="">
+                        <button class="edit-avatar-btn" id="edit-avatar-btn" title="Change photo"><i class="fas fa-camera"></i></button>
+                        <input type="file" id="photo-upload-input" accept="image/*" style="display: none;">
+                    </div>
+                    <div class="profile-titles">
+                        <h1 class="profile-name" id="display-name-display"></h1>
+                        <div class="profile-username" id="username-display"></div>
+                    </div>
                 </div>
-                
-                <h1 class="profile-name" id="display-name-display"></h1>
-                <div class="profile-username" id="username-display"></div>
+
                 <div class="profile-bio" id="bio-display"></div>
                 
                 <div class="profile-meta">
@@ -214,23 +219,23 @@
             
             <!-- Editable Profile Info -->
             <div class="content-section">
-                <h2 class="section-title"><i class="fas fa-user-edit"></i> Edit Profile</h2>
+                <h2 class="section-title"><i class="fas fa-user-edit"></i> <span id="ui-edit-profile">Edit Profile</span></h2>
                 <div class="edit-grid">
                     <div class="form-group">
-                        <label class="form-label">Full Name</label>
-                        <input type="text" id="edit-fullname" class="form-input" placeholder="Your full name">
+                        <label class="form-label" id="ui-fullname-lbl">Full Name</label>
+                        <input type="text" id="edit-fullname" class="form-input" placeholder="">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Username</label>
+                        <label class="form-label" id="ui-username-lbl">Username</label>
                         <input type="text" id="edit-username" class="form-input" placeholder="username" autocomplete="off">
                         <div class="username-status" id="username-status"></div>
                     </div>
                     <div class="form-group full-width">
-                        <label class="form-label">Bio</label>
-                        <textarea id="edit-bio" class="form-input" maxlength="160" placeholder="Tell the campus a little about yourself..."></textarea>
+                        <label class="form-label" id="ui-bio-lbl">Bio</label>
+                        <textarea id="edit-bio" class="form-input" maxlength="160" placeholder=""></textarea>
                     </div>
                     <div class="form-group full-width">
-                        <label class="form-label">App Language</label>
+                        <label class="form-label" id="ui-language-lbl">App Language / Langue</label>
                         <select id="language-select" class="form-input">
                             <option value="en">English</option>
                             <option value="fr">Français</option>
@@ -240,24 +245,24 @@
                 
                 <div id="save-feedback"></div>
                 <div class="btn-group">
-                    <button class="btn btn-secondary" id="reset-password-btn"><i class="fas fa-key"></i> Reset Password</button>
-                    <button class="btn btn-primary" id="save-profile-btn"><i class="fas fa-save"></i> Save Changes</button>
+                    <button class="btn btn-secondary" id="reset-password-btn"><i class="fas fa-key"></i> <span id="ui-btn-reset">Reset Password</span></button>
+                    <button class="btn btn-primary" id="save-profile-btn"><i class="fas fa-save"></i> <span id="ui-btn-save">Save Changes</span></button>
                 </div>
             </div>
             
             <!-- Saved Listings -->
             <div class="content-section">
-                <h2 class="section-title"><i class="fas fa-bookmark"></i> Saved Items</h2>
+                <h2 class="section-title"><i class="fas fa-bookmark"></i> <span id="ui-saved-items">Saved Items</span></h2>
                 <div id="saved-listings-container" class="saved-grid">
-                    <p style="color: var(--text-muted); font-weight: 500;">Loading saved items...</p>
+                    <p style="color: var(--text-muted); font-weight: 500;" id="ui-loading-saved">Loading saved items...</p>
                 </div>
             </div>
             
             <!-- Account Security -->
             <div class="content-section" style="border-color: #fecaca;">
-                <h2 class="section-title" style="color: var(--red);"><i class="fas fa-shield-alt"></i> Danger Zone</h2>
-                <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 20px;">Once you delete your account, there is no going back. Please be certain.</p>
-                <button class="btn btn-danger" id="delete-account-btn"><i class="fas fa-trash-alt"></i> Delete My Account</button>
+                <h2 class="section-title" style="color: var(--red);"><i class="fas fa-shield-alt"></i> <span id="ui-danger-zone">Danger Zone</span></h2>
+                <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 20px;" id="ui-danger-text">Once you delete your account, there is no going back. Please be certain.</p>
+                <button class="btn btn-danger" id="delete-account-btn"><i class="fas fa-trash-alt"></i> <span id="ui-btn-delete">Delete My Account</span></button>
             </div>
 
         </div>
@@ -274,15 +279,13 @@
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
-            
-            // Cloudinary settings
-            const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`;
-            const UPLOAD_PRESET = config.cloudinary.uploadPreset;
 
             // DOM Elements
             const infoContainer = document.getElementById('info-container');
             const profileContainer = document.getElementById('profile-container');
             const avatarImg = document.getElementById('profile-avatar-img');
+            const editAvatarBtn = document.getElementById('edit-avatar-btn');
+            const photoUploadInput = document.getElementById('photo-upload-input');
             const editFullname = document.getElementById('edit-fullname');
             const editUsername = document.getElementById('edit-username');
             const editBio = document.getElementById('edit-bio');
@@ -297,31 +300,60 @@
 
             let currentUser = null;
             let currentUserData = null;
-            let selectedPhotoFile = null;
             let usernameCheckTimeout = null;
             let isUsernameValid = false;
             let originalUsername = '';
 
-            // Translations
+            // --- BILINGUAL TRANSLATIONS ---
             const lang = localStorage.getItem('preferred_language') || 'en';
             const t = {
                 en: {
+                    loading: "Loading profile...",
+                    editProfile: "Edit Profile", fullName: "Full Name", usernameLbl: "Username",
+                    bio: "Bio", bioPlace: "Tell the campus a little about yourself...",
+                    appLang: "App Language / Langue", resetPwd: "Reset Password", saveChanges: "Save Changes",
+                    savedItems: "Saved Items", loadingSaved: "Loading saved items...", noSaved: "You haven't saved any items yet.",
+                    dangerZone: "Danger Zone", dangerText: "Once you delete your account, there is no going back. Please be certain.",
+                    deleteBtn: "Delete My Account",
                     verified: "Verified Student", joinPrefix: "Joined ", noRating: "No ratings yet",
                     saveSuccess: "Profile updated successfully!", saveError: "Error saving profile.",
                     pwdResetSent: "Password reset email sent!", deleteConfirm: "Are you sure? This will permanently delete your account and all your data.",
                     usernameTaken: "Username already taken", usernameAvailable: "✓ Available",
                     usernameInvalid: "Only letters, numbers, underscore", usernameChecking: "Checking...", usernameHint: "Only letters, numbers, underscore",
-                    noSaved: "You haven't saved any items yet."
+                    imgUploadFailed: "Failed to upload image. Please try again."
                 },
                 fr: {
+                    loading: "Chargement du profil...",
+                    editProfile: "Modifier le profil", fullName: "Nom complet", usernameLbl: "Nom d'utilisateur",
+                    bio: "Biographie", bioPlace: "Parlez-nous un peu de vous...",
+                    appLang: "Langue de l'application", resetPwd: "Réinitialiser le mot de passe", saveChanges: "Enregistrer les modifications",
+                    savedItems: "Articles sauvegardés", loadingSaved: "Chargement des articles sauvegardés...", noSaved: "Vous n'avez pas encore d'articles sauvegardés.",
+                    dangerZone: "Zone de danger", dangerText: "Une fois votre compte supprimé, il n'y a pas de retour en arrière. Soyez certain.",
+                    deleteBtn: "Supprimer mon compte",
                     verified: "Étudiant vérifié", joinPrefix: "Membre depuis ", noRating: "Aucune évaluation",
                     saveSuccess: "Profil mis à jour avec succès !", saveError: "Erreur lors de la mise à jour.",
                     pwdResetSent: "E-mail de réinitialisation envoyé !", deleteConfirm: "Êtes-vous sûr ? Cela supprimera définitivement votre compte et toutes vos données.",
                     usernameTaken: "Nom d'utilisateur déjà pris", usernameAvailable: "✓ Disponible",
                     usernameInvalid: "Lettres, chiffres, tiret bas uniquement", usernameChecking: "Vérification...", usernameHint: "Lettres, chiffres, tiret bas uniquement",
-                    noSaved: "Vous n'avez pas encore d'articles sauvegardés."
+                    imgUploadFailed: "Échec du téléchargement de l'image. Veuillez réessayer."
                 }
             }[lang];
+
+            // Apply translations to UI
+            document.getElementById('ui-loading').textContent = t.loading;
+            document.getElementById('ui-edit-profile').textContent = t.editProfile;
+            document.getElementById('ui-fullname-lbl').textContent = t.fullName;
+            document.getElementById('ui-username-lbl').textContent = t.usernameLbl;
+            document.getElementById('ui-bio-lbl').textContent = t.bio;
+            document.getElementById('edit-bio').placeholder = t.bioPlace;
+            document.getElementById('ui-language-lbl').textContent = t.appLang;
+            document.getElementById('ui-btn-reset').textContent = t.resetPwd;
+            document.getElementById('ui-btn-save').textContent = t.saveChanges;
+            document.getElementById('ui-saved-items').textContent = t.savedItems;
+            document.getElementById('ui-loading-saved').textContent = t.loadingSaved;
+            document.getElementById('ui-danger-zone').textContent = t.dangerZone;
+            document.getElementById('ui-danger-text').textContent = t.dangerText;
+            document.getElementById('ui-btn-delete').textContent = t.deleteBtn;
 
             // Helpers
             function generateBannerGradient(uid) {
@@ -346,6 +378,61 @@
                 if (snap.docs.length === 1 && snap.docs[0].id === currentUid) return true;
                 return false;
             }
+
+            // --- AUTO UPLOAD AVATAR ---
+            editAvatarBtn.onclick = () => photoUploadInput.click();
+            
+            photoUploadInput.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // 1. Show local preview instantly
+                const reader = new FileReader();
+                reader.onload = (ev) => { avatarImg.src = ev.target.result; };
+                reader.readAsDataURL(file);
+
+                // 2. Change icon to spinner & disable
+                const originalIcon = editAvatarBtn.innerHTML;
+                editAvatarBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                editAvatarBtn.disabled = true;
+
+                try {
+                    // Get signature
+                    const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
+                    
+                    // Upload to Cloudinary
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('api_key', signRes.apiKey);
+                    formData.append('timestamp', signRes.timestamp);
+                    formData.append('signature', signRes.signature);
+                    formData.append('upload_preset', signRes.uploadPreset);
+                    
+                    const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, {
+                        method: 'POST', body: formData
+                    }).then(r => r.json());
+                    
+                    if (res.secure_url) {
+                        const finalPhotoURL = res.secure_url;
+                        // Update Firebase Auth & DB immediately
+                        await updateProfile(currentUser, { photoURL: finalPhotoURL });
+                        await updateDoc(doc(db, "users", currentUser.uid), { photoURL: finalPhotoURL });
+                        currentUserData.photoURL = finalPhotoURL;
+                    } else {
+                        throw new Error("Upload Failed");
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert(t.imgUploadFailed);
+                    // Revert to old image
+                    avatarImg.src = currentUserData.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
+                } finally {
+                    // Restore button
+                    editAvatarBtn.innerHTML = originalIcon;
+                    editAvatarBtn.disabled = false;
+                    photoUploadInput.value = ''; // clear input
+                }
+            };
 
             // Username validation listener
             editUsername.addEventListener('input', async () => {
@@ -390,8 +477,11 @@
                 document.getElementById('bio-display').textContent = currentUserData.bio || '';
                 
                 editFullname.value = currentUserData.displayName || '';
+                editFullname.placeholder = t.fullName;
+                
                 editUsername.value = currentUserData.username || '';
                 originalUsername = currentUserData.username || '';
+                
                 editBio.value = currentUserData.bio || '';
                 languageSelect.value = currentUserData.language || localStorage.getItem('preferred_language') || 'en';
                 
@@ -434,7 +524,6 @@
                 // Fetch Saved Listings (Reversing the array to show newest first)
                 if (currentUserData.savedListings && currentUserData.savedListings.length > 0) {
                     const idsToFetch = [...currentUserData.savedListings].reverse();
-                    
                     const promises = idsToFetch.map(id => getDoc(doc(db, "listings", id)));
                     const snaps = await Promise.all(promises);
                     
@@ -466,7 +555,7 @@
                 profileContainer.style.display = 'block';
             }
             
-            // Save logic
+            // Save logic (Only handles text fields now)
             async function saveProfile() {
                 saveBtn.disabled = true;
                 saveFeedback.textContent = '';
@@ -498,34 +587,10 @@
                 
                 saveFeedback.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
                 
-                let finalPhotoURL = currentUserData.photoURL;
-                if (selectedPhotoFile) {
-                    try {
-                        const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
-                        const formData = new FormData();
-                        formData.append('file', selectedPhotoFile);
-                        formData.append('api_key', signRes.apiKey);
-                        formData.append('timestamp', signRes.timestamp);
-                        formData.append('signature', signRes.signature);
-                        formData.append('upload_preset', signRes.uploadPreset);
-                        
-                        const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, {
-                            method: 'POST', body: formData
-                        }).then(r => r.json());
-                        
-                        if (res.secure_url) finalPhotoURL = res.secure_url;
-                    } catch (err) {
-                        console.error(err);
-                        saveFeedback.textContent = 'Image upload failed.';
-                        saveFeedback.style.color = 'var(--red)';
-                        saveBtn.disabled = false; return;
-                    }
-                }
-                
                 try {
-                    await updateProfile(currentUser, { displayName: newFullname, photoURL: finalPhotoURL });
+                    await updateProfile(currentUser, { displayName: newFullname });
                     await updateDoc(doc(db, "users", currentUser.uid), {
-                        displayName: newFullname, username: newUsername, bio: newBio, photoURL: finalPhotoURL, language: newLanguage
+                        displayName: newFullname, username: newUsername, bio: newBio, language: newLanguage
                     });
                     
                     if (newFullname !== currentUserData.displayName && window.updateUserContent) {
@@ -537,12 +602,10 @@
                     document.getElementById('display-name-display').textContent = newFullname;
                     document.getElementById('username-display').textContent = `@${newUsername}`;
                     document.getElementById('bio-display').textContent = newBio;
-                    avatarImg.src = finalPhotoURL;
                     
                     currentUserData.displayName = newFullname;
                     currentUserData.username = newUsername;
                     currentUserData.bio = newBio;
-                    currentUserData.photoURL = finalPhotoURL;
                     originalUsername = newUsername;
                     
                     saveFeedback.textContent = t.saveSuccess;
@@ -557,23 +620,13 @@
                     saveFeedback.style.color = 'var(--red)';
                 } finally {
                     saveBtn.disabled = false;
-                    selectedPhotoFile = null;
                 }
             }
             
-            // Events
-            document.getElementById('edit-avatar-btn').onclick = () => document.getElementById('photo-upload-input').click();
-            document.getElementById('photo-upload-input').onchange = (e) => {
-                if (e.target.files[0]) {
-                    selectedPhotoFile = e.target.files[0];
-                    const reader = new FileReader();
-                    reader.onload = (ev) => { avatarImg.src = ev.target.result; };
-                    reader.readAsDataURL(selectedPhotoFile);
-                }
-            };
-            
+            // Text Save button
             saveBtn.onclick = saveProfile;
             
+            // Password Reset
             resetPwdBtn.onclick = async () => {
                 try {
                     await sendPasswordResetEmail(auth, currentUser.email);
@@ -581,6 +634,7 @@
                 } catch (e) { alert(e.message); }
             };
             
+            // Delete Account
             deleteBtn.onclick = async () => {
                 if (confirm(t.deleteConfirm)) {
                     try {
