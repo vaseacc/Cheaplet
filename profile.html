@@ -66,28 +66,24 @@
         
         .profile-header-card {
             background: var(--white); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);
-            padding: 0 40px 40px; margin: -80px auto 40px; position: relative; z-index: 10;
+            padding: 0 40px 35px; margin: -60px auto 40px; position: relative; z-index: 10;
             border: 1px solid rgba(179,205,224,0.3);
             display: flex; flex-direction: column; align-items: center; text-align: center;
         }
 
-        .header-top-row {
-            display: flex; align-items: flex-end; gap: 25px;
-            margin-top: -65px; margin-bottom: 20px;
-        }
-
         .main-avatar-wrapper { 
-            position: relative; width: 160px; height: 160px; 
-            margin-top: -80px; margin-bottom: 20px; flex-shrink: 0;
+            position: relative; width: 150px; height: 150px; 
+            margin-top: -75px; /* Pops out of the top of the card */
+            margin-bottom: 15px; flex-shrink: 0;
         }
         
         .main-profile-photo { 
             width: 100%; height: 100%; border-radius: 50%; border: 6px solid var(--white); 
-            background: var(--surface); object-fit: cover; box-shadow: 0 8px 24px rgba(0,0,0,0.12); display: block;
+            background: var(--surface); object-fit: cover; box-shadow: 0 6px 16px rgba(0,0,0,0.12); display: block;
         }
         
         .edit-avatar-btn {
-            position: absolute; bottom: 8px; right: 8px; width: 44px; height: 44px;
+            position: absolute; bottom: 5px; right: 5px; width: 42px; height: 42px;
             background: var(--gold); color: var(--ink); border: none; border-radius: 50%;
             cursor: pointer; font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
             box-shadow: 0 4px 12px rgba(200,169,110,0.4); transition: transform 0.2s;
@@ -95,9 +91,8 @@
         .edit-avatar-btn:hover { transform: scale(1.1); background: #dcb878; }
         .edit-avatar-btn:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
 
-        .profile-titles { padding-bottom: 12px; flex-grow: 1; }
-        .profile-name { font-family: var(--font-display); font-size: 2.6rem; font-weight: 900; color: var(--ink); line-height: 1.1; margin-bottom: 4px; }
-        .profile-username { font-size: 1.1rem; color: var(--text-muted); font-weight: 500; margin-bottom: 16px; }
+        .profile-name { font-family: var(--font-display); font-size: 2.2rem; font-weight: 900; color: var(--ink); line-height: 1.1; margin-bottom: 4px; }
+        .profile-username { font-size: 1.05rem; color: var(--text-muted); font-weight: 500; margin-bottom: 16px; }
         .profile-bio { color: var(--text-body); font-size: 1rem; max-width: 600px; line-height: 1.6; margin-bottom: 20px; }
         
         .profile-meta { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
@@ -150,17 +145,13 @@
         @media (max-width: 768px) {
             nav { display: none; }
             .profile-banner { height: 160px; border-radius: 0; }
-            .profile-header-card { margin: -65px 0 20px; padding: 0 20px 30px; border-radius: 0; border-left: none; border-right: none; box-shadow: none; border-bottom: 1px solid var(--mist); }
+            .profile-header-card { margin: -50px 0 20px; padding: 0 20px 30px; border-radius: 0; border-left: none; border-right: none; box-shadow: none; border-bottom: 1px solid var(--mist); }
             
-            .header-top-row { flex-direction: column; align-items: center; text-align: center; margin-top: -65px; gap: 12px; }
-            .profile-titles { padding-bottom: 0; }
-            
-            .main-avatar-wrapper { width: 130px; height: 130px; margin-top: -65px; }
+            .main-avatar-wrapper { width: 120px; height: 120px; margin-top: -60px; }
             .main-profile-photo { border-width: 4px; }
             .edit-avatar-btn { width: 38px; height: 38px; font-size: 1rem; bottom: 4px; right: 4px; }
             
-            .profile-name { font-size: 2rem; }
-            .profile-meta { justify-content: center; }
+            .profile-name { font-size: 1.8rem; }
             
             .edit-grid { grid-template-columns: 1fr; }
             .btn-group { flex-direction: column; }
@@ -189,18 +180,14 @@
             
             <!-- Centered Header Card -->
             <div class="profile-header-card">
-                <div class="header-top-row">
-                    <div class="main-avatar-wrapper">
-                        <img id="profile-avatar-img" class="main-profile-photo" alt="Profile picture" src="">
-                        <button class="edit-avatar-btn" id="edit-avatar-btn" title="Change photo"><i class="fas fa-camera"></i></button>
-                        <input type="file" id="photo-upload-input" accept="image/*" style="display: none;">
-                    </div>
-                    <div class="profile-titles">
-                        <h1 class="profile-name" id="display-name-display"></h1>
-                        <div class="profile-username" id="username-display"></div>
-                    </div>
+                <div class="main-avatar-wrapper">
+                    <img id="profile-avatar-img" class="main-profile-photo" alt="Profile picture" src="">
+                    <button class="edit-avatar-btn" id="edit-avatar-btn" title="Change photo"><i class="fas fa-camera"></i></button>
+                    <input type="file" id="photo-upload-input" accept="image/*" style="display: none;">
                 </div>
-
+                
+                <h1 class="profile-name" id="display-name-display"></h1>
+                <div class="profile-username" id="username-display"></div>
                 <div class="profile-bio" id="bio-display"></div>
                 
                 <div class="profile-meta">
@@ -279,6 +266,10 @@
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
+            
+            // Cloudinary settings
+            const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`;
+            const UPLOAD_PRESET = config.cloudinary.uploadPreset;
 
             // DOM Elements
             const infoContainer = document.getElementById('info-container');
