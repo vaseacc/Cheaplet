@@ -39,24 +39,19 @@ const translations = {
         "tour_desc_2": "Look for the <span style='color:#2E7D32; font-weight:bold;'><i class='fas fa-graduation-cap'></i> Verified Student</span> badge. It means the user registered with an official college email.",
         "tour_title_3": "Smart Features",
         "tour_desc_3": "Click the bookmark icon on any listing to save it. You can easily find your saved items later in <b>My Profile</b>.",
-        "tour_title_4": "Profile Photo",
-        "tour_desc_4": "Add a photo to personalize your account. (You can skip this for now.)",
+        "tour_title_4": "Personalize Your Profile",
+        "tour_desc_4": "Set your full name and a unique username (e.g., @jhondoe). Add a photo to personalize your account.",
+        "tour_full_name": "Full Name (e.g., John Doe)",
+        "tour_username": "Username (letters, numbers, underscore only)",
         "tour_upload": "Choose Photo",
         "tour_next": "Next",
         "tour_start": "Finish & Explore",
         "tour_saving": "Saving...",
-
-        "setup_title": "Complete Your Profile",
-        "setup_desc": "Choose a unique username and your full name. This will be visible to other users.",
-        "setup_fullname": "Full Name",
-        "setup_username": "Username (letters, numbers, underscore only)",
-        "setup_save": "Save",
-        "setup_checking": "Checking...",
-        "setup_available": "✓ Available",
-        "setup_taken": "✗ Already taken",
-        "setup_invalid": "Only letters, numbers, underscore (3+ chars)",
-        "setup_required": "Username is required",
-        "setup_name_required": "Full name is required"
+        "tour_name_err": "Please enter a valid full name.",
+        "tour_username_err": "Username must contain only letters, numbers, underscore, and be at least 3 characters.",
+        "tour_username_taken": "Username already taken. Please choose another.",
+        "tour_username_available": "✓ Available",
+        "tour_username_checking": "Checking..."
     },
     "fr": {
         "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil",
@@ -71,24 +66,19 @@ const translations = {
         "tour_desc_2": "Recherchez le badge <span style='color:#2E7D32; font-weight:bold;'><i class='fas fa-graduation-cap'></i> Étudiant vérifié</span>. Il indique une inscription avec un courriel scolaire officiel.",
         "tour_title_3": "Fonctionnalités",
         "tour_desc_3": "Cliquez sur l'icône de signet pour sauvegarder une annonce. Retrouvez-les facilement dans <b>Mon Profil</b>.",
-        "tour_title_4": "Photo de profil",
-        "tour_desc_4": "Ajoutez une photo pour personnaliser votre compte. (Vous pouvez passer cette étape.)",
+        "tour_title_4": "Personnalisez votre profil",
+        "tour_desc_4": "Définissez votre nom complet et un nom d'utilisateur unique (ex: @jhondoe). Ajoutez une photo pour personnaliser votre compte.",
+        "tour_full_name": "Nom complet (ex: Jean Dupont)",
+        "tour_username": "Nom d'utilisateur (lettres, chiffres, tiret bas)",
         "tour_upload": "Choisir une photo",
         "tour_next": "Suivant",
         "tour_start": "Terminer & Explorer",
         "tour_saving": "Enregistrement...",
-
-        "setup_title": "Complétez votre profil",
-        "setup_desc": "Choisissez un nom d'utilisateur unique et votre nom complet. Ces informations seront visibles par les autres utilisateurs.",
-        "setup_fullname": "Nom complet",
-        "setup_username": "Nom d'utilisateur (lettres, chiffres, tiret bas)",
-        "setup_save": "Enregistrer",
-        "setup_checking": "Vérification...",
-        "setup_available": "✓ Disponible",
-        "setup_taken": "✗ Déjà pris",
-        "setup_invalid": "Lettres, chiffres, tiret bas (3+ caractères)",
-        "setup_required": "Nom d'utilisateur requis",
-        "setup_name_required": "Nom complet requis"
+        "tour_name_err": "Veuillez entrer un nom complet valide.",
+        "tour_username_err": "Le nom d'utilisateur ne peut contenir que des lettres, chiffres, tiret bas et au moins 3 caractères.",
+        "tour_username_taken": "Nom d'utilisateur déjà pris. Veuillez en choisir un autre.",
+        "tour_username_available": "✓ Disponible",
+        "tour_username_checking": "Vérification..."
     }
 };
 
@@ -140,21 +130,6 @@ globalStyle.innerHTML = `
     .btn-accept-terms { background: #C8A96E; color: #0C1446; border: none; padding: 8px 30px; border-radius: 20px; font-weight: 800; cursor: pointer; }
     .desktop-only { display: inline-flex; }
     .mobile-link { display: none; }
-    .setup-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(12,20,70,0.95); z-index: 10010; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(6px); }
-    .setup-modal-card { background: white; padding: 30px; border-radius: 20px; max-width: 450px; width: 90%; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-    .setup-modal-card h2 { margin-bottom: 8px; color: #0C1446; font-family: 'Playfair Display', serif; }
-    .setup-modal-card p { margin-bottom: 20px; color: #666; font-size: 0.9rem; }
-    .setup-modal-field { margin-bottom: 16px; }
-    .setup-modal-field label { display: block; font-weight: 600; margin-bottom: 4px; font-size: 0.8rem; color: #333; }
-    .setup-modal-field input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 1rem; outline: none; }
-    .setup-modal-field input:focus { border-color: #C8A96E; }
-    .setup-status { font-size: 0.8rem; margin-top: 4px; display: flex; justify-content: space-between; }
-    .setup-status.valid { color: #2E7D32; }
-    .setup-status.invalid { color: #d32f2f; }
-    .setup-status.checking { color: #ff9800; }
-    .setup-modal-buttons { display: flex; gap: 12px; margin-top: 20px; }
-    .setup-modal-buttons button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-    .setup-modal-buttons .btn-save { background: #C8A96E; color: #0C1446; }
     @media (max-width: 767px) {
         nav { display: none !important; }
         .msg-btn-mobile { display: flex; }
@@ -182,24 +157,23 @@ onAuthStateChanged(auth, (user) => {
                 currentUserData = docSnap.data();
                 if (currentUserData.role === 'banned') { triggerHardLockdown(); return; }
                 if (currentUserData.language) localStorage.setItem('preferred_language', currentUserData.language);
-                
-                // If no username, force profile setup (modal)
-                if (!currentUserData.username) {
-                    showUsernameSetupModal();
-                } else {
-                    // User has username, check if they have seen the tour
-                    const tourKey = `scoralia_tour_seen_${user.uid}`;
-                    if (!currentUserData.hasSeenTour && !localStorage.getItem(tourKey)) {
-                        showWelcomeTour(); // tour that only asks for photo (no name/username)
-                    } else {
-                        refreshUI();
-                    }
+                refreshUI();
+                // Show welcome tour if not seen
+                const tourKey = `scoralia_tour_seen_${user.uid}`;
+                if (!currentUserData.hasSeenTour && !localStorage.getItem(tourKey)) {
+                    showWelcomeTour();
                 }
             } else {
-                // User document missing, create basic and then force setup
-                createBasicUserDoc(user).then(() => {
-                    showUsernameSetupModal();
-                });
+                // Create basic user document
+                setDoc(doc(db, "users", user.uid), {
+                    uid: user.uid,
+                    displayName: user.displayName || "",
+                    email: user.email,
+                    role: 'user',
+                    createdAt: new Date().toISOString()
+                }).then(() => {
+                    // Reload user data via snapshot
+                }).catch(console.error);
             }
         });
     } else {
@@ -208,135 +182,7 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-async function createBasicUserDoc(user) {
-    const userRef = doc(db, "users", user.uid);
-    await setDoc(userRef, {
-        uid: user.uid,
-        displayName: user.displayName || "",
-        email: user.email,
-        role: 'user',
-        createdAt: new Date().toISOString()
-    }, { merge: true });
-}
-
-// --- Modal for username setup (non-dismissible) ---
-async function showUsernameSetupModal() {
-    if (document.querySelector('.setup-modal-overlay')) return;
-    const lang = localStorage.getItem('preferred_language') || 'en';
-    const t = translations[lang];
-    const user = auth.currentUser;
-    if (!user) return;
-
-    const modalDiv = document.createElement('div');
-    modalDiv.className = 'setup-modal-overlay';
-    modalDiv.innerHTML = `
-        <div class="setup-modal-card">
-            <h2>${t.setup_title}</h2>
-            <p>${t.setup_desc}</p>
-            <div class="setup-modal-field">
-                <label>${t.setup_fullname}</label>
-                <input type="text" id="setup-fullname" placeholder="John Doe" value="${currentUserData?.displayName || ''}">
-            </div>
-            <div class="setup-modal-field">
-                <label>${t.setup_username}</label>
-                <input type="text" id="setup-username" placeholder="jhondoe" autocomplete="off">
-                <div class="setup-status" id="setup-status"></div>
-            </div>
-            <div class="setup-modal-buttons">
-                <button class="btn-save" id="setup-save">${t.setup_save}</button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modalDiv);
-
-    const usernameInput = modalDiv.querySelector('#setup-username');
-    const fullnameInput = modalDiv.querySelector('#setup-fullname');
-    const statusSpan = modalDiv.querySelector('#setup-status');
-    const saveBtn = modalDiv.querySelector('#setup-save');
-
-    let checkTimeout = null;
-    let isValid = false;
-
-    function validateFormat(username) {
-        return /^[a-zA-Z0-9_]{3,}$/.test(username);
-    }
-
-    async function checkAvailability(username) {
-        if (!validateFormat(username)) {
-            statusSpan.textContent = t.setup_invalid;
-            statusSpan.className = 'setup-status invalid';
-            isValid = false;
-            return;
-        }
-        statusSpan.textContent = t.setup_checking;
-        statusSpan.className = 'setup-status checking';
-        const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
-        const snap = await getDocs(q);
-        if (snap.empty) {
-            statusSpan.textContent = t.setup_available;
-            statusSpan.className = 'setup-status valid';
-            isValid = true;
-        } else {
-            statusSpan.textContent = t.setup_taken;
-            statusSpan.className = 'setup-status invalid';
-            isValid = false;
-        }
-    }
-
-    usernameInput.addEventListener('input', () => {
-        if (checkTimeout) clearTimeout(checkTimeout);
-        const val = usernameInput.value.trim();
-        if (!val) {
-            statusSpan.textContent = '';
-            isValid = false;
-            return;
-        }
-        checkTimeout = setTimeout(() => checkAvailability(val), 500);
-    });
-
-    saveBtn.onclick = async () => {
-        const username = usernameInput.value.trim().toLowerCase();
-        const fullname = fullnameInput.value.trim();
-        if (!fullname) {
-            statusSpan.textContent = t.setup_name_required;
-            statusSpan.className = 'setup-status invalid';
-            return;
-        }
-        if (!username) {
-            statusSpan.textContent = t.setup_required;
-            statusSpan.className = 'setup-status invalid';
-            return;
-        }
-        if (!validateFormat(username)) {
-            statusSpan.textContent = t.setup_invalid;
-            statusSpan.className = 'setup-status invalid';
-            return;
-        }
-        if (!isValid) {
-            await checkAvailability(username);
-            if (!isValid) return;
-        }
-        saveBtn.disabled = true;
-        saveBtn.textContent = t.tour_saving;
-        try {
-            await updateDoc(doc(db, "users", user.uid), {
-                displayName: fullname,
-                username: username,
-                hasSeenTour: true  // mark as seen so they don't get the tour again
-            });
-            await updateProfile(user, { displayName: fullname });
-            modalDiv.remove();
-            refreshUI();
-        } catch (err) {
-            console.error(err);
-            alert("Error saving profile.");
-        } finally {
-            saveBtn.disabled = false;
-        }
-    };
-}
-
-// --- Welcome Tour (only for users who already have a username) ---
+// --- Welcome Tour (original structure, but final step asks for full name + username) ---
 function showWelcomeTour() {
     const user = auth.currentUser;
     if (!user) return;
@@ -351,6 +197,8 @@ function showWelcomeTour() {
     const lang = localStorage.getItem('preferred_language') || 'en';
     const t = translations[lang];
     const defaultPfpUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
+    const existingFullName = currentUserData?.displayName || '';
+    const existingUsername = currentUserData?.username || '';
 
     const overlay = document.createElement('div');
     overlay.className = 'lang-modal-overlay';
@@ -379,6 +227,9 @@ function showWelcomeTour() {
                 <div class="tour-pfp-preview" id="tour-pfp-box"><img src="${defaultPfpUrl}"></div>
                 <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">${t.tour_title_4}</h2>
                 <p style="color:#6b84a3; margin-bottom:15px; line-height:1.4; font-size:0.85rem;">${t.tour_desc_4}</p>
+                <input type="text" id="tour-fullname" class="tour-input" value="${existingFullName}" placeholder="${t.tour_full_name}">
+                <input type="text" id="tour-username" class="tour-input" value="${existingUsername}" placeholder="${t.tour_username}">
+                <div id="tour-username-status" style="font-size:0.75rem; text-align:center; margin-bottom:10px;"></div>
                 <input type="file" id="tour-file-input" accept="image/*" style="display:none;">
                 <label for="tour-file-input" style="display:block; cursor:pointer; color:#2B5C92; font-weight:bold; margin-bottom:20px; text-decoration:underline;">
                     <i class="fas fa-camera"></i> ${t.tour_upload}
@@ -393,6 +244,7 @@ function showWelcomeTour() {
     `;
     document.body.appendChild(overlay);
 
+    // Navigation
     document.getElementById('tour-btn-1').onclick = () => {
         document.getElementById('tour-step-1').style.display = 'none';
         document.getElementById('tour-step-2').style.display = 'block';
@@ -412,21 +264,98 @@ function showWelcomeTour() {
         document.getElementById('dot-4').classList.add('active');
     };
 
+    // Username validation logic
+    const usernameInput = overlay.querySelector('#tour-username');
+    const usernameStatus = overlay.querySelector('#tour-username-status');
+    let usernameTimeout = null;
+    let isUsernameValid = false;
+
+    function validateUsernameFormat(username) {
+        return /^[a-zA-Z0-9_]{3,}$/.test(username);
+    }
+
+    async function checkUsernameAvailability(username) {
+        if (!validateUsernameFormat(username)) {
+            usernameStatus.textContent = t.tour_username_err;
+            usernameStatus.style.color = '#d32f2f';
+            isUsernameValid = false;
+            return false;
+        }
+        usernameStatus.textContent = t.tour_username_checking;
+        usernameStatus.style.color = '#ff9800';
+        const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
+        const snap = await getDocs(q);
+        if (snap.empty) {
+            usernameStatus.textContent = t.tour_username_available;
+            usernameStatus.style.color = '#2E7D32';
+            isUsernameValid = true;
+            return true;
+        } else {
+            usernameStatus.textContent = t.tour_username_taken;
+            usernameStatus.style.color = '#d32f2f';
+            isUsernameValid = false;
+            return false;
+        }
+    }
+
+    usernameInput.addEventListener('input', () => {
+        if (usernameTimeout) clearTimeout(usernameTimeout);
+        const val = usernameInput.value.trim();
+        if (!val) {
+            usernameStatus.textContent = '';
+            isUsernameValid = false;
+            return;
+        }
+        usernameTimeout = setTimeout(() => checkUsernameAvailability(val), 500);
+    });
+
+    // If username already exists (e.g., from OAuth), pre-check availability
+    if (existingUsername) {
+        setTimeout(() => checkUsernameAvailability(existingUsername), 100);
+    }
+
+    // Photo upload
     let selectedFile = null;
-    document.getElementById('tour-file-input').onchange = (e) => {
+    const fileInput = overlay.querySelector('#tour-file-input');
+    fileInput.onchange = (e) => {
         if (e.target.files[0]) {
             selectedFile = e.target.files[0];
-            document.getElementById('tour-pfp-box').innerHTML = `<img src="${URL.createObjectURL(selectedFile)}">`;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                overlay.querySelector('#tour-pfp-box').innerHTML = `<img src="${ev.target.result}">`;
+            };
+            reader.readAsDataURL(selectedFile);
         }
     };
 
-    document.getElementById('tour-btn-4').onclick = async () => {
-        const btn = document.getElementById('tour-btn-4');
-        btn.disabled = true;
-        btn.textContent = t.tour_saving;
+    // Finish button
+    const finishBtn = overlay.querySelector('#tour-btn-4');
+    finishBtn.onclick = async () => {
+        const fullname = overlay.querySelector('#tour-fullname').value.trim();
+        const username = overlay.querySelector('#tour-username').value.trim().toLowerCase();
+        if (!fullname) {
+            alert(t.tour_name_err);
+            return;
+        }
+        if (!username) {
+            alert(t.tour_username_err);
+            return;
+        }
+        if (!validateUsernameFormat(username)) {
+            alert(t.tour_username_err);
+            return;
+        }
+        // Re-check availability if not already valid
+        if (!isUsernameValid) {
+            const available = await checkUsernameAvailability(username);
+            if (!available) return;
+        }
+        finishBtn.disabled = true;
+        finishBtn.textContent = t.tour_saving;
+
         let finalPhoto = defaultPfpUrl;
-        try {
-            if (selectedFile) {
+        if (selectedFile) {
+            try {
                 const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
                 const formData = new FormData();
                 formData.append('file', selectedFile);
@@ -438,16 +367,29 @@ function showWelcomeTour() {
                     method: 'POST', body: formData
                 }).then(r => r.json());
                 if (res.secure_url) finalPhoto = res.secure_url;
+            } catch (err) {
+                console.error(err);
             }
-            await updateProfile(user, { photoURL: finalPhoto });
-            await updateDoc(doc(db, "users", user.uid), { photoURL: finalPhoto, hasSeenTour: true });
+        }
+
+        try {
+            // Update Auth profile
+            await updateProfile(user, { displayName: fullname, photoURL: finalPhoto });
+            // Update Firestore user doc
+            await updateDoc(doc(db, "users", user.uid), {
+                displayName: fullname,
+                username: username,
+                photoURL: finalPhoto,
+                hasSeenTour: true
+            });
             localStorage.setItem(tourKey, 'true');
             overlay.remove();
             refreshUI();
-        } catch (e) {
-            console.error(e);
-            localStorage.setItem(tourKey, 'true');
-            overlay.remove();
+        } catch (err) {
+            console.error(err);
+            alert("Error saving profile. Please try again.");
+            finishBtn.disabled = false;
+            finishBtn.textContent = t.tour_start;
         }
     };
 }
