@@ -41,7 +41,7 @@
         .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
 
         /* --- CARDS --- */
-        .admin-card, .tag-card, .user-card, .report-card, .investigation-card {
+        .admin-card, .tag-card, .topic-card, .user-card, .report-card, .investigation-card {
             background-color: #2d2d2d; border: 1px solid #444; border-radius: 8px; overflow: hidden;
             display: flex; flex-direction: column;
         }
@@ -69,6 +69,12 @@
         .card-title { font-weight: bold; margin-bottom: 5px; color: white; font-size: 1.1rem; }
         .card-price { color: #FFD700; font-weight: bold; }
         .card-actions { padding: 10px; background: #222; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        /* Tag / Topic Card Specifics */
+        .tag-card { display: flex; flex-direction: row; justify-content: space-between; align-items: center; padding: 15px; }
+        .tag-info h3 { color: #4CAF50; font-size: 1.1rem; margin: 0 0 5px 0; border: none; padding: 0; }
+        .tag-meta { color: #888; font-size: 0.85rem; }
+        .topic-name { color: #2196F3 !important; }
 
         /* User Card Specifics */
         .user-card { padding: 20px; text-align: center; align-items: center; }
@@ -130,6 +136,7 @@
             <div class="tabs">
                 <button class="tab-btn active" onclick="switchTab('listings')">Manage Listings</button>
                 <button class="tab-btn" onclick="switchTab('tags')">Manage Tags</button>
+                <button class="tab-btn" onclick="switchTab('topics')">Manage Topics</button> <!-- NEW TAB -->
                 <button class="tab-btn" onclick="switchTab('users')">Manage Users</button>
                 <button class="tab-btn" onclick="switchTab('reports')">Manage Reports</button>
                 <button class="tab-btn" onclick="switchTab('settings')">Site Settings</button>
@@ -144,6 +151,13 @@
             <div id="view-tags" class="view-section">
                 <h1>Global Tags</h1>
                 <div id="tags-grid" class="dashboard-grid"></div>
+            </div>
+
+            <!-- NEW TOPICS VIEW -->
+            <div id="view-topics" class="view-section">
+                <h1>Custom Social Topics</h1>
+                <p style="color:#aaa; margin-bottom:20px; font-size:0.9rem;">Deleting a topic hides it from the social hub. Use this to remove spam or inappropriate topics.</p>
+                <div id="topics-grid" class="dashboard-grid"></div>
             </div>
 
             <div id="view-users" class="view-section">
@@ -199,6 +213,7 @@
             const mainInterface = document.getElementById('main-interface');
             const listingsGrid = document.getElementById('listings-grid');
             const tagsGrid = document.getElementById('tags-grid');
+            const topicsGrid = document.getElementById('topics-grid'); // NEW
             const usersGrid = document.getElementById('users-grid');
             const reportsGrid = document.getElementById('reports-grid');
 
@@ -208,7 +223,12 @@
                     if (userDoc.exists() && userDoc.data().role === 'admin') {
                         securityScreen.style.display = 'none';
                         mainInterface.style.display = 'block';
-                        loadAllListings(); loadAllTags(); loadRecentUsers(); loadAllReports(); loadSettings();
+                        loadAllListings(); 
+                        loadAllTags(); 
+                        loadAllTopics(); // NEW
+                        loadRecentUsers(); 
+                        loadAllReports(); 
+                        loadSettings();
                     } else { window.location.href = '/index.html'; }
                 } else { window.location.href = '/LoginInToCheaplet.html'; }
             });
@@ -240,7 +260,7 @@
                 });
             }
 
-            // --- TAGS (RESTORED MISSING FUNCTION) ---
+            // --- TAGS ---
             window.loadAllTags = async () => {
                 const snapshot = await getDocs(query(collection(db, "global_tags"), orderBy("count", "desc")));
                 tagsGrid.innerHTML = '';
@@ -250,6 +270,37 @@
                     card.className = 'tag-card'; card.id = `tag-${tdoc.id}`;
                     card.innerHTML = `<div class="tag-info"><h3>#${d.tag}</h3><div class="tag-meta">${d.count || 0} uses</div></div><button class="btn btn-tag-delete" onclick="window.deleteTag('${tdoc.id}')">Delete</button>`;
                     tagsGrid.appendChild(card);
+                });
+            }
+
+            // --- TOPICS (NEW) ---
+            window.loadAllTopics = async () => {
+                const snapshot = await getDocs(query(collection(db, "social_channels"), orderBy("postCount", "desc")));
+                topicsGrid.innerHTML = '';
+                snapshot.forEach(tdoc => {
+                    const d = tdoc.data();
+                    const card = document.createElement('div');
+                    card.className = 'tag-card'; // Reuse tag-card styling for topics
+                    card.id = `topic-${tdoc.id}`;
+                    
+                    // Format date
+                    let dateStr = "Unknown";
+                    if (d.createdAt) {
+                        dateStr = d.createdAt.toDate().toLocaleDateString();
+                    }
+
+                    card.innerHTML = `
+                        <div class="tag-info">
+                            <h3 class="topic-name">#${d.name}</h3>
+                            <div class="tag-meta" style="margin-top: 4px; line-height: 1.4;">
+                                School: <strong style="color:#ccc;">${d.schoolName || 'Global Campus'}</strong><br>
+                                Posts: <strong style="color:#ccc;">${d.postCount || 0}</strong><br>
+                                Created: ${dateStr}
+                            </div>
+                        </div>
+                        <button class="btn btn-tag-delete" onclick="window.deleteTopic('${tdoc.id}')">Delete</button>
+                    `;
+                    topicsGrid.appendChild(card);
                 });
             }
 
@@ -289,7 +340,7 @@
                 });
             }
 
-            // --- INVESTIGATION (FIXED BUG: FULL DATA LOADING) ---
+            // --- INVESTIGATION ---
             window.investigateUser = async (uid) => {
                 document.getElementById('tab-investigation').style.display = 'block';
                 switchTab('investigation');
@@ -318,7 +369,7 @@
                         listingsBox.appendChild(card);
                     });
 
-                    // 3. FULL CHATS (Using for...of loop for perfect sequential loading)
+                    // 3. FULL CHATS
                     chatsBox.innerHTML = '';
                     const cSnap = await getDocs(query(collection(db, "chats"), where("participants", "array-contains", uid)));
                     
@@ -338,12 +389,21 @@
                             log.innerHTML += `<div class="msg-line ${isT?'target':'other'}"><strong>${isT?'USER':'OTHER'}:</strong> ${m.data().text || '[Image]'}</div>`;
                         });
                     }
-                } catch (err) { console.error(err); alert("Query Error: Check console for missing index link."); }
+                } catch (err) { console.error(err); alert("Query Error: Check console."); }
             };
 
             // --- ACTIONS ---
             window.deleteListing = async (id) => { if(confirm("Delete?")) { await deleteDoc(doc(db, "listings", id)); document.getElementById(`listing-${id}`).remove(); } };
             window.deleteTag = async (id) => { if(confirm("Delete?")) { await deleteDoc(doc(db, "global_tags", id)); document.getElementById(`tag-${id}`).remove(); } };
+            
+            // NEW TOPIC DELETE
+            window.deleteTopic = async (id) => { 
+                if(confirm("Delete this topic forever?")) { 
+                    await deleteDoc(doc(db, "social_channels", id)); 
+                    document.getElementById(`topic-${id}`).remove(); 
+                } 
+            };
+
             window.dismissReport = async (id) => { await deleteDoc(doc(db, "reports", id)); document.getElementById(`report-${id}`).remove(); };
             window.toggleAdmin = async (uid, act) => { await updateDoc(doc(db, "users", uid), { role: act === 'add' ? 'admin' : 'user' }); loadRecentUsers(); };
             window.banUser = async (uid) => { if(confirm("Ban user?")) { await updateDoc(doc(db, "users", uid), { role: 'banned' }); alert("Banned."); } };
@@ -359,7 +419,6 @@
 
             document.getElementById('logoutBtn').onclick = () => signOut(auth);
         }
-        function loadAllTags() { window.loadAllTags(); } // Global helper
         main();
     </script>
 </body>
