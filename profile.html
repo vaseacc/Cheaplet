@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <title>My Profile - Cheaplet</title>
-    <!-- GLOBAL CONFIGURATION (Language & Ban Check) -->
+    <title>My Profile - Scoralia</title>
     <script type="module" src="global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -16,14 +15,11 @@
         .header-content { display: flex; justify-content: space-between; align-items: center; }
         .logo { font-size: 24px; font-weight: bold; display: flex; align-items: center; cursor: pointer; color: white; text-decoration: none; }
         .logo span { color: #FFD700; }
-        
         nav ul { display: flex; list-style: none; }
         nav ul li { margin-left: 20px; }
         nav ul li a { color: white; text-decoration: none; font-weight: 500; opacity: 0.9; transition: opacity 0.2s; }
         nav ul li a:hover { opacity: 1; }
-
         .header-auth-buttons { display: flex; gap: 10px; align-items: center; }
-
         .btn { 
             background: linear-gradient(135deg, #FFD700 0%, #FFC400 100%); 
             color: #333; border: none; padding: 10px 20px; border-radius: 6px; 
@@ -32,113 +28,283 @@
         }
         .btn:hover { transform: translateY(-2px); }
         .btn:disabled { background: #ccc; cursor: not-allowed; transform: none; }
-        
         .btn-danger { background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%); color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
         .btn-secondary { background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-
-        .page-header { display: flex; justify-content: space-between; align-items: center; padding: 40px 0 20px; border-bottom: 1px solid #ddd; margin-bottom: 30px; }
-        .profile-container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 30px; padding-bottom: 50px; }
-        
-        .profile-section { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-        .profile-section h2 { font-size: 1.5rem; margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 10px; color: #2E7D32; }
-        
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; font-weight: 600; margin-bottom: 5px; color: #555; }
-        .form-group input, .form-group select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem; }
-        .form-group input[disabled] { background-color: #f4f4f4; }
-        
         .info-message { text-align: center; padding: 50px; font-size: 1.2rem; color: #777; }
-        #update-feedback { text-align: center; margin-top: 15px; font-weight: 500; }
-        .success { color: #4CAF50; }
-        .error { color: #f44336; }
-
-        .profile-picture-section { text-align: center; margin-bottom: 30px; }
-        #avatar-display { width: 120px; height: 120px; border-radius: 50%; background-color: #e9e9e9; color: #aaa; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 3rem; margin: 0 auto 15px; background-size: cover; background-position: center; border: 4px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        #photo-upload-input { display: none; }
-        .photo-buttons { display: flex; justify-content: center; gap: 10px; }
-
-        .saved-listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
-        .saved-item-card { border: 1px solid #eee; border-radius: 8px; overflow: hidden; text-decoration: none; color: inherit; transition: transform 0.2s; background: white; }
-        .saved-item-img { height: 140px; background-color: #eee; background-size: cover; background-position: center; }
-        .saved-item-details { padding: 12px; }
-        .saved-item-price { font-weight: bold; color: #4CAF50; }
-
-        @media (max-width: 767px) { nav { display: none; } }
+        
+        /* Profile Banner */
+        .profile-banner {
+            position: relative;
+            background: linear-gradient(135deg, #0C1446, #2B5C92);
+            height: 180px;
+            border-radius: 12px 12px 0 0;
+            overflow: hidden;
+        }
+        .profile-banner::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(circle at 30% 40%, rgba(255,215,0,0.15) 2px, transparent 2px);
+            background-size: 24px 24px;
+            pointer-events: none;
+        }
+        .profile-avatar-container {
+            position: relative;
+            margin-top: -70px;
+            text-align: center;
+            z-index: 2;
+        }
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 4px solid white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            object-fit: cover;
+            background: #fff;
+            margin: 0 auto;
+        }
+        .edit-avatar-btn {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            background: #C8A96E;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            transition: 0.2s;
+        }
+        .edit-avatar-btn:hover {
+            background: #b38f40;
+            transform: scale(1.05);
+        }
+        
+        .profile-info {
+            text-align: center;
+            margin-top: 12px;
+            padding: 0 20px;
+        }
+        .profile-name {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #0C1446;
+            margin-bottom: 4px;
+        }
+        .profile-username {
+            font-size: 1rem;
+            color: #6b84a3;
+            margin-bottom: 12px;
+            font-family: monospace;
+        }
+        .profile-bio {
+            max-width: 600px;
+            margin: 8px auto;
+            color: #555;
+            font-style: italic;
+        }
+        .profile-meta {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+        .meta-item {
+            background: #f0f0f0;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .verified-badge {
+            background: #e8f5e9;
+            color: #2E7D32;
+        }
+        .school-badge {
+            background: #e3f2fd;
+            color: #0b5e7e;
+        }
+        .rating-stars {
+            color: #FFD700;
+            font-size: 0.9rem;
+        }
+        .join-date {
+            color: #6b84a3;
+        }
+        
+        /* Editable fields */
+        .profile-edit-section {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin: 30px auto;
+            max-width: 700px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .edit-field {
+            margin-bottom: 20px;
+        }
+        .edit-field label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        .edit-field input, .edit-field textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        .edit-field textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .username-status {
+            font-size: 0.8rem;
+            margin-top: 4px;
+        }
+        .username-status.valid { color: #2E7D32; }
+        .username-status.invalid { color: #d32f2f; }
+        .username-status.checking { color: #ff9800; }
+        
+        .button-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+        
+        .saved-listings-section {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            margin: 30px auto;
+            max-width: 700px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .saved-listings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .saved-item-card {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            overflow: hidden;
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.2s;
+            background: white;
+        }
+        .saved-item-img {
+            height: 140px;
+            background-color: #eee;
+            background-size: cover;
+            background-position: center;
+        }
+        .saved-item-details {
+            padding: 12px;
+        }
+        .saved-item-price {
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        
+        @media (max-width: 767px) {
+            nav { display: none; }
+            .profile-banner { height: 140px; }
+            .profile-avatar { width: 90px; height: 90px; margin-top: -45px; }
+            .profile-name { font-size: 1.4rem; }
+        }
     </style>
 </head>
 <body>
     <header>
         <div class="container header-content">
-            <a href="/index.html" class="logo">Cheap<span>let</span></a>
+            <a href="/index.html" class="logo">Scor<span>alia</span></a>
             <nav><ul></ul></nav>
             <div class="header-auth-buttons"></div>
         </div>
     </header>
 
     <main class="container">
-        <div class="page-header">
-            <h1>My Profile</h1>
-            <a href="/my-listings.html" class="btn">View My Listings</a>
-        </div>
-
         <div id="info-container">
             <p class="info-message">Loading profile...</p>
         </div>
-    
-        <div class="profile-container" id="profile-container" style="display: none;">
+
+        <div id="profile-container" style="display: none;">
+            <!-- Banner -->
+            <div class="profile-banner" id="profile-banner"></div>
             
-            <div class="profile-section">
-                <div class="profile-picture-section">
-                    <div id="avatar-display"></div>
-                    <div class="photo-buttons">
-                        <label for="photo-upload-input" class="btn btn-secondary">Change Photo</label>
-                        <button class="btn" id="savePhotoBtn" style="display: none;">Save Photo</button>
-                    </div>
-                    <input type="file" id="photo-upload-input" accept="image/*">
-                </div>
-                
-                <h2>Personal Information</h2>
-                <div class="form-group">
-                    <label>First Name</label>
-                    <input type="text" id="firstName">
-                </div>
-                <div class="form-group">
-                    <label>Last Name</label>
-                    <input type="text" id="lastName">
-                </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" id="email" disabled>
-                </div>
-
-                <div class="form-group">
-                    <label>Language / Langue</label>
-                    <select id="languageSelect">
-                        <option value="en">English</option>
-                        <option value="fr">Français</option>
-                    </select>
-                </div>
-
-                <button class="btn" id="saveProfileBtn">Save Changes</button>
-                <p id="update-feedback"></p>
+            <!-- Avatar + edit -->
+            <div class="profile-avatar-container">
+                <img id="profile-avatar-img" class="profile-avatar" alt="Profile picture">
+                <button class="edit-avatar-btn" id="edit-avatar-btn" title="Change photo"><i class="fas fa-camera"></i></button>
+                <input type="file" id="photo-upload-input" accept="image/*" style="display: none;">
             </div>
-
-            <div class="profile-section">
+            
+            <!-- Info area -->
+            <div class="profile-info">
+                <h1 class="profile-name" id="display-name-display"></h1>
+                <div class="profile-username" id="username-display"></div>
+                <div class="profile-bio" id="bio-display"></div>
+                <div class="profile-meta">
+                    <div class="meta-item rating-stars" id="rating-display"></div>
+                    <div class="meta-item verified-badge" id="verified-badge" style="display: none;"><i class="fas fa-graduation-cap"></i> <span id="verified-text">Verified Student</span></div>
+                    <div class="meta-item school-badge" id="school-badge"><i class="fas fa-university"></i> <span id="school-name"></span></div>
+                    <div class="meta-item join-date" id="join-date-display"></div>
+                </div>
+            </div>
+            
+            <!-- Editable fields -->
+            <div class="profile-edit-section">
+                <h2>Edit Profile</h2>
+                <div class="edit-field">
+                    <label>Full Name</label>
+                    <input type="text" id="edit-fullname" placeholder="Your full name">
+                </div>
+                <div class="edit-field">
+                    <label>Username</label>
+                    <input type="text" id="edit-username" placeholder="username" autocomplete="off">
+                    <div class="username-status" id="username-status"></div>
+                </div>
+                <div class="edit-field">
+                    <label>Bio</label>
+                    <textarea id="edit-bio" maxlength="160" placeholder="Tell us a little about yourself..."></textarea>
+                </div>
+                <div class="button-group">
+                    <button class="btn" id="save-profile-btn">Save Changes</button>
+                    <button class="btn-secondary" id="reset-password-btn">Reset Password</button>
+                </div>
+                <div id="save-feedback" style="margin-top: 10px; text-align: center;"></div>
+            </div>
+            
+            <!-- Saved listings section (unchanged) -->
+            <div class="saved-listings-section">
                 <h2>Saved Items</h2>
                 <div id="saved-listings-container" class="saved-listings-grid">
                     <p>Loading saved items...</p>
                 </div>
             </div>
-
-            <div class="profile-section">
+            
+            <!-- Account security -->
+            <div class="profile-edit-section">
                 <h2>Account Security</h2>
-                <div class="form-group">
-                    <label>Password</label>
-                    <button class="btn btn-secondary" id="resetPasswordBtn">Send Password Reset Email</button>
-                </div>
-                <div class="form-group">
-                    <label>Delete Account</label>
-                    <button class="btn-danger" id="deleteAccountBtn">Delete My Account</button>
+                <div class="button-group">
+                    <button class="btn-danger" id="delete-account-btn">Delete My Account</button>
                 </div>
             </div>
         </div>
@@ -146,8 +312,8 @@
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, updateProfile, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged, updateProfile, sendPasswordResetEmail, deleteUser } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -155,154 +321,376 @@
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
-
             const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`;
             const UPLOAD_PRESET = config.cloudinary.uploadPreset;
 
             const infoContainer = document.getElementById('info-container');
             const profileContainer = document.getElementById('profile-container');
-            const firstNameInput = document.getElementById('firstName');
-            const lastNameInput = document.getElementById('lastName');
-            const emailInput = document.getElementById('email');
-            const avatarDisplay = document.getElementById('avatar-display');
-            const savePhotoBtn = document.getElementById('savePhotoBtn');
+            const avatarImg = document.getElementById('profile-avatar-img');
+            const editFullname = document.getElementById('edit-fullname');
+            const editUsername = document.getElementById('edit-username');
+            const editBio = document.getElementById('edit-bio');
+            const usernameStatus = document.getElementById('username-status');
+            const saveBtn = document.getElementById('save-profile-btn');
+            const resetPwdBtn = document.getElementById('reset-password-btn');
+            const deleteBtn = document.getElementById('delete-account-btn');
+            const saveFeedback = document.getElementById('save-feedback');
             const savedListingsContainer = document.getElementById('saved-listings-container');
-            const languageSelect = document.getElementById('languageSelect');
+            const bannerDiv = document.getElementById('profile-banner');
 
+            let currentUser = null;
+            let currentUserData = null;
             let selectedPhotoFile = null;
+            let usernameCheckTimeout = null;
+            let isUsernameValid = false;
+            let originalUsername = '';
 
-            // --- UPDATED AUTH CHECK: FIXES THE REDIRECT LOOP ---
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    // Check if it's a social login (Microsoft/Google)
-                    const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
-                    
-                    // Allow access if email is verified OR if it's a social login
-                    if (user.emailVerified || isOAuth) {
-                        // --- NOW LOAD DATA ---
-                        const savedLang = localStorage.getItem('preferred_language') || 'en';
-                        languageSelect.value = savedLang;
+            const lang = localStorage.getItem('preferred_language') || 'en';
+            const translations = {
+                en: {
+                    verified: "Verified Student",
+                    joinPrefix: "Joined ",
+                    noRating: "No ratings yet",
+                    saveSuccess: "Profile updated!",
+                    saveError: "Error saving profile.",
+                    pwdResetSent: "Password reset email sent!",
+                    deleteConfirm: "Are you sure? This will permanently delete your account and all your data.",
+                    usernameTaken: "Username already taken",
+                    usernameAvailable: "✓ Available",
+                    usernameInvalid: "Only letters, numbers, underscore",
+                    usernameChecking: "Checking...",
+                    usernameHint: "Only letters, numbers, underscore"
+                },
+                fr: {
+                    verified: "Étudiant vérifié",
+                    joinPrefix: "Membre depuis ",
+                    noRating: "Aucune évaluation",
+                    saveSuccess: "Profil mis à jour !",
+                    saveError: "Erreur lors de la mise à jour.",
+                    pwdResetSent: "E-mail de réinitialisation envoyé !",
+                    deleteConfirm: "Êtes-vous sûr ? Cela supprimera définitivement votre compte et toutes vos données.",
+                    usernameTaken: "Nom d'utilisateur déjà pris",
+                    usernameAvailable: "✓ Disponible",
+                    usernameInvalid: "Lettres, chiffres, tiret bas uniquement",
+                    usernameChecking: "Vérification...",
+                    usernameHint: "Lettres, chiffres, tiret bas uniquement"
+                }
+            };
+            const t = translations[lang];
 
-                        populateProfileForm(user);
-                        infoContainer.style.display = 'none';
-                        profileContainer.style.display = 'flex';
+            // Helper to generate unique banner gradient based on user ID
+            function generateBannerGradient(uid) {
+                let hash = 0;
+                for (let i = 0; i < uid.length; i++) {
+                    hash = ((hash << 5) - hash) + uid.charCodeAt(i);
+                    hash |= 0;
+                }
+                const hue1 = Math.abs(hash % 360);
+                const hue2 = (hue1 + 40) % 360;
+                const sat = 70 + (Math.abs(hash >> 8) % 30);
+                const light = 45 + (Math.abs(hash >> 16) % 20);
+                return `linear-gradient(135deg, hsl(${hue1}, ${sat}%, ${light}%), hsl(${hue2}, ${sat}%, ${light - 10}%))`;
+            }
 
-                        const userDocSnap = await getDoc(doc(db, "users", user.uid));
-                        if (userDocSnap.exists()) {
-                            const data = userDocSnap.data();
-                            
-                            // Check for Ban
-                            if (data.role === 'banned') {
-                                await signOut(auth);
-                                alert("You have been banned.");
-                                window.location.href = '/LoginInToCheaplet.html';
-                                return;
-                            }
+            // Validate username format
+            function isValidUsernameFormat(username) {
+                return /^[a-zA-Z0-9_]{3,}$/.test(username);
+            }
 
-                            if (data.photoURL) setAvatar(data.photoURL);
-                            else setAvatar(user.photoURL, user.displayName);
-                            
-                            if (data.savedListings && data.savedListings.length > 0) {
-                                fetchSavedListings(data.savedListings);
-                            } else if (savedListingsContainer) {
-                                savedListingsContainer.innerHTML = '<p style="color:#999; grid-column:1/-1;">You haven\'t saved any items yet.</p>';
-                            }
-                        }
+            // Check availability (exclude current user)
+            async function checkUsernameAvailability(username, currentUid) {
+                if (!username) return false;
+                if (!isValidUsernameFormat(username)) return false;
+                const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
+                const snap = await getDocs(q);
+                // If no docs, or the only doc is the current user's, it's available.
+                if (snap.empty) return true;
+                if (snap.docs.length === 1 && snap.docs[0].id === currentUid) return true;
+                return false;
+            }
+
+            // Real-time username check
+            editUsername.addEventListener('input', async () => {
+                if (usernameCheckTimeout) clearTimeout(usernameCheckTimeout);
+                const newUsername = editUsername.value.trim().toLowerCase();
+                if (!newUsername) {
+                    usernameStatus.textContent = t.usernameHint;
+                    usernameStatus.className = '';
+                    isUsernameValid = false;
+                    return;
+                }
+                if (!isValidUsernameFormat(newUsername)) {
+                    usernameStatus.textContent = t.usernameInvalid;
+                    usernameStatus.className = 'invalid';
+                    isUsernameValid = false;
+                    return;
+                }
+                usernameStatus.textContent = t.usernameChecking;
+                usernameStatus.className = 'checking';
+                isUsernameValid = false;
+                usernameCheckTimeout = setTimeout(async () => {
+                    const available = await checkUsernameAvailability(newUsername, currentUser.uid);
+                    if (available) {
+                        usernameStatus.textContent = t.usernameAvailable;
+                        usernameStatus.className = 'valid';
+                        isUsernameValid = true;
                     } else {
-                        // User exists but isn't verified (and not OAuth), kick them
-                        alert("Please verify your email address.");
+                        usernameStatus.textContent = t.usernameTaken;
+                        usernameStatus.className = 'invalid';
+                        isUsernameValid = false;
+                    }
+                }, 500);
+            });
+
+            // Load user data
+            async function loadProfile() {
+                const user = auth.currentUser;
+                if (!user) return;
+                currentUser = user;
+                const userDoc = await getDoc(doc(db, "users", user.uid));
+                if (!userDoc.exists()) {
+                    infoContainer.innerHTML = '<p class="info-message">Profile not found.</p>';
+                    return;
+                }
+                currentUserData = userDoc.data();
+                
+                // Display info
+                document.getElementById('display-name-display').textContent = currentUserData.displayName || 'User';
+                document.getElementById('username-display').textContent = currentUserData.username ? `@${currentUserData.username}` : '';
+                document.getElementById('bio-display').textContent = currentUserData.bio || '';
+                editFullname.value = currentUserData.displayName || '';
+                editUsername.value = currentUserData.username || '';
+                originalUsername = currentUserData.username || '';
+                editBio.value = currentUserData.bio || '';
+                
+                // Avatar
+                let photoURL = currentUserData.photoURL;
+                if (!photoURL || photoURL.includes("googleusercontent") || photoURL.includes("live.com")) {
+                    photoURL = `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
+                }
+                avatarImg.src = photoURL;
+                
+                // Banner
+                bannerDiv.style.background = generateBannerGradient(user.uid);
+                
+                // Rating display
+                const ratingContainer = document.getElementById('rating-display');
+                if (currentUserData.ratingCount && currentUserData.ratingCount > 0) {
+                    const avg = (currentUserData.ratingSum / currentUserData.ratingCount).toFixed(1);
+                    let stars = '';
+                    for (let i = 1; i <= 5; i++) {
+                        if (avg >= i) stars += '<i class="fas fa-star"></i>';
+                        else if (avg >= i - 0.5) stars += '<i class="fas fa-star-half-alt"></i>';
+                        else stars += '<i class="far fa-star"></i>';
+                    }
+                    ratingContainer.innerHTML = `${stars} <span>(${avg})</span>`;
+                } else {
+                    ratingContainer.innerHTML = t.noRating;
+                }
+                
+                // Verified badge
+                if (currentUserData.isStudent) {
+                    document.getElementById('verified-badge').style.display = 'flex';
+                    document.getElementById('verified-text').textContent = t.verified;
+                } else {
+                    document.getElementById('verified-badge').style.display = 'none';
+                }
+                
+                // School name
+                const schoolNameSpan = document.getElementById('school-name');
+                if (currentUserData.schoolName) {
+                    schoolNameSpan.textContent = currentUserData.schoolName;
+                } else {
+                    schoolNameSpan.textContent = lang === 'fr' ? 'Université non spécifiée' : 'Unspecified school';
+                }
+                
+                // Join date
+                const joinDateSpan = document.getElementById('join-date-display');
+                if (currentUserData.createdAt) {
+                    const date = new Date(currentUserData.createdAt);
+                    const formatted = date.toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                    joinDateSpan.textContent = `${t.joinPrefix}${formatted}`;
+                } else {
+                    joinDateSpan.textContent = t.joinPrefix + (lang === 'fr' ? 'récemment' : 'recently');
+                }
+                
+                // Saved listings
+                if (currentUserData.savedListings && currentUserData.savedListings.length > 0) {
+                    const ids = currentUserData.savedListings;
+                    const promises = ids.map(id => getDoc(doc(db, "listings", id)));
+                    const snaps = await Promise.all(promises);
+                    savedListingsContainer.innerHTML = '';
+                    snaps.forEach(snap => {
+                        if (snap.exists()) {
+                            const data = snap.data();
+                            const card = document.createElement('a');
+                            card.className = 'saved-item-card';
+                            card.href = `/listing.html?id=${snap.id}`;
+                            card.innerHTML = `
+                                <div class="saved-item-img" style="background-image: url('${data.imageUrls?.[0] || ''}')"></div>
+                                <div class="saved-item-details">
+                                    <div class="saved-item-price">$${data.price.toFixed(2)}</div>
+                                    <div class="saved-item-title">${data.title}</div>
+                                </div>`;
+                            savedListingsContainer.appendChild(card);
+                        }
+                    });
+                } else {
+                    savedListingsContainer.innerHTML = '<p style="grid-column: 1/-1;">No saved items yet.</p>';
+                }
+                
+                infoContainer.style.display = 'none';
+                profileContainer.style.display = 'block';
+            }
+            
+            // Save profile changes
+            async function saveProfile() {
+                saveBtn.disabled = true;
+                saveFeedback.textContent = '';
+                const newFullname = editFullname.value.trim();
+                const newUsername = editUsername.value.trim().toLowerCase();
+                const newBio = editBio.value.trim();
+                
+                if (!newFullname) {
+                    saveFeedback.textContent = 'Full name is required';
+                    saveFeedback.style.color = 'red';
+                    saveBtn.disabled = false;
+                    return;
+                }
+                if (!newUsername) {
+                    saveFeedback.textContent = 'Username is required';
+                    saveFeedback.style.color = 'red';
+                    saveBtn.disabled = false;
+                    return;
+                }
+                if (!isValidUsernameFormat(newUsername)) {
+                    saveFeedback.textContent = t.usernameInvalid;
+                    saveFeedback.style.color = 'red';
+                    saveBtn.disabled = false;
+                    return;
+                }
+                if (newUsername !== originalUsername && !isUsernameValid) {
+                    // Re-check availability
+                    const available = await checkUsernameAvailability(newUsername, currentUser.uid);
+                    if (!available) {
+                        saveFeedback.textContent = t.usernameTaken;
+                        saveFeedback.style.color = 'red';
+                        saveBtn.disabled = false;
+                        return;
+                    }
+                }
+                
+                // Upload photo if changed
+                let finalPhotoURL = currentUserData.photoURL;
+                if (selectedPhotoFile) {
+                    try {
+                        const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
+                        const formData = new FormData();
+                        formData.append('file', selectedPhotoFile);
+                        formData.append('api_key', signRes.apiKey);
+                        formData.append('timestamp', signRes.timestamp);
+                        formData.append('signature', signRes.signature);
+                        formData.append('upload_preset', signRes.uploadPreset);
+                        const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, {
+                            method: 'POST', body: formData
+                        }).then(r => r.json());
+                        if (res.secure_url) finalPhotoURL = res.secure_url;
+                    } catch (err) {
+                        console.error(err);
+                        saveFeedback.textContent = 'Image upload failed';
+                        saveFeedback.style.color = 'red';
+                        saveBtn.disabled = false;
+                        return;
+                    }
+                }
+                
+                try {
+                    // Update Auth profile
+                    await updateProfile(currentUser, { displayName: newFullname, photoURL: finalPhotoURL });
+                    // Update Firestore user doc
+                    const updates = {
+                        displayName: newFullname,
+                        username: newUsername,
+                        bio: newBio,
+                        photoURL: finalPhotoURL
+                    };
+                    await updateDoc(doc(db, "users", currentUser.uid), updates);
+                    
+                    // If display name changed, propagate to listings and chats
+                    if (newFullname !== currentUserData.displayName) {
+                        if (window.updateUserContent) {
+                            await window.updateUserContent(currentUser.uid, newFullname);
+                        } else {
+                            console.warn('updateUserContent not available');
+                        }
+                    }
+                    
+                    // Refresh displayed data
+                    document.getElementById('display-name-display').textContent = newFullname;
+                    document.getElementById('username-display').textContent = `@${newUsername}`;
+                    document.getElementById('bio-display').textContent = newBio;
+                    avatarImg.src = finalPhotoURL;
+                    currentUserData.displayName = newFullname;
+                    currentUserData.username = newUsername;
+                    currentUserData.bio = newBio;
+                    currentUserData.photoURL = finalPhotoURL;
+                    originalUsername = newUsername;
+                    
+                    saveFeedback.textContent = t.saveSuccess;
+                    saveFeedback.style.color = 'green';
+                } catch (err) {
+                    console.error(err);
+                    saveFeedback.textContent = t.saveError;
+                    saveFeedback.style.color = 'red';
+                } finally {
+                    saveBtn.disabled = false;
+                    selectedPhotoFile = null;
+                }
+            }
+            
+            // Event listeners
+            document.getElementById('edit-avatar-btn').onclick = () => {
+                document.getElementById('photo-upload-input').click();
+            };
+            document.getElementById('photo-upload-input').onchange = (e) => {
+                if (e.target.files[0]) {
+                    selectedPhotoFile = e.target.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (ev) => { avatarImg.src = ev.target.result; };
+                    reader.readAsDataURL(selectedPhotoFile);
+                }
+            };
+            saveBtn.onclick = saveProfile;
+            resetPwdBtn.onclick = async () => {
+                await sendPasswordResetEmail(auth, currentUser.email);
+                alert(t.pwdResetSent);
+            };
+            deleteBtn.onclick = async () => {
+                if (confirm(t.deleteConfirm)) {
+                    try {
+                        // Delete user document and listings? For simplicity, we just delete auth and user doc.
+                        // In production, you'd also delete listings, chats, etc.
+                        await deleteDoc(doc(db, "users", currentUser.uid));
+                        await deleteUser(currentUser);
+                        window.location.href = '/index.html';
+                    } catch (err) {
+                        alert("Error deleting account: " + err.message);
+                    }
+                }
+            };
+            
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
+                    if (user.emailVerified || isOAuth) {
+                        loadProfile();
+                    } else {
                         window.location.href = '/LoginInToCheaplet.html';
                     }
                 } else {
-                    // Not logged in at all
                     window.location.href = '/LoginInToCheaplet.html';
                 }
             });
-
-            // Handle language change
-            languageSelect.onchange = (e) => {
-                const newLang = e.target.value;
-                if (window.applyLanguage) {
-                    window.applyLanguage(newLang); // Updates global brain and localStorage
-                } else {
-                    localStorage.setItem('preferred_language', newLang);
-                }
-            };
-
-            async function fetchSavedListings(ids) {
-                savedListingsContainer.innerHTML = '';
-                const promises = ids.map(id => getDoc(doc(db, "listings", id)));
-                const snaps = await Promise.all(promises);
-                snaps.forEach(snap => {
-                    if (snap.exists()) {
-                        const d = snap.data();
-                        const card = document.createElement('a');
-                        card.className = 'saved-item-card';
-                        card.href = `/listing.html?id=${snap.id}`;
-                        card.innerHTML = `
-                            <div class="saved-item-img" style="background-image: url('${d.imageUrls?.[0] || ''}')"></div>
-                            <div class="saved-item-details">
-                                <div class="saved-item-price">$${d.price.toFixed(2)}</div>
-                                <div class="saved-item-title">${d.title}</div>
-                            </div>`;
-                        savedListingsContainer.appendChild(card);
-                    }
-                });
-            }
-
-            function setAvatar(url, name) {
-                if (url) { avatarDisplay.style.backgroundImage = `url('${url}')`; avatarDisplay.textContent = ''; }
-                else { avatarDisplay.style.backgroundImage = 'none'; avatarDisplay.textContent = name ? name.charAt(0).toUpperCase() : '?'; }
-            }
-
-            function populateProfileForm(user) {
-                emailInput.value = user.email;
-                if (user.displayName) {
-                    const parts = user.displayName.split(' ');
-                    firstNameInput.value = parts[0];
-                    lastNameInput.value = parts.slice(1).join(' ');
-                }
-            }
-
-            document.getElementById('saveProfileBtn').onclick = async () => {
-                const newName = `${firstNameInput.value.trim()} ${lastNameInput.value.trim()}`;
-                const user = auth.currentUser;
-                
-                // --- ADDED: Explicitly save language when "Save Changes" is clicked ---
-                localStorage.setItem('preferred_language', languageSelect.value);
-                
-                await updateProfile(user, { displayName: newName });
-                await updateDoc(doc(db, "users", user.uid), { displayName: newName });
-                alert("Profile and Language preferences saved!");
-                window.location.reload(); // Refresh to apply all changes
-            };
-
-            document.getElementById('photo-upload-input').onchange = (e) => {
-                selectedPhotoFile = e.target.files[0];
-                if (selectedPhotoFile) {
-                    const reader = new FileReader();
-                    reader.onload = (ev) => setAvatar(ev.target.result);
-                    reader.readAsDataURL(selectedPhotoFile);
-                    savePhotoBtn.style.display = 'inline-block';
-                }
-            };
-
-            savePhotoBtn.onclick = async () => {
-                const fd = new FormData();
-                fd.append('file', selectedPhotoFile);
-                fd.append('upload_preset', UPLOAD_PRESET);
-                const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd });
-                const data = await res.json();
-                await updateProfile(auth.currentUser, { photoURL: data.secure_url });
-                await updateDoc(doc(db, "users", auth.currentUser.uid), { photoURL: data.secure_url });
-                savePhotoBtn.style.display = 'none';
-                alert("Photo Saved!");
-            };
-
-            document.getElementById('resetPasswordBtn').onclick = () => {
-                sendPasswordResetEmail(auth, auth.currentUser.email);
-                alert("Reset email sent!");
-            };
         }
         main();
     </script>
