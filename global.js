@@ -182,7 +182,7 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// --- Welcome Tour (original structure, but final step asks for full name + username) ---
+// --- Welcome Tour (final step asks for full name + username) ---
 function showWelcomeTour() {
     const user = auth.currentUser;
     if (!user) return;
