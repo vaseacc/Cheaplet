@@ -76,9 +76,10 @@
         .btn-composer-send:disabled { background: #cbd5e1; cursor: not-allowed; }
         .btn-composer-send:not(:disabled):hover { background: var(--ink); transform: translateY(-2px); }
 
-        .btn-action { background: var(--gold); color: var(--ink); border: none; padding: 10px 28px; border-radius: 30px; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(200, 169, 110, 0.2); }
+        .btn-action { background: var(--gold); color: var(--ink); border: none; padding: 10px 28px; border-radius: 30px; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(200, 169, 110, 0.2); flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-action:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(200, 169, 110, 0.4); }
-        .btn-ghost { background: #f1f5f9; color: var(--text-main); padding: 10px 28px; border-radius: 30px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; }
+        .btn-action:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-ghost { background: #f1f5f9; color: var(--text-main); padding: 10px 28px; border-radius: 30px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; flex-shrink: 0; }
         .btn-ghost:hover { background: #e2e8f0; }
 
         .post-card { background: var(--white); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); border: var(--border); animation: fadeUp 0.4s ease both; width: 100%; overflow: hidden; }
@@ -226,7 +227,7 @@
         </main>
     </div>
 
-    <!-- LOGIN MODAL -->
+    <!-- MODAL FOR LOGIN/REGISTER -->
     <div id="login-modal" class="login-modal-overlay" style="display: none;">
         <div class="login-modal-card">
             <span class="close-modal" id="close-login-modal">&times;</span>
@@ -239,7 +240,7 @@
         </div>
     </div>
 
-    <!-- NEW TOPIC MODAL -->
+    <!-- CUSTOM MODAL FOR NEW TOPIC -->
     <div class="modal-overlay" id="topic-modal">
         <div class="modal-card">
             <h2 data-i18n="modal_title">Create New Topic</h2>
@@ -409,7 +410,12 @@
 
             const topicModal = document.getElementById('topic-modal');
             const topicInput = document.getElementById('topic-name-input');
-            const triggerNewWay = () => { if (!currentUser) { showLoginModal(null); return; } topicModal.style.display = 'flex'; topicInput.value = ''; topicInput.focus(); };
+            const triggerNewWay = () => {
+                if (!currentUser) { showLoginModal(null); return; }
+                topicModal.style.display = 'flex';
+                topicInput.value = '';
+                topicInput.focus();
+            };
             
             document.getElementById('btn-create-way').onclick = triggerNewWay;
             document.getElementById('m-btn-create-way').onclick = triggerNewWay;
@@ -424,7 +430,11 @@
                 document.getElementById('btn-confirm-topic').disabled = true;
                 try {
                     const newRef = await addDoc(collection(db, "social_channels"), {
-                        name: wayName.substring(0, 30), schoolName: internalSchoolName, createdBy: currentUser.uid, createdAt: serverTimestamp(), postCount: 0 
+                        name: wayName.substring(0, 30),
+                        schoolName: internalSchoolName,
+                        createdBy: currentUser.uid,
+                        createdAt: serverTimestamp(),
+                        postCount: 0 
                     });
                     topicModal.style.display = 'none';
                     window.location.href = `/topic.html?id=${newRef.id}`;
@@ -439,133 +449,222 @@
 
                 feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub}</span></div>`;
 
-                let q = query(collection(db, "social_posts"), orderBy("timestamp", "desc"), limit(15));
+                // FIX FOR SAFARI BUG: Query increased to limit 100 to ensure we find posts even if buried
+                let q = query(collection(db, "social_posts"), orderBy("timestamp", "desc"), limit(100));
                 
                 try {
                     unsubscribePosts = onSnapshot(q, (snapshot) => {
                         feedContainer.innerHTML = '';
+                        
                         let filteredDocs = snapshot.docs.filter(d => d.data().wayId === topicId);
-                        if (filteredDocs.length === 0) { feedContainer.innerHTML = `<div class="loader-msg">${ui.noPosts}</div>`; return; }
+
+                        if (filteredDocs.length === 0) {
+                            feedContainer.innerHTML = `<div class="loader-msg">${ui.noPosts}</div>`;
+                            return;
+                        }
 
                         const frag = document.createDocumentFragment();
-                        filteredDocs.forEach(docSnap => { frag.appendChild(createPostElement(docSnap.id, docSnap.data())); });
+
+                        filteredDocs.forEach(docSnap => {
+                            const d = docSnap.data();
+                            frag.appendChild(createPostElement(docSnap.id, d));
+                        });
+
                         feedContainer.appendChild(frag);
                     });
                 } catch (e) { console.error(e); }
             }
 
             function createPostElement(id, d) {
-                let pfp = d.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${d.authorUid}&backgroundColor=EBF2FA`;
-                let timeStr = d.timestamp ? formatTime(d.timestamp.toDate()) : ui.justNow;
+                let pfp = d.authorPhoto;
+                if (!pfp || pfp.includes("googleusercontent") || pfp.includes("live.com")) {
+                    pfp = `https://api.dicebear.com/7.x/identicon/svg?seed=${d.authorUid}&backgroundColor=EBF2FA`;
+                }
+
+                let timeStr = ui.justNow;
+                if (d.timestamp) {
+                    const dateObj = d.timestamp.toDate();
+                    const diffMins = Math.round((new Date() - dateObj) / 60000);
+                    if (diffMins < 60) timeStr = lang === 'fr' ? `Il y a ${diffMins} min` : `${diffMins}m`;
+                    else if (diffMins < 1440) timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/60)} h` : `${Math.round(diffMins/60)}h`;
+                    else timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/1440)} j` : `${Math.round(diffMins/1440)}d`;
+                }
+
                 const isLiked = currentUser && d.likedBy && d.likedBy.includes(currentUser.uid);
+                const commentCount = d.commentCount || 0;
 
                 const card = document.createElement('div');
                 card.className = 'post-card';
                 card.innerHTML = `
                     <a href="/user.html?id=${d.authorUid}" class="post-author-link">
-                        <img src="${pfp}" class="post-avatar">
-                        <div class="post-meta"><span class="post-author">${d.authorName}</span><span class="post-time">${timeStr}</span></div>
+                        <img src="${pfp}" class="post-avatar" alt="Avatar">
+                        <div class="post-meta">
+                            <span class="post-author">${d.authorName}</span>
+                            <span class="post-time">${timeStr}</span>
+                        </div>
                     </a>
                     <div class="post-body">${d.text}</div>
+                    
                     <div class="post-actions">
-                        <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="window.likePost('${id}', ${isLiked})"><i class="${isLiked ? 'fas' : 'far'} fa-heart"></i> ${d.likes || 0}</button>
-                        <button class="action-btn" onclick="window.toggleComments('${id}')"><i class="far fa-comment"></i> ${d.commentCount || 0}</button>
+                        <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="window.likePost('${id}', ${isLiked})">
+                            <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i> ${d.likes || 0}
+                        </button>
+                        <button class="action-btn" onclick="window.toggleComments('${id}')">
+                            <i class="far fa-comment"></i> ${commentCount}
+                        </button>
                     </div>
+
                     <div class="comments-section" id="comments-section-${id}">
-                        <div class="comment-list" id="comment-list-${id}"></div>
+                        <div class="comment-list" id="comment-list-${id}">
+                            <div style="text-align:center; font-size:0.8rem; color:#888;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                        </div>
                         <div class="comment-input-wrapper">
                             <textarea class="comment-input" id="comment-input-${id}" placeholder="${ui.comment_placeholder}"></textarea>
                             <button class="btn-comment-send" onclick="window.postComment('${id}')" id="btn-send-comment-${id}"><i class="fas fa-paper-plane"></i></button>
                         </div>
-                    </div>`;
+                    </div>
+                `;
                 return card;
             }
 
-            function formatTime(date) {
-                const diff = Math.round((new Date() - date) / 60000);
-                if (diff < 60) return lang === 'fr' ? `Il y a ${diff} min` : `${diff}m`;
-                if (diff < 1440) return lang === 'fr' ? `${Math.round(diff/60)} h` : `${Math.round(diff/60)}h`;
-                return lang === 'fr' ? `${Math.round(diff/1440)} j` : `${Math.round(diff/1440)}d`;
-            }
-
-            window.likePost = async (id, liked) => {
-                if (!currentUser) { showLoginModal(topicId); return; }
+            window.likePost = async (id, alreadyLiked) => {
+                if (!currentUser) { window.showLoginModal(topicId); return; }
                 const ref = doc(db, "social_posts", id);
-                await updateDoc(ref, { likes: increment(liked ? -1 : 1), likedBy: liked ? arrayRemove(currentUser.uid) : arrayUnion(currentUser.uid) });
+                if(alreadyLiked) {
+                    await updateDoc(ref, { likes: increment(-1), likedBy: arrayRemove(currentUser.uid) });
+                } else {
+                    await updateDoc(ref, { likes: increment(1), likedBy: arrayUnion(currentUser.uid) });
+                }
             };
 
-            window.toggleComments = (id) => {
-                const sec = document.getElementById(`comments-section-${id}`);
-                if (sec.style.display === 'block') { sec.style.display = 'none'; if(commentUnsubscribes[id]) commentUnsubscribes[id](); }
-                else { sec.style.display = 'block'; loadComments(id); }
+            window.toggleComments = (postId) => {
+                const section = document.getElementById(`comments-section-${postId}`);
+                if (section.style.display === 'block') {
+                    section.style.display = 'none';
+                    if (commentUnsubscribes[postId]) {
+                        commentUnsubscribes[postId]();
+                        delete commentUnsubscribes[postId];
+                    }
+                } else {
+                    section.style.display = 'block';
+                    loadCommentsForPost(postId);
+                }
             };
 
-            function loadComments(postId) {
-                const list = document.getElementById(`comment-list-${postId}`);
-                commentUnsubscribes[postId] = onSnapshot(query(collection(db, "social_posts", postId, "comments"), orderBy("timestamp", "asc")), (snap) => {
-                    list.innerHTML = snap.empty ? `<div style="text-align:center; font-size:0.85rem; color:#888;">${ui.no_comments}</div>` : '';
+            function loadCommentsForPost(postId) {
+                const listEl = document.getElementById(`comment-list-${postId}`);
+                const q = query(collection(db, "social_posts", postId, "comments"), orderBy("timestamp", "asc"));
+                
+                commentUnsubscribes[postId] = onSnapshot(q, (snap) => {
+                    listEl.innerHTML = '';
+                    if (snap.empty) {
+                        listEl.innerHTML = `<div style="text-align:center; font-size:0.85rem; color:var(--text-muted);">${ui.no_comments}</div>`;
+                        return;
+                    }
+                    
                     snap.forEach(doc => {
                         const c = doc.data();
-                        const pfp = c.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${c.authorUid}&backgroundColor=EBF2FA`;
+                        let timeStr = ui.justNow;
+                        if (c.timestamp) {
+                            const diffMins = Math.round((new Date() - c.timestamp.toDate()) / 60000);
+                            if (diffMins < 60) timeStr = lang === 'fr' ? `Il y a ${diffMins}m` : `${diffMins}m`;
+                            else if (diffMins < 1440) timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/60)}h` : `${Math.round(diffMins/60)}h`;
+                            else timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/1440)}j` : `${Math.round(diffMins/1440)}d`;
+                        }
+                        let pfp = c.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${c.authorUid}&backgroundColor=EBF2FA`;
+                        
                         const div = document.createElement('div');
                         div.className = 'comment-item';
-                        div.innerHTML = `<a href="/user.html?id=${c.authorUid}"><img src="${pfp}" class="comment-avatar"></a><div class="comment-content"><a href="/user.html?id=${c.authorUid}" class="comment-author-link"><div class="comment-author">${c.authorName}</div></a><div class="comment-text">${c.text}</div></div>`;
-                        list.appendChild(div);
+                        div.innerHTML = `
+                            <a href="/user.html?id=${c.authorUid}"><img src="${pfp}" class="comment-avatar"></a>
+                            <div class="comment-content">
+                                <a href="/user.html?id=${c.authorUid}" class="comment-author-link"><div class="comment-author">${c.authorName}</div></a>
+                                <div class="comment-text">${c.text}</div>
+                                <div class="comment-time">${timeStr}</div>
+                            </div>
+                        `;
+                        listEl.appendChild(div);
                     });
-                    list.scrollTop = list.scrollHeight;
+                    listEl.scrollTop = listEl.scrollHeight;
                 });
             }
 
             window.postComment = async (postId) => {
-                if (!currentUser) { showLoginModal(topicId); return; }
-                const input = document.getElementById(`comment-input-${postId}`);
-                const text = input.value.trim(); if (!text) return;
-                input.value = '';
-                await addDoc(collection(db, "social_posts", postId, "comments"), { text, authorUid: currentUser.uid, authorName: currentUser.displayName, authorPhoto: currentUser.photoURL, timestamp: serverTimestamp() });
-                await updateDoc(doc(db, "social_posts", postId), { commentCount: increment(1) });
+                if (!currentUser) { window.showLoginModal(topicId); return; }
+                const inputEl = document.getElementById(`comment-input-${postId}`);
+                const btnEl = document.getElementById(`btn-send-comment-${postId}`);
+                const text = inputEl.value.trim();
+                
+                if (!text) return;
+                
+                btnEl.disabled = true;
+                inputEl.value = '';
+                
+                let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
+
+                try {
+                    await addDoc(collection(db, "social_posts", postId, "comments"), {
+                        text: text,
+                        authorUid: currentUser.uid,
+                        authorName: currentUser.displayName || "User",
+                        authorPhoto: photoToSave,
+                        timestamp: serverTimestamp()
+                    });
+                    await updateDoc(doc(db, "social_posts", postId), { commentCount: increment(1) });
+                } catch(e) { console.error(e); alert("Error posting comment."); } 
+                finally { btnEl.disabled = false; }
             };
 
-            if (currentUser) {
-                postInput.addEventListener('input', function() {
+            document.body.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && e.target.classList.contains('comment-input')) {
+                    e.preventDefault();
+                    const postId = e.target.id.replace('comment-input-', '');
+                    window.postComment(postId);
+                }
+            });
+
+            // ATTACH EVENTS UNCONDITIONALLY TO FIX GREY BUTTON BUG
+            postInput.addEventListener('input', function() {
+                this.style.height = '40px';
+                this.style.height = (this.scrollHeight) + 'px';
+                if (this.value.trim() === '') {
                     this.style.height = '40px';
-                    this.style.height = (this.scrollHeight) + 'px';
-                    if (this.value.trim() === '') {
-                        this.style.height = '40px';
-                        btnSendPost.disabled = true;
-                    } else {
-                        btnSendPost.disabled = false;
-                    }
-                });
-
-                btnSendPost.onclick = async () => {
-                    const text = postInput.value.trim(); if (!text) return;
-                    
                     btnSendPost.disabled = true;
-                    postInput.value = '';
-                    postInput.style.height = '40px'; 
-                    postInput.blur(); 
+                } else {
+                    btnSendPost.disabled = false;
+                }
+            });
 
-                    try {
-                        let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
+            btnSendPost.onclick = async () => {
+                if (!currentUser) { window.showLoginModal(topicId); return; }
+                const text = postInput.value.trim(); 
+                if (!text) return;
+                
+                btnSendPost.disabled = true;
+                postInput.value = '';
+                postInput.style.height = '40px'; 
+                postInput.blur(); 
 
-                        await addDoc(collection(db, "social_posts"), {
-                            wayId: topicId,
-                            schoolName: internalSchoolName,
-                            text: text,
-                            authorUid: currentUser.uid,
-                            authorName: currentUser.displayName || "User",
-                            authorPhoto: photoToSave,
-                            likes: 0,
-                            likedBy: [],
-                            commentCount: 0,
-                            timestamp: serverTimestamp()
-                        });
+                try {
+                    let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
 
-                        await updateDoc(doc(db, "social_channels", topicId), { postCount: increment(1) });
+                    await addDoc(collection(db, "social_posts"), {
+                        wayId: topicId,
+                        schoolName: internalSchoolName,
+                        text: text,
+                        authorUid: currentUser.uid,
+                        authorName: currentUser.displayName || "User",
+                        authorPhoto: photoToSave,
+                        likes: 0,
+                        likedBy: [],
+                        commentCount: 0,
+                        timestamp: serverTimestamp()
+                    });
 
-                    } catch (e) { alert("Error posting."); }
-                };
-            }
+                    await updateDoc(doc(db, "social_channels", topicId), { postCount: increment(1) });
+
+                } catch (e) { alert("Error posting."); btnSendPost.disabled = false; }
+            };
         }
         main();
     </script>
