@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Edit Topic — Scoralia</title>
+    <script type="module" src="global.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --ink:       #0C1446;
+            --deep:      #2B5C92;
+            --off-white: #F8FAFC;
+            --white:     #FFFFFF;
+            --gold:      #C8A96E;
+            --text-main: #0f172a;
+            --text-muted:#64748b;
+            --radius:    16px;
+            --shadow:    0 4px 20px rgba(12,20,70,0.05);
+            --border:    1px solid #e2e8f0;
+            --red:       #e53e3e;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--off-white); color: var(--text-main); }
+
+        header { position: sticky; top: 0; z-index: 200; background: var(--ink); border-bottom: 1px solid rgba(255,255,255,0.1); width: 100%; }
+        .header-inner { max-width: 1100px; margin: 0 auto; padding: 0 20px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: -0.5px; }
+        .logo em { color: var(--gold); font-style: normal; }
+
+        .main-wrapper { max-width: 600px; margin: 40px auto; padding: 0 20px; animation: fadeUp 0.4s ease; padding-bottom: 60px; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        .back-link { display: inline-flex; align-items: center; gap: 8px; color: var(--text-muted); text-decoration: none; font-weight: 600; margin-bottom: 20px; transition: color 0.2s; }
+        .back-link:hover { color: var(--deep); }
+
+        .config-card { background: var(--white); border-radius: var(--radius); padding: 35px; box-shadow: var(--shadow); border: var(--border); margin-bottom: 20px; }
+        .config-card h1 { font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--ink); margin-bottom: 5px; }
+        .config-card p.subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 30px; }
+
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .form-input { width: 100%; padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-family: inherit; font-size: 1rem; color: var(--text-main); outline: none; transition: 0.2s; background: var(--off-white); }
+        .form-input:focus { border-color: var(--deep); background: var(--white); box-shadow: 0 0 0 3px rgba(43,92,146,0.1); }
+        textarea.form-input { resize: vertical; min-height: 80px; }
+
+        .privacy-options { display: flex; gap: 15px; margin-top: 10px; }
+        .privacy-option { flex: 1; position: relative; }
+        .privacy-option input { display: none; }
+        .privacy-card { border: 2px solid #cbd5e1; border-radius: 12px; padding: 15px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; gap: 5px; background: var(--white); }
+        .privacy-card i { font-size: 1.5rem; color: var(--text-muted); margin-bottom: 5px; }
+        .privacy-card strong { font-weight: 700; color: var(--ink); }
+        .privacy-card span { font-size: 0.8rem; color: var(--text-muted); line-height: 1.3; }
+        
+        .privacy-option input:checked + .privacy-card { border-color: var(--deep); background: #f0f7ff; }
+        .privacy-option input:checked + .privacy-card i { color: var(--deep); }
+
+        .btn-submit { width: 100%; background: var(--gold); color: var(--ink); border: none; padding: 14px; border-radius: 30px; font-weight: 800; font-size: 1rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(200, 169, 110, 0.2); display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; }
+        .btn-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(200, 169, 110, 0.4); }
+        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* Danger Zone */
+        .danger-zone { border-color: #fecaca; }
+        .danger-zone h2 { color: var(--red); font-size: 1.3rem; margin-bottom: 10px; }
+        .btn-danger { width: 100%; background: #fef2f2; color: var(--red); border: 1.5px solid #fecaca; padding: 12px; border-radius: 30px; font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: 0.2s; }
+        .btn-danger:hover { background: var(--red); color: var(--white); }
+
+        /* Members Section */
+        .members-section { display: none; }
+        .members-list { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        .member-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; border: 1px solid #e2e8f0; border-radius: 12px; background: var(--off-white); }
+        .member-info { display: flex; align-items: center; gap: 12px; }
+        .member-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #cbd5e1; }
+        .member-name { font-weight: 700; font-size: 0.95rem; color: var(--ink); }
+        .btn-kick { background: none; border: none; color: var(--red); font-weight: 600; font-size: 0.85rem; cursor: pointer; padding: 5px 10px; border-radius: 6px; transition: 0.2s; }
+        .btn-kick:hover { background: #fecaca; }
+
+        .error-msg { color: var(--red); font-size: 0.9rem; font-weight: 600; text-align: center; margin-bottom: 15px; display: none; }
+        .success-msg { color: #16a34a; font-size: 0.9rem; font-weight: 600; text-align: center; margin-bottom: 15px; display: none; }
+
+        @media (max-width: 600px) {
+            .config-card { padding: 25px 20px; border-radius: 0; border: none; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; box-shadow: none; }
+            .privacy-options { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-inner">
+            <a href="/index.html" class="logo">Scor<em>alia</em></a>
+            <div class="header-right"></div>
+        </div>
+    </header>
+
+    <main class="main-wrapper">
+        <a href="#" class="back-link" id="back-btn"><i class="fas fa-arrow-left"></i> <span id="ui-back">Back to Topic</span></a>
+
+        <div class="config-card">
+            <h1 id="ui-title">Topic Settings</h1>
+            <p class="subtitle" id="ui-sub">Manage your custom topic preferences.</p>
+
+            <div class="error-msg" id="error-msg"></div>
+            <div class="success-msg" id="success-msg"></div>
+
+            <div class="form-group">
+                <label class="form-label" id="ui-name-lbl">Topic Name</label>
+                <input type="text" id="topic-name" class="form-input" placeholder="e.g. Study Groups, Tech, Events..." maxlength="30">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" id="ui-desc-lbl">Description (Optional)</label>
+                <textarea id="topic-desc" class="form-input" placeholder="What is this topic about?" maxlength="100"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" id="ui-vis-lbl">Visibility</label>
+                <div class="privacy-options">
+                    <label class="privacy-option">
+                        <input type="radio" name="visibility" value="public" id="radio-pub">
+                        <div class="privacy-card">
+                            <i class="fas fa-globe-americas"></i>
+                            <strong id="ui-pub">Public</strong>
+                            <span id="ui-pub-desc">Visible in the sidebar to everyone at your school.</span>
+                        </div>
+                    </label>
+                    <label class="privacy-option">
+                        <input type="radio" name="visibility" value="private" id="radio-priv">
+                        <div class="privacy-card">
+                            <i class="fas fa-lock"></i>
+                            <strong id="ui-priv">Private</strong>
+                            <span id="ui-priv-desc">Hidden from the sidebar. Accessible only via direct link.</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <button class="btn-submit" id="btn-save"><i class="fas fa-save"></i> <span id="ui-btn">Save Changes</span></button>
+        </div>
+
+        <div class="config-card members-section" id="members-section">
+            <h2 style="font-family: 'Playfair Display', serif; color: var(--ink); font-size: 1.3rem;">Manage Members</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Because this topic is private, you can manage who has access to it. Anyone who has posted in this topic appears here.</p>
+            <div class="members-list" id="members-list">
+                <div style="text-align: center; color: var(--text-muted); padding: 10px;">Loading members...</div>
+            </div>
+        </div>
+
+        <div class="config-card danger-zone">
+            <h2 id="ui-danger">Danger Zone</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;" id="ui-danger-desc">Permanently delete this topic. This action cannot be undone.</p>
+            <button class="btn-danger" id="btn-delete"><i class="fas fa-trash-alt"></i> <span id="ui-btn-del">Delete Topic</span></button>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getFirestore, doc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+
+        async function main() {
+            const response = await fetch('/.netlify/functions/config');
+            const config = await response.json();
+            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const topicId = urlParams.get('id');
+            if (!topicId) { window.location.href = '/social.html'; return; }
+
+            const lang = localStorage.getItem('preferred_language') || 'en';
+            const ui = {
+                en: { back: "Back to Topic", title: "Topic Settings", sub: "Manage your custom topic preferences.", name: "Topic Name", desc: "Description (Optional)", vis: "Visibility", pub: "Public", pubDesc: "Visible in the sidebar to everyone at your school.", priv: "Private", privDesc: "Hidden from the sidebar. Accessible only via direct link.", btn: "Save Changes", errShort: "Name must be at least 2 characters.", errLimit: "You have reached the limit for this type of topic.", saving: "Saving...", success: "Changes saved successfully!", danger: "Danger Zone", dangerDesc: "Permanently delete this topic. This action cannot be undone.", btnDel: "Delete Topic", confirmDel: "Are you sure you want to delete this topic?", kick: "Remove", noMembers: "No other members have joined yet." },
+                fr: { back: "Retour au sujet", title: "Paramètres du sujet", sub: "Gérez les préférences de votre sujet.", name: "Nom du sujet", desc: "Description (Optionnel)", vis: "Visibilité", pub: "Public", pubDesc: "Visible dans le menu par tout le monde à votre école.", priv: "Privé", privDesc: "Masqué du menu. Accessible uniquement par lien direct.", btn: "Enregistrer", errShort: "Le nom doit contenir au moins 2 caractères.", errLimit: "Vous avez atteint la limite pour ce type de sujet.", saving: "Enregistrement...", success: "Modifications enregistrées avec succès !", danger: "Zone de danger", dangerDesc: "Supprimer définitivement ce sujet. Cette action est irréversible.", btnDel: "Supprimer le sujet", confirmDel: "Êtes-vous sûr de vouloir supprimer ce sujet ?", kick: "Retirer", noMembers: "Aucun autre membre n'a encore rejoint." }
+            }[lang];
+
+            document.getElementById('ui-back').textContent = ui.back;
+            document.getElementById('ui-title').textContent = ui.title;
+            document.getElementById('ui-sub').textContent = ui.sub;
+            document.getElementById('ui-name-lbl').textContent = ui.name;
+            document.getElementById('ui-desc-lbl').textContent = ui.desc;
+            document.getElementById('ui-vis-lbl').textContent = ui.vis;
+            document.getElementById('ui-pub').textContent = ui.pub;
+            document.getElementById('ui-pub-desc').textContent = ui.pubDesc;
+            document.getElementById('ui-priv').textContent = ui.priv;
+            document.getElementById('ui-priv-desc').textContent = ui.privDesc;
+            document.getElementById('ui-btn').textContent = ui.btn;
+            document.getElementById('ui-danger').textContent = ui.danger;
+            document.getElementById('ui-danger-desc').textContent = ui.dangerDesc;
+            document.getElementById('ui-btn-del').textContent = ui.btnDel;
+
+            document.getElementById('back-btn').href = `/topic.html?id=${topicId}`;
+
+            let currentUser = null;
+            let topicData = null;
+            let initialVisibility = null;
+
+            const errorMsg = document.getElementById('error-msg');
+            const successMsg = document.getElementById('success-msg');
+            const btnSave = document.getElementById('btn-save');
+            const btnDelete = document.getElementById('btn-delete');
+            const membersSection = document.getElementById('members-section');
+            const membersList = document.getElementById('members-list');
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUser = user;
+                    loadTopicData();
+                } else {
+                    window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent(`/edittopic.html?id=${topicId}`)}`;
+                }
+            });
+
+            async function loadTopicData() {
+                try {
+                    const tDoc = await getDoc(doc(db, "social_channels", topicId));
+                    if (!tDoc.exists()) { window.location.href = '/social.html'; return; }
+                    
+                    topicData = tDoc.data();
+                    
+                    // Security: Only creator or admin can edit
+                    const uDoc = await getDoc(doc(db, "users", currentUser.uid));
+                    const isAdmin = uDoc.exists() && uDoc.data().role === 'admin';
+                    
+                    if (topicData.createdBy !== currentUser.uid && !isAdmin) {
+                        window.location.href = `/topic.html?id=${topicId}`;
+                        return;
+                    }
+
+                    document.getElementById('topic-name').value = topicData.name || '';
+                    document.getElementById('topic-desc').value = topicData.description || '';
+                    
+                    initialVisibility = topicData.visibility || 'public';
+                    if (initialVisibility === 'private') {
+                        document.getElementById('radio-priv').checked = true;
+                        membersSection.style.display = 'block';
+                        loadMembers();
+                    } else {
+                        document.getElementById('radio-pub').checked = true;
+                    }
+                    
+                    // Listen to radio changes to show/hide members
+                    document.querySelectorAll('input[name="visibility"]').forEach(radio => {
+                        radio.addEventListener('change', (e) => {
+                            if (e.target.value === 'private') {
+                                membersSection.style.display = 'block';
+                                loadMembers();
+                            } else {
+                                membersSection.style.display = 'none';
+                            }
+                        });
+                    });
+
+                } catch(e) {
+                    console.error(e);
+                    window.location.href = '/social.html';
+                }
+            }
+
+            async function loadMembers() {
+                if (!topicData.members || topicData.members.length === 0) {
+                    membersList.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 10px;">${ui.noMembers}</div>`;
+                    return;
+                }
+
+                // Filter out the creator
+                const memberUids = topicData.members.filter(uid => uid !== topicData.createdBy);
+                
+                if (memberUids.length === 0) {
+                    membersList.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 10px;">${ui.noMembers}</div>`;
+                    return;
+                }
+
+                membersList.innerHTML = '';
+                
+                // Fetch details for each member
+                for (const uid of memberUids) {
+                    try {
+                        const uDoc = await getDoc(doc(db, "users", uid));
+                        if (uDoc.exists()) {
+                            const uData = uDoc.data();
+                            const pfp = uData.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${uid}&backgroundColor=EBF2FA`;
+                            
+                            const item = document.createElement('div');
+                            item.className = 'member-item';
+                            item.innerHTML = `
+                                <div class="member-info">
+                                    <img src="${pfp}" class="member-avatar">
+                                    <span class="member-name">${uData.displayName}</span>
+                                </div>
+                                <button class="btn-kick" onclick="window.kickMember('${uid}')"><i class="fas fa-user-slash"></i> ${ui.kick}</button>
+                            `;
+                            membersList.appendChild(item);
+                        }
+                    } catch(e) { console.error(e); }
+                }
+            }
+
+            window.kickMember = async (uid) => {
+                if(confirm("Remove this user? They will lose access to this private topic.")) {
+                    try {
+                        // Remove from members array in Firestore
+                        const newMembers = topicData.members.filter(m => m !== uid);
+                        await updateDoc(doc(db, "social_channels", topicId), {
+                            members: newMembers
+                        });
+                        // Update local data and UI
+                        topicData.members = newMembers;
+                        loadMembers();
+                    } catch(e) {
+                        alert("Error removing user.");
+                    }
+                }
+            };
+
+            btnSave.onclick = async () => {
+                errorMsg.style.display = 'none';
+                successMsg.style.display = 'none';
+                
+                const name = document.getElementById('topic-name').value.trim();
+                const desc = document.getElementById('topic-desc').value.trim();
+                const visibility = document.querySelector('input[name="visibility"]:checked').value;
+
+                if (name.length < 2) {
+                    errorMsg.textContent = ui.errShort;
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+
+                // If visibility changed, check limits
+                if (visibility !== initialVisibility) {
+                    const q = query(collection(db, "social_channels"), where("createdBy", "==", currentUser.uid), where("visibility", "==", visibility));
+                    const snap = await getDocs(q);
+                    if (snap.docs.length >= 10) {
+                        errorMsg.textContent = ui.errLimit;
+                        errorMsg.style.display = 'block';
+                        return;
+                    }
+                }
+
+                btnSave.disabled = true;
+                const origText = document.getElementById('ui-btn').innerHTML;
+                document.getElementById('ui-btn').innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${ui.saving}`;
+
+                try {
+                    await updateDoc(doc(db, "social_channels", topicId), {
+                        name: name.substring(0, 30),
+                        description: desc.substring(0, 100),
+                        visibility: visibility
+                    });
+                    
+                    initialVisibility = visibility;
+                    successMsg.textContent = ui.success;
+                    successMsg.style.display = 'block';
+                } catch (e) {
+                    errorMsg.textContent = "Error: " + e.message;
+                    errorMsg.style.display = 'block';
+                } finally {
+                    btnSave.disabled = false;
+                    document.getElementById('ui-btn').innerHTML = origText;
+                }
+            };
+
+            btnDelete.onclick = async () => {
+                if (confirm(ui.confirmDel)) {
+                    btnDelete.disabled = true;
+                    try {
+                        await deleteDoc(doc(db, "social_channels", topicId));
+                        window.location.href = '/social.html';
+                    } catch(e) {
+                        alert("Error deleting topic.");
+                        btnDelete.disabled = false;
+                    }
+                }
+            };
+        }
+        main();
+    </script>
+</body>
+</html>
