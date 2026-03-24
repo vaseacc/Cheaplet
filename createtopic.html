@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Create Topic — Scoralia</title>
+    <script type="module" src="global.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --ink:       #0C1446;
+            --deep:      #2B5C92;
+            --off-white: #F8FAFC;
+            --white:     #FFFFFF;
+            --gold:      #C8A96E;
+            --text-main: #0f172a;
+            --text-muted:#64748b;
+            --radius:    16px;
+            --shadow:    0 4px 20px rgba(12,20,70,0.05);
+            --border:    1px solid #e2e8f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--off-white); color: var(--text-main); }
+
+        header { position: sticky; top: 0; z-index: 200; background: var(--ink); border-bottom: 1px solid rgba(255,255,255,0.1); width: 100%; }
+        .header-inner { max-width: 1100px; margin: 0 auto; padding: 0 20px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: -0.5px; }
+        .logo em { color: var(--gold); font-style: normal; }
+
+        .main-wrapper { max-width: 600px; margin: 40px auto; padding: 0 20px; animation: fadeUp 0.4s ease; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        .back-link { display: inline-flex; align-items: center; gap: 8px; color: var(--text-muted); text-decoration: none; font-weight: 600; margin-bottom: 20px; transition: color 0.2s; }
+        .back-link:hover { color: var(--deep); }
+
+        .config-card { background: var(--white); border-radius: var(--radius); padding: 35px; box-shadow: var(--shadow); border: var(--border); }
+        .config-card h1 { font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--ink); margin-bottom: 5px; }
+        .config-card p.subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 30px; }
+
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .form-input { width: 100%; padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-family: inherit; font-size: 1rem; color: var(--text-main); outline: none; transition: 0.2s; background: var(--off-white); }
+        .form-input:focus { border-color: var(--deep); background: var(--white); box-shadow: 0 0 0 3px rgba(43,92,146,0.1); }
+        textarea.form-input { resize: vertical; min-height: 80px; }
+
+        .privacy-options { display: flex; gap: 15px; margin-top: 10px; }
+        .privacy-option { flex: 1; position: relative; }
+        .privacy-option input { display: none; }
+        .privacy-card { border: 2px solid #cbd5e1; border-radius: 12px; padding: 15px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; gap: 5px; background: var(--white); }
+        .privacy-card i { font-size: 1.5rem; color: var(--text-muted); margin-bottom: 5px; }
+        .privacy-card strong { font-weight: 700; color: var(--ink); }
+        .privacy-card span { font-size: 0.8rem; color: var(--text-muted); line-height: 1.3; }
+        
+        .privacy-option input:checked + .privacy-card { border-color: var(--deep); background: #f0f7ff; }
+        .privacy-option input:checked + .privacy-card i { color: var(--deep); }
+
+        .limits-info { font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-top: 15px; margin-bottom: 25px; padding: 10px; background: var(--off-white); border-radius: 8px; }
+        .limits-info strong { color: var(--ink); }
+
+        .btn-submit { width: 100%; background: var(--gold); color: var(--ink); border: none; padding: 14px; border-radius: 30px; font-weight: 800; font-size: 1rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(200, 169, 110, 0.2); display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(200, 169, 110, 0.4); }
+        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .error-msg { color: #e53e3e; font-size: 0.9rem; font-weight: 600; text-align: center; margin-bottom: 15px; display: none; }
+
+        @media (max-width: 600px) {
+            .config-card { padding: 25px 20px; border-radius: 0; border: none; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; box-shadow: none; }
+            .privacy-options { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-inner">
+            <a href="/index.html" class="logo">Scor<em>alia</em></a>
+            <div class="header-right"></div>
+        </div>
+    </header>
+
+    <main class="main-wrapper">
+        <a href="/social.html" class="back-link"><i class="fas fa-arrow-left"></i> <span id="ui-back">Back to Campus Hub</span></a>
+
+        <div class="config-card">
+            <h1 id="ui-title">Create Topic</h1>
+            <p class="subtitle" id="ui-sub">Start a new conversation space for your campus.</p>
+
+            <div class="error-msg" id="error-msg"></div>
+
+            <div class="form-group">
+                <label class="form-label" id="ui-name-lbl">Topic Name</label>
+                <input type="text" id="topic-name" class="form-input" placeholder="e.g. Study Groups, Tech, Events..." maxlength="30">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" id="ui-desc-lbl">Description (Optional)</label>
+                <textarea id="topic-desc" class="form-input" placeholder="What is this topic about?" maxlength="100"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" id="ui-vis-lbl">Visibility</label>
+                <div class="privacy-options">
+                    <label class="privacy-option">
+                        <input type="radio" name="visibility" value="public" checked>
+                        <div class="privacy-card">
+                            <i class="fas fa-globe-americas"></i>
+                            <strong id="ui-pub">Public</strong>
+                            <span id="ui-pub-desc">Visible in the sidebar to everyone at your school.</span>
+                        </div>
+                    </label>
+                    <label class="privacy-option">
+                        <input type="radio" name="visibility" value="private">
+                        <div class="privacy-card">
+                            <i class="fas fa-lock"></i>
+                            <strong id="ui-priv">Private</strong>
+                            <span id="ui-priv-desc">Hidden from the sidebar. Accessible only via direct link.</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="limits-info">
+                <span id="ui-limits">You can create up to <strong>10 Public</strong> and <strong>10 Private</strong> topics.</span><br>
+                <span id="usage-stats">Checking your usage...</span>
+            </div>
+
+            <button class="btn-submit" id="btn-create"><i class="fas fa-magic"></i> <span id="ui-btn">Create Topic</span></button>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, query, where, getDocs, getDoc, doc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+
+        async function main() {
+            const response = await fetch('/.netlify/functions/config');
+            const config = await response.json();
+            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+
+            const lang = localStorage.getItem('preferred_language') || 'en';
+            const ui = {
+                en: { back: "Back to Campus Hub", title: "Create Topic", sub: "Start a new conversation space for your campus.", name: "Topic Name", desc: "Description (Optional)", vis: "Visibility", pub: "Public", pubDesc: "Visible in the sidebar to everyone at your school.", priv: "Private", privDesc: "Hidden from the sidebar. Accessible only via direct link.", limits: "You can create up to <strong>10 Public</strong> and <strong>10 Private</strong> topics.", btn: "Create Topic", errShort: "Name must be at least 2 characters.", errLimit: "You have reached the limit for this type of topic.", creating: "Creating..." },
+                fr: { back: "Retour au Hub", title: "Créer un sujet", sub: "Lancez un nouvel espace de discussion pour votre campus.", name: "Nom du sujet", desc: "Description (Optionnel)", vis: "Visibilité", pub: "Public", pubDesc: "Visible dans le menu par tout le monde à votre école.", priv: "Privé", privDesc: "Masqué du menu. Accessible uniquement par lien direct.", limits: "Vous pouvez créer jusqu'à <strong>10 sujets Publics</strong> et <strong>10 Privés</strong>.", btn: "Créer le sujet", errShort: "Le nom doit contenir au moins 2 caractères.", errLimit: "Vous avez atteint la limite pour ce type de sujet.", creating: "Création..." }
+            }[lang];
+
+            document.getElementById('ui-back').textContent = ui.back;
+            document.getElementById('ui-title').textContent = ui.title;
+            document.getElementById('ui-sub').textContent = ui.sub;
+            document.getElementById('ui-name-lbl').textContent = ui.name;
+            document.getElementById('ui-desc-lbl').textContent = ui.desc;
+            document.getElementById('ui-vis-lbl').textContent = ui.vis;
+            document.getElementById('ui-pub').textContent = ui.pub;
+            document.getElementById('ui-pub-desc').textContent = ui.pubDesc;
+            document.getElementById('ui-priv').textContent = ui.priv;
+            document.getElementById('ui-priv-desc').textContent = ui.privDesc;
+            document.getElementById('ui-limits').innerHTML = ui.limits;
+            document.getElementById('ui-btn').textContent = ui.btn;
+
+            let currentUser = null;
+            let internalSchoolName = "Global Campus";
+            let publicCount = 0;
+            let privateCount = 0;
+
+            const errorMsg = document.getElementById('error-msg');
+            const btnCreate = document.getElementById('btn-create');
+            const usageStats = document.getElementById('usage-stats');
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUser = user;
+                    const uSnap = await getDoc(doc(db, "users", user.uid));
+                    if (uSnap.exists()) {
+                        internalSchoolName = uSnap.data().schoolName || "Global Campus";
+                    }
+                    checkUsage();
+                } else {
+                    window.location.href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent('/createtopic.html')}`;
+                }
+            });
+
+            async function checkUsage() {
+                try {
+                    const q = query(collection(db, "social_channels"), where("createdBy", "==", currentUser.uid));
+                    const snap = await getDocs(q);
+                    
+                    publicCount = 0;
+                    privateCount = 0;
+                    
+                    snap.forEach(d => {
+                        if (d.data().visibility === 'private') privateCount++;
+                        else publicCount++;
+                    });
+
+                    const usedPubStr = lang === 'fr' ? `${publicCount}/10 Publics utilisés` : `${publicCount}/10 Public used`;
+                    const usedPrivStr = lang === 'fr' ? `${privateCount}/10 Privés utilisés` : `${privateCount}/10 Private used`;
+                    usageStats.textContent = `(${usedPubStr} • ${usedPrivStr})`;
+                } catch(e) {
+                    usageStats.textContent = "";
+                }
+            }
+
+            btnCreate.onclick = async () => {
+                errorMsg.style.display = 'none';
+                if (!currentUser) return;
+                
+                const name = document.getElementById('topic-name').value.trim();
+                const desc = document.getElementById('topic-desc').value.trim();
+                const visibility = document.querySelector('input[name="visibility"]:checked').value;
+
+                if (name.length < 2) {
+                    errorMsg.textContent = ui.errShort;
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+
+                if (visibility === 'public' && publicCount >= 10) {
+                    errorMsg.textContent = ui.errLimit;
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+
+                if (visibility === 'private' && privateCount >= 10) {
+                    errorMsg.textContent = ui.errLimit;
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+
+                btnCreate.disabled = true;
+                document.getElementById('ui-btn').innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${ui.creating}`;
+
+                try {
+                    const newRef = await addDoc(collection(db, "social_channels"), {
+                        name: name.substring(0, 30),
+                        description: desc.substring(0, 100),
+                        visibility: visibility, // 'public' or 'private'
+                        schoolName: internalSchoolName,
+                        createdBy: currentUser.uid,
+                        createdAt: serverTimestamp(),
+                        postCount: 0 
+                    });
+                    window.location.href = `/topic.html?id=${newRef.id}`;
+                } catch (e) {
+                    errorMsg.textContent = "Error: " + e.message;
+                    errorMsg.style.display = 'block';
+                    btnCreate.disabled = false;
+                    document.getElementById('ui-btn').textContent = ui.btn;
+                }
+            };
+        }
+        main();
+    </script>
+</body>
+</html>
