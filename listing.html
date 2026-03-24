@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Listing Details - Cheaplet</title>
+    <title>Listing Details - Scoralia</title>
     <script type="module" src="global.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,35 +31,28 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        /* ── FIXED DOUBLE SCROLLBAR ── */
+        /* Lock body height to exactly 100vh and hide body overflow to prevent the 1mm scroll */
         body {
             font-family: var(--font-body);
             background: var(--off-white);
             color: var(--text-body);
-            min-height: 100vh;
-            display: flex; flex-direction: column;
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column;
+            overflow: hidden; 
         }
 
         /* ── ANIMATIONS ── */
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-8px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(16px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to   { opacity: 1; }
-        }
-        @keyframes imagePop {
-            from { opacity: 0; transform: scale(0.97); }
-            to   { opacity: 1; transform: scale(1); }
-        }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes imagePop { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
 
         /* ── HEADER ── */
         header {
-            position: sticky; top: 0; z-index: 200;
+            position: relative; z-index: 200;
             background: rgba(12, 20, 70, 0.97);
             backdrop-filter: blur(12px);
             border-bottom: 1px solid rgba(179,205,224,0.15);
@@ -87,7 +80,12 @@
         .header-right { display: flex; align-items: center; gap: 10px; }
 
         /* ── MAIN LAYOUT ── */
-        .main-wrapper { display: flex; flex-shrink: 0; height: calc(100vh - 68px); overflow: hidden; }
+        /* Use flex: 1 to perfectly fill remaining space without overflowing */
+        .main-wrapper { 
+            display: flex; 
+            flex: 1; 
+            overflow: hidden; 
+        }
 
         /* ── IMAGE STAGE ── */
         .image-stage { flex: 1; background-color: #000; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
@@ -99,7 +97,7 @@
         .nav-prev { left: 20px; } .nav-next { right: 20px; }
         .thumbnails-overlay { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 10; padding: 5px; }
         .thumb { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; cursor: pointer; opacity: 0.6; border: 2px solid white; transition: all 0.2s; }
-        .thumb.active { opacity: 1; border-color: #FFD700; transform: scale(1.15); }
+        .thumb.active { opacity: 1; border-color: var(--gold); transform: scale(1.15); }
 
         /* ── DETAILS PANEL ── */
         .details-panel {
@@ -109,7 +107,6 @@
             overflow-y: auto; display: flex; flex-direction: column;
             padding: 28px 24px;
             animation: fadeUp 0.5s 0.1s ease both;
-            animation-fill-mode: forwards;
         }
 
         h1 {
@@ -122,121 +119,43 @@
         .price-container { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
         .price { font-size: 1.5rem; font-weight: 800; color: var(--green); font-family: var(--font-display); }
         .original-price { font-size: 1rem; color: var(--text-muted); text-decoration: line-through; }
-        .meta-info {
-            font-size: 0.82rem; color: var(--text-muted);
-            margin-bottom: 20px; padding-bottom: 16px;
-            border-bottom: 1px solid rgba(179,205,224,0.4);
-        }
+        .meta-info { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid rgba(179,205,224,0.4); }
 
         /* ── ACTION BUTTONS ── */
         .action-buttons { display: flex; gap: 10px; margin-bottom: 24px; }
-        .btn-primary {
-            flex: 1; background: var(--ink); color: var(--white);
-            border: none; border-radius: var(--radius-sm);
-            font-family: var(--font-body); font-weight: 600;
-            padding: 11px; cursor: pointer;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            font-size: 0.95rem; transition: background 0.2s, transform 0.15s;
-        }
+        .btn-primary { flex: 1; background: var(--ink); color: var(--white); border: none; border-radius: var(--radius-sm); font-family: var(--font-body); font-weight: 600; padding: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.95rem; transition: background 0.2s, transform 0.15s; }
         .btn-primary:hover { background: var(--deep); transform: translateY(-1px); }
-        .btn-icon {
-            width: 44px; height: 44px;
-            background: var(--surface); border-radius: var(--radius-sm);
-            border: 1.5px solid rgba(179,205,224,0.5);
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: 16px; color: var(--text-muted);
-            transition: background 0.18s, color 0.18s, transform 0.15s;
-        }
+        .btn-icon { width: 44px; height: 44px; background: var(--surface); border-radius: var(--radius-sm); border: 1.5px solid rgba(179,205,224,0.5); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: var(--text-muted); transition: background 0.18s, color 0.18s, transform 0.15s; }
         .btn-icon:hover { background: var(--mist); color: var(--ink); transform: translateY(-1px); }
         .btn-report:hover { color: var(--red) !important; background: #fdecea !important; }
 
         /* ── SECTION HEADERS ── */
-        .section-header {
-            font-family: var(--font-display);
-            font-weight: 700; font-size: 1rem;
-            color: var(--ink); margin-top: 18px; margin-bottom: 10px;
-            padding-bottom: 6px;
-            border-bottom: 2px solid var(--surface);
-        }
-        .info-row {
-            display: flex; justify-content: space-between;
-            margin-bottom: 7px; font-size: 0.88rem; gap: 10px;
-        }
+        .section-header { font-family: var(--font-display); font-weight: 700; font-size: 1rem; color: var(--ink); margin-top: 18px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid var(--surface); }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 7px; font-size: 0.88rem; gap: 10px; }
         .info-label { font-weight: 600; color: var(--text-muted); flex-shrink: 0; }
         .info-value { color: var(--text-body); text-align: right; overflow-wrap: break-word; word-break: break-word; }
-        .description-text {
-            font-size: 0.9rem; line-height: 1.65;
-            color: var(--text-body); white-space: pre-wrap;
-            margin-bottom: 20px; overflow-wrap: break-word;
-        }
+        .description-text { font-size: 0.9rem; line-height: 1.65; color: var(--text-body); white-space: pre-wrap; margin-bottom: 20px; overflow-wrap: break-word; }
 
         /* ── SELLER ── */
-        .seller-section {
-            display: flex; align-items: center; gap: 14px;
-            margin-top: 10px; padding: 14px 0;
-            border-top: 1px solid rgba(179,205,224,0.4);
-            border-bottom: 1px solid rgba(179,205,224,0.4);
-        }
-        #seller-avatar-small {
-            width: 46px; height: 46px; border-radius: 50%;
-            background-color: var(--surface);
-            background-size: cover;
-            background-position: center;
-            border: 2px solid var(--mist); flex-shrink: 0;
-        }
-        .seller-name {
-            font-weight: 700; color: var(--ink); text-decoration: none; font-size: 0.95rem;
-            transition: color 0.2s;
-        }
+        .seller-section { display: flex; align-items: center; gap: 14px; margin-top: 10px; padding: 14px 0; border-top: 1px solid rgba(179,205,224,0.4); border-bottom: 1px solid rgba(179,205,224,0.4); }
+        #seller-avatar-small { width: 46px; height: 46px; border-radius: 50%; background-color: var(--surface); background-size: cover; background-position: center; border: 2px solid var(--mist); flex-shrink: 0; }
+        .seller-name { font-weight: 700; color: var(--ink); text-decoration: none; font-size: 0.95rem; transition: color 0.2s; }
         .seller-name:hover { color: var(--deep); }
         .seller-rating-display { color: var(--gold); font-size: 0.82rem; margin-top: 3px; }
-        .verified-student-badge {
-            display: inline-flex; align-items: center; gap: 5px;
-            background: rgba(46,125,94,0.1); color: var(--green);
-            font-size: 0.73rem; font-weight: 700; padding: 2px 9px;
-            border-radius: 50px; border: 1px solid rgba(46,125,94,0.25); margin-top: 4px;
-        }
+        .verified-student-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(46,125,94,0.1); color: var(--green); font-size: 0.73rem; font-weight: 700; padding: 2px 9px; border-radius: 50px; border: 1px solid rgba(46,125,94,0.25); margin-top: 4px; }
 
         /* ── QUICK MESSAGE ── */
-        .quick-message-container {
-            margin-top: 24px;
-            border-top: 1px solid rgba(179,205,224,0.4);
-            padding-top: 18px;
-        }
-        .quick-msg-label {
-            font-size: 0.82rem; font-weight: 600;
-            color: var(--text-muted); text-transform: uppercase;
-            letter-spacing: 0.5px; margin-bottom: 8px;
-        }
-        .quick-msg-input {
-            width: 100%; padding: 10px 14px;
-            border: 1.5px solid rgba(179,205,224,0.5);
-            border-radius: var(--radius-sm);
-            font-family: var(--font-body); font-size: 0.9rem;
-            color: var(--text-body); resize: none; height: 70px;
-            background: var(--surface); margin-bottom: 8px;
-            transition: border-color 0.2s;
-            outline: none;
-        }
+        .quick-message-container { margin-top: 24px; border-top: 1px solid rgba(179,205,224,0.4); padding-top: 18px; }
+        .quick-msg-label { font-size: 0.82rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .quick-msg-input { width: 100%; padding: 10px 14px; border: 1.5px solid rgba(179,205,224,0.5); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 0.9rem; color: var(--text-body); resize: none; height: 70px; background: var(--surface); margin-bottom: 8px; transition: border-color 0.2s; outline: none; }
         .quick-msg-input:focus { border-color: var(--deep); background: var(--white); }
-        .btn-send {
-            background: var(--deep); color: var(--white);
-            width: 100%; border: none; border-radius: var(--radius-sm);
-            height: 40px; font-family: var(--font-body); font-weight: 600;
-            cursor: pointer; font-size: 0.9rem;
-            transition: background 0.2s, transform 0.15s;
-        }
+        .btn-send { background: var(--deep); color: var(--white); width: 100%; border: none; border-radius: var(--radius-sm); height: 40px; font-family: var(--font-body); font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: background 0.2s, transform 0.15s; }
         .btn-send:hover { background: var(--ink); transform: translateY(-1px); }
 
         /* ── RELATED ── */
         .related-section { margin-top: 32px; padding-top: 18px; padding-bottom: 40px; border-top: 1px solid rgba(179,205,224,0.4); }
         .related-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .related-card {
-            background: var(--off-white); text-decoration: none; color: inherit;
-            display: block; overflow: hidden; border-radius: var(--radius-sm);
-            border: 1px solid rgba(179,205,224,0.3);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
+        .related-card { background: var(--off-white); text-decoration: none; color: inherit; display: block; overflow: hidden; border-radius: var(--radius-sm); border: 1px solid rgba(179,205,224,0.3); transition: transform 0.2s, box-shadow 0.2s; }
         .related-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
         .related-img { width: 100%; height: 110px; background-color: var(--surface); background-size: cover; background-position: center; border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
         .related-info { padding: 8px 10px; }
@@ -245,36 +164,15 @@
 
         /* ── ADMIN ── */
         .admin-controls { margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(179,205,224,0.4); }
-        .btn-delete {
-            background: #fdecea; color: var(--red);
-            border: 1px solid rgba(192,57,43,0.3); border-radius: var(--radius-sm);
-            padding: 8px 18px; font-family: var(--font-body); font-weight: 600;
-            font-size: 0.88rem; cursor: pointer; transition: background 0.2s;
-        }
+        .btn-delete { background: #fdecea; color: var(--red); border: 1px solid rgba(192,57,43,0.3); border-radius: var(--radius-sm); padding: 8px 18px; font-family: var(--font-body); font-weight: 600; font-size: 0.88rem; cursor: pointer; transition: background 0.2s; }
         .btn-delete:hover { background: #f8c8c3; }
 
         /* ── MODAL ── */
-        .modal-overlay {
-            position: fixed; inset: 0;
-            background: rgba(12,20,70,0.6);
-            backdrop-filter: blur(4px);
-            z-index: 10000; display: none;
-            justify-content: center; align-items: center;
-        }
-        .modal-card {
-            background: var(--white); padding: 28px;
-            border-radius: var(--radius-md); width: 90%; max-width: 440px;
-            box-shadow: var(--shadow-md);
-            animation: fadeUp 0.3s ease both;
-        }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(12,20,70,0.6); backdrop-filter: blur(4px); z-index: 10000; display: none; justify-content: center; align-items: center; }
+        .modal-card { background: var(--white); padding: 28px; border-radius: var(--radius-md); width: 90%; max-width: 440px; box-shadow: var(--shadow-md); animation: fadeUp 0.3s ease both; }
         .modal-card h2 { font-family: var(--font-display); color: var(--ink); margin-bottom: 6px; }
         .modal-card p { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 16px; }
-        .modal-card select, .modal-card textarea {
-            width: 100%; padding: 10px 14px; margin-bottom: 12px;
-            border: 1.5px solid rgba(179,205,224,0.5); border-radius: var(--radius-sm);
-            font-family: var(--font-body); font-size: 0.9rem; color: var(--text-body);
-            background: var(--surface); outline: none;
-        }
+        .modal-card select, .modal-card textarea { width: 100%; padding: 10px 14px; margin-bottom: 12px; border: 1.5px solid rgba(179,205,224,0.5); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 0.9rem; color: var(--text-body); background: var(--surface); outline: none; }
         .modal-card textarea { height: 90px; resize: none; }
         .modal-buttons { display: flex; gap: 10px; }
         .modal-buttons button { flex: 1; padding: 11px; border-radius: var(--radius-sm); font-family: var(--font-body); font-weight: 700; cursor: pointer; border: none; transition: opacity 0.2s; }
@@ -284,10 +182,12 @@
 
         /* ── MOBILE ── */
         @media (max-width: 900px) {
-            .main-wrapper { flex-direction: column; overflow-y: auto; height: auto; }
+            /* On mobile, allow the body to scroll normally and stack the panels */
+            body { height: auto; overflow-y: auto; overflow-x: hidden; display: block; }
+            .main-wrapper { flex-direction: column; overflow: visible; height: auto; }
             .image-stage { height: 350px; flex: none; width: 100%; }
             .main-image-container { padding: 10px; }
-            .details-panel { width: 100%; border-left: none; height: auto; padding: 20px 16px 50px; }
+            .details-panel { width: 100%; border-left: none; height: auto; padding: 20px 16px 50px; overflow-y: visible; }
             nav { display: none; }
         }
     </style>
@@ -296,7 +196,7 @@
 
     <header>
         <div class="header-inner">
-            <a href="/index.html" class="logo">Cheap<em>let</em></a>
+            <a href="/index.html" class="logo">Scor<em>alia</em></a>
             <nav>
                 <ul>
                     <li><a href="/search.html">Browse</a></li>
@@ -354,7 +254,7 @@
                 <div>
                     <a href="#" id="seller-name-link" class="seller-name">Loading...</a>
                     <div id="seller-rating-container" class="seller-rating-display"></div>
-                    <div id="seller-badge-container" style="font-size:0.8rem; color:var(--text-muted);">Cheaplet Member</div>
+                    <div id="seller-badge-container" style="font-size:0.8rem; color:var(--text-muted);">Scoralia Member</div>
                 </div>
             </div>
 
@@ -406,9 +306,6 @@
             const auth = getAuth(app);
             const db = getFirestore(app);
 
-            const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`;
-            const UPLOAD_PRESET = config.cloudinary.uploadPreset;
-
             const mainImage = document.getElementById('main-image');
             const blurBg = document.getElementById('blur-bg');
             const thumbnailContainer = document.getElementById('thumbnail-container');
@@ -429,12 +326,11 @@
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             
-            // 🔥 TRANSLATION DIRECTORY FOR LISTING PAGE
             const strings = {
                 en: { 
                     reportTitle: "Report Listing", reportDesc: "Why are you reporting this?", reportPlaceholder: "Details...", reportSuccess: "Reported.", 
                     opt1: "Inappropriate Content", opt2: "Scam or Fraud", opt3: "Sold or Unavailable", opt4: "Other", 
-                    sold: "SOLD", seeMore: "See more", seeLess: "See less", verifiedStudent: "Verified Student", cheapletMember: "Cheaplet Member", noRatings: "No ratings yet",
+                    sold: "SOLD", verifiedStudent: "Verified Student", member: "Scoralia Member", noRatings: "No ratings yet",
                     btn_message: " Message", details_title: "Details", condition_label: "Condition", access_code_label: "Access Code", 
                     location_label: "Location", label_meeting_point: "Meeting Point", label_writing: "Writing inside", 
                     label_water: "Water damage", label_missing: "Missing pages", description_title: "Description", 
@@ -443,7 +339,7 @@
                 fr: { 
                     reportTitle: "Signaler l'annonce", reportDesc: "Pourquoi signalez-vous cela ?", reportPlaceholder: "Détails...", reportSuccess: "Signalé.", 
                     opt1: "Contenu inapproprié", opt2: "Arnaque ou Fraude", opt3: "Vendu ou Indisponible", opt4: "Autre", 
-                    sold: "VENDU", seeMore: "Voir plus", seeLess: "Voir moins", verifiedStudent: "Étudiant vérifié", cheapletMember: "Membre Cheaplet", noRatings: "Aucune évaluation",
+                    sold: "VENDU", verifiedStudent: "Étudiant vérifié", member: "Membre Scoralia", noRatings: "Aucune évaluation",
                     btn_message: " Message", details_title: "Détails", condition_label: "État", access_code_label: "Code d'accès", 
                     location_label: "Emplacement", label_meeting_point: "Point de rencontre", label_writing: "Écritures à l'intérieur", 
                     label_water: "Dommages causés par l'eau", label_missing: "Pages manquantes", description_title: "Description", 
@@ -455,12 +351,9 @@
                 fr: { "New": "Neuf", "Like New": "Comme neuf", "Good": "Bon état", "Fair": "État correct", "Not applicable": "Non applicable", "Available / Unused": "Disponible / Inutilisé", "Already used": "Déjà utilisé", "Yes": "Oui", "No": "Non", "N/A": "N/O", "To be discussed": "À discuter" }
             };
 
-            // Apply local UI translations immediately
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
-                if (strings[lang] && strings[lang][key]) {
-                    el.innerHTML = strings[lang][key]; // innerHTML to preserve icons inside buttons
-                }
+                if (strings[lang] && strings[lang][key]) el.innerHTML = strings[lang][key]; 
             });
 
             function translateData(value) {
@@ -488,6 +381,14 @@
 
                     const data = listingSnap.data();
                     currentListingData = data;
+
+                    // DYNAMIC TAB TITLE FIX
+                    let shortTitle = data.title;
+                    if(shortTitle) {
+                        const words = shortTitle.split(' ');
+                        shortTitle = words.length > 3 ? words.slice(0, 3).join(' ') + '...' : shortTitle;
+                    }
+                    document.title = `${shortTitle} — Scoralia`;
 
                     if (currentUser && currentUser.uid === data.posterUid) {
                         reportBtn.style.display = 'none';
@@ -543,7 +444,7 @@
                                     sellerRatingContainer.innerHTML = `<span style="color:var(--text-muted);">${strings[lang].noRatings}</span>`;
                                 }
                                 if (sellerData.isStudent) sellerBadgeContainer.innerHTML = `<span class="verified-student-badge"><i class="fas fa-graduation-cap"></i> ${strings[lang].verifiedStudent}</span>`;
-                                else sellerBadgeContainer.textContent = strings[lang].cheapletMember;
+                                else sellerBadgeContainer.textContent = strings[lang].member;
                             }
                         } catch (e) { console.error(e); }
                     }
@@ -628,7 +529,7 @@
                 const url = imageUrls[index];
                 if (url) {
                     mainImage.style.animation = 'none';
-                    mainImage.offsetHeight; // reflow
+                    mainImage.offsetHeight; 
                     mainImage.style.animation = 'imagePop 0.3s ease both';
                     mainImage.src = url;
                     blurBg.style.backgroundImage = `url('${url}')`;
