@@ -24,10 +24,10 @@ const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getA
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// --- 2. TRANSLATION DICTIONARY (same as before) ---
+// --- 2. TRANSLATION DICTIONARY ---
 const translations = {
     "en": {
-        "nav_browse": "Browse", "nav_listings": "My Listings", "nav_messages": "Messages", "nav_profile": "My Profile",
+        "nav_browse": "Browse", "nav_listings": "My Listings", "nav_messages": "Messages", "nav_profile": "My Profile", "nav_hub": "Campus Hub",
         "btn_login": "Login / Register", "btn_list": "List an Item", "btn_signout": "Sign Out",
         "verified_student": "Verified Student",
         "ban_title": "ACCESS DENIED",
@@ -54,7 +54,7 @@ const translations = {
         "tour_username_checking": "Checking..."
     },
     "fr": {
-        "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil",
+        "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", "nav_hub": "Hub Campus",
         "btn_login": "Connexion", "btn_list": "Vendre", "btn_signout": "Déconnexion",
         "verified_student": "Étudiant vérifié",
         "ban_title": "ACCÈS REFUSÉ",
@@ -90,7 +90,7 @@ window.applyLanguage = (lang) => {
     localStorage.setItem('preferred_language', lang);
 };
 
-// --- 3. GLOBAL CSS (same as before) ---
+// --- 3. GLOBAL CSS ---
 const globalStyle = document.createElement('style');
 globalStyle.innerHTML = `
     .header-inner, .header-content { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 15px !important; flex-direction: row !important; }
@@ -141,20 +141,16 @@ globalStyle.innerHTML = `
 `;
 document.head.appendChild(globalStyle);
 
-// --- 4. FUNCTION TO UPDATE USER CONTENT (listings & chats) ---
+// --- 4. FUNCTION TO UPDATE USER CONTENT ---
 async function updateUserContent(uid, newDisplayName) {
     if (!newDisplayName) return;
     try {
-        // Update listings
         const listingsQuery = query(collection(db, "listings"), where("posterUid", "==", uid));
         const listingsSnap = await getDocs(listingsQuery);
         const batch = writeBatch(db);
-        listingsSnap.forEach(doc => {
-            batch.update(doc.ref, { posterDisplayName: newDisplayName });
-        });
+        listingsSnap.forEach(doc => { batch.update(doc.ref, { posterDisplayName: newDisplayName }); });
         await batch.commit();
 
-        // Update chats
         const chatsQuery = query(collection(db, "chats"), where("participants", "array-contains", uid));
         const chatsSnap = await getDocs(chatsQuery);
         const chatBatch = writeBatch(db);
@@ -167,9 +163,7 @@ async function updateUserContent(uid, newDisplayName) {
             }
         });
         await chatBatch.commit();
-    } catch (err) {
-        console.error("Error updating user content:", err);
-    }
+    } catch (err) { console.error("Error updating user content:", err); }
 }
 window.updateUserContent = updateUserContent;
 
@@ -190,21 +184,13 @@ onAuthStateChanged(auth, (user) => {
                 if (currentUserData.role === 'banned') { triggerHardLockdown(); return; }
                 if (currentUserData.language) localStorage.setItem('preferred_language', currentUserData.language);
                 refreshUI();
-                // Show welcome tour if not seen
                 const tourKey = `scoralia_tour_seen_${user.uid}`;
                 if (!currentUserData.hasSeenTour && !localStorage.getItem(tourKey)) {
                     showWelcomeTour();
                 }
             } else {
-                // Create basic user document
                 setDoc(doc(db, "users", user.uid), {
-                    uid: user.uid,
-                    displayName: user.displayName || "",
-                    email: user.email,
-                    role: 'user',
-                    createdAt: new Date().toISOString()
-                }).then(() => {
-                    // Reload user data via snapshot
+                    uid: user.uid, displayName: user.displayName || "", email: user.email, role: 'user', createdAt: new Date().toISOString()
                 }).catch(console.error);
             }
         });
@@ -214,16 +200,12 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// --- Welcome Tour (final step asks for full name + username) ---
 function showWelcomeTour() {
     const user = auth.currentUser;
     if (!user) return;
     const tourKey = `scoralia_tour_seen_${user.uid}`;
     if (localStorage.getItem(tourKey) === 'true') return;
-    if (currentUserData && currentUserData.hasSeenTour) {
-        localStorage.setItem(tourKey, 'true');
-        return;
-    }
+    if (currentUserData && currentUserData.hasSeenTour) { localStorage.setItem(tourKey, 'true'); return; }
     if (document.querySelector('.lang-modal-overlay')) return;
 
     const lang = localStorage.getItem('preferred_language') || 'en';
@@ -276,157 +258,98 @@ function showWelcomeTour() {
     `;
     document.body.appendChild(overlay);
 
-    // Navigation
     document.getElementById('tour-btn-1').onclick = () => {
-        document.getElementById('tour-step-1').style.display = 'none';
-        document.getElementById('tour-step-2').style.display = 'block';
-        document.getElementById('dot-1').classList.remove('active');
-        document.getElementById('dot-2').classList.add('active');
+        document.getElementById('tour-step-1').style.display = 'none'; document.getElementById('tour-step-2').style.display = 'block';
+        document.getElementById('dot-1').classList.remove('active'); document.getElementById('dot-2').classList.add('active');
     };
     document.getElementById('tour-btn-2').onclick = () => {
-        document.getElementById('tour-step-2').style.display = 'none';
-        document.getElementById('tour-step-3').style.display = 'block';
-        document.getElementById('dot-2').classList.remove('active');
-        document.getElementById('dot-3').classList.add('active');
+        document.getElementById('tour-step-2').style.display = 'none'; document.getElementById('tour-step-3').style.display = 'block';
+        document.getElementById('dot-2').classList.remove('active'); document.getElementById('dot-3').classList.add('active');
     };
     document.getElementById('tour-btn-3').onclick = () => {
-        document.getElementById('tour-step-3').style.display = 'none';
-        document.getElementById('tour-step-4').style.display = 'block';
-        document.getElementById('dot-3').classList.remove('active');
-        document.getElementById('dot-4').classList.add('active');
+        document.getElementById('tour-step-3').style.display = 'none'; document.getElementById('tour-step-4').style.display = 'block';
+        document.getElementById('dot-3').classList.remove('active'); document.getElementById('dot-4').classList.add('active');
     };
 
-    // Username validation logic
     const usernameInput = overlay.querySelector('#tour-username');
     const usernameStatus = overlay.querySelector('#tour-username-status');
     let usernameTimeout = null;
     let isUsernameValid = false;
 
-    function validateUsernameFormat(username) {
-        return /^[a-zA-Z0-9_]{3,}$/.test(username);
-    }
+    function validateUsernameFormat(username) { return /^[a-zA-Z0-9_]{3,}$/.test(username); }
 
     async function checkUsernameAvailability(username) {
         if (!validateUsernameFormat(username)) {
-            usernameStatus.textContent = t.tour_username_err;
-            usernameStatus.style.color = '#d32f2f';
-            isUsernameValid = false;
-            return false;
+            usernameStatus.textContent = t.tour_username_err; usernameStatus.style.color = '#d32f2f';
+            isUsernameValid = false; return false;
         }
-        usernameStatus.textContent = t.tour_username_checking;
-        usernameStatus.style.color = '#ff9800';
+        usernameStatus.textContent = t.tour_username_checking; usernameStatus.style.color = '#ff9800';
         const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
         const snap = await getDocs(q);
         if (snap.empty) {
-            usernameStatus.textContent = t.tour_username_available;
-            usernameStatus.style.color = '#2E7D32';
-            isUsernameValid = true;
-            return true;
+            usernameStatus.textContent = t.tour_username_available; usernameStatus.style.color = '#2E7D32';
+            isUsernameValid = true; return true;
         } else {
-            usernameStatus.textContent = t.tour_username_taken;
-            usernameStatus.style.color = '#d32f2f';
-            isUsernameValid = false;
-            return false;
+            usernameStatus.textContent = t.tour_username_taken; usernameStatus.style.color = '#d32f2f';
+            isUsernameValid = false; return false;
         }
     }
 
     usernameInput.addEventListener('input', () => {
         if (usernameTimeout) clearTimeout(usernameTimeout);
         const val = usernameInput.value.trim();
-        if (!val) {
-            usernameStatus.textContent = '';
-            isUsernameValid = false;
-            return;
-        }
+        if (!val) { usernameStatus.textContent = ''; isUsernameValid = false; return; }
         usernameTimeout = setTimeout(() => checkUsernameAvailability(val), 500);
     });
 
-    // If username already exists (e.g., from OAuth), pre-check availability
-    if (existingUsername) {
-        setTimeout(() => checkUsernameAvailability(existingUsername), 100);
-    }
+    if (existingUsername) { setTimeout(() => checkUsernameAvailability(existingUsername), 100); }
 
-    // Photo upload
     let selectedFile = null;
     const fileInput = overlay.querySelector('#tour-file-input');
     fileInput.onchange = (e) => {
         if (e.target.files[0]) {
             selectedFile = e.target.files[0];
             const reader = new FileReader();
-            reader.onload = (ev) => {
-                overlay.querySelector('#tour-pfp-box').innerHTML = `<img src="${ev.target.result}">`;
-            };
+            reader.onload = (ev) => { overlay.querySelector('#tour-pfp-box').innerHTML = `<img src="${ev.target.result}">`; };
             reader.readAsDataURL(selectedFile);
         }
     };
 
-    // Finish button
     const finishBtn = overlay.querySelector('#tour-btn-4');
     finishBtn.onclick = async () => {
         const fullname = overlay.querySelector('#tour-fullname').value.trim();
         const username = overlay.querySelector('#tour-username').value.trim().toLowerCase();
-        if (!fullname) {
-            alert(t.tour_name_err);
-            return;
-        }
-        if (!username) {
-            alert(t.tour_username_err);
-            return;
-        }
-        if (!validateUsernameFormat(username)) {
-            alert(t.tour_username_err);
-            return;
-        }
-        // Re-check availability if not already valid
+        if (!fullname) { alert(t.tour_name_err); return; }
+        if (!username || !validateUsernameFormat(username)) { alert(t.tour_username_err); return; }
         if (!isUsernameValid) {
             const available = await checkUsernameAvailability(username);
             if (!available) return;
         }
-        finishBtn.disabled = true;
-        finishBtn.textContent = t.tour_saving;
+        finishBtn.disabled = true; finishBtn.textContent = t.tour_saving;
 
         let finalPhoto = defaultPfpUrl;
         if (selectedFile) {
             try {
                 const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
                 const formData = new FormData();
-                formData.append('file', selectedFile);
-                formData.append('api_key', signRes.apiKey);
-                formData.append('timestamp', signRes.timestamp);
-                formData.append('signature', signRes.signature);
+                formData.append('file', selectedFile); formData.append('api_key', signRes.apiKey);
+                formData.append('timestamp', signRes.timestamp); formData.append('signature', signRes.signature);
                 formData.append('upload_preset', signRes.uploadPreset);
-                const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, {
-                    method: 'POST', body: formData
-                }).then(r => r.json());
+                const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { method: 'POST', body: formData }).then(r => r.json());
                 if (res.secure_url) finalPhoto = res.secure_url;
-            } catch (err) {
-                console.error(err);
-            }
+            } catch (err) { console.error(err); }
         }
 
         try {
             const oldDisplayName = currentUserData?.displayName || '';
-            // Update Auth profile
             await updateProfile(user, { displayName: fullname, photoURL: finalPhoto });
-            // Update Firestore user doc
-            await updateDoc(doc(db, "users", user.uid), {
-                displayName: fullname,
-                username: username,
-                photoURL: finalPhoto,
-                hasSeenTour: true
-            });
-            // If display name changed, update listings and chats
-            if (fullname !== oldDisplayName) {
-                await updateUserContent(user.uid, fullname);
-            }
+            await updateDoc(doc(db, "users", user.uid), { displayName: fullname, username: username, photoURL: finalPhoto, hasSeenTour: true });
+            if (fullname !== oldDisplayName) await updateUserContent(user.uid, fullname);
             localStorage.setItem(tourKey, 'true');
-            overlay.remove();
-            refreshUI();
+            overlay.remove(); refreshUI();
         } catch (err) {
-            console.error(err);
-            alert("Error saving profile. Please try again.");
-            finishBtn.disabled = false;
-            finishBtn.textContent = t.tour_start;
+            console.error(err); alert("Error saving profile. Please try again.");
+            finishBtn.disabled = false; finishBtn.textContent = t.tour_start;
         }
     };
 }
@@ -442,13 +365,10 @@ function triggerHardLockdown() {
 }
 
 function refreshUI() {
-    if (currentUserData) {
-        updateHeaderToLoggedIn(currentUserData);
-    } else {
+    if (currentUserData) { updateHeaderToLoggedIn(currentUserData); } 
+    else {
         updateHeaderToLoggedOut();
-        if (globalSettings.enableLanguagePrompt && !sessionStorage.getItem('lang_picked_this_session')) {
-            showLanguagePopup();
-        }
+        if (globalSettings.enableLanguagePrompt && !sessionStorage.getItem('lang_picked_this_session')) { showLanguagePopup(); }
     }
     window.applyLanguage(localStorage.getItem('preferred_language') || 'en');
     showTermsBanner();
@@ -484,6 +404,7 @@ function updateHeaderToLoggedIn(userData) {
         navUl.innerHTML = `
             <li><a href="/search.html">${t.nav_browse}</a></li>
             <li><a href="/my-listings.html">${t.nav_listings}</a></li>
+            <li><a href="/social.html">${t.nav_hub}</a></li>
             <li><a href="/messages.html" class="badge-container">${t.nav_messages}<span class="unread-badge" id="desktop-unread-badge"></span></a></li>
         `;
     }
@@ -511,6 +432,7 @@ function updateHeaderToLoggedIn(userData) {
                 <a href="/listanitem.html" class="dropdown-item mobile-link" style="color:#2B5C92; font-weight:bold;"><i class="fas fa-plus-circle"></i> ${t.btn_list}</a>
                 <a href="/search.html" class="dropdown-item mobile-link"><i class="fas fa-search"></i> ${t.nav_browse}</a>
                 <a href="/my-listings.html" class="dropdown-item mobile-link"><i class="fas fa-book"></i> ${t.nav_listings}</a>
+                <a href="/social.html" class="dropdown-item mobile-link"><i class="fas fa-users"></i> ${t.nav_hub}</a>
                 <a href="/profile.html" class="dropdown-item"><i class="fas fa-user-circle"></i> ${t.nav_profile}</a>
                 <a href="#" class="dropdown-item" id="globalLogout" style="color:#ff4d4d; border-top:1px solid #eee;"><i class="fas fa-sign-out-alt"></i> ${t.btn_signout}</a>
             </div>
@@ -528,10 +450,7 @@ function updateHeaderToLoggedIn(userData) {
     const logoutBtn = document.getElementById('globalLogout');
     if (logoutBtn) logoutBtn.onclick = (e) => {
         e.preventDefault();
-        signOut(auth).then(() => {
-            sessionStorage.clear();
-            window.location.href = '/index.html';
-        });
+        signOut(auth).then(() => { sessionStorage.clear(); window.location.href = '/index.html'; });
     };
 
     listenToUnreadMessages(userData.uid);
@@ -542,7 +461,10 @@ function updateHeaderToLoggedOut() {
     const t = translations[lang];
     const navUl = document.querySelector('nav ul');
     if (navUl) {
-        navUl.innerHTML = `<li><a href="/search.html">${t.nav_browse}</a></li>`;
+        navUl.innerHTML = `
+            <li><a href="/search.html">${t.nav_browse}</a></li>
+            <li><a href="/social.html">${t.nav_hub}</a></li>
+        `;
     }
 
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
