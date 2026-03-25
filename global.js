@@ -141,6 +141,28 @@ globalStyle.innerHTML = `
 `;
 document.head.appendChild(globalStyle);
 
+// --- SCHOOL DOMAIN CHECKER ---
+const schoolDomains = {
+    "@etu.cegepjonquiere.ca": "Cégep de Jonquière",
+    "@cegep-lanaudiere.qc.ca": "Cégep de Lanaudière",
+    "@etu.cegep-lanaudiere.qc.ca": "Cégep de Lanaudière",
+    "@crosemont.qc.ca": "Cégep de Rosemont",
+    "@cmaisonneuve.qc.ca": "Cégep Maisonneuve",
+    "@cegepmv.qc.ca": "Cégep Marie-Victorin",
+    "@collegeahuntsic.qc.ca": "Collège Ahuntsic",
+    "@dawsoncollege.qc.ca": "Dawson College",
+    "@usherbrooke.ca": "Université de Sherbrooke",
+    "@ulaval.ca": "Université Laval"
+};
+
+function getSchoolInfo(email) {
+    if (!email) return { isStudent: false, schoolName: null };
+    const domain = email.substring(email.lastIndexOf("@")).toLowerCase();
+    return schoolDomains[domain]
+        ? { isStudent: true, schoolName: schoolDomains[domain] }
+        : { isStudent: false, schoolName: null };
+}
+
 // --- 4. FUNCTION TO UPDATE USER CONTENT ---
 async function updateUserContent(uid, newDisplayName) {
     if (!newDisplayName) return;
@@ -178,10 +200,23 @@ onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
 
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        onSnapshot(doc(db, "users", user.uid), (docSnap) => {
+        onSnapshot(doc(db, "users", user.uid), async (docSnap) => {
             if (docSnap.exists()) {
                 currentUserData = docSnap.data();
                 if (currentUserData.role === 'banned') { triggerHardLockdown(); return; }
+                
+                // RETROACTIVE STUDENT CHECK: 
+                // If they logged in before this update, check their email now and grant the badge instantly
+                if (currentUserData.isStudent === undefined && user.email) {
+                    const schoolInfo = getSchoolInfo(user.email);
+                    await updateDoc(doc(db, "users", user.uid), {
+                        isStudent: schoolInfo.isStudent,
+                        schoolName: schoolInfo.schoolName
+                    });
+                    currentUserData.isStudent = schoolInfo.isStudent;
+                    currentUserData.schoolName = schoolInfo.schoolName;
+                }
+
                 if (currentUserData.language) localStorage.setItem('preferred_language', currentUserData.language);
                 refreshUI();
                 const tourKey = `scoralia_tour_seen_${user.uid}`;
@@ -189,8 +224,16 @@ onAuthStateChanged(auth, (user) => {
                     showWelcomeTour();
                 }
             } else {
+                // If they sign in via Google/Microsoft for the first time, check their domain
+                const schoolInfo = getSchoolInfo(user.email);
                 setDoc(doc(db, "users", user.uid), {
-                    uid: user.uid, displayName: user.displayName || "", email: user.email, role: 'user', createdAt: new Date().toISOString()
+                    uid: user.uid, 
+                    displayName: user.displayName || "", 
+                    email: user.email, 
+                    role: 'user', 
+                    isStudent: schoolInfo.isStudent,
+                    schoolName: schoolInfo.schoolName,
+                    createdAt: new Date().toISOString()
                 }).catch(console.error);
             }
         });
@@ -251,7 +294,7 @@ function showWelcomeTour() {
                     <i class="fas fa-camera"></i> ${t.tour_upload}
                 </label>
                 
-                <!-- NEW: INLINE ERROR CONTAINER -->
+                <!-- INLINE ERROR CONTAINER -->
                 <div id="tour-final-error" style="color:#d32f2f; font-size:0.85rem; margin-bottom:10px; display:none; text-align:center; font-weight:bold; border: 1px solid #ffcdd2; background: #fef2f2; padding: 8px; border-radius: 6px;"></div>
 
                 <button class="btn" id="tour-btn-4" style="width:100%;">${t.tour_start}</button>
@@ -285,7 +328,6 @@ function showWelcomeTour() {
     let usernameTimeout = null;
     let isUsernameValid = false;
 
-    // Reset error visuals on typing
     nameInput.addEventListener('input', () => {
         finalError.style.display = 'none';
         nameInput.style.borderColor = '#eee';
@@ -335,12 +377,11 @@ function showWelcomeTour() {
 
     const finishBtn = overlay.querySelector('#tour-btn-4');
     finishBtn.onclick = async () => {
-        finalError.style.display = 'none'; // reset
+        finalError.style.display = 'none'; 
 
         const fullname = nameInput.value.trim();
         const username = usernameInput.value.trim().toLowerCase();
         
-        // 1. Validate Full Name
         if (!fullname) {
             finalError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${t.tour_name_err}`;
             finalError.style.display = 'block';
@@ -348,7 +389,6 @@ function showWelcomeTour() {
             return;
         }
 
-        // 2. Validate Username format
         if (!username || !validateUsernameFormat(username)) {
             finalError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${t.tour_username_err}`;
             finalError.style.display = 'block';
@@ -356,7 +396,6 @@ function showWelcomeTour() {
             return;
         }
 
-        // 3. Re-check Username availability if needed
         if (!isUsernameValid) {
             const available = await checkUsernameAvailability(username);
             if (!available) {
