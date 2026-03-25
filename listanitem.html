@@ -6,6 +6,10 @@
     <title>List an Item - Scoralia</title>
     <script type="module" src="global.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- AI Safety Libraries (Unlimited Free Moderation) -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.1/dist/nsfwjs.min.js"></script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,700;0,900;1,700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -410,6 +414,34 @@
             const pageLoader = document.getElementById('page-loader');
             const loaderTimeout = setTimeout(() => { pageLoader.style.display = 'none'; }, 4000);
 
+            // --- AI SAFETY INITIALIZATION ---
+            let nsfwModel = null;
+            let isModelLoading = false;
+
+            async function checkSafety(file) {
+                if (!nsfwModel && !isModelLoading) {
+                    isModelLoading = true;
+                    // mobilenet_v2 is the fastest model for mobile browsers
+                    nsfwModel = await nsfwjs.load('mobilenet_v2');
+                    isModelLoading = false;
+                }
+                if (!nsfwModel) return true; // Fallback
+
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.src = URL.createObjectURL(file);
+                    img.onload = async () => {
+                        const predictions = await nsfwModel.classify(img);
+                        URL.revokeObjectURL(img.src);
+                        // Categories: Porn, Hentai, Sexy, Neutral, Drawing
+                        const nsfw = predictions.find(p =>
+                            (p.className === 'Porn' || p.className === 'Hentai') && p.probability > 0.65
+                        );
+                        resolve(!nsfw); // Return true if safe
+                    };
+                });
+            }
+
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
@@ -463,13 +495,10 @@
                             }
                         }
                         
-                        // Store the ISBN
                         currentISBN = isbn;
                         document.getElementById('listing-isbn').value = isbn;
-                        
                         document.getElementById('isbn-section').style.display = 'none';
                         document.getElementById('main-form-section').style.display = 'block';
-                        
                         if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
                     } else {
                         alert(ui[lang].notFound);
@@ -601,11 +630,36 @@
                 document.getElementById('add-photo-label').style.display = selectedFiles.length < 5 ? 'flex' : 'none';
             }
 
-            imageInput.onchange = (e) => {
+            imageInput.onchange = async (e) => {
                 const file = e.target.files[0];
                 if (file) {
                     if (!file.type.startsWith('image/')) { alert(ui[lang].imgTypeErr); imageInput.value = ''; return; }
                     if (file.size > 5 * 1024 * 1024) { alert(ui[lang].imgSizeErr); imageInput.value = ''; return; }
+
+                    // --- AI SAFETY CHECK START ---
+                    const originalText = document.getElementById('ui-btn-add-photo').textContent;
+                    document.getElementById('ui-btn-add-photo').textContent = "...";
+
+                    const isSafe = await checkSafety(file);
+
+                    if (!isSafe) {
+                        alert("Security Alert: Restricted content detected. This attempt has been logged.");
+                        document.getElementById('ui-btn-add-photo').textContent = originalText;
+                        // Log attempt to administrators
+                        await addDoc(collection(db, "reports"), {
+                            reporterName: "SYSTEM_AI",
+                            reason: "NSFW Upload Blocked",
+                            targetUid: auth.currentUser ? auth.currentUser.uid : "unknown",
+                            targetUserName: auth.currentUser ? auth.currentUser.displayName : "Guest",
+                            details: "User attempted to upload a prohibited image.",
+                            timestamp: serverTimestamp()
+                        });
+                        imageInput.value = '';
+                        return;
+                    }
+                    document.getElementById('ui-btn-add-photo').textContent = originalText;
+                    // --- AI SAFETY CHECK END ---
+
                     selectedFiles.push(file);
                     renderPreviews();
                 }
@@ -676,7 +730,7 @@
                         imageUrls: imageUrls,
                         posterUid: currentUser.uid,
                         posterDisplayName: displayName,
-                        isbn: isbn,          // Store the ISBN
+                        isbn: isbn,
                         status: 'active',
                         timestamp: serverTimestamp()
                     });
