@@ -48,7 +48,7 @@ const translations = {
         "tour_start": "Finish & Explore",
         "tour_saving": "Saving...",
         "tour_name_err": "Please enter a valid full name.",
-        "tour_username_err": "Username must contain only letters, numbers, underscore, and be at least 3 characters.",
+        "tour_username_err": "Please enter a valid username (min 3 chars).",
         "tour_username_taken": "Username already taken. Please choose another.",
         "tour_username_available": "✓ Available",
         "tour_username_checking": "Checking..."
@@ -75,7 +75,7 @@ const translations = {
         "tour_start": "Terminer & Explorer",
         "tour_saving": "Enregistrement...",
         "tour_name_err": "Veuillez entrer un nom complet valide.",
-        "tour_username_err": "Le nom d'utilisateur ne peut contenir que des lettres, chiffres, tiret bas et au moins 3 caractères.",
+        "tour_username_err": "Veuillez entrer un nom d'utilisateur valide (min 3 car.).",
         "tour_username_taken": "Nom d'utilisateur déjà pris. Veuillez en choisir un autre.",
         "tour_username_available": "✓ Disponible",
         "tour_username_checking": "Vérification..."
@@ -241,13 +241,19 @@ function showWelcomeTour() {
                 <div class="tour-pfp-preview" id="tour-pfp-box"><img src="${defaultPfpUrl}"></div>
                 <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">${t.tour_title_4}</h2>
                 <p style="color:#6b84a3; margin-bottom:15px; line-height:1.4; font-size:0.85rem;">${t.tour_desc_4}</p>
+                
                 <input type="text" id="tour-fullname" class="tour-input" value="${existingFullName}" placeholder="${t.tour_full_name}">
                 <input type="text" id="tour-username" class="tour-input" value="${existingUsername}" placeholder="${t.tour_username}">
                 <div id="tour-username-status" style="font-size:0.75rem; text-align:center; margin-bottom:10px;"></div>
+                
                 <input type="file" id="tour-file-input" accept="image/*" style="display:none;">
                 <label for="tour-file-input" style="display:block; cursor:pointer; color:#2B5C92; font-weight:bold; margin-bottom:20px; text-decoration:underline;">
                     <i class="fas fa-camera"></i> ${t.tour_upload}
                 </label>
+                
+                <!-- NEW: INLINE ERROR CONTAINER -->
+                <div id="tour-final-error" style="color:#d32f2f; font-size:0.85rem; margin-bottom:10px; display:none; text-align:center; font-weight:bold; border: 1px solid #ffcdd2; background: #fef2f2; padding: 8px; border-radius: 6px;"></div>
+
                 <button class="btn" id="tour-btn-4" style="width:100%;">${t.tour_start}</button>
             </div>
             <div style="display:flex; justify-content:center; gap:8px; margin-top:25px;" id="tour-dots">
@@ -272,9 +278,28 @@ function showWelcomeTour() {
     };
 
     const usernameInput = overlay.querySelector('#tour-username');
+    const nameInput = overlay.querySelector('#tour-fullname');
     const usernameStatus = overlay.querySelector('#tour-username-status');
+    const finalError = overlay.querySelector('#tour-final-error');
+
     let usernameTimeout = null;
     let isUsernameValid = false;
+
+    // Reset error visuals on typing
+    nameInput.addEventListener('input', () => {
+        finalError.style.display = 'none';
+        nameInput.style.borderColor = '#eee';
+    });
+    
+    usernameInput.addEventListener('input', () => {
+        finalError.style.display = 'none';
+        usernameInput.style.borderColor = '#eee';
+        
+        if (usernameTimeout) clearTimeout(usernameTimeout);
+        const val = usernameInput.value.trim();
+        if (!val) { usernameStatus.textContent = ''; isUsernameValid = false; return; }
+        usernameTimeout = setTimeout(() => checkUsernameAvailability(val), 500);
+    });
 
     function validateUsernameFormat(username) { return /^[a-zA-Z0-9_]{3,}$/.test(username); }
 
@@ -295,13 +320,6 @@ function showWelcomeTour() {
         }
     }
 
-    usernameInput.addEventListener('input', () => {
-        if (usernameTimeout) clearTimeout(usernameTimeout);
-        const val = usernameInput.value.trim();
-        if (!val) { usernameStatus.textContent = ''; isUsernameValid = false; return; }
-        usernameTimeout = setTimeout(() => checkUsernameAvailability(val), 500);
-    });
-
     if (existingUsername) { setTimeout(() => checkUsernameAvailability(existingUsername), 100); }
 
     let selectedFile = null;
@@ -317,15 +335,39 @@ function showWelcomeTour() {
 
     const finishBtn = overlay.querySelector('#tour-btn-4');
     finishBtn.onclick = async () => {
-        const fullname = overlay.querySelector('#tour-fullname').value.trim();
-        const username = overlay.querySelector('#tour-username').value.trim().toLowerCase();
-        if (!fullname) { alert(t.tour_name_err); return; }
-        if (!username || !validateUsernameFormat(username)) { alert(t.tour_username_err); return; }
+        finalError.style.display = 'none'; // reset
+
+        const fullname = nameInput.value.trim();
+        const username = usernameInput.value.trim().toLowerCase();
+        
+        // 1. Validate Full Name
+        if (!fullname) {
+            finalError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${t.tour_name_err}`;
+            finalError.style.display = 'block';
+            nameInput.style.borderColor = '#d32f2f';
+            return;
+        }
+
+        // 2. Validate Username format
+        if (!username || !validateUsernameFormat(username)) {
+            finalError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${t.tour_username_err}`;
+            finalError.style.display = 'block';
+            usernameInput.style.borderColor = '#d32f2f';
+            return;
+        }
+
+        // 3. Re-check Username availability if needed
         if (!isUsernameValid) {
             const available = await checkUsernameAvailability(username);
-            if (!available) return;
+            if (!available) {
+                finalError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${t.tour_username_taken}`;
+                finalError.style.display = 'block';
+                usernameInput.style.borderColor = '#d32f2f';
+                return;
+            }
         }
-        finishBtn.disabled = true; finishBtn.textContent = t.tour_saving;
+        
+        finishBtn.disabled = true; finishBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${t.tour_saving}`;
 
         let finalPhoto = defaultPfpUrl;
         if (selectedFile) {
@@ -348,7 +390,9 @@ function showWelcomeTour() {
             localStorage.setItem(tourKey, 'true');
             overlay.remove(); refreshUI();
         } catch (err) {
-            console.error(err); alert("Error saving profile. Please try again.");
+            console.error(err); 
+            finalError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Error saving profile. Please try again.`;
+            finalError.style.display = 'block';
             finishBtn.disabled = false; finishBtn.textContent = t.tour_start;
         }
     };
