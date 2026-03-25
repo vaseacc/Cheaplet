@@ -23,6 +23,7 @@
             --shadow:    0 4px 20px rgba(12,20,70,0.05);
             --border:    1px solid #e2e8f0;
             --red:       #e53e3e;
+            --green:     #2E7D32;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -107,6 +108,11 @@
         .btn-composer-send:disabled { background: #cbd5e1; cursor: not-allowed; }
         .btn-composer-send:not(:disabled):hover { background: var(--ink); transform: translateY(-2px); }
 
+        .btn-action { background: var(--gold); color: var(--ink); border: none; padding: 10px 28px; border-radius: 30px; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(200, 169, 110, 0.2); flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-action:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(200, 169, 110, 0.4); }
+        .btn-ghost { background: #f1f5f9; color: var(--text-main); padding: 10px 28px; border-radius: 30px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; flex-shrink: 0; }
+        .btn-ghost:hover { background: #e2e8f0; }
+
         /* ── POST CARDS & 3-DOT MENU ── */
         .post-card { background: var(--white); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); border: var(--border); animation: fadeUp 0.4s ease both; width: 100%; overflow: visible; position: relative; }
         .post-header-top { display: flex; justify-content: space-between; align-items: flex-start; }
@@ -172,7 +178,6 @@
         .btn-comment-send:hover:not(:disabled) { background: var(--ink); transform: translateY(-2px); }
         .btn-comment-send:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* Market Break */
         .market-break { margin: 10px 0; padding: 25px; background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); border: var(--border); width: 100%; overflow-x: auto; overflow-y: visible; }
         .break-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px; width: 100%; flex-wrap: wrap; }
         .break-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 900; color: var(--ink); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
@@ -212,7 +217,6 @@
         .modal-buttons { justify-content: flex-end; }
         .btn-danger { background: var(--red); color: var(--white); }
         .btn-ghost { background: var(--surface); color: var(--text-main); }
-        .btn-action { background: var(--gold); color: var(--ink); border: none; padding: 10px 28px; border-radius: 30px; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(200, 169, 110, 0.2); }
 
         /* Listing Selector List */
         .listing-selector-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 400px; margin-bottom: 10px; padding-right: 5px; }
@@ -229,7 +233,9 @@
             .mobile-topics-wrapper { display: flex; }
             .feed-column { gap: 8px; padding: 8px 0 60px; background: var(--off-white); width: 100%; }
             .composer { padding: 15px; margin-bottom: 0; border-radius: 0; border-left: none; border-right: none; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; box-shadow: none; width: 100%; }
+            .composer-input { font-size: 1rem; min-height: 40px; }
             .post-card { padding: 16px 15px; border-radius: 0; border-left: none; border-right: none; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; box-shadow: none; margin-bottom: 0; width: 100%; }
+            .market-break { padding: 20px 15px; margin: 0; border-radius: 0; border-left: none; border-right: none; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; box-shadow: none; width: 100%; }
         }
     </style>
 </head>
@@ -319,7 +325,6 @@
                 </div>
             </div>
 
-            <!-- FEED CONTAINER -->
             <div id="feed-container">
                 <div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i> <br><span id="ui-loading" data-i18n="loading_hub">Loading campus hub...</span></div>
             </div>
@@ -721,7 +726,7 @@
                     if (uSnap.exists()) {
                         const data = uSnap.data();
                         
-                        // SECURITY CHECK: Must be a verified student
+                        // SECURITY CHECK: Admin bypass OR Verified Student
                         if (!data.isStudent && data.role !== 'admin') {
                             showLockedScreen();
                             return;
@@ -777,11 +782,12 @@
                 const q = query(collection(db, "social_channels"), orderBy("postCount", "desc"));
                 onSnapshot(q, (snapshot) => {
                     desktopWaysList.innerHTML = '';
-                    mobileWaysList.innerHTML = '';
+                    
                     const mGeneral = document.createElement('a');
                     mGeneral.className = 'm-way-pill active';
                     mGeneral.href = '/social.html';
                     mGeneral.innerHTML = `<i class="fas fa-globe-americas"></i> ${ui.topics_campus}`;
+                    mobileWaysList.innerHTML = '';
                     mobileWaysList.appendChild(mGeneral);
 
                     snapshot.forEach(docSnap => {
@@ -849,6 +855,8 @@
                         feedContainer.innerHTML = '';
                         
                         let filteredDocs = snapshot.docs.filter(d => d.data().wayId === 'general');
+                        
+                        // IF NOT ADMIN, ONLY SHOW OWN SCHOOL
                         if (internalSchoolName !== "Global Campus" && (!currentUser || currentUser.role !== 'admin')) {
                             filteredDocs = filteredDocs.filter(d => d.data().schoolName === internalSchoolName);
                         }
@@ -977,7 +985,6 @@
                 document.getElementById(`btn-send-comment-${id}`).disabled = (!val && !hasImg);
             };
 
-            // --- 3-DOT MENU LOGIC ---
             window.togglePostMenu = (id) => {
                 const dropdown = document.getElementById(`post-dropdown-${id}`);
                 const isShowing = dropdown.classList.contains('show');
@@ -1037,7 +1044,6 @@
                 document.querySelectorAll('.post-dropdown').forEach(d => d.classList.remove('show'));
                 editTargetPostId = postId;
                 
-                // Decode the text securely
                 const textarea = document.createElement('textarea');
                 textarea.innerHTML = encodedText;
                 
@@ -1065,7 +1071,6 @@
                 btn.disabled = false;
             };
 
-
             window.likePost = async (id, alreadyLiked) => {
                 if (!currentUser) return;
                 const ref = doc(db, "social_posts", id);
@@ -1088,6 +1093,13 @@
                     list.innerHTML = snap.empty ? `<div style="text-align:center; font-size:0.85rem; color:#888;">${ui.no_comments}</div>` : '';
                     snap.forEach(doc => {
                         const c = doc.data();
+                        let timeStr = ui.justNow;
+                        if (c.timestamp) {
+                            const diffMins = Math.round((new Date() - c.timestamp.toDate()) / 60000);
+                            if (diffMins < 60) timeStr = lang === 'fr' ? `Il y a ${diffMins}m` : `${diffMins}m`;
+                            else if (diffMins < 1440) timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/60)}h` : `${Math.round(diffMins/60)}h`;
+                            else timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/1440)}j` : `${Math.round(diffMins/1440)}d`;
+                        }
                         const pfp = c.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${c.authorUid}&backgroundColor=EBF2FA`;
                         const imgHtml = c.imageUrl ? `<img src="${c.imageUrl}" class="comment-image-attachment" onclick="window.open('${c.imageUrl}', '_blank')">` : '';
                         
@@ -1099,6 +1111,7 @@
                                 <a href="/user.html?id=${c.authorUid}" class="comment-author-link"><div class="comment-author">${c.authorName}</div></a>
                                 <div class="comment-text">${c.text}</div>
                                 ${imgHtml}
+                                <div class="comment-time">${timeStr}</div>
                             </div>
                         `;
                         list.appendChild(div);
@@ -1107,17 +1120,82 @@
                 });
             }
 
+            window.postComment = async (postId) => {
+                if (!currentUser) return;
+                const inputEl = document.getElementById(`comment-input-${postId}`);
+                const btnEl = document.getElementById(`btn-send-comment-${postId}`);
+                const text = inputEl.value.trim();
+                const file = commentImageFiles[postId];
+                
+                if (!text && !file) return;
+                
+                btnEl.disabled = true;
+                const origIcon = btnEl.innerHTML;
+                btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                
+                try {
+                    let uploadedImgUrl = null;
+                    if (file) {
+                        uploadedImgUrl = await uploadImageToCloudinary(file);
+                    }
+
+                    let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
+
+                    const commentData = {
+                        text: text,
+                        authorUid: currentUser.uid,
+                        authorName: currentUser.displayName || "User",
+                        authorPhoto: photoToSave,
+                        timestamp: serverTimestamp()
+                    };
+
+                    if (uploadedImgUrl) commentData.imageUrl = uploadedImgUrl;
+
+                    await addDoc(collection(db, "social_posts", postId, "comments"), commentData);
+                    await updateDoc(doc(db, "social_posts", postId), { commentCount: increment(1) });
+
+                    // Clear UI
+                    inputEl.value = '';
+                    window.removeCommentImg(postId);
+                } catch(e) { 
+                    console.error(e); 
+                    alert(ui.upload_fail); 
+                } finally { 
+                    btnEl.innerHTML = origIcon;
+                    btnEl.disabled = true; // since it's empty now
+                }
+            };
+
             document.body.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && e.target.classList.contains('comment-input')) {
-                    e.preventDefault(); window.postComment(e.target.id.replace('comment-input-', ''));
+                    e.preventDefault();
+                    window.postComment(e.target.id.replace('comment-input-', ''));
                 }
             });
 
             function createMarketBreak() {
-                const breakSection = document.createElement('div'); breakSection.className = 'market-break';
+                const breakSection = document.createElement('div');
+                breakSection.className = 'market-break';
                 let bookHtml = '';
-                listings.forEach(b => { bookHtml += `<a href="/listing.html?id=${b.id}" class="mini-book-card"><div class="mini-img" style="background-image:url('${b.imageUrls[0]}')"></div><div class="mini-info"><div class="mini-price">$${b.price.toFixed(2)}</div><div class="mini-title">${b.title}</div></div></a>`; });
-                breakSection.innerHTML = `<div class="break-header"><span class="break-title"><i class="fas fa-book-open"></i> ${ui.suggest}</span><a href="/search.html" class="break-link">${ui.browse}</a></div><div class="break-scroll">${bookHtml}</div>`;
+                listings.forEach(b => {
+                    bookHtml += `
+                        <a href="/listing.html?id=${b.id}" class="mini-book-card">
+                            <div class="mini-img" style="background-image:url('${b.imageUrls[0]}')"></div>
+                            <div class="mini-info">
+                                <div class="mini-price">$${b.price.toFixed(2)}</div>
+                                <div class="mini-title">${b.title}</div>
+                            </div>
+                        </a>
+                    `;
+                });
+
+                breakSection.innerHTML = `
+                    <div class="break-header">
+                        <span class="break-title"><i class="fas fa-book-open"></i> ${ui.suggest}</span>
+                        <a href="/search.html" class="break-link">${ui.browse}</a>
+                    </div>
+                    <div class="break-scroll">${bookHtml}</div>
+                `;
                 return breakSection;
             }
         }
