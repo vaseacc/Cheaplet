@@ -857,22 +857,37 @@
 
             // --- SMART TOPICS DIRECTORY ---
             function loadTopics() {
+                // 1. Listen to all topics
                 const q = query(collection(db, "social_channels"), orderBy("postCount", "desc"));
                 onSnapshot(q, (snapshot) => {
                     allTopicsData = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
                     renderTopics();
                 });
+
+                // 2. Listen to User document specifically for Pinned changes
+                if (auth.currentUser) {
+                    onSnapshot(doc(db, "users", auth.currentUser.uid), (snap) => {
+                        if (snap.exists()) {
+                            currentUser = { ...auth.currentUser, ...snap.data() };
+                            renderTopics(); // Re-render categories when pins change
+                        }
+                    });
+                }
             }
 
             function renderTopics() {
+                // Desktop Containers
                 const dListMy = document.getElementById('d-list-my');
                 const dListPinned = document.getElementById('d-list-pinned');
                 const dListDiscover = document.getElementById('d-list-discover');
                 
+                // Mobile Containers
                 const mListMy = document.getElementById('m-list-my');
                 const mListPinned = document.getElementById('m-list-pinned');
                 const mListDiscover = document.getElementById('m-list-discover');
                 
+                if (!dListMy || !mListMy) return; // Guard against null
+
                 dListMy.innerHTML = ''; dListPinned.innerHTML = ''; dListDiscover.innerHTML = '';
                 mListMy.innerHTML = ''; mListPinned.innerHTML = ''; mListDiscover.innerHTML = '';
                 
@@ -893,6 +908,7 @@
                     const isAdmin = currentUser && currentUser.role === 'admin';
                     const isPinned = pinnedArr.includes(d.id);
                     
+                    // Logic: Hide private unless owner/member/admin
                     if (isPrivate && !isOwner && !isMember && !isAdmin) return; 
                     
                     if (isOwner) myT.push(d);
@@ -900,6 +916,7 @@
                     else discT.push(d);
                 });
 
+                // Update visibility of sections
                 document.getElementById('d-sec-my').style.display = myT.length ? 'block' : 'none';
                 document.getElementById('d-sec-pinned').style.display = pinT.length ? 'block' : 'none';
                 document.getElementById('d-sec-discover').style.display = discT.length ? 'block' : 'none';
@@ -930,11 +947,25 @@
                     return item;
                 };
 
+                // Add to bar: My Topics first, then Pinned Topics
                 myT.forEach(t => {
                     dListMy.appendChild(createItemHtml(t, true, true));
                     mListMy.appendChild(createItemHtml(t, false, true));
                     mobileWaysList.appendChild(createTopBarItem(t));
                 });
+
+                pinT.forEach(t => {
+                    dListPinned.appendChild(createItemHtml(t, true, false));
+                    mListPinned.appendChild(createItemHtml(t, false, false));
+                    mobileWaysList.appendChild(createTopBarItem(t));
+                });
+
+                discT.forEach(t => {
+                    dListDiscover.appendChild(createItemHtml(t, true, false));
+                    mListDiscover.appendChild(createItemHtml(t, false, false));
+                    mobileWaysList.appendChild(createTopBarItem(t));
+                });
+            }
 
                 pinT.forEach(t => {
                     dListPinned.appendChild(createItemHtml(t, true, false));
