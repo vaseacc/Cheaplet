@@ -680,6 +680,34 @@
                     const displayName = currentUser.displayName || "User";
 
                     // ── SAVE AS PENDING ──
+                    // Update UI to show AI is working
+                    postBtnText.textContent = "AI Scanning Image...";
+
+                    // 1. Send the first image and text to Gemini via Netlify
+                    let finalStatus = 'pending';
+                    try {
+                        const aiRes = await fetch('/.netlify/functions/moderate-listing', {
+                            method: 'POST',
+                            body: JSON.stringify({ 
+                                imageUrl: imageUrls[0] || "", // Send the first image!
+                                title: title.trim(),
+                                description: desc.trim()
+                            })
+                        });
+                        
+                        const aiData = await aiRes.json();
+                        // If AI says safe, make it active immediately. If unsafe, reject it.
+                        if (aiData.safe) {
+                            finalStatus = 'active';
+                        } else {
+                            finalStatus = 'rejected';
+                            alert("Warning: Our AI has flagged your image or text as inappropriate. It will not be shown publicly.");
+                        }
+                    } catch (e) {
+                        console.error("AI check failed, defaulting to pending:", e);
+                    }
+
+                    // 2. Save to Firestore with the AI's final verdict!
                     const docRef = await addDoc(collection(db, 'listings'), {
                         title: title.trim(),
                         description: desc.trim(),
@@ -697,18 +725,11 @@
                         posterUid: currentUser.uid,
                         posterDisplayName: displayName,
                         isbn: isbn,          
-                        status: 'pending', // ASYNC MODERATION: Save as pending so it's hidden
+                        status: finalStatus, // Saved as 'active' or 'rejected'
                         timestamp: serverTimestamp()
                     });
 
-                    // ── TRIGGER NETLIFY AI MODERATION SERVER ──
-                    // Fire and forget (don't await). The server will change it to 'active' or 'rejected'
-                    fetch('/.netlify/functions/moderate-listing', {
-                        method: 'POST',
-                        body: JSON.stringify({ listingId: docRef.id })
-                    }).catch(e => console.log("Moderation trigger failed internally (non-critical)."));
-
-                    // Redirect to My Listings immediately
+                    // Redirect to My Listings
                     window.location.href = `/my-listings.html`;
                 } catch (err) {
                     console.error(err);
