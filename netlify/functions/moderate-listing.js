@@ -1,53 +1,34 @@
 exports.handler = async (event, context) => {
-    console.log("--- STARTING SYSTEM DIAGNOSTICS ---");
     if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
 
-    const GEMINI_KEY = process.env.VITE_GEMINI_API_KEY;
-    const FB_KEY = process.env.VITE_FIREBASE_API_KEY;
-    const PROJ_ID = process.env.VITE_FIREBASE_PROJECT_ID;
-
     try {
-        // 1. LIST ALL AVAILABLE MODELS
-        console.log("Fetching available models for your API key...");
-        const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_KEY}`);
-        const listData = await listRes.json();
-
-        if (listData.error) {
-            console.error("API KEY ERROR:", listData.error.message);
-            return { statusCode: 200, body: JSON.stringify({ status: "active", error: listData.error.message }) };
-        }
-
-        const modelNames = listData.models.map(m => m.name);
-        console.log("STABLE MODELS AVAILABLE:", JSON.stringify(modelNames));
-
-        // 2. AUTO-SELECT THE BEST MODEL
-        // We look for 1.5-flash first, then 1.0-pro-vision
-        const bestModel = const bestModel = "models/gemini-2.5-flash";
-                          modelNames[0];
-
-        console.log("SELECTED MODEL FOR MODERATION:", bestModel);
-
-        // 3. PROCEED WITH MODERATION
         const data = JSON.parse(event.body);
         const { listingId, imageUrl, title, description } = data;
+        
+        const GEMINI_KEY = process.env.VITE_GEMINI_API_KEY;
+        const FB_KEY = process.env.VITE_FIREBASE_API_KEY;
+        const PROJ_ID = process.env.VITE_FIREBASE_PROJECT_ID;
 
         let base64Image = null;
         if (imageUrl) {
-            try {
-                const imgRes = await fetch(imageUrl);
-                const buffer = await imgRes.arrayBuffer();
-                base64Image = Buffer.from(buffer).toString('base64');
-            } catch (e) { console.log("Image download failed."); }
+            const imgRes = await fetch(imageUrl);
+            const buffer = await imgRes.arrayBuffer();
+            base64Image = Buffer.from(buffer).toString('base64');
         }
 
-        const genUrl = `https://generativelanguage.googleapis.com/v1beta/${bestModel}:generateContent?key=${GEMINI_KEY}`;
+        // 1. Call Gemini 2.5 Flash
+        const genUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
         const aiRes = await fetch(genUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 contents: [{
                     parts: [
-                        { text: `Is this listing safe? (No weapons/drugs/nudity). Title: ${title}. Description: ${description}. Reply ONLY 'SAFE' or 'UNSAFE'.` },
+                        { text: `STRICT MODERATION TASK: Analyze this listing. 
+                        REJECT (UNSAFE) if you see: Nudity, Sexual Content, Weapons, Drugs, or Violence. 
+                        APPROVE (SAFE) if it is a standard student item: Books, electronics, furniture, clothes.
+                        Title: ${title}. Description: ${description}. 
+                        Reply ONLY 'SAFE' or 'UNSAFE'.` },
                         ...(base64Image ? [{ inlineData: { mimeType: "image/jpeg", data: base64Image } }] : [])
                     ]
                 }]
@@ -58,31 +39,57 @@ exports.handler = async (event, context) => {
         let isUnsafe = false;
 
         if (aiData.candidates && aiData.candidates[0]) {
-            if (aiData.candidates[0].finishReason === "SAFETY") {
-                isUnsafe = true;
-            } else if (aiData.candidates[0].content) {
-                const text = aiData.candidates[0].content.parts[0].text.toUpperCase();
-                console.log("AI VERDICT:", text);
-                if (text.includes("UNSAFE")) isUnsafe = true;
+            if (aiData.candidates[0].finishReason === "SAFETY") isUnsafe = true;
+            else if (aiData.candidates[0].content) {
+                if (aiData.candidates[0].content.parts[0].text.toUpperCase().includes("UNSAFE")) isUnsafe = true;
             }
         }
 
-        const newStatus = isUnsafe ? "rejected" : "active";
+        // 2. Prepare Database Updates
+        const fbDocUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?key=${FB_KEY}`;
+        
+        if (isUnsafe) {
+            // REJECTED: Change status AND Delete images from DB
+            await fetch(`${fbDocUrl}&updateMask.fieldPaths=status&updateMask.fieldPaths=imageUrls`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    fields: {
+                        status: { stringValue: "rejected" },
+                        imageUrls: { arrayValue: { values: [] } } // Wipes the images
+                    }
+                })
+            });
 
-        // 4. Update Firebase
-        const fbUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?updateMask.fieldPaths=status&key=${FB_KEY}`;
-        await fetch(fbUrl, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ fields: { status: { stringValue: newStatus } } })
-        });
+            // CREATE AUTOMATIC REPORT FOR ADMIN
+            const reportUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/reports?key=${FB_KEY}`;
+            await fetch(reportUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    fields: {
+                        reporterName: { stringValue: "Scoralia AI Guard" },
+                        reason: { stringValue: "NSFW / Inappropriate Content Detected" },
+                        details: { stringValue: `AI automatically blocked listing "${title}" (ID: ${listingId}) for safety violations.` },
+                        targetUid: { stringValue: "system" },
+                        targetUserName: { stringValue: "AI Block" },
+                        timestamp: { timestampValue: new Date().toISOString() }
+                    }
+                })
+            });
 
-        console.log(`FINAL STATUS: ${newStatus}`);
-        console.log("--- DIAGNOSTICS COMPLETE ---");
-        return { statusCode: 200, body: JSON.stringify({ status: newStatus }) };
+        } else {
+            // SAFE: Just activate it
+            await fetch(`${fbDocUrl}&updateMask.fieldPaths=status`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ fields: { status: { stringValue: "active" } } })
+            });
+        }
+
+        return { statusCode: 200, body: JSON.stringify({ status: isUnsafe ? "rejected" : "active" }) };
 
     } catch (error) {
-        console.error("CRITICAL SYSTEM FAILURE:", error.message);
-        return { statusCode: 500, body: "System Error" };
+        return { statusCode: 500, body: "Error" };
     }
 };
