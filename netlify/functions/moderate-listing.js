@@ -1,5 +1,5 @@
 exports.handler = async (event, context) => {
-    console.log("--- MODERATION ATTEMPT (STABLE API) ---");
+    console.log("--- MULTI-MODEL MODERATION START ---");
     if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
 
     try {
@@ -20,42 +20,58 @@ exports.handler = async (event, context) => {
             } catch (e) { console.log("Image download failed."); }
         }
 
-        // 2. Call Gemini (USING STABLE v1 ENDPOINT)
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
-        
-        const promptParts = [{ text: `Is this listing safe for a student marketplace? 
-            Check for weapons (guns/knives), drugs, or nudity. 
-            Used books and calculators are safe.
-            Title: ${title}
-            Description: ${description}
-            Reply with ONLY the word SAFE or UNSAFE.` 
-        }];
-        
-        if (base64Image) {
-            promptParts.push({ inlineData: { mimeType: "image/jpeg", data: base64Image } });
+        // 2. Try Different Models (Google is finicky with names)
+        const modelsToTry = [
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent",
+            "https://generativelanguage.googleapis.com/v1/models/gemini-pro-vision:generateContent"
+        ];
+
+        let aiData = null;
+        let successUrl = "";
+
+        for (const baseUrl of modelsToTry) {
+            console.log(`Trying model: ${baseUrl.split('/models/')[1].split(':')[0]}...`);
+            try {
+                const res = await fetch(`${baseUrl}?key=${GEMINI_KEY}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [
+                                { text: `Is this safe for a student marketplace? No weapons, drugs, or nudity. Title: ${title}. Description: ${description}. Reply ONLY 'SAFE' or 'UNSAFE'.` },
+                                ...(base64Image ? [{ inlineData: { mimeType: "image/jpeg", data: base64Image } }] : [])
+                            ]
+                        }]
+                    })
+                });
+                const result = await res.json();
+                if (!result.error) {
+                    aiData = result;
+                    successUrl = baseUrl;
+                    break; // Stop trying once we find one that works!
+                } else {
+                    console.log(`Model failed: ${result.error.message}`);
+                }
+            } catch (e) { console.log("Fetch failed for this model."); }
         }
 
-        const aiRes = await fetch(geminiUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents: [{ parts: promptParts }] })
-        });
+        if (!aiData) {
+            console.error("ALL GOOGLE MODELS FAILED.");
+            return { statusCode: 200, body: JSON.stringify({ status: "active", debug: "AI Offline" }) };
+        }
 
-        const aiData = await aiRes.json();
-        console.log("RAW RESPONSE FROM GOOGLE:", JSON.stringify(aiData));
-
+        console.log("SUCCESS WITH:", successUrl);
+        
         let isUnsafe = false;
-
-        // Check if the AI gave a verdict
-        if (aiData.candidates && aiData.candidates[0] && aiData.candidates[0].content) {
-            const aiText = aiData.candidates[0].content.parts[0].text.toUpperCase();
-            console.log("AI VERDICT:", aiText);
-            if (aiText.includes("UNSAFE")) isUnsafe = true;
-        } 
-        // IMPORTANT: If Google blocks the response entirely due to "SAFETY", it means it saw something dangerous
-        else if (aiData.candidates && aiData.candidates[0] && aiData.candidates[0].finishReason === "SAFETY") {
-            console.warn("GOOGLE BLOCKED CONTENT DUE TO SAFETY: Rejecting listing.");
-            isUnsafe = true; 
+        if (aiData.candidates && aiData.candidates[0]) {
+            const candidate = aiData.candidates[0];
+            if (candidate.finishReason === "SAFETY") {
+                isUnsafe = true;
+            } else if (candidate.content) {
+                const aiText = candidate.content.parts[0].text.toUpperCase();
+                if (aiText.includes("UNSAFE")) isUnsafe = true;
+            }
         }
 
         const newStatus = isUnsafe ? "rejected" : "active";
@@ -68,11 +84,11 @@ exports.handler = async (event, context) => {
             body: JSON.stringify({ fields: { status: { stringValue: newStatus } } })
         });
 
-        console.log(`Final Status: ${newStatus}`);
+        console.log(`VERDICT: ${newStatus}`);
         return { statusCode: 200, body: JSON.stringify({ status: newStatus }) };
 
     } catch (error) {
-        console.error("CRASH:", error.message);
+        console.error("FATAL ERROR:", error.message);
         return { statusCode: 500, body: "Error" };
     }
 };
