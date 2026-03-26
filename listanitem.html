@@ -151,6 +151,13 @@
     <header>
         <div class="header-inner">
             <a href="/index.html" class="logo">Scor<em>alia</em></a>
+            <nav>
+                <ul>
+                    <li><a href="/search.html">Browse</a></li>
+                    <li><a href="/my-listings.html">My Listings</a></li>
+                    <li><a href="/messages.html">Messages</a></li>
+                </ul>
+            </nav>
             <div class="header-right"></div>
         </div>
     </header>
@@ -263,7 +270,6 @@
                             <div>
                                 <label class="field-label" id="ui-label-location">Campus Location</label>
                                 <select id="listing-location" required>
-                                    <!-- Options will be populated dynamically -->
                                     <option value="Collège de Rosemont">Collège de Rosemont</option>
                                     <option value="Cégep de Jonquière">Cégep de Jonquière</option>
                                     <option value="Cégep de Lanaudière">Cégep de Lanaudière</option>
@@ -322,11 +328,10 @@
             const db = getFirestore(app);
 
             const lang = localStorage.getItem('preferred_language') || 'en';
-
             const ui = {
                 en: {
-                    mainTitle: "List an Item", mainSub: "Fill in the details below and your book will be reviewed by our AI safety system.",
-                    isbnTitle: "Quick Book Scan", isbnDesc: "Scan your book's barcode to automatically fill in the title and description.",
+                    mainTitle: "List an Item", mainSub: "Your book will be reviewed by our AI safety system.",
+                    isbnTitle: "Quick Book Scan", isbnDesc: "Scan your book's barcode to fill in info automatically.",
                     btnScan: "Scan Barcode", btnSkip: "Skip & Fill Manually", isbnPlace: "Enter ISBN manually...",
                     fetching: "Fetching info...", notFound: "Book not found. Please fill manually.",
                     secBasic: "Basic Info", secTags: "Tags", secCond: "Condition & Details", secLoc: "Location", secPhoto: "Photos",
@@ -339,14 +344,14 @@
                     lblDet: "Additional Details", chkWrite: "Writing inside", chkWater: "Water damage", chkMiss: "Missing pages",
                     lblPhotos: "Photos (Max 5, Max 5MB each)", btnAddPhoto: "Add Photo", btnPost: "Submit for Review", btnCancel: "Cancel",
                     priceErr: "Price cannot exceed $1200.", origPriceErr: "Original price cannot exceed $5000.",
-                    imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type. Please upload an image.",
-                    imgSizeErr: "Image too large (Max 5MB).", uploading: "Uploading & Submitting…",
+                    imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type.",
+                    imgSizeErr: "Image too large (Max 5MB).", uploading: "Processing Content…",
                     tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.",
                     tagUses: "uses", uploadFail: "Image upload failed. Please try again."
                 },
                 fr: {
-                    mainTitle: "Publier un article", mainSub: "Remplissez les détails et votre livre sera analysé par notre système de sécurité IA.",
-                    isbnTitle: "Scan rapide du livre", isbnDesc: "Scannez le code-barres pour remplir automatiquement le titre et la description.",
+                    mainTitle: "Publier un article", mainSub: "Votre livre sera analysé par notre système de sécurité IA.",
+                    isbnTitle: "Scan rapide du livre", isbnDesc: "Scannez le code-barres pour remplir les infos automatiquement.",
                     btnScan: "Scanner le code-barres", btnSkip: "Ignorer et remplir manuellement", isbnPlace: "Entrer l'ISBN manuellement...",
                     fetching: "Recherche en cours...", notFound: "Livre introuvable. Veuillez remplir manuellement.",
                     secBasic: "Infos de base", secTags: "Mots-clés", secCond: "État et Détails", secLoc: "Emplacement", secPhoto: "Photos",
@@ -359,10 +364,10 @@
                     lblDet: "Détails supplémentaires", chkWrite: "Écritures à l'intérieur", chkWater: "Dommages causés par l'eau", chkMiss: "Pages manquantes",
                     lblPhotos: "Photos (Max 5, Max 5MB chacune)", btnAddPhoto: "Ajouter une photo", btnPost: "Soumettre pour révision", btnCancel: "Annuler",
                     priceErr: "Le prix ne peut dépasser 1200$.", origPriceErr: "Le prix d'origine ne peut dépasser 5000$.",
-                    imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté. Veuillez télécharger une image.",
-                    imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Téléchargement & Soumission…",
+                    imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté.",
+                    imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Traitement du contenu…",
                     tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.",
-                    tagUses: "utilisations", uploadFail: "Échec du téléchargement de l'image. Veuillez réessayer."
+                    tagUses: "utilisations", uploadFail: "Échec du téléchargement. Veuillez réessayer."
                 }
             };
 
@@ -416,32 +421,13 @@
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
-                    if (user.emailVerified || isOAuth) {
-                        try {
-                            const userDoc = await getDoc(doc(db, "users", user.uid));
-                            if (userDoc.exists()) {
-                                const data = userDoc.data();
-                                if (data.role === 'banned') {
-                                    clearTimeout(loaderTimeout); pageLoader.innerHTML = "<span style='color:white;font-family:sans-serif;'>Access Denied</span>";
-                                    return;
-                                }
-                                currentUser = user;
-                                internalSchoolName = data.schoolName || "Global Campus";
-                                
-                                // Auto-select user's school if available in the dropdown
-                                const locationSelect = document.getElementById('listing-location');
-                                for (let i = 0; i < locationSelect.options.length; i++) {
-                                    if (locationSelect.options[i].value === internalSchoolName) {
-                                        locationSelect.selectedIndex = i;
-                                        break;
-                                    }
-                                }
-
-                                clearTimeout(loaderTimeout); pageLoader.style.display = 'none';
-                            }
-                        } catch (e) { clearTimeout(loaderTimeout); pageLoader.style.display = 'none'; }
-                    } else { window.location.href = '/LoginInToCheaplet.html'; }
+                    const uSnap = await getDoc(doc(db, "users", user.uid));
+                    if (uSnap.exists()) {
+                        const data = uSnap.data();
+                        currentUser = user;
+                        internalSchoolName = data.schoolName || "Global Campus";
+                        clearTimeout(loaderTimeout); pageLoader.style.display = 'none';
+                    }
                 } else { window.location.href = '/LoginInToCheaplet.html'; }
             });
 
@@ -461,41 +447,15 @@
                         const book = data.items[0].volumeInfo;
                         const fullTitle = book.title + (book.authors ? ` by ${book.authors.join(', ')}` : '');
                         document.getElementById('listing-title').value = fullTitle;
-                        
                         let originalDesc = book.description ? book.description.replace(/<[^>]*>?/gm, '') : '';
-                        
-                        if (originalDesc) {
-                            try {
-                                const transRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=fr&dt=t&q=${encodeURIComponent(originalDesc)}`);
-                                const transData = await transRes.json();
-                                let frenchDesc = transData[0].map(item => item[0]).join('');
-                                
-                                if (frenchDesc && frenchDesc !== originalDesc) {
-                                    document.getElementById('listing-description').value = frenchDesc + "\n\n" + originalDesc;
-                                } else {
-                                    document.getElementById('listing-description').value = originalDesc;
-                                }
-                            } catch (e) {
-                                console.error("Live translation failed:", e);
-                                document.getElementById('listing-description').value = originalDesc; 
-                            }
-                        }
-                        
+                        document.getElementById('listing-description').value = originalDesc;
                         currentISBN = isbn;
                         document.getElementById('listing-isbn').value = isbn;
-                        
                         document.getElementById('isbn-section').style.display = 'none';
                         document.getElementById('main-form-section').style.display = 'block';
-                        
                         if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
-                    } else {
-                        alert(ui[lang].notFound);
-                    }
-                } catch (err) {
-                    console.error("Book fetch error:", err);
-                    alert(ui[lang].notFound);
-                }
-                
+                    } else { alert(ui[lang].notFound); }
+                } catch (err) { alert(ui[lang].notFound); }
                 scanBtn.innerHTML = `<i class="fas fa-camera"></i> <span id="ui-btn-scan">${ui[lang].btnScan}</span>`;
                 scanBtn.disabled = false; manualBtn.disabled = false;
             }
@@ -503,34 +463,14 @@
             document.getElementById('start-scan-btn').onclick = () => {
                 if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
                 document.getElementById('reader').style.display = 'block';
-                html5QrCode.start(
-                    { facingMode: "environment" },
-                    { fps: 10, qrbox: { width: 250, height: 150 } },
-                    (decodedText, decodedResult) => {
-                        html5QrCode.stop().then(() => {
-                            document.getElementById('reader').style.display = 'none';
-                            fetchBookData(decodedText);
-                        });
-                    },
-                    (errorMessage) => { }
-                ).catch(err => {
-                    console.error("Camera error:", err);
-                    alert("Camera access denied or unavailable.");
-                });
+                html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, (decodedText) => {
+                    html5QrCode.stop().then(() => { document.getElementById('reader').style.display = 'none'; fetchBookData(decodedText); });
+                }).catch(err => { alert("Camera access denied."); });
             };
 
             document.getElementById('manual-isbn-btn').onclick = () => {
                 const val = document.getElementById('manual-isbn-input').value.trim();
-                document.getElementById('manual-isbn-input').blur(); 
                 if(val) fetchBookData(val);
-            };
-
-            document.getElementById('manual-isbn-input').onkeydown = (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    e.target.blur();
-                    document.getElementById('manual-isbn-btn').click();
-                }
             };
 
             document.getElementById('skip-scan-btn').onclick = () => {
@@ -559,38 +499,22 @@
                 if (tags.length >= 15) { alert(ui[lang].tagLimit); return; }
                 if (cleaned && !tags.includes(cleaned)) { tags.push(cleaned); renderTags(); }
                 tagInput.value = ''; suggestionsBox.style.display = 'none';
-                tagInput.focus();
             }
 
             tagInput.oninput = async (e) => {
                 const val = e.target.value.trim().toLowerCase();
                 if (val.length < 1) { suggestionsBox.style.display = 'none'; return; }
-                const q = query(collection(db, "global_tags"), where("tag_lowercase", ">=", val), where("tag_lowercase", "<=", val + "\uf8ff"), limit(5));
-                const snap = await getDocs(q);
+                const snap = await getDocs(query(collection(db, "global_tags"), where("tag_lowercase", ">=", val), where("tag_lowercase", "<=", val + "\uf8ff"), limit(5)));
                 suggestionsBox.innerHTML = '';
                 if (!snap.empty) {
                     suggestionsBox.style.display = 'block';
                     snap.forEach(doc => {
-                        const d = doc.data();
                         const div = document.createElement('div');
                         div.className = 'suggestion-item';
-                        div.innerHTML = `<span>${d.tag}</span><span class="suggestion-count">${d.count || 1} ${ui[lang].tagUses}</span>`;
-                        div.onmousedown = (ev) => {
-                            ev.preventDefault();
-                            addTag(d.tag);
-                        };
+                        div.innerHTML = `<span>${doc.data().tag}</span><span class="suggestion-count">${doc.data().count || 1} ${ui[lang].tagUses}</span>`;
+                        div.onmousedown = (ev) => { ev.preventDefault(); addTag(doc.data().tag); };
                         suggestionsBox.appendChild(div);
                     });
-                } else {
-                    suggestionsBox.style.display = 'block';
-                    const div = document.createElement('div');
-                    div.className = 'suggestion-item';
-                    div.innerHTML = `Create: "${tagInput.value}"`;
-                    div.onmousedown = (ev) => {
-                        ev.preventDefault();
-                        addTag(tagInput.value);
-                    };
-                    suggestionsBox.appendChild(div);
                 }
             };
             
@@ -602,18 +526,11 @@
             function renderPreviews() {
                 previewContainer.innerHTML = '';
                 selectedFiles.forEach((file, index) => {
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'image-preview-wrapper';
-                    const img = document.createElement('img');
-                    img.src = URL.createObjectURL(file);
-                    img.className = 'image-preview';
-                    const removeBtn = document.createElement('button');
-                    removeBtn.className = 'remove-image-btn';
-                    removeBtn.type = 'button';
-                    removeBtn.innerHTML = '&times;';
-                    removeBtn.onclick = () => { selectedFiles.splice(index, 1); renderPreviews(); };
-                    wrapper.appendChild(img); wrapper.appendChild(removeBtn);
-                    previewContainer.appendChild(wrapper);
+                    const wrapper = document.createElement('div'); wrapper.className = 'image-preview-wrapper';
+                    const img = document.createElement('img'); img.src = URL.createObjectURL(file); img.className = 'image-preview';
+                    const btn = document.createElement('button'); btn.className = 'remove-image-btn'; btn.type = 'button'; btn.innerHTML = '&times;';
+                    btn.onclick = () => { selectedFiles.splice(index, 1); renderPreviews(); };
+                    wrapper.appendChild(img); wrapper.appendChild(btn); previewContainer.appendChild(wrapper);
                 });
                 document.getElementById('add-photo-label').style.display = selectedFiles.length < 5 ? 'flex' : 'none';
             }
@@ -621,26 +538,18 @@
             imageInput.onchange = (e) => {
                 const file = e.target.files[0];
                 if (file) {
-                    if (!file.type.startsWith('image/')) { alert(ui[lang].imgTypeErr); imageInput.value = ''; return; }
-                    if (file.size > 5 * 1024 * 1024) { alert(ui[lang].imgSizeErr); imageInput.value = ''; return; }
-                    selectedFiles.push(file);
-                    renderPreviews();
+                    if (file.size > 5 * 1024 * 1024) { alert(ui[lang].imgSizeErr); return; }
+                    selectedFiles.push(file); renderPreviews();
                 }
             };
 
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
-                const title = document.getElementById('listing-title').value;
-                const desc = document.getElementById('listing-description').value;
-                const meet = document.getElementById('listing-meeting-point').value;
+                const title = document.getElementById('listing-title').value.trim();
+                const desc = document.getElementById('listing-description').value.trim();
                 const price = parseFloat(document.getElementById('listing-price').value);
-                const originalPriceVal = document.getElementById('listing-original-price').value;
-                const originalPrice = originalPriceVal ? parseFloat(originalPriceVal) : null;
-                const isbn = document.getElementById('listing-isbn').value.trim() || null;
 
-                if (title.length > 80 || desc.length > 1500 || meet.length > 60) { alert(ui[lang].lenErr); return; }
                 if (price > 1200) { alert(ui[lang].priceErr); return; }
-                if (originalPrice && originalPrice > 5000) { alert(ui[lang].origPriceErr); return; }
                 if (selectedFiles.length === 0) { alert(ui[lang].imgErr); return; }
 
                 const submitBtn = document.getElementById('postListingBtn');
@@ -649,91 +558,39 @@
                 postBtnText.textContent = ui[lang].uploading;
 
                 try {
-                    // Upload Images to Cloudinary
                     const imageUrls = [];
                     for (const file of selectedFiles) {
-                        const signResponse = await fetch('/.netlify/functions/sign-upload');
-                        if (!signResponse.ok) throw new Error("Could not securely connect to image server.");
-                        const signRes = await signResponse.json();
-
+                        const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
                         const formData = new FormData();
-                        formData.append('file', file);
-                        formData.append('api_key', signRes.apiKey);
-                        formData.append('timestamp', signRes.timestamp);
-                        formData.append('signature', signRes.signature);
+                        formData.append('file', file); formData.append('api_key', signRes.apiKey);
+                        formData.append('timestamp', signRes.timestamp); formData.append('signature', signRes.signature);
                         formData.append('upload_preset', signRes.uploadPreset);
-
-                        const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, {
-                            method: 'POST', body: formData
-                        }).then(r => r.json());
-
-                        if (res.secure_url) { imageUrls.push(res.secure_url); }
-                        else { throw new Error(res.error?.message || "Upload Failed"); }
+                        const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { method: 'POST', body: formData }).then(r => r.json());
+                        if (res.secure_url) imageUrls.push(res.secure_url);
                     }
 
-                    // Increment tag usage counts
-                    for (const t of tags) {
-                        const tagId = t.toLowerCase().replace(/[^a-z0-9]/g, "_");
-                        await setDoc(doc(db, "global_tags", tagId), { tag: t, tag_lowercase: t.toLowerCase(), count: increment(1) }, { merge: true });
-                    }
-
-                    const displayName = currentUser.displayName || "User";
-
-                    // ── SAVE AS PENDING ──
-                    // Update UI to show AI is working
-                    postBtnText.textContent = "AI Scanning Image...";
-
-                    // 1. Send the first image and text to Gemini via Netlify
-                    let finalStatus = 'pending';
-                    try {
-                        const aiRes = await fetch('/.netlify/functions/moderate-listing', {
-                            method: 'POST',
-                            body: JSON.stringify({ 
-                                imageUrl: imageUrls[0] || "", // Send the first image!
-                                title: title.trim(),
-                                description: desc.trim()
-                            })
-                        });
-                        
-                        const aiData = await aiRes.json();
-                        // If AI says safe, make it active immediately. If unsafe, reject it.
-                        if (aiData.safe) {
-                            finalStatus = 'active';
-                        } else {
-                            finalStatus = 'rejected';
-                            alert("Warning: Our AI has flagged your image or text as inappropriate. It will not be shown publicly.");
-                        }
-                    } catch (e) {
-                        console.error("AI check failed, defaulting to pending:", e);
-                    }
-
-                    // 2. Save to Firestore with the AI's final verdict!
+                    // ADD AS PENDING
                     const docRef = await addDoc(collection(db, 'listings'), {
-                        title: title.trim(),
-                        description: desc.trim(),
-                        price: price,
-                        originalPrice: originalPrice,
-                        meetingPoint: meet.trim(),
-                        hasWriting: document.getElementById('cond-writing').checked,
-                        hasWaterDamage: document.getElementById('cond-water').checked,
-                        hasMissingPages: document.getElementById('cond-missing').checked,
+                        title, description: desc, price, 
                         condition: document.getElementById('listing-condition').value,
                         digitalCode: document.getElementById('listing-digital-code').value,
                         location: document.getElementById('listing-location').value,
-                        tags: tags,
-                        imageUrls: imageUrls,
+                        tags, imageUrls,
                         posterUid: currentUser.uid,
-                        posterDisplayName: displayName,
-                        isbn: isbn,          
-                        status: finalStatus, // Saved as 'active' or 'rejected'
+                        posterDisplayName: currentUser.displayName || "User",
+                        status: 'pending',
                         timestamp: serverTimestamp()
                     });
 
-                    // Redirect to My Listings
+                    // TRIGGER AI MODERATION IN BACKGROUND
+                    fetch('/.netlify/functions/moderate-listing', {
+                        method: 'POST',
+                        body: JSON.stringify({ listingId: docRef.id, imageUrl: imageUrls[0], title, description: desc })
+                    }).catch(err => console.log("AI trigger delay"));
+
                     window.location.href = `/my-listings.html`;
                 } catch (err) {
-                    console.error(err);
-                    alert(ui[lang].uploadFail + "\n" + err.message);
+                    alert(err.message);
                     submitBtn.disabled = false;
                     postBtnText.textContent = ui[lang].btnPost;
                 }
