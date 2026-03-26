@@ -6,7 +6,8 @@
     <title>List an Item - Scoralia</title>
     <script type="module" src="global.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
-    <!-- AI Safety Libraries (Unlimited Free Moderation) -->
+    
+    <!-- AI Safety Libraries -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.11.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/nsfwjs@2.4.1/dist/nsfwjs.min.js"></script>
 
@@ -36,23 +37,14 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: var(--font-body);
-            background: var(--off-white);
-            color: var(--text-body);
-            line-height: 1.6;
-            min-height: 100vh;
-        }
+        body { font-family: var(--font-body); background: var(--off-white); color: var(--text-body); line-height: 1.6; min-height: 100vh; }
 
         @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes popIn { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
 
-        #page-loader {
-            position: fixed; inset: 0; background: var(--ink); z-index: 9999;
-            display: flex; justify-content: center; align-items: center; flex-direction: column; gap: 14px;
-        }
+        #page-loader { position: fixed; inset: 0; background: var(--ink); z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; gap: 14px; }
         #page-loader .loader-logo { font-family: var(--font-display); font-size: 1.8rem; font-weight: 900; color: var(--white); letter-spacing: -0.5px; }
         #page-loader .loader-logo em { color: var(--gold); font-style: normal; }
         #page-loader .loader-dots { display: flex; gap: 7px; }
@@ -291,7 +283,7 @@
                             <div class="image-preview-grid" id="image-preview-container"></div>
                             <label for="listing-image-input" id="add-photo-label">
                                 <i class="fas fa-plus"></i>
-                                <span id="ui-btn-add-photo">Add Photo</span>
+                                <span id="ui-btn-add-photo" style="text-align: center;">Add Photo</span>
                             </label>
                             <input type="file" id="listing-image-input" accept="image/*">
                         </div>
@@ -314,6 +306,16 @@
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, setDoc, increment, limit } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+
+        // --- BACKGROUND AI SAFETY LOADER ---
+        let nsfwModel = null;
+        console.log("Initializing AI Safety Scanner...");
+        nsfwjs.load().then(model => {
+            nsfwModel = model;
+            console.log("✅ AI Security Scanner Ready");
+        }).catch(err => {
+            console.error("❌ Failed to load AI Security Scanner", err);
+        });
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -343,7 +345,9 @@
                     imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type. Please upload an image.",
                     imgSizeErr: "Image too large (Max 5MB).", uploading: "Processing…",
                     tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.",
-                    tagUses: "uses", uploadFail: "Image upload failed. Please try again."
+                    tagUses: "uses", uploadFail: "Image upload failed. Please try again.",
+                    aiScanning: "Scanning...", aiNotReady: "Security scanner is initializing. Please wait a moment and try again.",
+                    aiBlocked: "Security Alert: Restricted content detected. This attempt has been logged."
                 },
                 fr: {
                     mainTitle: "Publier un article", mainSub: "Remplissez les détails ci-dessous et votre livre sera en ligne.",
@@ -358,12 +362,14 @@
                     lblCode: "Code d'accès numérique", optNa: "Non applicable", optAvail: "Disponible / Inutilisé", optUsed: "Déjà utilisé",
                     lblLoc: "Emplacement du campus", lblMeet: "Point de rencontre (Max 60 car.)", meetPlace: "ex: Près de la bibliothèque",
                     lblDet: "Détails supplémentaires", chkWrite: "Écritures à l'intérieur", chkWater: "Dommages causés par l'eau", chkMiss: "Pages manquantes",
-                    lblPhotos: "Photos (Max 5, Max 5MB chacune)", btnAddPhoto: "Ajouter une photo", btnPost: "Publier l'article", btnCancel: "Annuler",
+                    lblPhotos: "Photos (Max 5, Max 5MB chacune)", btnAddPhoto: "Ajouter photo", btnPost: "Publier l'article", btnCancel: "Annuler",
                     priceErr: "Le prix ne peut dépasser 1200$.", origPriceErr: "Le prix d'origine ne peut dépasser 5000$.",
                     imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté. Veuillez télécharger une image.",
                     imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Traitement…",
                     tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.",
-                    tagUses: "utilisations", uploadFail: "Échec du téléchargement de l'image. Veuillez réessayer."
+                    tagUses: "utilisations", uploadFail: "Échec du téléchargement de l'image. Veuillez réessayer.",
+                    aiScanning: "Analyse...", aiNotReady: "Le scanner de sécurité s'initialise. Veuillez patienter un instant et réessayer.",
+                    aiBlocked: "Alerte de sécurité : Contenu restreint détecté. Cette tentative a été enregistrée."
                 }
             };
 
@@ -410,37 +416,9 @@
             let currentUser = null;
             let selectedFiles = [];
             let tags = [];
-            let currentISBN = null;  // Store the ISBN for the listing
+            let currentISBN = null;
             const pageLoader = document.getElementById('page-loader');
             const loaderTimeout = setTimeout(() => { pageLoader.style.display = 'none'; }, 4000);
-
-            // --- AI SAFETY INITIALIZATION ---
-            let nsfwModel = null;
-            let isModelLoading = false;
-
-            async function checkSafety(file) {
-                if (!nsfwModel && !isModelLoading) {
-                    isModelLoading = true;
-                    // mobilenet_v2 is the fastest model for mobile browsers
-                    nsfwModel = await nsfwjs.load('mobilenet_v2');
-                    isModelLoading = false;
-                }
-                if (!nsfwModel) return true; // Fallback
-
-                return new Promise((resolve) => {
-                    const img = new Image();
-                    img.src = URL.createObjectURL(file);
-                    img.onload = async () => {
-                        const predictions = await nsfwModel.classify(img);
-                        URL.revokeObjectURL(img.src);
-                        // Categories: Porn, Hentai, Sexy, Neutral, Drawing
-                        const nsfw = predictions.find(p =>
-                            (p.className === 'Porn' || p.className === 'Hentai') && p.probability > 0.65
-                        );
-                        resolve(!nsfw); // Return true if safe
-                    };
-                });
-            }
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
@@ -464,7 +442,7 @@
             async function fetchBookData(isbn) {
                 const scanBtn = document.getElementById('start-scan-btn');
                 const manualBtn = document.getElementById('manual-isbn-btn');
-                scanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${ui[lang].fetching}</span>`;
+                scanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${ui.fetching}</span>`;
                 scanBtn.disabled = true; manualBtn.disabled = true;
 
                 try {
@@ -497,18 +475,20 @@
                         
                         currentISBN = isbn;
                         document.getElementById('listing-isbn').value = isbn;
+                        
                         document.getElementById('isbn-section').style.display = 'none';
                         document.getElementById('main-form-section').style.display = 'block';
+                        
                         if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
                     } else {
-                        alert(ui[lang].notFound);
+                        alert(ui.notFound);
                     }
                 } catch (err) {
                     console.error("Book fetch error:", err);
-                    alert(ui[lang].notFound);
+                    alert(ui.notFound);
                 }
                 
-                scanBtn.innerHTML = `<i class="fas fa-camera"></i> <span id="ui-btn-scan">${ui[lang].btnScan}</span>`;
+                scanBtn.innerHTML = `<i class="fas fa-camera"></i> <span id="ui-btn-scan">${ui.btnScan}</span>`;
                 scanBtn.disabled = false; manualBtn.disabled = false;
             }
 
@@ -568,7 +548,7 @@
 
             function addTag(tagName) {
                 const cleaned = tagName.trim();
-                if (tags.length >= 15) { alert(ui[lang].tagLimit); return; }
+                if (tags.length >= 15) { alert(ui.tagLimit); return; }
                 if (cleaned && !tags.includes(cleaned)) { tags.push(cleaned); renderTags(); }
                 tagInput.value = ''; suggestionsBox.style.display = 'none';
                 tagInput.focus();
@@ -586,7 +566,7 @@
                         const d = doc.data();
                         const div = document.createElement('div');
                         div.className = 'suggestion-item';
-                        div.innerHTML = `<span>${d.tag}</span><span class="suggestion-count">${d.count || 1} ${ui[lang].tagUses}</span>`;
+                        div.innerHTML = `<span>${d.tag}</span><span class="suggestion-count">${d.count || 1} ${ui.tagUses}</span>`;
                         div.onmousedown = (ev) => {
                             ev.preventDefault();
                             addTag(d.tag);
@@ -610,6 +590,7 @@
 
             const imageInput = document.getElementById('listing-image-input');
             const previewContainer = document.getElementById('image-preview-container');
+            const postBtn = document.getElementById('postListingBtn');
 
             function renderPreviews() {
                 previewContainer.innerHTML = '';
@@ -632,36 +613,68 @@
 
             imageInput.onchange = async (e) => {
                 const file = e.target.files[0];
-                if (file) {
-                    if (!file.type.startsWith('image/')) { alert(ui[lang].imgTypeErr); imageInput.value = ''; return; }
-                    if (file.size > 5 * 1024 * 1024) { alert(ui[lang].imgSizeErr); imageInput.value = ''; return; }
+                if (!file) return;
 
-                    // --- AI SAFETY CHECK START ---
-                    const originalText = document.getElementById('ui-btn-add-photo').textContent;
-                    document.getElementById('ui-btn-add-photo').textContent = "...";
+                if (!file.type.startsWith('image/')) { alert(ui.imgTypeErr); imageInput.value = ''; return; }
+                if (file.size > 5 * 1024 * 1024) { alert(ui.imgSizeErr); imageInput.value = ''; return; }
 
-                    const isSafe = await checkSafety(file);
+                // --- AI SAFETY CHECK START ---
+                if (!nsfwModel) {
+                    alert(ui.aiNotReady);
+                    imageInput.value = '';
+                    return;
+                }
+
+                // Show loading state
+                postBtn.disabled = true;
+                const addPhotoLabelSpan = document.getElementById('ui-btn-add-photo');
+                const origText = addPhotoLabelSpan.textContent;
+                addPhotoLabelSpan.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${ui.aiScanning}`;
+
+                try {
+                    // Check safety
+                    const imgElement = new Image();
+                    imgElement.src = URL.createObjectURL(file);
+                    
+                    const isSafe = await new Promise((resolve) => {
+                        imgElement.onload = async () => {
+                            const predictions = await nsfwModel.classify(imgElement);
+                            URL.revokeObjectURL(imgElement.src);
+                            const nsfw = predictions.find(p => (p.className === 'Porn' || p.className === 'Hentai') && p.probability > 0.65);
+                            resolve(!nsfw);
+                        };
+                    });
 
                     if (!isSafe) {
-                        alert("Security Alert: Restricted content detected. This attempt has been logged.");
-                        document.getElementById('ui-btn-add-photo').textContent = originalText;
+                        alert(ui.aiBlocked);
                         // Log attempt to administrators
-                        await addDoc(collection(db, "reports"), {
-                            reporterName: "SYSTEM_AI",
-                            reason: "NSFW Upload Blocked",
-                            targetUid: auth.currentUser ? auth.currentUser.uid : "unknown",
-                            targetUserName: auth.currentUser ? auth.currentUser.displayName : "Guest",
-                            details: "User attempted to upload a prohibited image.",
-                            timestamp: serverTimestamp()
-                        });
+                        if(auth.currentUser) {
+                            await addDoc(collection(db, "reports"), {
+                                reporterName: "SYSTEM_AI",
+                                reason: "NSFW Upload Blocked",
+                                targetUid: auth.currentUser.uid,
+                                targetUserName: auth.currentUser.displayName,
+                                details: "User attempted to upload a prohibited image.",
+                                timestamp: serverTimestamp()
+                            });
+                        }
                         imageInput.value = '';
                         return;
                     }
-                    document.getElementById('ui-btn-add-photo').textContent = originalText;
-                    // --- AI SAFETY CHECK END ---
 
+                    // If safe, add to previews
                     selectedFiles.push(file);
                     renderPreviews();
+
+                } catch (err) {
+                    console.error("Safety scan failed:", err);
+                    // Decide whether to allow or block on error. Allowing is safer for UX if model bugs out.
+                    selectedFiles.push(file);
+                    renderPreviews();
+                } finally {
+                    // Restore UI
+                    addPhotoLabelSpan.textContent = origText;
+                    postBtn.disabled = false;
                 }
             };
 
@@ -675,15 +688,15 @@
                 const originalPrice = originalPriceVal ? parseFloat(originalPriceVal) : null;
                 const isbn = document.getElementById('listing-isbn').value.trim() || null;
 
-                if (title.length > 80 || desc.length > 1500 || meet.length > 60) { alert(ui[lang].lenErr); return; }
-                if (price > 1200) { alert(ui[lang].priceErr); return; }
-                if (originalPrice && originalPrice > 5000) { alert(ui[lang].origPriceErr); return; }
-                if (selectedFiles.length === 0) { alert(ui[lang].imgErr); return; }
+                if (title.length > 80 || desc.length > 1500 || meet.length > 60) { alert(ui.lenErr); return; }
+                if (price > 1200) { alert(ui.priceErr); return; }
+                if (originalPrice && originalPrice > 5000) { alert(ui.origPriceErr); return; }
+                if (selectedFiles.length === 0) { alert(ui.imgErr); return; }
 
                 const submitBtn = document.getElementById('postListingBtn');
                 const postBtnText = document.getElementById('post-btn-text');
                 submitBtn.disabled = true;
-                postBtnText.textContent = ui[lang].uploading;
+                postBtnText.textContent = ui.uploading;
 
                 try {
                     const imageUrls = [];
@@ -730,7 +743,7 @@
                         imageUrls: imageUrls,
                         posterUid: currentUser.uid,
                         posterDisplayName: displayName,
-                        isbn: isbn,
+                        isbn: isbn,          
                         status: 'active',
                         timestamp: serverTimestamp()
                     });
@@ -738,9 +751,9 @@
                     window.location.href = `/listing.html?id=${docRef.id}`;
                 } catch (err) {
                     console.error(err);
-                    alert(ui[lang].uploadFail + "\n" + err.message);
+                    alert(ui.uploadFail + "\n" + err.message);
                     submitBtn.disabled = false;
-                    postBtnText.textContent = ui[lang].btnPost;
+                    postBtnText.textContent = ui.btnPost;
                 }
             };
         }
