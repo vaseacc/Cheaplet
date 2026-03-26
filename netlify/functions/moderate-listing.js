@@ -1,5 +1,5 @@
 exports.handler = async (event, context) => {
-    console.log("--- MODERATION ENGINE ACTIVATED ---");
+    console.log("--- PROOF-OF-WORK MODERATION START ---");
     if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
 
     try {
@@ -10,31 +10,33 @@ exports.handler = async (event, context) => {
         const FB_KEY = process.env.VITE_FIREBASE_API_KEY;
         const PROJ_ID = process.env.VITE_FIREBASE_PROJECT_ID;
 
-        if (!GEMINI_KEY || !FB_KEY || !PROJ_ID) {
-            console.error("ERROR: Missing Environment Variables in Netlify!");
-            return { statusCode: 500, body: "Server Config Error" };
-        }
-
-        console.log(`Checking Listing: ${title}`);
-
-        // 1. Download image & convert to Base64 for Gemini
+        // 1. Fetch Image
         let base64Image = null;
         if (imageUrl) {
-            try {
-                const imgRes = await fetch(imageUrl);
-                const buffer = await imgRes.arrayBuffer();
-                base64Image = Buffer.from(buffer).toString('base64');
-                console.log("Image attached to AI prompt.");
-            } catch (e) { console.log("Image download failed, checking text only."); }
+            const imgRes = await fetch(imageUrl);
+            const buffer = await imgRes.arrayBuffer();
+            base64Image = Buffer.from(buffer).toString('base64');
         }
 
-        // 2. Ask Gemini 1.5 Flash
+        // 2. The "Aggressive" Prompt
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
-        const promptParts = [{ text: `You are a marketplace moderator. Look at this item. Is it inappropriate (Guns, drugs, nudity, violence, or scams)? 
-            Used textbooks and electronics are SAFE. 
-            Title: ${title} 
-            Description: ${description} 
-            Reply with ONLY 'SAFE' or 'UNSAFE'.` }];
+        
+        const promptParts = [{ text: `
+            SYSTEM TASK: You are a strict security auditor for a student marketplace. 
+            USER CONTENT TO ANALYZE:
+            Title: "${title}"
+            Description: "${description}"
+
+            INSTRUCTIONS:
+            1. Describe what is in the image in 5 words.
+            2. Decide if this violates safety rules. 
+            WEAPONS (GUNS, KNIVES), DRUGS, NUDITY, AND ALCOHOL ARE STRICTLY FORBIDDEN.
+            
+            OUTPUT FORMAT:
+            You must reply in this EXACT format:
+            DESCRIPTION: [your description]
+            VERDICT: [SAFE or UNSAFE]
+        ` }];
         
         if (base64Image) {
             promptParts.push({ inlineData: { mimeType: "image/jpeg", data: base64Image } });
@@ -47,30 +49,27 @@ exports.handler = async (event, context) => {
         });
 
         const aiData = await aiRes.json();
-        let verdict = "SAFE";
-        if (aiData.candidates && aiData.candidates[0]) {
-            verdict = aiData.candidates[0].content.parts[0].text.trim().toUpperCase();
-        }
-        console.log("AI Verdict:", verdict);
-
-        // 3. Update Firebase via REST API
-        // We use the PATCH method to update just the status field
-        const newStatus = verdict.includes("UNSAFE") ? "rejected" : "active";
-        const fbUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?updateMask.fieldPaths=status&key=${FB_KEY}`;
         
-        const updateRes = await fetch(fbUrl, {
+        // LOG EVERYTHING FOR PROOF
+        const aiResponseText = aiData.candidates[0].content.parts[0].text;
+        console.log("AI RAW RESPONSE:\n", aiResponseText);
+
+        const isUnsafe = aiResponseText.toUpperCase().includes("VERDICT: UNSAFE");
+        const newStatus = isUnsafe ? "rejected" : "active";
+
+        // 3. Update Firebase
+        const fbUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?updateMask.fieldPaths=status&key=${FB_KEY}`;
+        await fetch(fbUrl, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ fields: { status: { stringValue: newStatus } } })
         });
 
-        console.log("Database Updated to:", newStatus);
-        console.log("--- MODERATION COMPLETE ---");
-
-        return { statusCode: 200, body: JSON.stringify({ success: true, status: newStatus }) };
+        console.log(`Final Decision: ${newStatus}`);
+        return { statusCode: 200, body: JSON.stringify({ status: newStatus }) };
 
     } catch (error) {
         console.error("CRASH:", error.message);
-        return { statusCode: 500, body: error.message };
+        return { statusCode: 500, body: "Error" };
     }
 };
