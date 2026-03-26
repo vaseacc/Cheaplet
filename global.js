@@ -31,7 +31,9 @@ const translations = {
         "btn_login": "Login / Register", "btn_list": "List an Item", "btn_signout": "Sign Out",
         "verified_student": "Verified Student",
         "ban_title": "ACCESS DENIED",
-        "ban_text": "This account has been permanently banned.",
+        "ban_text": "This account has been banned.",
+        "ban_perm": "Permanent Ban",
+        "ban_until": "Banned until: ",
 
         "tour_title_1": "Welcome to Scoralia!",
         "tour_desc_1": "Your campus marketplace for textbooks and essentials. Buy cheaply, sell quickly, and save money every semester.",
@@ -51,14 +53,18 @@ const translations = {
         "tour_username_err": "Please enter a valid username (min 3 chars).",
         "tour_username_taken": "Username already taken. Please choose another.",
         "tour_username_available": "✓ Available",
-        "tour_username_checking": "Checking..."
+        "tour_username_checking": "Checking...",
+        "warning_title": "Admin Warning",
+        "warning_btn": "I Understand"
     },
     "fr": {
         "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", "nav_hub": "Hub Campus",
         "btn_login": "Connexion", "btn_list": "Vendre", "btn_signout": "Déconnexion",
         "verified_student": "Étudiant vérifié",
         "ban_title": "ACCÈS REFUSÉ",
-        "ban_text": "Ce compte a été définitivement banni.",
+        "ban_text": "Ce compte a été banni.",
+        "ban_perm": "Bannissement permanent",
+        "ban_until": "Banni jusqu'au : ",
 
         "tour_title_1": "Bienvenue sur Scoralia !",
         "tour_desc_1": "Votre marché étudiant pour les manuels et articles essentiels. Achetez à bas prix, vendez rapidement et économisez.",
@@ -78,7 +84,9 @@ const translations = {
         "tour_username_err": "Veuillez entrer un nom d'utilisateur valide (min 3 car.).",
         "tour_username_taken": "Nom d'utilisateur déjà pris. Veuillez en choisir un autre.",
         "tour_username_available": "✓ Disponible",
-        "tour_username_checking": "Vérification..."
+        "tour_username_checking": "Vérification...",
+        "warning_title": "Avertissement de l'Administration",
+        "warning_btn": "J'ai compris"
     }
 };
 
@@ -130,6 +138,15 @@ globalStyle.innerHTML = `
     .btn-accept-terms { background: #C8A96E; color: #0C1446; border: none; padding: 8px 30px; border-radius: 20px; font-weight: 800; cursor: pointer; }
     .desktop-only { display: inline-flex; }
     .mobile-link { display: none; }
+    
+    /* Global Warning Modal Styling */
+    .warning-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10050; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+    .warning-modal { background: #fff5f5; border: 2px solid #ef4444; border-radius: 16px; padding: 30px; text-align: center; max-width: 450px; width: 90%; box-shadow: 0 20px 60px rgba(239, 68, 68, 0.2); }
+    .warning-modal h2 { color: #b91c1c; font-family: 'Playfair Display', serif; font-size: 1.8rem; margin-bottom: 15px; }
+    .warning-modal p { color: #7f1d1d; font-size: 1.05rem; margin-bottom: 25px; line-height: 1.5; }
+    .warning-btn { background: #ef4444; color: white; border: none; padding: 12px 30px; border-radius: 30px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; }
+    .warning-btn:hover { background: #dc2626; transform: translateY(-2px); }
+
     @media (max-width: 767px) {
         nav { display: none !important; }
         .msg-btn-mobile { display: flex; }
@@ -163,7 +180,7 @@ function getSchoolInfo(email) {
         : { isStudent: false, schoolName: null };
 }
 
-// --- 4. FUNCTION TO UPDATE USER CONTENT ---
+// --- FUNCTION TO UPDATE USER CONTENT ---
 async function updateUserContent(uid, newDisplayName) {
     if (!newDisplayName) return;
     try {
@@ -189,7 +206,7 @@ async function updateUserContent(uid, newDisplayName) {
 }
 window.updateUserContent = updateUserContent;
 
-// --- 5. STATE & LISTENERS ---
+// --- STATE & LISTENERS ---
 let globalSettings = {};
 let currentUserData = null;
 let unsubscribeChats = null;
@@ -203,10 +220,26 @@ onAuthStateChanged(auth, (user) => {
         onSnapshot(doc(db, "users", user.uid), async (docSnap) => {
             if (docSnap.exists()) {
                 currentUserData = docSnap.data();
-                if (currentUserData.role === 'banned') { triggerHardLockdown(); return; }
                 
-                // RETROACTIVE STUDENT CHECK: 
-                // If they logged in before this update, check their email now and grant the badge instantly
+                // --- ADMIN WARNING SYSTEM ---
+                if (currentUserData.activeWarning) {
+                    showWarningPopup(currentUserData.activeWarning, user.uid);
+                }
+
+                // --- BAN SYSTEM ENFORCEMENT ---
+                if (currentUserData.role === 'banned') { 
+                    if (currentUserData.banExpiresAt && currentUserData.banExpiresAt.toDate() < new Date()) {
+                        // Ban is expired! Unban them automatically.
+                        await updateDoc(doc(db, "users", user.uid), { role: 'user', banExpiresAt: null });
+                        currentUserData.role = 'user';
+                    } else {
+                        // Still banned.
+                        triggerHardLockdown(currentUserData.banExpiresAt); 
+                        return; 
+                    }
+                }
+                
+                // RETROACTIVE STUDENT CHECK
                 if (currentUserData.isStudent === undefined && user.email) {
                     const schoolInfo = getSchoolInfo(user.email);
                     await updateDoc(doc(db, "users", user.uid), {
@@ -224,7 +257,6 @@ onAuthStateChanged(auth, (user) => {
                     showWelcomeTour();
                 }
             } else {
-                // If they sign in via Google/Microsoft for the first time, check their domain
                 const schoolInfo = getSchoolInfo(user.email);
                 setDoc(doc(db, "users", user.uid), {
                     uid: user.uid, 
@@ -242,6 +274,57 @@ onAuthStateChanged(auth, (user) => {
         refreshUI();
     }
 });
+
+// --- ADMIN WARNING POPUP ---
+function showWarningPopup(warningText, uid) {
+    if (document.getElementById('admin-warning-modal')) return;
+
+    const lang = localStorage.getItem('preferred_language') || 'en';
+    const t = translations[lang];
+
+    const modal = document.createElement('div');
+    modal.id = 'admin-warning-modal';
+    modal.className = 'warning-modal-overlay';
+    modal.innerHTML = `
+        <div class="warning-modal">
+            <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #ef4444; margin-bottom: 15px;"></i>
+            <h2>${t.warning_title}</h2>
+            <p>${warningText}</p>
+            <button class="warning-btn" id="btn-ack-warning">${t.warning_btn}</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById('btn-ack-warning').onclick = async () => {
+        modal.remove();
+        // Clear the warning from the database so it doesn't loop
+        await updateDoc(doc(db, "users", uid), { activeWarning: null });
+    };
+}
+
+// --- HARD LOCKDOWN FOR BANNED USERS ---
+function triggerHardLockdown(expireTimestamp) {
+    const lang = localStorage.getItem('preferred_language') || 'en';
+    const t = translations[lang];
+    
+    let expiryText = "";
+    if (expireTimestamp) {
+        const date = expireTimestamp.toDate();
+        const dateStr = lang === 'fr' ? date.toLocaleString('fr-CA') : date.toLocaleString('en-US');
+        expiryText = `<div style="margin-top:15px; font-size:1.2rem; color:#aaa; font-weight:bold;">${t.ban_until}<br><span style="color:#FFD700;">${dateStr}</span></div>`;
+    } else {
+        expiryText = `<div style="margin-top:15px; font-size:1.2rem; color:#aaa; font-weight:bold; text-transform:uppercase;">${t.ban_perm}</div>`;
+    }
+
+    document.body.innerHTML = `<div style="height:100vh; background:#0C1446; color:#ff4d4d; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif; text-align:center; padding:20px;">
+        <i class="fas fa-user-slash fa-4x" style="margin-bottom:20px;"></i>
+        <h1 style="font-family:'Playfair Display', serif; font-size: 3rem; margin-bottom: 10px;">${t.ban_title}</h1>
+        <p style="font-size: 1.1rem; color: #ccc;">${t.ban_text}</p>
+        ${expiryText}
+    </div>`;
+
+    setTimeout(() => { signOut(auth).then(() => { window.location.href = '/LoginInToCheaplet.html'; }); }, 5000);
+}
 
 function showWelcomeTour() {
     const user = auth.currentUser;
@@ -294,7 +377,6 @@ function showWelcomeTour() {
                     <i class="fas fa-camera"></i> ${t.tour_upload}
                 </label>
                 
-                <!-- INLINE ERROR CONTAINER -->
                 <div id="tour-final-error" style="color:#d32f2f; font-size:0.85rem; margin-bottom:10px; display:none; text-align:center; font-weight:bold; border: 1px solid #ffcdd2; background: #fef2f2; padding: 8px; border-radius: 6px;"></div>
 
                 <button class="btn" id="tour-btn-4" style="width:100%;">${t.tour_start}</button>
@@ -435,16 +517,6 @@ function showWelcomeTour() {
             finishBtn.disabled = false; finishBtn.textContent = t.tour_start;
         }
     };
-}
-
-function triggerHardLockdown() {
-    const lang = localStorage.getItem('preferred_language') || 'en';
-    document.body.innerHTML = `<div style="height:100vh; background:#0C1446; color:#ff4d4d; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif; text-align:center; padding:20px;">
-        <i class="fas fa-user-slash fa-4x" style="margin-bottom:20px;"></i>
-        <h1>${translations[lang].ban_title}</h1>
-        <p>${translations[lang].ban_text}</p>
-    </div>`;
-    setTimeout(() => { signOut(auth).then(() => { window.location.href = '/LoginInToCheaplet.html'; }); }, 3000);
 }
 
 function refreshUI() {
