@@ -22,8 +22,7 @@ exports.handler = async (event, context) => {
 
         // 2. AUTO-SELECT THE BEST MODEL
         // We look for 1.5-flash first, then 1.0-pro-vision
-        const bestModel = modelNames.find(n => n.includes("gemini-1.5-flash")) || 
-                          modelNames.find(n => n.includes("pro-vision")) || 
+        const bestModel = const bestModel = "models/gemini-2.5-flash";
                           modelNames[0];
 
         console.log("SELECTED MODEL FOR MODERATION:", bestModel);
