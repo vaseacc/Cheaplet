@@ -1,83 +1,76 @@
 exports.handler = async (event, context) => {
+    console.log("--- MODERATION ENGINE ACTIVATED ---");
     if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
 
     try {
         const data = JSON.parse(event.body);
-        const { imageUrl, title, description } = data;
-        const GEMINI_API_KEY = process.env.VITE_GEMINI_API_KEY;
+        const { listingId, imageUrl, title, description } = data;
+        
+        const GEMINI_KEY = process.env.VITE_GEMINI_API_KEY;
+        const FB_KEY = process.env.VITE_FIREBASE_API_KEY;
+        const PROJ_ID = process.env.VITE_FIREBASE_PROJECT_ID;
 
-        if (!GEMINI_API_KEY) throw new Error("Missing Gemini API Key");
+        if (!GEMINI_KEY || !FB_KEY || !PROJ_ID) {
+            console.error("ERROR: Missing Environment Variables in Netlify!");
+            return { statusCode: 500, body: "Server Config Error" };
+        }
 
-        // 1. Download the image from Cloudinary and convert it to Base64 for Gemini
+        console.log(`Checking Listing: ${title}`);
+
+        // 1. Download image & convert to Base64 for Gemini
         let base64Image = null;
-        let mimeType = "image/jpeg";
-        
         if (imageUrl) {
-            const imageResponse = await fetch(imageUrl);
-            const arrayBuffer = await imageResponse.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
-            base64Image = buffer.toString('base64');
-            
-            // Guess mime type from URL
-            if (imageUrl.toLowerCase().endsWith('.png')) mimeType = "image/png";
-            if (imageUrl.toLowerCase().endsWith('.webp')) mimeType = "image/webp";
+            try {
+                const imgRes = await fetch(imageUrl);
+                const buffer = await imgRes.arrayBuffer();
+                base64Image = Buffer.from(buffer).toString('base64');
+                console.log("Image attached to AI prompt.");
+            } catch (e) { console.log("Image download failed, checking text only."); }
         }
 
-        // 2. Build the payload for Gemini 1.5 Flash (Multimodal)
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+        // 2. Ask Gemini 1.5 Flash
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`;
+        const promptParts = [{ text: `You are a marketplace moderator. Look at this item. Is it inappropriate (Guns, drugs, nudity, violence, or scams)? 
+            Used textbooks and electronics are SAFE. 
+            Title: ${title} 
+            Description: ${description} 
+            Reply with ONLY 'SAFE' or 'UNSAFE'.` }];
         
-        const promptParts = [
-            { text: `You are an AI safety moderator for a college marketplace. 
-            Analyze the attached image, title, and description. 
-            Look for explicitly illegal items, weapons, extreme violence, deep hate speech, or pornography. 
-            Selling used textbooks, notes, calculators, electronics, or clothes is TOTALLY SAFE.
-            Title: "${title}"
-            Description: "${description}"
-            
-            Reply ONLY with the exact word "SAFE" or "UNSAFE". Do not add any punctuation or explanation.` }
-        ];
-
-        // If we successfully got the image, attach it to the AI's prompt
         if (base64Image) {
-            promptParts.push({
-                inlineData: {
-                    mimeType: mimeType,
-                    data: base64Image
-                }
-            });
+            promptParts.push({ inlineData: { mimeType: "image/jpeg", data: base64Image } });
         }
 
-        const geminiPrompt = {
-            contents: [{ parts: promptParts }]
-        };
-
-        // 3. Ask Gemini
-        const geminiRes = await fetch(geminiUrl, {
+        const aiRes = await fetch(geminiUrl, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(geminiPrompt)
+            body: JSON.stringify({ contents: [{ parts: promptParts }] })
         });
 
-        const geminiData = await geminiRes.json();
-        
-        let isSafe = true; // Default to safe if AI is confused
-        if (geminiData.candidates && geminiData.candidates[0]) {
-            const aiVerdict = geminiData.candidates[0].content.parts[0].text.trim().toUpperCase();
-            console.log("Gemini Verdict:", aiVerdict); // You can see this in Netlify Function Logs!
-            
-            if (aiVerdict.includes("UNSAFE")) {
-                isSafe = false;
-            }
+        const aiData = await aiRes.json();
+        let verdict = "SAFE";
+        if (aiData.candidates && aiData.candidates[0]) {
+            verdict = aiData.candidates[0].content.parts[0].text.trim().toUpperCase();
         }
+        console.log("AI Verdict:", verdict);
 
-        // Return the verdict to your frontend
-        return {
-            statusCode: 200,
-            body: JSON.stringify({ safe: isSafe })
-        };
+        // 3. Update Firebase via REST API
+        // We use the PATCH method to update just the status field
+        const newStatus = verdict.includes("UNSAFE") ? "rejected" : "active";
+        const fbUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?updateMask.fieldPaths=status&key=${FB_KEY}`;
+        
+        const updateRes = await fetch(fbUrl, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fields: { status: { stringValue: newStatus } } })
+        });
+
+        console.log("Database Updated to:", newStatus);
+        console.log("--- MODERATION COMPLETE ---");
+
+        return { statusCode: 200, body: JSON.stringify({ success: true, status: newStatus }) };
 
     } catch (error) {
-        console.error("Moderation Error:", error);
-        return { statusCode: 500, body: JSON.stringify({ error: error.message, safe: true }) }; // Default to safe on error
+        console.error("CRASH:", error.message);
+        return { statusCode: 500, body: error.message };
     }
 };
