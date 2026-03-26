@@ -4,8 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <title>My Listings - Cheaplet</title>
-    <!-- GLOBAL BRAIN -->
+    <title>My Listings - Scoralia</title>
     <script type="module" src="global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -24,17 +23,25 @@
         .btn-secondary { background: #e0e0e0; color: #333; }
         .btn-delete { background: #f44336 !important; color: white !important; }
         .btn-sold { background: #2E7D32 !important; color: white !important; }
-        .btn-sold:disabled { background: #aaa !important; opacity: 0.7; }
+        .btn:disabled { background: #aaa !important; opacity: 0.7; cursor: not-allowed; }
 
         .page-header { display: flex; justify-content: space-between; align-items: center; padding: 40px 0 20px; border-bottom: 1px solid #ddd; margin-bottom: 30px; }
         .page-header h1 { font-size: 2rem; margin: 0; }
+
+        /* Banner info at the top */
+        .review-banner { background: #fff8e1; border: 1px solid #ffe082; color: #f57f17; padding: 15px; border-radius: 8px; margin-bottom: 25px; display: none; font-weight: bold; text-align: center; }
 
         .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px; }
         .listing-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; flex-direction: column; transition: transform 0.3s; position: relative; }
         .listing-card:hover { transform: translateY(-5px); }
         
         .listing-image { height: 180px; background-color: #eee; background-size: cover; background-position: center; cursor: pointer; position: relative; }
-        .sold-badge { position: absolute; top: 10px; left: 10px; background: rgba(244, 67, 54, 0.9); color: white; padding: 4px 12px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; z-index: 5; }
+        
+        /* Badges */
+        .status-badge { position: absolute; top: 10px; left: 10px; color: white; padding: 4px 12px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; z-index: 5; }
+        .status-sold { background: rgba(244, 67, 54, 0.9); }
+        .status-pending { background: rgba(255, 152, 0, 0.9); }
+        .status-rejected { background: rgba(0, 0, 0, 0.9); }
 
         .listing-details { padding: 15px; flex-grow: 1; }
         .listing-title { font-weight: 600; font-size: 1rem; margin-bottom: 5px; }
@@ -42,7 +49,7 @@
 
         .manage-buttons { border-top: 1px solid #eee; padding: 10px; display: flex; gap: 8px; background: #f9f9f9; flex-wrap: wrap; }
         .manage-buttons a { flex: 1; text-decoration: none; min-width: 70px; }
-        .manage-buttons .btn { width: 100%; }
+        .manage-buttons .btn { width: 100%; border: none; padding: 8px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; }
 
         .info-message { text-align: center; padding: 100px 0; font-size: 1.2rem; color: #999; }
         
@@ -55,7 +62,7 @@
     <header>
         <div class="container header-content">
             <div class="header-left">
-                <a href="/index.html" class="logo">Cheap<span>let</span></a>
+                <a href="/index.html" class="logo">Scor<span>alia</span></a>
                 <nav><ul></ul></nav>
             </div>
             <div class="header-right"></div>
@@ -65,7 +72,11 @@
     <main class="container">
         <div class="page-header">
             <h1 data-i18n="nav_listings">My Listings</h1>
-            <a href="/messages.html" class="btn" data-i18n="nav_messages">Messages</a>
+            <a href="/messages.html" class="btn" style="background:#C8A96E; padding:10px 20px; color:#0C1446; font-weight:bold; border-radius:20px; text-decoration:none;" data-i18n="nav_messages">Messages</a>
+        </div>
+
+        <div id="review-banner" class="review-banner">
+            <i class="fas fa-robot"></i> Your new listing is currently being reviewed by our safety system. It will appear live in 1-2 minutes.
         </div>
 
         <div id="info-container">
@@ -79,7 +90,7 @@
 
     <footer>
         <div class="container">
-            <div class="copyright">© 2025 Cheaplet. All rights reserved.</div>
+            <div class="copyright">© 2026 Scoralia. All rights reserved.</div>
         </div>
     </footer>
 
@@ -97,11 +108,12 @@
 
             const infoContainer = document.getElementById('info-container');
             const myListingsContainer = document.getElementById('my-listings-container');
+            const reviewBanner = document.getElementById('review-banner');
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = {
-                en: { loading: "Loading your listings...", empty: "You haven't posted any listings yet!", confirm: "Delete this listing permanently?", deleting: "Deleting...", btnEdit: "Edit", btnDel: "Delete", btnSold: "Sold", confirmSold: "Mark this item as sold?", badgeSold: "SOLD" },
-                fr: { loading: "Chargement de vos annonces...", empty: "Vous n'avez pas encore publié d'annonces !", confirm: "Supprimer cette annonce définitivement ?", deleting: "Suppression...", btnEdit: "Modifier", btnDel: "Supprimer", btnSold: "Vendu", confirmSold: "Marquer cet article comme vendu ?", badgeSold: "VENDU" }
+                en: { loading: "Loading your listings...", empty: "You haven't posted any listings yet!", confirm: "Delete this listing permanently?", deleting: "Deleting...", btnEdit: "Edit", btnDel: "Delete", btnSold: "Sold", confirmSold: "Mark this item as sold?", badgeSold: "SOLD", badgePending: "⏳ IN REVIEW", badgeRejected: "❌ REJECTED" },
+                fr: { loading: "Chargement de vos annonces...", empty: "Vous n'avez pas encore publié d'annonces !", confirm: "Supprimer cette annonce définitivement ?", deleting: "Suppression...", btnEdit: "Modifier", btnDel: "Supprimer", btnSold: "Vendu", confirmSold: "Marquer cet article comme vendu ?", badgeSold: "VENDU", badgePending: "⏳ EN RÉVISION", badgeRejected: "❌ REJETÉ" }
             };
 
             onAuthStateChanged(auth, async (user) => {
@@ -123,13 +135,21 @@
 
                 onSnapshot(q, (snapshot) => {
                     myListingsContainer.innerHTML = '';
+                    let hasPending = false;
+
                     if (snapshot.empty) {
                         infoContainer.innerHTML = `<p class="info-message">${strings[lang].empty}</p>`;
+                        reviewBanner.style.display = 'none';
                     } else {
                         infoContainer.innerHTML = ''; 
                         snapshot.forEach((doc) => {
+                            const data = doc.data();
+                            if (data.status === 'pending') hasPending = true;
                             myListingsContainer.appendChild(renderMyListing(doc));
                         });
+                        
+                        // Show banner if any item is currently pending review
+                        reviewBanner.style.display = hasPending ? 'block' : 'none';
                     }
                 });
             }
@@ -139,17 +159,30 @@
                 const card = document.createElement('div');
                 card.className = 'listing-card';
                 const img = data.imageUrls?.[0] || '';
-                const isSold = data.status === 'sold';
                 
-                // Show Edit button ONLY if not sold
-                const editButtonHtml = isSold ? '' : `
+                const isSold = data.status === 'sold';
+                const isPending = data.status === 'pending';
+                const isRejected = data.status === 'rejected';
+                
+                // Construct Badge
+                let badgeHtml = '';
+                if (isSold) badgeHtml = `<div class="status-badge status-sold">${strings[lang].badgeSold}</div>`;
+                else if (isPending) badgeHtml = `<div class="status-badge status-pending">${strings[lang].badgePending}</div>`;
+                else if (isRejected) badgeHtml = `<div class="status-badge status-rejected">${strings[lang].badgeRejected}</div>`;
+                
+                // Allow edit only if active (not sold, not rejected, not pending)
+                const canEdit = !isSold && !isPending && !isRejected;
+                const editButtonHtml = canEdit ? `
                     <a href="/edit-listing.html?id=${listingDoc.id}">
                         <button class="btn btn-secondary">${strings[lang].btnEdit}</button>
-                    </a>`;
+                    </a>` : '';
                 
+                // Action Buttons
+                const disableActions = isPending || isRejected || isSold;
+
                 card.innerHTML = `
                     <div class="listing-image" style="background-image: url('${img}')" onclick="window.location.href='/listing.html?id=${listingDoc.id}'">
-                        ${isSold ? `<div class="sold-badge">${strings[lang].badgeSold}</div>` : ''}
+                        ${badgeHtml}
                     </div>
                     <div class="listing-details">
                         <h3 class="listing-title">${data.title}</h3>
@@ -157,7 +190,7 @@
                     </div>
                     <div class="manage-buttons">
                         ${editButtonHtml}
-                        <button class="btn btn-sold sold-btn" ${isSold ? 'disabled' : ''}>${strings[lang].btnSold}</button>
+                        <button class="btn btn-sold sold-btn" ${disableActions ? 'disabled' : ''}>${strings[lang].btnSold}</button>
                         <button class="btn btn-delete delete-btn">${strings[lang].btnDel}</button>
                     </div>`;
 
