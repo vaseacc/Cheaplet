@@ -1,16 +1,37 @@
 exports.handler = async (event, context) => {
-    console.log("--- MULTI-MODEL MODERATION START ---");
+    console.log("--- STARTING SYSTEM DIAGNOSTICS ---");
     if (event.httpMethod !== "POST") return { statusCode: 405, body: "Method Not Allowed" };
 
+    const GEMINI_KEY = process.env.VITE_GEMINI_API_KEY;
+    const FB_KEY = process.env.VITE_FIREBASE_API_KEY;
+    const PROJ_ID = process.env.VITE_FIREBASE_PROJECT_ID;
+
     try {
+        // 1. LIST ALL AVAILABLE MODELS
+        console.log("Fetching available models for your API key...");
+        const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_KEY}`);
+        const listData = await listRes.json();
+
+        if (listData.error) {
+            console.error("API KEY ERROR:", listData.error.message);
+            return { statusCode: 200, body: JSON.stringify({ status: "active", error: listData.error.message }) };
+        }
+
+        const modelNames = listData.models.map(m => m.name);
+        console.log("STABLE MODELS AVAILABLE:", JSON.stringify(modelNames));
+
+        // 2. AUTO-SELECT THE BEST MODEL
+        // We look for 1.5-flash first, then 1.0-pro-vision
+        const bestModel = modelNames.find(n => n.includes("gemini-1.5-flash")) || 
+                          modelNames.find(n => n.includes("pro-vision")) || 
+                          modelNames[0];
+
+        console.log("SELECTED MODEL FOR MODERATION:", bestModel);
+
+        // 3. PROCEED WITH MODERATION
         const data = JSON.parse(event.body);
         const { listingId, imageUrl, title, description } = data;
-        
-        const GEMINI_KEY = process.env.VITE_GEMINI_API_KEY;
-        const FB_KEY = process.env.VITE_FIREBASE_API_KEY;
-        const PROJ_ID = process.env.VITE_FIREBASE_PROJECT_ID;
 
-        // 1. Prepare Image
         let base64Image = null;
         if (imageUrl) {
             try {
@@ -20,63 +41,36 @@ exports.handler = async (event, context) => {
             } catch (e) { console.log("Image download failed."); }
         }
 
-        // 2. Try Different Models (Google is finicky with names)
-        const modelsToTry = [
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent",
-            "https://generativelanguage.googleapis.com/v1/models/gemini-pro-vision:generateContent"
-        ];
+        const genUrl = `https://generativelanguage.googleapis.com/v1beta/${bestModel}:generateContent?key=${GEMINI_KEY}`;
+        const aiRes = await fetch(genUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [
+                        { text: `Is this listing safe? (No weapons/drugs/nudity). Title: ${title}. Description: ${description}. Reply ONLY 'SAFE' or 'UNSAFE'.` },
+                        ...(base64Image ? [{ inlineData: { mimeType: "image/jpeg", data: base64Image } }] : [])
+                    ]
+                }]
+            })
+        });
 
-        let aiData = null;
-        let successUrl = "";
-
-        for (const baseUrl of modelsToTry) {
-            console.log(`Trying model: ${baseUrl.split('/models/')[1].split(':')[0]}...`);
-            try {
-                const res = await fetch(`${baseUrl}?key=${GEMINI_KEY}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        contents: [{
-                            parts: [
-                                { text: `Is this safe for a student marketplace? No weapons, drugs, or nudity. Title: ${title}. Description: ${description}. Reply ONLY 'SAFE' or 'UNSAFE'.` },
-                                ...(base64Image ? [{ inlineData: { mimeType: "image/jpeg", data: base64Image } }] : [])
-                            ]
-                        }]
-                    })
-                });
-                const result = await res.json();
-                if (!result.error) {
-                    aiData = result;
-                    successUrl = baseUrl;
-                    break; // Stop trying once we find one that works!
-                } else {
-                    console.log(`Model failed: ${result.error.message}`);
-                }
-            } catch (e) { console.log("Fetch failed for this model."); }
-        }
-
-        if (!aiData) {
-            console.error("ALL GOOGLE MODELS FAILED.");
-            return { statusCode: 200, body: JSON.stringify({ status: "active", debug: "AI Offline" }) };
-        }
-
-        console.log("SUCCESS WITH:", successUrl);
-        
+        const aiData = await aiRes.json();
         let isUnsafe = false;
+
         if (aiData.candidates && aiData.candidates[0]) {
-            const candidate = aiData.candidates[0];
-            if (candidate.finishReason === "SAFETY") {
+            if (aiData.candidates[0].finishReason === "SAFETY") {
                 isUnsafe = true;
-            } else if (candidate.content) {
-                const aiText = candidate.content.parts[0].text.toUpperCase();
-                if (aiText.includes("UNSAFE")) isUnsafe = true;
+            } else if (aiData.candidates[0].content) {
+                const text = aiData.candidates[0].content.parts[0].text.toUpperCase();
+                console.log("AI VERDICT:", text);
+                if (text.includes("UNSAFE")) isUnsafe = true;
             }
         }
 
         const newStatus = isUnsafe ? "rejected" : "active";
 
-        // 3. Update Firebase
+        // 4. Update Firebase
         const fbUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?updateMask.fieldPaths=status&key=${FB_KEY}`;
         await fetch(fbUrl, {
             method: "PATCH",
@@ -84,11 +78,12 @@ exports.handler = async (event, context) => {
             body: JSON.stringify({ fields: { status: { stringValue: newStatus } } })
         });
 
-        console.log(`VERDICT: ${newStatus}`);
+        console.log(`FINAL STATUS: ${newStatus}`);
+        console.log("--- DIAGNOSTICS COMPLETE ---");
         return { statusCode: 200, body: JSON.stringify({ status: newStatus }) };
 
     } catch (error) {
-        console.error("FATAL ERROR:", error.message);
-        return { statusCode: 500, body: "Error" };
+        console.error("CRITICAL SYSTEM FAILURE:", error.message);
+        return { statusCode: 500, body: "System Error" };
     }
 };
