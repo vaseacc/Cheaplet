@@ -304,7 +304,7 @@
             </div>
 
             <div class="sheet-section" id="m-sec-pinned">
-                <div class="sheet-section-title" data-i18n="pinned_topics">Pinned Topics</div>
+                <div class="sheet-section-title" data-i18n="saved_topics">Saved Topics</div>
                 <div id="m-list-pinned" style="display:flex; flex-direction:column; gap:8px;"></div>
             </div>
 
@@ -341,7 +341,7 @@
                 </div>
 
                 <div id="d-sec-pinned" style="display: none;">
-                    <div class="topic-section-title" style="margin-top: 20px;" data-i18n="pinned_topics">Pinned Topics</div>
+                    <div class="topic-section-title" style="margin-top: 20px;" data-i18n="saved_topics">Saved Topics</div>
                     <div id="d-list-pinned" style="display:flex; flex-direction:column; gap:4px;"></div>
                 </div>
 
@@ -466,7 +466,7 @@
                     rep_title: "Report Post", rep_desc: "Help us keep Scoralia safe.", rep_place: "Details...", rep_cancel: "Cancel", rep_submit: "Submit", rep_success: "Report submitted.",
                     attach_title: "Attach a Listing", attach_desc: "Select one of your active listings to share.", attach_empty: "You have no active listings.", upload_fail: "Image upload failed.",
                     search_social_place: "Search posts, topics, people...", edit_post_title: "Edit Post", save_changes: "Save Changes", edited_label: " • Edited",
-                    my_topics: "My Topics", pinned_topics: "Pinned Topics", discover_topics: "Discover", topics_directory: "Topics Directory"
+                    my_topics: "My Topics", saved_topics: "Saved Topics", discover_topics: "Discover", topics_directory: "Topics Directory"
                 },
                 fr: { 
                     topics_public: "Canaux Publics", topics_campus: "Campus Public", topics_custom: "Sujets Personnalisés", topics_new: "Nouveau Sujet",
@@ -477,7 +477,7 @@
                     rep_title: "Signaler le message", rep_desc: "Aidez-nous à protéger Scoralia.", rep_place: "Détails...", rep_cancel: "Annuler", rep_submit: "Envoyer", rep_success: "Signalement envoyé.",
                     attach_title: "Joindre une annonce", attach_desc: "Sélectionnez l'une de vos annonces actives.", attach_empty: "Vous n'avez aucune annonce active.", upload_fail: "Échec du téléchargement.",
                     search_social_place: "Rechercher messages, sujets, personnes...", edit_post_title: "Modifier le message", save_changes: "Enregistrer", edited_label: " • Modifié",
-                    my_topics: "Mes Sujets", pinned_topics: "Sujets Épinglés", discover_topics: "Découvrir", topics_directory: "Annuaire des Sujets"
+                    my_topics: "Mes Sujets", saved_topics: "Sujets Enregistrés", discover_topics: "Découvrir", topics_directory: "Annuaire des Sujets"
                 }
             };
             const ui = allStrings[lang] || allStrings['en'];
@@ -904,11 +904,16 @@
                     const isAdmin = currentUser && currentUser.role === 'admin';
                     const isPinned = pinnedArr.includes(d.id);
                     
-                    if (isPrivate && !isOwner && !isMember && !isAdmin) return; 
+                    if (isPrivate && !isOwner && !isMember && !isAdmin && !isPinned) return; 
                     
-                    if (isOwner) myT.push(d);
-                    else if (isPinned) pinT.push(d);
-                    else discT.push(d);
+                    // 🔥 FIX: pinned topics always go to Saved Topics, regardless of ownership
+                    if (isPinned) {
+                        pinT.push(d);
+                    } else if (isOwner) {
+                        myT.push(d);
+                    } else {
+                        discT.push(d);
+                    }
                 });
 
                 document.getElementById('d-sec-my').style.display = myT.length ? 'block' : 'none';
