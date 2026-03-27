@@ -72,24 +72,31 @@ exports.handler = async (event, context) => {
 
         const imageDataArray = (await Promise.all(imagePromises)).filter(img => img !== null);
 
-        // --- AI Prompt ---
-        const prompt = `You are a highly strict, zero-tolerance safety AI for a college student marketplace.
-        Analyze this image, the title: "${title}", and the description: "${description}".
+        // --- REVISED AI PROMPT (allows book covers, movie posters, etc.) ---
+        const prompt = `You are a strict safety AI for a college student marketplace. 
+        The user is selling an item and the image is of the item itself (book, textbook, clothing, electronics, etc.).
 
-        IMMEDIATE REJECTION (UNSAFE) FOR ANY OF THE FOLLOWING:
-        1. Nudity, pornography, lingerie, swimwear, cleavage, sexual poses, or suggestive content.
-        2. Weapons, firearms, knives, explosives, or violence.
-        3. Drugs, marijuana, alcohol, vaping, smoking paraphernalia, or pills.
-        4. Counterfeit items, fake IDs, or illegal goods.
-        5. Irrelevant spam, memes, screenshots of text, or QR codes.
+        RULES:
+        - If the image contains nudity, pornography, lingerie, swimwear, sexual poses, or any sexually suggestive content -> UNSAFE.
+        - If the image shows actual weapons (real guns, knives, explosives, etc.) -> UNSAFE.
+        - If the image shows drugs, marijuana, alcohol, vaping, smoking paraphernalia, or pills -> UNSAFE.
+        - If the image shows counterfeit items, fake IDs, or illegal goods -> UNSAFE.
+        - If the image is irrelevant (spam, memes, screenshots of text, QR codes not related to the item) -> UNSAFE.
         
-        If the image is a textbook, school supply, electronics, clothing (not underwear/swimwear), or normal student item, it is SAFE.
-        If you are even 1% unsure or it looks suspicious, output UNSAFE. Er on the side of caution.
+        IMPORTANT EXCEPTIONS (SAFE):
+        - Book covers, movie posters, video game covers, or any product packaging that contains illustrations or depictions of weapons (e.g., an arrow on a book cover) are SAFE because they are part of the product being sold.
+        - Clothing items (except underwear/swimwear) are SAFE.
+        - Textbooks, school supplies, electronics, and normal student items are SAFE.
+        
+        If you are even 1% unsure about a legitimate product, mark SAFE. Only mark UNSAFE if you are confident the image violates the above unsafe rules.
+
+        LISTING TITLE: "${title}"
+        LISTING DESCRIPTION: "${description}"
 
         OUTPUT EXACTLY THIS RAW JSON FORMAT AND NOTHING ELSE. DO NOT USE MARKDOWN BACKTICKS:
-        {"verdict": "SAFE", "reason": "Looks like a textbook"}
+        {"verdict": "SAFE", "reason": "Brief explanation"}
         or
-        {"verdict": "UNSAFE", "reason": "Contains suggestive clothing/lingerie"}
+        {"verdict": "UNSAFE", "reason": "Brief explanation"}
         `;
 
         // --- Ask Gemini ---
@@ -160,12 +167,11 @@ exports.handler = async (event, context) => {
 async function approveListing(listingId, FB_KEY, PROJ_ID, corsHeaders, authHeader) {
     const fbDocUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?key=${FB_KEY}`;
     
-    // FIXED: Changed ? to & for the updateMask
     const response = await fetch(`${fbDocUrl}&updateMask.fieldPaths=status`, {
         method: "PATCH",
         headers: { 
             "Content-Type": "application/json",
-            "Authorization": authHeader // Proof of identity
+            "Authorization": authHeader
         },
         body: JSON.stringify({ 
             name: `projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}`,
@@ -184,7 +190,6 @@ async function approveListing(listingId, FB_KEY, PROJ_ID, corsHeaders, authHeade
 async function rejectListing(listingId, title, posterUid, posterName, FB_KEY, PROJ_ID, reason, corsHeaders, authHeader) {
     const fbDocUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?key=${FB_KEY}`;
     
-    // FIXED: Changed ? to & for the updateMask
     const response = await fetch(`${fbDocUrl}&updateMask.fieldPaths=status&updateMask.fieldPaths=imageUrls`, {
         method: "PATCH",
         headers: { 
