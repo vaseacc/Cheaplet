@@ -1,20 +1,27 @@
 exports.handler = async (event, context) => {
     // 1. CORS Headers
-    const headers = {
+    const corsHeaders = {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
         "Access-Control-Allow-Methods": "POST, OPTIONS"
     };
 
     if (event.httpMethod === "OPTIONS") {
-        return { statusCode: 200, headers, body: "" };
+        return { statusCode: 200, headers: corsHeaders, body: "" };
     }
 
     if (event.httpMethod !== "POST") {
-        return { statusCode: 405, headers, body: "Method Not Allowed" };
+        return { statusCode: 405, headers: corsHeaders, body: "Method Not Allowed" };
     }
 
     try {
+        // Extract the user's login token from the frontend request
+        const authHeader = event.headers.authorization || event.headers.Authorization;
+        if (!authHeader) {
+            console.error("Missing Authorization header");
+            return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: "Unauthorized" }) };
+        }
+
         const data = JSON.parse(event.body);
         let { listingId, imageUrls, title, description } = data;
 
@@ -32,7 +39,7 @@ exports.handler = async (event, context) => {
 
         console.log(`Starting AI scan for listing: ${listingId}`);
 
-        // --- Fetch listing details ---
+        // --- Fetch listing details (Anonymous read allowed by rules) ---
         const listingDocUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?key=${FB_KEY}`;
         const listingRes = await fetch(listingDocUrl);
         let posterUid = "unknown";
@@ -46,7 +53,7 @@ exports.handler = async (event, context) => {
 
         if (imageUrls.length === 0) {
             console.log("No images found. Approving automatically.");
-            return await approveListing(listingId, FB_KEY, PROJ_ID, headers);
+            return await approveListing(listingId, FB_KEY, PROJ_ID, corsHeaders, authHeader);
         }
 
         // --- Download images ---
@@ -137,10 +144,10 @@ exports.handler = async (event, context) => {
         // --- Apply verdict ---
         if (isUnsafe) {
             console.log(`Verdict: UNSAFE. Reason: ${finalReason}`);
-            return await rejectListing(listingId, title, posterUid, posterName, FB_KEY, PROJ_ID, finalReason, headers);
+            return await rejectListing(listingId, title, posterUid, posterName, FB_KEY, PROJ_ID, finalReason, corsHeaders, authHeader);
         } else {
             console.log(`Verdict: SAFE. Approving listing...`);
-            return await approveListing(listingId, FB_KEY, PROJ_ID, headers);
+            return await approveListing(listingId, FB_KEY, PROJ_ID, corsHeaders, authHeader);
         }
 
     } catch (error) {
@@ -149,13 +156,16 @@ exports.handler = async (event, context) => {
     }
 };
 
-// Helper: Approve listing (set status to active)
-async function approveListing(listingId, FB_KEY, PROJ_ID, headers) {
+// Helper: Approve listing (Authenticated request)
+async function approveListing(listingId, FB_KEY, PROJ_ID, corsHeaders, authHeader) {
     const fbDocUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?key=${FB_KEY}`;
     
     const response = await fetch(`${fbDocUrl}?updateMask.fieldPaths=status`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "Authorization": authHeader // Proof of identity
+        },
         body: JSON.stringify({ 
             name: `projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}`,
             fields: { status: { stringValue: "active" } } 
@@ -163,23 +173,23 @@ async function approveListing(listingId, FB_KEY, PROJ_ID, headers) {
     });
 
     const resData = await response.json();
-    
-    if (!response.ok) {
-        console.error("FIRESTORE APPROVE ERROR:", JSON.stringify(resData));
-    } else {
-        console.log("FIRESTORE SUCCESS: Listing marked as active.");
-    }
+    if (!response.ok) console.error("FIRESTORE APPROVE ERROR:", JSON.stringify(resData));
+    else console.log("FIRESTORE SUCCESS: Listing marked as active.");
 
-    return { statusCode: 200, headers, body: JSON.stringify({ status: "active" }) };
+    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ status: "active" }) };
 }
 
-// Helper: Reject listing
-async function rejectListing(listingId, title, posterUid, posterName, FB_KEY, PROJ_ID, reason, headers) {
+// Helper: Reject listing and create report (Authenticated request)
+async function rejectListing(listingId, title, posterUid, posterName, FB_KEY, PROJ_ID, reason, corsHeaders, authHeader) {
     const fbDocUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?key=${FB_KEY}`;
     
+    // 1. Mark rejected
     const response = await fetch(`${fbDocUrl}?updateMask.fieldPaths=status&updateMask.fieldPaths=imageUrls`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "Authorization": authHeader 
+        },
         body: JSON.stringify({
             name: `projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}`,
             fields: {
@@ -189,16 +199,16 @@ async function rejectListing(listingId, title, posterUid, posterName, FB_KEY, PR
         })
     });
 
-    const resData = await response.json();
-    if (!response.ok) {
-        console.error("FIRESTORE REJECT ERROR:", JSON.stringify(resData));
-    }
+    if (!response.ok) console.error("FIRESTORE REJECT ERROR:", JSON.stringify(await response.json()));
 
-    // Create Report
+    // 2. Create Admin Report
     const reportUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/reports?key=${FB_KEY}`;
     await fetch(reportUrl, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "Authorization": authHeader 
+        },
         body: JSON.stringify({
             fields: {
                 reporterName: { stringValue: "AI Guard" },
@@ -213,5 +223,5 @@ async function rejectListing(listingId, title, posterUid, posterName, FB_KEY, PR
         })
     }).catch(err => console.error("Report creation failed:", err));
 
-    return { statusCode: 200, headers, body: JSON.stringify({ status: "rejected", reason }) };
+    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ status: "rejected", reason }) };
 }
