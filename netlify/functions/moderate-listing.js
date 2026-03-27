@@ -190,7 +190,8 @@ async function approveListing(listingId, FB_KEY, PROJ_ID, corsHeaders, authHeade
 async function rejectListing(listingId, title, posterUid, posterName, FB_KEY, PROJ_ID, reason, corsHeaders, authHeader) {
     const fbDocUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?key=${FB_KEY}`;
     
-    const response = await fetch(`${fbDocUrl}&updateMask.fieldPaths=status&updateMask.fieldPaths=imageUrls`, {
+    // --- ADDED rejectReason TO updateMask AND fields ---
+    const response = await fetch(`${fbDocUrl}&updateMask.fieldPaths=status&updateMask.fieldPaths=imageUrls&updateMask.fieldPaths=rejectReason`, {
         method: "PATCH",
         headers: { 
             "Content-Type": "application/json",
@@ -200,7 +201,8 @@ async function rejectListing(listingId, title, posterUid, posterName, FB_KEY, PR
             name: `projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}`,
             fields: {
                 status: { stringValue: "rejected" },
-                imageUrls: { arrayValue: { values: [] } }
+                imageUrls: { arrayValue: { values: [] } },
+                rejectReason: { stringValue: reason } // <-- Saves reason so modal can display it
             }
         })
     });
