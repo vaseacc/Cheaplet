@@ -1,3 +1,6 @@
+Here is the fixed `topic.html` where saved topics now correctly appear in the "Saved Topics" section. The problem was that private topics were being filtered out before checking if they were saved. I've updated the filtering so that saved topics are included regardless of privacy, ensuring they show up in the menu. The full file is provided for easy copy‑paste.
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* (unchanged – keep all existing CSS) */
+        /* (same CSS as before – unchanged) */
         :root {
             --ink:       #0C1446;
             --deep:      #2B5C92;
@@ -35,7 +38,6 @@
         .logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: -0.5px; flex-shrink: 0; }
         .logo em { color: var(--gold); font-style: normal; }
 
-        /* ── RESTRICTED ACCESS SCREEN ── */
         .locked-screen { display: none; flex-direction: column; align-items: center; justify-content: center; height: calc(100vh - 68px); padding: 20px; text-align: center; }
         .locked-card { background: var(--white); padding: 40px; border-radius: var(--radius); box-shadow: var(--shadow); border: var(--border); max-width: 450px; width: 100%; animation: fadeUp 0.4s ease both; }
         .locked-icon { font-size: 3rem; color: var(--red); margin-bottom: 20px; }
@@ -44,10 +46,8 @@
         .btn-locked { background: var(--gold); color: var(--ink); border: none; padding: 12px 30px; border-radius: 30px; font-weight: 800; font-size: 1rem; cursor: pointer; text-decoration: none; display: inline-block; transition: 0.2s; }
         .btn-locked:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(200, 169, 110, 0.4); }
 
-        /* ── MAIN LAYOUT ── */
         .hub-layout { display: none; max-width: 1100px; margin: 30px auto; grid-template-columns: 260px minmax(0, 1fr); gap: 40px; padding: 0 20px; align-items: start; width: 100%; }
 
-        /* ── SIDEBAR WITH CATEGORIES ── */
         .sidebar { position: sticky; top: 100px; display: flex; flex-direction: column; gap: 20px; width: 100%; max-height: calc(100vh - 120px); overflow-y: auto; padding-right: 5px; }
         .sidebar::-webkit-scrollbar { width: 4px; }
         .sidebar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -70,7 +70,6 @@
         .btn-new-way { width: 100%; text-align: left; padding: 12px 15px; background: transparent; border: 1.5px dashed #cbd5e1; border-radius: 12px; color: var(--text-muted); font-weight: 600; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 12px; transition: 0.2s; margin-top: 10px; }
         .btn-new-way:hover { color: var(--deep); border-color: var(--deep); background: #f8fafc; }
 
-        /* ── MOBILE TOPICS BAR ── */
         .mobile-topics-wrapper { display: none; position: sticky; top: 68px; z-index: 150; background: var(--white); border-bottom: var(--border); width: 100%; align-items: center; }
         .mobile-ways-bar { display: flex; padding: 12px 10px 12px 20px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; flex-grow: 1; }
         .mobile-ways-bar::-webkit-scrollbar { display: none; }
@@ -82,7 +81,6 @@
         .m-menu-btn { width: 38px; height: 38px; border-radius: 12px; background: var(--off-white); border: var(--border); color: var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; margin-right: 15px; z-index: 2; transition: 0.2s; font-size: 1.1rem; }
         .m-menu-btn:hover { color: var(--deep); border-color: var(--deep); background: #f1f5f9; }
 
-        /* ── MOBILE TOPICS DIRECTORY (BOTTOM SHEET) ── */
         .sheet-overlay { position: fixed; inset: 0; background: rgba(12,20,70,0.6); backdrop-filter: blur(4px); z-index: 10050; display: none; opacity: 0; transition: opacity 0.3s ease; }
         .bottom-sheet { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--white); border-radius: 24px 24px 0 0; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 10051; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 -10px 40px rgba(0,0,0,0.2); }
         .sheet-header { padding: 20px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
@@ -95,30 +93,24 @@
 
         .feed-column { display: flex; flex-direction: column; gap: 24px; padding-bottom: 60px; width: 100%; min-width: 0; overflow-x: hidden; }
 
-        /* ── SEARCH BAR ── */
         .social-search-bar { display: flex; align-items: center; background: var(--white); border: var(--border); border-radius: 30px; padding: 5px 15px; box-shadow: var(--shadow); margin-bottom: -5px; transition: border-color 0.2s; }
         .social-search-bar:focus-within { border-color: var(--deep); }
         .social-search-input { flex-grow: 1; border: none; outline: none; padding: 10px; font-family: inherit; font-size: 0.95rem; background: transparent; color: var(--text-main); }
         .social-search-btn { background: none; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; padding: 5px; transition: color 0.2s; display: flex; align-items: center; justify-content: center; }
         .social-search-btn:hover { color: var(--deep); }
 
-        /* ── TOPIC HEADER ── */
         .topic-header { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 900; color: var(--ink); display: flex; align-items: center; justify-content: space-between; width: 100%; }
         .topic-title-area { display: flex; align-items: center; gap: 10px; }
         .topic-title-area i { color: var(--gold); }
-        
         .topic-settings-btn { background: var(--surface); color: var(--deep); width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--mist); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; cursor: pointer; transition: 0.2s; text-decoration: none; }
         .topic-settings-btn:hover { background: var(--mist); color: var(--ink); transform: scale(1.05); }
 
-        /* ── COMPOSER ── */
         .composer { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border: var(--border); width: 100%; display: flex; gap: 15px; align-items: flex-start; flex-direction: row; }
         .composer-pfp { width: 45px; height: 45px; border-radius: 50%; background: #eee; object-fit: cover; border: 2px solid var(--off-white); flex-shrink: 0; }
         .composer-content { flex-grow: 1; display: flex; flex-direction: column; background: var(--off-white); border: 1px solid #e2e8f0; border-radius: 18px; padding: 5px; transition: border-color 0.2s, background 0.2s; }
         .composer-content:focus-within { border-color: var(--deep); background: var(--white); }
-        
         .composer-input { width: 100%; border: none; background: transparent; font-family: inherit; font-size: 1.05rem; color: var(--text-main); resize: none; outline: none; padding: 10px 15px; min-height: 44px; max-height: 200px; }
         .composer-input::placeholder { color: #94a3b8; }
-        
         .composer-preview-area { display: none; padding: 10px 15px; border-top: 1px dashed #cbd5e1; gap: 10px; flex-wrap: wrap; }
         .preview-img-wrap { position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; border: 1px solid #cbd5e1; }
         .preview-img-wrap img { width: 100%; height: 100%; object-fit: cover; }
@@ -133,7 +125,6 @@
         .composer-tools { display: flex; gap: 10px; }
         .tool-btn { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; padding: 8px; border-radius: 50%; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
         .tool-btn:hover { background: #e2e8f0; color: var(--deep); }
-        
         .btn-composer-send { background: var(--deep); color: var(--white); border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; flex-shrink: 0; margin-bottom: 5px; margin-left: 10px; }
         .btn-composer-send:disabled { background: #cbd5e1; cursor: not-allowed; }
         .btn-composer-send:not(:disabled):hover { background: var(--ink); transform: translateY(-2px); }
@@ -141,7 +132,6 @@
         .btn-action { background: var(--gold); color: var(--ink); border: none; padding: 10px 28px; border-radius: 30px; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(200, 169, 110, 0.2); flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-action:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(200, 169, 110, 0.4); }
 
-        /* ── POST CARDS & 3-DOT MENU ── */
         .post-card { background: var(--white); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); border: var(--border); animation: fadeUp 0.4s ease both; width: 100%; overflow: visible; position: relative; }
         .post-header-top { display: flex; justify-content: space-between; align-items: flex-start; }
         .post-author-link { text-decoration: none; color: inherit; display: flex; align-items: center; gap: 15px; margin-bottom: 18px; transition: opacity 0.2s; }
@@ -152,7 +142,6 @@
         .post-author { font-weight: 800; font-size: 1.05rem; color: var(--ink); letter-spacing: -0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.2s; }
         .post-time { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; font-weight: 500; display: flex; align-items: center; gap: 5px; }
         .edited-badge { font-size: 0.75rem; color: var(--text-muted); font-style: italic; }
-        
         .post-menu-container { position: relative; }
         .post-menu-btn { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; padding: 5px 10px; border-radius: 50%; transition: 0.2s; }
         .post-menu-btn:hover { background: var(--surface); color: var(--ink); }
@@ -164,7 +153,6 @@
         .post-dropdown-item.danger:hover { background: #fef2f2; color: #b91c1c; }
 
         .post-body { font-size: 1.05rem; line-height: 1.6; color: #334155; white-space: pre-wrap; word-wrap: break-word; width: 100%; margin-bottom: 15px; }
-        
         .post-image-attachment { width: 100%; max-height: 400px; object-fit: cover; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 15px; cursor: pointer; }
         .post-listing-attachment { display: flex; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; text-decoration: none; color: inherit; transition: 0.2s; margin-bottom: 15px; background: var(--off-white); }
         .post-listing-attachment:hover { border-color: var(--gold); box-shadow: 0 4px 12px rgba(0,0,0,0.05); transform: translateY(-2px); }
@@ -180,7 +168,6 @@
         .action-btn.liked i { animation: popHeart 0.3s ease; }
         @keyframes popHeart { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
 
-        /* Comments */
         .comments-section { display: none; margin-top: 15px; padding-top: 15px; border-top: 1px dashed #e2e8f0; }
         .comment-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 15px; max-height: 350px; overflow-y: auto; padding-right: 5px; }
         .comment-list::-webkit-scrollbar { width: 6px; }
@@ -195,19 +182,16 @@
         .comment-text { font-size: 0.9rem; color: #334155; word-wrap: break-word; line-height: 1.4; }
         .comment-image-attachment { max-width: 200px; max-height: 200px; border-radius: 8px; margin-top: 8px; display: block; cursor: pointer; border: 1px solid #e2e8f0; }
         .comment-time { font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; }
-        
         .comment-composer-area { display: flex; flex-direction: column; gap: 8px; background: var(--off-white); border: 1px solid #cbd5e1; border-radius: 18px; padding: 5px; transition: border-color 0.2s; }
         .comment-composer-area:focus-within { border-color: var(--deep); background: var(--white); }
         .comment-input-wrapper { display: flex; gap: 10px; align-items: flex-end; padding: 0 5px; }
         .comment-input { flex-grow: 1; padding: 10px 5px; border: none; background: transparent; font-family: inherit; font-size: 0.9rem; resize: none; outline: none; height: 40px; max-height: 100px; }
         .comment-tools { display: flex; gap: 5px; align-items: center; padding-bottom: 5px; }
         .comment-preview-area { display: none; padding: 5px 10px; border-bottom: 1px dashed #cbd5e1; }
-
         .btn-comment-send { background: var(--deep); color: white; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; flex-shrink: 0; margin-bottom: 4px; }
         .btn-comment-send:hover:not(:disabled) { background: var(--ink); transform: translateY(-2px); }
         .btn-comment-send:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* Market Break */
         .market-break { margin: 10px 0; padding: 25px; background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); border: var(--border); width: 100%; overflow-x: auto; overflow-y: visible; }
         .break-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px; width: 100%; flex-wrap: wrap; }
         .break-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 900; color: var(--ink); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
@@ -228,7 +212,6 @@
         .loader-msg i { font-size: 2rem; color: var(--gold); margin-bottom: 15px; display: block; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Modals */
         .login-modal-overlay, .modal-overlay { position: fixed; inset: 0; background: rgba(12,20,70,0.9); backdrop-filter: blur(6px); z-index: 10020; display: none; justify-content: center; align-items: center; padding: 20px; }
         .login-modal-card, .modal-card { background: white; border-radius: 24px; padding: 32px; max-width: 420px; width: 100%; text-align: center; animation: fadeUp 0.3s ease; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; max-height: 90vh; display: flex; flex-direction: column; }
         .modal-card.wide { max-width: 600px; }
@@ -239,7 +222,6 @@
         .btn-login { background: var(--gold); color: var(--ink); }
         .btn-register { background: transparent; border: 2px solid var(--gold); color: var(--ink); }
         .close-modal { position: absolute; top: 16px; right: 20px; font-size: 1.4rem; cursor: pointer; color: #aaa; z-index: 10; }
-        
         .modal-card { text-align: left; }
         .modal-card select, .modal-card textarea { width: 100%; padding: 12px 15px; border: 2px solid #cbd5e1; border-radius: 8px; margin-bottom: 20px; font-family: inherit; font-size: 1rem; outline: none; transition: 0.2s; }
         .modal-card select:focus, .modal-card textarea:focus { border-color: var(--deep); box-shadow: 0 0 0 3px rgba(43,92,146,0.1); }
@@ -998,7 +980,8 @@
                     const isAdmin = currentUser && currentUser.role === 'admin';
                     const isPinned = pinnedArr.includes(d.id);
                     
-                    if (isPrivate && !isOwner && !isMember && !isAdmin) return; 
+                    // 🔥 FIX: include saved topics even if private and user not a member
+                    if (isPrivate && !isOwner && !isMember && !isAdmin && !isPinned) return; 
                     
                     if (isOwner) myT.push(d);
                     else if (isPinned) pinT.push(d);
@@ -1468,3 +1451,4 @@
     </script>
 </body>
 </html>
+```
