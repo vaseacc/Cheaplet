@@ -6,65 +6,117 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <title>My Listings - Scoralia</title>
     <script type="module" src="global.js"></script>
+    
+    <!-- FONTS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
-        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+        :root {
+            --ink:       #0C1446;
+            --deep:      #2B5C92;
+            --mist:      #B3CDE0;
+            --white:     #FFFFFF;
+            --off-white: #F4F7FC;
+            --surface:   #EBF2FA;
+            --text-body: #1a2a4a;
+            --text-muted:#64748b;
+            --gold:      #C8A96E;
+            --red:       #e53e3e;
+            --green:     #2E7D32;
+            --radius-md: 16px;
+            --shadow-sm: 0 4px 20px rgba(12,20,70,0.06);
+            --font-display: 'Playfair Display', Georgia, serif;
+            --font-body:    'DM Sans', sans-serif;
+        }
 
-        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
-        .header-content { display: flex; justify-content: space-between; align-items: center; }
-        .header-left { display: flex; align-items: center; gap: 20px; }
-        .logo { font-size: 24px; font-weight: bold; color: white; text-decoration: none; }
-        .logo span { color: #FFD700; }
-        nav ul { display: flex; list-style: none; margin: 0; padding: 0; gap: 20px; }
-        .header-right { display: flex; align-items: center; gap: 15px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: var(--font-body); background-color: var(--off-white); color: var(--text-body); line-height: 1.6; min-height: 100vh; display: flex; flex-direction: column; }
 
-        .btn-secondary { background: #e0e0e0; color: #333; }
-        .btn-delete { background: #f44336 !important; color: white !important; }
-        .btn-sold { background: #2E7D32 !important; color: white !important; }
-        .btn:disabled { background: #aaa !important; opacity: 0.7; cursor: not-allowed; }
+        .container { width: 100%; max-width: 1100px; margin: 0 auto; padding: 0 20px; flex-grow: 1; }
 
-        .page-header { display: flex; justify-content: space-between; align-items: center; padding: 40px 0 20px; border-bottom: 1px solid #ddd; margin-bottom: 30px; }
-        .page-header h1 { font-size: 2rem; margin: 0; }
+        /* ── HEADER ── */
+        header { position: sticky; top: 0; z-index: 200; background: rgba(12, 20, 70, 0.97); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(179,205,224,0.15); width: 100%; }
+        .header-inner { max-width: 1100px; margin: 0 auto; padding: 0 20px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-family: var(--font-display); font-size: 1.6rem; font-weight: 900; color: var(--white); text-decoration: none; letter-spacing: -0.5px; }
+        .logo em { color: var(--gold); font-style: normal; }
+        .header-right { display: flex; align-items: center; gap: 10px; }
 
-        /* Banner info at the top */
-        .review-banner { background: #fff8e1; border: 1px solid #ffe082; color: #f57f17; padding: 15px; border-radius: 8px; margin-bottom: 25px; display: none; font-weight: bold; text-align: center; }
-
-        .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px; }
-        .listing-card { background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; flex-direction: column; transition: transform 0.3s; position: relative; }
-        .listing-card:hover { transform: translateY(-5px); }
+        /* ── PAGE HEADER ── */
+        .page-header { display: flex; justify-content: space-between; align-items: center; padding: 40px 0 20px; border-bottom: 2px solid #e2e8f0; margin-bottom: 30px; animation: fadeUp 0.4s ease both; }
+        .page-header h1 { font-family: var(--font-display); font-size: 2.2rem; color: var(--ink); margin: 0; }
         
-        .listing-image { height: 180px; background-color: #eee; background-size: cover; background-position: center; cursor: pointer; position: relative; }
+        .btn-header { background: var(--gold); color: var(--ink); padding: 10px 24px; border-radius: 30px; font-weight: 800; text-decoration: none; transition: 0.2s; box-shadow: 0 4px 15px rgba(200, 169, 110, 0.3); }
+        .btn-header:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(200, 169, 110, 0.4); }
+
+        /* ── BANNER ── */
+        .review-banner { background: #fffbeb; border: 1px solid #fde68a; color: #b45309; padding: 15px 20px; border-radius: 12px; margin-bottom: 25px; display: none; font-weight: 600; text-align: center; animation: fadeUp 0.5s ease both; box-shadow: var(--shadow-sm); }
+        
+        /* ── GRID ── */
+        .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; margin-bottom: 50px; }
+        .listing-card { background: var(--white); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); border: 1px solid rgba(179,205,224,0.3); display: flex; flex-direction: column; transition: transform 0.3s; position: relative; animation: fadeUp 0.5s ease both; }
+        .listing-card:hover { transform: translateY(-5px); border-color: var(--deep); }
+        
+        .listing-image { height: 200px; background-color: var(--surface); background-size: cover; background-position: center; cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; }
+        .listing-image i { font-size: 3rem; color: #cbd5e1; } /* Fallback icon if no image */
         
         /* Badges */
-        .status-badge { position: absolute; top: 10px; left: 10px; color: white; padding: 4px 12px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; z-index: 5; }
-        .status-sold { background: rgba(244, 67, 54, 0.9); }
-        .status-pending { background: rgba(255, 152, 0, 0.9); }
-        .status-rejected { background: rgba(0, 0, 0, 0.9); }
+        .status-badge { position: absolute; top: 12px; left: 12px; color: white; padding: 6px 14px; border-radius: 30px; font-weight: 800; font-size: 0.75rem; z-index: 5; letter-spacing: 0.5px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .status-sold { background: var(--green); }
+        .status-pending { background: #f59e0b; color: #fff; }
+        .status-rejected { background: var(--ink); }
 
-        .listing-details { padding: 15px; flex-grow: 1; }
-        .listing-title { font-weight: 600; font-size: 1rem; margin-bottom: 5px; }
-        .listing-price { color: #4CAF50; font-weight: bold; font-size: 1.1rem; }
+        .listing-details { padding: 18px; flex-grow: 1; }
+        .listing-title { font-weight: 700; font-size: 1.05rem; color: var(--ink); margin-bottom: 6px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 2.6em; }
+        .listing-price { color: var(--deep); font-weight: 800; font-size: 1.2rem; font-family: var(--font-display); }
 
-        .manage-buttons { border-top: 1px solid #eee; padding: 10px; display: flex; gap: 8px; background: #f9f9f9; flex-wrap: wrap; }
+        .manage-buttons { border-top: 1px solid #e2e8f0; padding: 12px; display: flex; gap: 8px; background: #f8fafc; flex-wrap: wrap; }
         .manage-buttons a { flex: 1; text-decoration: none; min-width: 70px; }
-        .manage-buttons .btn { width: 100%; border: none; padding: 8px; border-radius: 4px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-
-        .info-message { text-align: center; padding: 100px 0; font-size: 1.2rem; color: #999; }
+        .btn-action { width: 100%; border: none; padding: 10px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 0.9rem; }
         
-        footer { background: linear-gradient(135deg, #2E7D32 0%, #1b5e20 100%); color: white; padding: 40px 0 20px; margin-top: 40px; }
-        .copyright { text-align: center; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.9rem; color: #ccc; }
-        @media (max-width: 767px) { nav { display: none; } }
+        .btn-edit { background: var(--surface); color: var(--deep); border: 1px solid var(--mist); }
+        .btn-edit:hover:not(:disabled) { background: var(--mist); color: var(--ink); }
+        .btn-sold { background: #dcfce7; color: var(--green); border: 1px solid #bbf7d0; }
+        .btn-sold:hover:not(:disabled) { background: var(--green); color: white; }
+        .btn-delete { background: #fee2e2; color: var(--red); border: 1px solid #fecaca; }
+        .btn-delete:hover:not(:disabled) { background: var(--red); color: white; }
+        .btn-action:disabled { opacity: 0.5; cursor: not-allowed; filter: grayscale(100%); }
+
+        .info-message { text-align: center; padding: 100px 0; font-size: 1.1rem; color: var(--text-muted); font-weight: 500; }
+        
+        /* ── MODAL ── */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(12,20,70,0.8); backdrop-filter: blur(6px); z-index: 10000; display: none; justify-content: center; align-items: center; padding: 20px; animation: fadeIn 0.2s ease; }
+        .modal-card { background: var(--white); padding: 40px 30px; border-radius: var(--radius-md); max-width: 420px; width: 100%; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal-icon { font-size: 3.5rem; margin-bottom: 20px; }
+        .modal-card h2 { font-family: var(--font-display); font-size: 1.8rem; color: var(--ink); margin-bottom: 12px; }
+        .modal-card p { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 20px; line-height: 1.5; }
+        .reason-box { background: #fee2e2; border: 1px solid #fecaca; color: #b91c1c; padding: 15px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; margin-bottom: 25px; text-align: left; }
+        .btn-understand { background: var(--ink); color: white; border: none; padding: 14px 30px; border-radius: 30px; font-weight: 800; font-size: 1rem; cursor: pointer; width: 100%; transition: 0.2s; }
+        .btn-understand:hover { background: var(--deep); transform: translateY(-2px); }
+
+        /* Animations */
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.9) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+        footer { background: var(--ink); color: white; padding: 30px 0; margin-top: auto; border-top: 1px solid rgba(179,205,224,0.15); }
+        .copyright { text-align: center; font-size: 0.9rem; color: rgba(255,255,255,0.5); }
+        
+        @media (max-width: 767px) { 
+            .page-header { flex-direction: column; gap: 15px; text-align: center; } 
+            .listings-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .listing-image { height: 140px; }
+            .manage-buttons { padding: 8px; gap: 5px; flex-direction: column; }
+            .manage-buttons a { width: 100%; }
+        }
     </style>
 </head>
 <body>
     <header>
-        <div class="container header-content">
-            <div class="header-left">
-                <a href="/index.html" class="logo">Scor<span>alia</span></a>
-                <nav><ul></ul></nav>
-            </div>
+        <div class="header-inner">
+            <a href="/index.html" class="logo">Scor<em>alia</em></a>
             <div class="header-right"></div>
         </div>
     </header>
@@ -72,21 +124,30 @@
     <main class="container">
         <div class="page-header">
             <h1 data-i18n="nav_listings">My Listings</h1>
-            <a href="/messages.html" class="btn" style="background:#C8A96E; padding:10px 20px; color:#0C1446; font-weight:bold; border-radius:20px; text-decoration:none;" data-i18n="nav_messages">Messages</a>
+            <a href="/messages.html" class="btn-header" data-i18n="nav_messages"><i class="fas fa-comment-dots"></i> Messages</a>
         </div>
 
         <div id="review-banner" class="review-banner">
-            <i class="fas fa-robot"></i> Your new listing is currently being reviewed by our safety system. It will appear live in 1-2 minutes.
+            <i class="fas fa-robot"></i> <span data-i18n="review_banner">Your new listing is currently being reviewed by our safety system. It will appear live shortly.</span>
         </div>
 
         <div id="info-container">
-            <p class="info-message">...</p>
+            <p class="info-message"><i class="fas fa-circle-notch fa-spin"></i> Loading...</p>
         </div>
     
-        <section class="listings">
-            <div class="listings-grid" id="my-listings-container"></div>
-        </section>
+        <div class="listings-grid" id="my-listings-container"></div>
     </main>
+
+    <!-- REJECTION EXPLANATION MODAL -->
+    <div class="modal-overlay" id="rejected-modal">
+        <div class="modal-card">
+            <i class="fas fa-shield-alt modal-icon" style="color: var(--red);"></i>
+            <h2 id="modal-rej-title">Listing Rejected</h2>
+            <p id="modal-rej-desc">Our safety system blocked this listing for violating our community guidelines.</p>
+            <div class="reason-box" id="modal-rej-reason"></div>
+            <button class="btn-understand" id="btn-close-modal">I Understand</button>
+        </div>
+    </div>
 
     <footer>
         <div class="container">
@@ -110,11 +171,39 @@
             const myListingsContainer = document.getElementById('my-listings-container');
             const reviewBanner = document.getElementById('review-banner');
 
+            // Modal elements
+            const rejectedModal = document.getElementById('rejected-modal');
+            const btnCloseModal = document.getElementById('btn-close-modal');
+            const reasonBox = document.getElementById('modal-rej-reason');
+
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = {
-                en: { loading: "Loading your listings...", empty: "You haven't posted any listings yet!", confirm: "Delete this listing permanently?", deleting: "Deleting...", btnEdit: "Edit", btnDel: "Delete", btnSold: "Sold", confirmSold: "Mark this item as sold?", badgeSold: "SOLD", badgePending: "⏳ IN REVIEW", badgeRejected: "❌ REJECTED" },
-                fr: { loading: "Chargement de vos annonces...", empty: "Vous n'avez pas encore publié d'annonces !", confirm: "Supprimer cette annonce définitivement ?", deleting: "Suppression...", btnEdit: "Modifier", btnDel: "Supprimer", btnSold: "Vendu", confirmSold: "Marquer cet article comme vendu ?", badgeSold: "VENDU", badgePending: "⏳ EN RÉVISION", badgeRejected: "❌ REJETÉ" }
+                en: { 
+                    loading: '<i class="fas fa-circle-notch fa-spin"></i> Loading your listings...', 
+                    empty: '<i class="fas fa-book-open" style="font-size:2rem; color:var(--mist); display:block; margin-bottom:15px;"></i> You haven\'t posted any listings yet!', 
+                    confirm: "Delete this listing permanently?", deleting: "Deleting...", 
+                    btnEdit: "Edit", btnDel: "Delete", btnSold: "Mark Sold", confirmSold: "Mark this item as sold?", 
+                    badgeSold: "SOLD", badgePending: "⏳ IN REVIEW", badgeRejected: "❌ REJECTED",
+                    modalRejTitle: "Listing Rejected", modalRejDesc: "Our safety system blocked this listing for violating our community guidelines.",
+                    btnUnderstand: "I Understand", defaultReason: "Inappropriate content, spam, or prohibited items."
+                },
+                fr: { 
+                    loading: '<i class="fas fa-circle-notch fa-spin"></i> Chargement de vos annonces...', 
+                    empty: '<i class="fas fa-book-open" style="font-size:2rem; color:var(--mist); display:block; margin-bottom:15px;"></i> Vous n\'avez pas encore publié d\'annonces !', 
+                    confirm: "Supprimer cette annonce définitivement ?", deleting: "Suppression...", 
+                    btnEdit: "Modifier", btnDel: "Supprimer", btnSold: "Vendu", confirmSold: "Marquer cet article comme vendu ?", 
+                    badgeSold: "VENDU", badgePending: "⏳ EN RÉVISION", badgeRejected: "❌ REJETÉ",
+                    modalRejTitle: "Annonce Rejetée", modalRejDesc: "Notre système de sécurité a bloqué cette annonce pour non-respect de nos règles communautaires.",
+                    btnUnderstand: "Je comprends", defaultReason: "Contenu inapproprié, spam ou articles interdits."
+                }
             };
+
+            const ui = strings[lang];
+            document.getElementById('modal-rej-title').textContent = ui.modalRejTitle;
+            document.getElementById('modal-rej-desc').textContent = ui.modalRejDesc;
+            btnCloseModal.textContent = ui.btnUnderstand;
+
+            btnCloseModal.onclick = () => { rejectedModal.style.display = 'none'; };
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
@@ -131,24 +220,29 @@
 
             function fetchMyListings(userId) {
                 const q = query(collection(db, "listings"), where("posterUid", "==", userId), orderBy("timestamp", "desc"));
-                infoContainer.innerHTML = `<p class="info-message">${strings[lang].loading}</p>`;
+                infoContainer.innerHTML = `<p class="info-message">${ui.loading}</p>`;
 
                 onSnapshot(q, (snapshot) => {
                     myListingsContainer.innerHTML = '';
                     let hasPending = false;
 
                     if (snapshot.empty) {
-                        infoContainer.innerHTML = `<p class="info-message">${strings[lang].empty}</p>`;
+                        infoContainer.innerHTML = `<p class="info-message">${ui.empty}</p>`;
                         reviewBanner.style.display = 'none';
                     } else {
                         infoContainer.innerHTML = ''; 
+                        
+                        let delay = 0;
                         snapshot.forEach((doc) => {
                             const data = doc.data();
                             if (data.status === 'pending') hasPending = true;
-                            myListingsContainer.appendChild(renderMyListing(doc));
+                            
+                            const card = renderMyListing(doc);
+                            card.style.animationDelay = `${delay}s`;
+                            delay += 0.05;
+                            myListingsContainer.appendChild(card);
                         });
                         
-                        // Show banner if any item is currently pending review
                         reviewBanner.style.display = hasPending ? 'block' : 'none';
                     }
                 });
@@ -166,23 +260,25 @@
                 
                 // Construct Badge
                 let badgeHtml = '';
-                if (isSold) badgeHtml = `<div class="status-badge status-sold">${strings[lang].badgeSold}</div>`;
-                else if (isPending) badgeHtml = `<div class="status-badge status-pending">${strings[lang].badgePending}</div>`;
-                else if (isRejected) badgeHtml = `<div class="status-badge status-rejected">${strings[lang].badgeRejected}</div>`;
+                if (isSold) badgeHtml = `<div class="status-badge status-sold">${ui.badgeSold}</div>`;
+                else if (isPending) badgeHtml = `<div class="status-badge status-pending">${ui.badgePending}</div>`;
+                else if (isRejected) badgeHtml = `<div class="status-badge status-rejected">${ui.badgeRejected}</div>`;
                 
-                // Allow edit only if active (not sold, not rejected, not pending)
+                // Construct Image Div
+                let imgContent = badgeHtml;
+                if (!img) imgContent += '<i class="fas fa-image"></i>'; // Placeholder icon if AI wiped image
+                
                 const canEdit = !isSold && !isPending && !isRejected;
                 const editButtonHtml = canEdit ? `
                     <a href="/edit-listing.html?id=${listingDoc.id}">
-                        <button class="btn btn-secondary">${strings[lang].btnEdit}</button>
+                        <button class="btn-action btn-edit"><i class="fas fa-pen"></i> ${ui.btnEdit}</button>
                     </a>` : '';
                 
-                // Action Buttons
                 const disableActions = isPending || isRejected || isSold;
 
                 card.innerHTML = `
-                    <div class="listing-image" style="background-image: url('${img}')" onclick="window.location.href='/listing.html?id=${listingDoc.id}'">
-                        ${badgeHtml}
+                    <div class="listing-image" style="background-image: url('${img}')">
+                        ${imgContent}
                     </div>
                     <div class="listing-details">
                         <h3 class="listing-title">${data.title}</h3>
@@ -190,22 +286,36 @@
                     </div>
                     <div class="manage-buttons">
                         ${editButtonHtml}
-                        <button class="btn btn-sold sold-btn" ${disableActions ? 'disabled' : ''}>${strings[lang].btnSold}</button>
-                        <button class="btn btn-delete delete-btn">${strings[lang].btnDel}</button>
+                        <button class="btn-action btn-sold sold-btn" ${disableActions ? 'disabled' : ''}><i class="fas fa-check"></i> ${ui.btnSold}</button>
+                        <button class="btn-action btn-delete delete-btn"><i class="fas fa-trash"></i> ${ui.btnDel}</button>
                     </div>`;
+
+                // Handle Image Click (Modal for rejected, link for active)
+                const imgDiv = card.querySelector('.listing-image');
+                imgDiv.onclick = () => {
+                    if (isRejected) {
+                        reasonBox.textContent = data.rejectReason || ui.defaultReason;
+                        rejectedModal.style.display = 'flex';
+                    } else if (isPending) {
+                        // Do nothing, let them wait
+                    } else {
+                        window.location.href = `/listing.html?id=${listingDoc.id}`;
+                    }
+                };
 
                 const soldBtn = card.querySelector('.sold-btn');
                 soldBtn.onclick = async () => {
-                    if (confirm(strings[lang].confirmSold)) {
+                    if (confirm(ui.confirmSold)) {
                         soldBtn.disabled = true;
+                        soldBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
                         await updateDoc(doc(db, 'listings', listingDoc.id), { status: 'sold' });
                     }
                 };
 
                 const delBtn = card.querySelector('.delete-btn');
                 delBtn.onclick = async () => {
-                    if (confirm(strings[lang].confirm)) {
-                        delBtn.textContent = strings[lang].deleting;
+                    if (confirm(ui.confirm)) {
+                        delBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
                         delBtn.disabled = true;
                         await deleteDoc(doc(db, 'listings', listingDoc.id));
                     }
