@@ -448,7 +448,26 @@
                         const fullTitle = book.title + (book.authors ? ` by ${book.authors.join(', ')}` : '');
                         document.getElementById('listing-title').value = fullTitle;
                         let originalDesc = book.description ? book.description.replace(/<[^>]*>?/gm, '') : '';
-                        document.getElementById('listing-description').value = originalDesc;
+                        
+                        // --- Translation to French ---
+                        let frenchDesc = '';
+                        if (originalDesc) {
+                            try {
+                                const transRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=fr&dt=t&q=${encodeURIComponent(originalDesc)}`);
+                                const transData = await transRes.json();
+                                frenchDesc = transData[0].map(item => item[0]).join('');
+                            } catch (e) {
+                                console.error("Translation failed:", e);
+                            }
+                        }
+                        
+                        // Combine: French first, then English (with separator)
+                        let finalDesc = originalDesc;
+                        if (frenchDesc && frenchDesc !== originalDesc) {
+                            finalDesc = frenchDesc + "\n\n" + originalDesc;
+                        }
+                        document.getElementById('listing-description').value = finalDesc;
+                        
                         currentISBN = isbn;
                         document.getElementById('listing-isbn').value = isbn;
                         document.getElementById('isbn-section').style.display = 'none';
@@ -569,8 +588,6 @@
                         if (res.secure_url) imageUrls.push(res.secure_url);
                     }
 
-                    // ADD AS PENDING
-                    // ADD AS PENDING
                     const docRef = await addDoc(collection(db, 'listings'), {
                         title, description: desc, price, 
                         condition: document.getElementById('listing-condition').value,
@@ -583,17 +600,15 @@
                         timestamp: serverTimestamp()
                     });
 
-                    // GET LOGIN TOKEN TO PROVE IDENTITY TO DATABASE
                     const idToken = await currentUser.getIdToken();
 
-                    // TRIGGER AI MODERATION AND WAIT FOR IT
                     postBtnText.textContent = "AI Safety Check...";
                     try {
                         await fetch('/.netlify/functions/moderate-listing', {
                             method: 'POST',
                             headers: { 
                                 'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${idToken}` // Passes the token to the backend
+                                'Authorization': `Bearer ${idToken}`
                             },
                             body: JSON.stringify({ 
                                 listingId: docRef.id, 
@@ -606,7 +621,6 @@
                         console.error("AI trigger error:", err);
                     }
 
-                    // NOW REDIRECT
                     window.location.href = `/my-listings.html`;
                 } catch (err) {
                     alert(err.message);
