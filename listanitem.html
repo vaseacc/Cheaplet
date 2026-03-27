@@ -582,27 +582,22 @@
                         timestamp: serverTimestamp()
                     });
 
-                    // TRIGGER AI MODERATION IN BACKGROUND
-                    fetch('/.netlify/functions/moderate-listing', {
-                        method: 'POST',
-                        keepalive: true, // Prevents browser from cancelling request on redirect
-                        body: JSON.stringify({ 
-                            listingId: docRef.id, 
-                            imageUrls: imageUrls, 
-                            title: title, 
-                            description: desc 
-                        })
-                    }).catch(err => console.error("AI trigger error:", err));
+                    // TRIGGER AI MODERATION AND WAIT FOR IT
+                    postBtnText.textContent = "AI Safety Check...";
+                    try {
+                        await fetch('/.netlify/functions/moderate-listing', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                listingId: docRef.id, 
+                                imageUrls: imageUrls, 
+                                title: title, 
+                                description: desc 
+                            })
+                        });
+                    } catch (err) {
+                        console.error("AI trigger error:", err);
+                    }
 
+                    // NOW REDIRECT
                     window.location.href = `/my-listings.html`;
-                } catch (err) {
-                    alert(err.message);
-                    submitBtn.disabled = false;
-                    postBtnText.textContent = ui[lang].btnPost;
-                }
-            };
-        }
-        main();
-    </script>
-</body>
-</html>
