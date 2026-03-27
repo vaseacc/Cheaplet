@@ -34,6 +34,7 @@
         /* Cards */
         .admin-card, .tag-card, .user-card, .report-card, .investigation-card { background-color: #2d2d2d; border: 1px solid #444; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
         
+        /* Investigation Card */
         .investigation-card { padding: 20px; margin-bottom: 20px; border-left: 5px solid #2196F3; background: #252525; }
         .chat-log-box { background: #111; padding: 15px; border-radius: 6px; max-height: 400px; overflow-y: auto; margin-bottom: 10px; font-size: 0.85rem; border: 1px solid #333; }
         .msg-line { margin-bottom: 5px; padding: 8px; border-radius: 4px; line-height: 1.4; }
@@ -58,13 +59,27 @@
         .role-banned { background: #d32f2f; color: white; }
         .ban-date { font-size: 0.75rem; color: #ff8f8f; margin-bottom: 10px; }
 
-        .search-container { display: flex; gap: 10px; margin-bottom: 20px; }
-        .search-input { flex: 1; padding: 10px; background: #333; border: 1px solid #555; color: white; border-radius: 4px; }
-        .search-btn { background: #4CAF50; color: white; border: none; padding: 0 20px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        /* Listing Cards */
+        .listing-card {
+            background: #2d2d2d;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #444;
+            transition: transform 0.2s;
+        }
+        .listing-card:hover { transform: translateY(-2px); }
+        .listing-img { width: 100%; height: 160px; object-fit: cover; background: #1a1a1a; border-bottom: 1px solid #444; }
+        .listing-info { padding: 12px; }
+        .listing-title { font-weight: bold; font-size: 1rem; margin-bottom: 5px; color: white; }
+        .listing-price { color: #4CAF50; font-weight: bold; margin-bottom: 8px; }
+        .listing-user { font-size: 0.8rem; color: #aaa; margin-bottom: 8px; cursor: pointer; text-decoration: underline; }
+        .listing-actions { padding: 10px; border-top: 1px solid #444; display: flex; justify-content: flex-end; }
+        .btn-delete { background-color: #ff9800; color: black; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
+        .btn-delete:hover { opacity: 0.9; }
 
+        /* Other Buttons */
         .btn { border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
         .btn:hover { opacity: 0.9; }
-        .btn-delete { background-color: #ff9800; color: black; } 
         .btn-ban { background-color: #d32f2f; color: white; } 
         .btn-tag-delete { background-color: #d32f2f; color: white; font-size: 0.8rem; }
         .btn-make-admin { background-color: #2196F3; color: white; width: 100%; }
@@ -95,6 +110,14 @@
         .modal-card label { display: block; margin-top: 10px; font-size: 0.85rem; color: #ccc; }
         .modal-card select, .modal-card input { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; background: #1a1a1a; color: white; border: 1px solid #555; border-radius: 4px; outline: none; }
         .modal-buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; }
+
+        /* Investigation specific */
+        .investigation-listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 10px; }
+        .investigation-listing-card { background: #2d2d2d; border-radius: 8px; overflow: hidden; border: 1px solid #444; }
+        .investigation-listing-card img { width: 100%; height: 140px; object-fit: cover; background: #1a1a1a; }
+        .investigation-listing-info { padding: 10px; }
+        .investigation-listing-info h4 { font-size: 0.9rem; margin-bottom: 5px; color: white; }
+        .investigation-listing-price { color: #4CAF50; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -157,7 +180,7 @@
                 <h1>User Investigation</h1>
                 <div id="investigation-profile" class="investigation-card"></div>
                 <h2 style="margin: 20px 0;">Post History</h2>
-                <div id="investigation-listings" class="dashboard-grid"></div>
+                <div id="investigation-listings" class="investigation-listings-grid"></div>
                 <h2 style="margin: 30px 0;">Full Chat History (Admin Eyes Only)</h2>
                 <div id="investigation-chats"></div>
             </div>
@@ -263,7 +286,6 @@
                     const userRef = doc(db, "users", modTargetUid);
 
                     if (action === 'warn') {
-                        // SEND WARNING
                         const warnEn = "Warning: Recent activity on your account violates our community guidelines. Please ensure you follow our rules, or it will result in a ban.";
                         const warnFr = "Avertissement : Une activité récente sur votre compte enfreint nos règles communautaires. Veuillez respecter nos règles, sinon votre compte sera banni.";
                         await updateDoc(userRef, { activeWarning: modTargetLang === 'fr' ? warnFr : warnEn });
@@ -399,7 +421,7 @@
                 });
             }
 
-            // --- LISTINGS ---
+            // --- LISTINGS (with images and styled cards) ---
             async function loadAllListings() {
                 const snapshot = await getDocs(query(collection(db, "listings"), orderBy("timestamp", "desc")));
                 const grid = document.getElementById('listings-grid');
@@ -407,14 +429,20 @@
                 snapshot.forEach(ldoc => {
                     const d = ldoc.data();
                     const card = document.createElement('div');
-                    card.className = 'admin-card'; card.id = `listing-${ldoc.id}`;
+                    card.className = 'listing-card';
+                    card.id = `listing-${ldoc.id}`;
+                    const imgUrl = d.imageUrls && d.imageUrls[0] ? d.imageUrls[0] : '';
                     card.innerHTML = `
-                        <div class="card-header"><span class="user-link" onclick="window.investigateUser('${d.posterUid}')">${d.posterDisplayName}</span></div>
-                        <div class="card-body">
-                            ${d.imageUrls && d.imageUrls[0] ? `<img src="${d.imageUrls[0]}" class="card-img">` : ''}
-                            <div class="card-info"><div class="card-title">${d.title}</div><div class="card-price">$${d.price}</div></div>
+                        ${imgUrl ? `<img src="${imgUrl}" class="listing-img" onerror="this.style.display='none'">` : '<div style="height:160px; background:#1a1a1a;"></div>'}
+                        <div class="listing-info">
+                            <div class="listing-title">${d.title || 'Untitled'}</div>
+                            <div class="listing-price">$${d.price ? d.price.toFixed(2) : '0.00'}</div>
+                            <div class="listing-user" onclick="window.investigateUser('${d.posterUid}')">By: ${d.posterDisplayName || 'Unknown'}</div>
                         </div>
-                        <div class="card-actions"><button class="btn btn-delete" onclick="window.deleteListing('${ldoc.id}')">Delete</button></div>`;
+                        <div class="listing-actions">
+                            <button class="btn-delete" onclick="window.deleteListing('${ldoc.id}')">Delete</button>
+                        </div>
+                    `;
                     grid.appendChild(card);
                 });
             }
@@ -425,27 +453,78 @@
                 switchTab('investigation');
                 const profileBox = document.getElementById('investigation-profile');
                 const listingsBox = document.getElementById('investigation-listings');
+                const chatsBox = document.getElementById('investigation-chats');
                 
                 profileBox.innerHTML = 'Fetching full profile...';
+                listingsBox.innerHTML = '';
+                chatsBox.innerHTML = '';
+                
                 try {
+                    // 1. Profile
                     const uSnap = await getDoc(doc(db, "users", uid));
                     if(uSnap.exists()) {
                         const d = uSnap.data();
                         profileBox.innerHTML = `<h2>${d.displayName}</h2><p>${d.email}</p><button class="btn btn-ban" style="margin-top:15px; width:200px;" onclick="window.openModModal('${uid}')">MODERATE</button>`;
                     }
+
+                    // 2. Listings - display as cards
                     const lSnap = await getDocs(query(collection(db, "listings"), where("posterUid", "==", uid)));
-                    listingsBox.innerHTML = '';
-                    lSnap.forEach(ldoc => {
-                        const card = document.createElement('div'); card.className = 'admin-card';
-                        card.innerHTML = `<div class="card-body"><strong>${ldoc.data().title}</strong></div>`;
-                        listingsBox.appendChild(card);
-                    });
-                } catch (err) { console.error(err); alert("Query Error."); }
+                    if (lSnap.empty) {
+                        listingsBox.innerHTML = '<p>No listings found.</p>';
+                    } else {
+                        lSnap.forEach(ldoc => {
+                            const d = ldoc.data();
+                            const card = document.createElement('div');
+                            card.className = 'investigation-listing-card';
+                            const imgUrl = d.imageUrls && d.imageUrls[0] ? d.imageUrls[0] : '';
+                            card.innerHTML = `
+                                ${imgUrl ? `<img src="${imgUrl}" onerror="this.style.display='none'">` : '<div style="height:140px; background:#1a1a1a;"></div>'}
+                                <div class="investigation-listing-info">
+                                    <h4>${d.title}</h4>
+                                    <div class="investigation-listing-price">$${d.price ? d.price.toFixed(2) : '0.00'}</div>
+                                    <div style="font-size:0.8rem; color:#aaa;">${d.condition || ''}</div>
+                                </div>
+                            `;
+                            listingsBox.appendChild(card);
+                        });
+                    }
+
+                    // 3. Full Chat History (Admin Eyes Only)
+                    const cSnap = await getDocs(query(collection(db, "chats"), where("participants", "array-contains", uid)));
+                    if (cSnap.empty) {
+                        chatsBox.innerHTML = '<p>No chats found.</p>';
+                        return;
+                    }
+                    
+                    for (const cdoc of cSnap.docs) {
+                        const d = cdoc.data();
+                        const otherId = d.participants.find(p => p !== uid);
+                        const otherName = d.participantInfo ? d.participantInfo[otherId] : 'User';
+                        const chatCard = document.createElement('div');
+                        chatCard.className = 'investigation-card';
+                        chatCard.innerHTML = `<div class="investigation-sub-title" style="font-weight:bold; margin-bottom:8px;">Chat with ${otherName}</div><div class="chat-log-box" id="log-${cdoc.id}"></div>`;
+                        chatsBox.appendChild(chatCard);
+                        
+                        const mSnap = await getDocs(query(collection(db, "chats", cdoc.id, "messages"), orderBy("timestamp", "asc")));
+                        const log = document.getElementById(`log-${cdoc.id}`);
+                        mSnap.forEach(m => {
+                            const isTarget = m.data().senderId === uid;
+                            const sender = isTarget ? 'USER' : otherName;
+                            const text = m.data().text || (m.data().imageUrl ? '[Image]' : '');
+                            const time = m.data().timestamp ? m.data().timestamp.toDate().toLocaleTimeString() : '';
+                            log.innerHTML += `<div class="msg-line ${isTarget ? 'target' : 'other'}"><strong>${sender}:</strong> ${text} <span style="font-size:0.7rem;">${time}</span></div>`;
+                        });
+                        log.scrollTop = log.scrollHeight;
+                    }
+                } catch (err) {
+                    console.error(err);
+                    alert("Error loading user data.");
+                }
             };
 
             window.deleteTopic = async (id) => { if(confirm("Delete this topic forever?")) { await deleteDoc(doc(db, "social_channels", id)); document.getElementById(`topic-${id}`).remove(); } };
-            window.deleteListing = async (id) => { if(confirm("Delete?")) { await deleteDoc(doc(db, "listings", id)); document.getElementById(`listing-${id}`).remove(); } };
-            window.deleteTag = async (id) => { if(confirm("Delete?")) { await deleteDoc(doc(db, "global_tags", id)); document.getElementById(`tag-${id}`).remove(); } };
+            window.deleteListing = async (id) => { if(confirm("Delete this listing?")) { await deleteDoc(doc(db, "listings", id)); document.getElementById(`listing-${id}`).remove(); } };
+            window.deleteTag = async (id) => { if(confirm("Delete this tag?")) { await deleteDoc(doc(db, "global_tags", id)); document.getElementById(`tag-${id}`).remove(); } };
             window.dismissReport = async (id) => { await deleteDoc(doc(db, "reports", id)); document.getElementById(`report-${id}`).remove(); };
             window.toggleAdmin = async (uid, act) => { await updateDoc(doc(db, "users", uid), { role: act === 'add' ? 'admin' : 'user' }); loadRecentUsers(); };
 
