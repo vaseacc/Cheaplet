@@ -570,6 +570,7 @@
                     }
 
                     // ADD AS PENDING
+                    // ADD AS PENDING
                     const docRef = await addDoc(collection(db, 'listings'), {
                         title, description: desc, price, 
                         condition: document.getElementById('listing-condition').value,
@@ -582,12 +583,18 @@
                         timestamp: serverTimestamp()
                     });
 
+                    // GET LOGIN TOKEN TO PROVE IDENTITY TO DATABASE
+                    const idToken = await currentUser.getIdToken();
+
                     // TRIGGER AI MODERATION AND WAIT FOR IT
                     postBtnText.textContent = "AI Safety Check...";
                     try {
                         await fetch('/.netlify/functions/moderate-listing', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${idToken}` // Passes the token to the backend
+                            },
                             body: JSON.stringify({ 
                                 listingId: docRef.id, 
                                 imageUrls: imageUrls, 
