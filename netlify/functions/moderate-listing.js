@@ -3,113 +3,179 @@ exports.handler = async (event, context) => {
 
     try {
         const data = JSON.parse(event.body);
-        const { listingId, imageUrl, title, description, tags } = data;
-        
+        const { listingId, imageUrls, title, description, tags } = data;
+
+        // Validate input
+        if (!listingId) throw new Error("Missing listingId");
+        if (!imageUrls || !Array.isArray(imageUrls)) throw new Error("Missing or invalid imageUrls");
+
         const GEMINI_KEY = process.env.VITE_GEMINI_API_KEY;
         const FB_KEY = process.env.VITE_FIREBASE_API_KEY;
         const PROJ_ID = process.env.VITE_FIREBASE_PROJECT_ID;
 
-        // 1. Prepare Image
-        let base64Image = null;
-        if (imageUrl) {
-            try {
-                const imgRes = await fetch(imageUrl);
-                const buffer = await imgRes.arrayBuffer();
-                base64Image = Buffer.from(buffer).toString('base64');
-            } catch (e) { console.log("Image download failed."); }
+        // --- Step 0: Fetch listing details to get poster info ---
+        const listingDocUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?key=${FB_KEY}`;
+        const listingRes = await fetch(listingDocUrl);
+        let posterUid = "unknown";
+        let posterName = "Unknown User";
+        if (listingRes.ok) {
+            const listingData = await listingRes.json();
+            const fields = listingData.fields;
+            posterUid = fields.posterUid?.stringValue || "unknown";
+            posterName = fields.posterDisplayName?.stringValue || "Unknown User";
         }
 
-        // 2. The "Aggressive Zero-Tolerance" Prompt
-        const genUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
-        const aiRes = await fetch(genUrl, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [
-                        { text: `CORE MISSION: You are a Zero-Tolerance Safety Auditor for a school marketplace.
-                        
-                        RULES:
-                        - Reject (UNSAFE) any nudity, partial nudity, exposed skin in sexual areas, or sexually suggestive poses.
-                        - Reject (UNSAFE) any weapons, drugs, or drug paraphernalia.
-                        - Reject (UNSAFE) if the image is unrelated to a school marketplace.
-                        - If the image is even SLIGHTLY suggestive or suspicious, you MUST mark it as UNSAFE. 
-                        - Erring on the side of caution is mandatory.
-
-                        Item Title: ${title}
-                        Item Description: ${description}
-
-                        Reply exactly in this JSON format:
-                        { "verdict": "SAFE" or "UNSAFE", "reason": "Short explanation" }` },
-                        ...(base64Image ? [{ inlineData: { mimeType: "image/jpeg", data: base64Image } }] : [])
-                    ]
-                }]
-            })
-        });
-
-        const aiData = await aiRes.json();
-        let isUnsafe = true; // Default to UNSAFE for maximum security
-
-        if (aiData.candidates && aiData.candidates[0]) {
-            const candidate = aiData.candidates[0];
-            if (candidate.finishReason === "SAFETY") {
-                isUnsafe = true;
-                console.warn("GOOGLE FILTERS BLOCKED THIS IMAGE - INSTANT REJECTION");
-            } else if (candidate.content) {
-                try {
-                    const result = JSON.parse(candidate.content.parts[0].text);
-                    isUnsafe = result.verdict === "UNSAFE";
-                    console.log("AI Verdict:", result.verdict, "Reason:", result.reason);
-                } catch(e) {
-                    // Fallback if AI doesn't reply in perfect JSON
-                    if (candidate.content.parts[0].text.toUpperCase().includes("SAFE")) isUnsafe = false;
-                    if (candidate.content.parts[0].text.toUpperCase().includes("UNSAFE")) isUnsafe = true;
-                }
+        // --- Step 1: Download and prepare all images as base64 ---
+        const imageDataArray = [];
+        for (const imgUrl of imageUrls) {
+            try {
+                const imgRes = await fetch(imgUrl);
+                if (!imgRes.ok) throw new Error(`HTTP ${imgRes.status}`);
+                const buffer = await imgRes.arrayBuffer();
+                imageDataArray.push({
+                    url: imgUrl,
+                    base64: Buffer.from(buffer).toString('base64')
+                });
+            } catch (err) {
+                console.error(`Image download failed for ${imgUrl}:`, err.message);
+                // If any image fails to download, treat as unsafe (could be malicious)
+                return await rejectListing(listingId, title, posterUid, posterName, FB_KEY, PROJ_ID, "Image download failed");
             }
         }
 
-        const fbDocUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?key=${FB_KEY}`;
+        // --- Step 2: Zero‑Tolerance prompt ---
+        const prompt = `You are a strict safety auditor for a student marketplace. You must inspect the provided image and determine if it violates our content policy. The listing title is: "${title}" and description: "${description}".
+
+        PROHIBITED CONTENT (any occurrence = UNSAFE):
+        - Nudity, partial nudity, exposed genitalia, breasts, buttocks, or sexual poses.
+        - Sexually suggestive content, lingerie, or any content that could be interpreted as adult-oriented.
+        - Violence, gore, injuries, or cruelty.
+        - Weapons (guns, knives, explosives) or accessories that could be used as weapons.
+        - Drugs, drug paraphernalia, alcohol, tobacco, or vaping products.
+        - Illegal items, counterfeit goods, or items that violate school policies.
+        - Any content that is not relevant to a school marketplace (e.g., memes, unrelated images, spam).
         
-        if (isUnsafe) {
-            // REJECTED: Wipe images immediately
-            await fetch(`${fbDocUrl}&updateMask.fieldPaths=status&updateMask.fieldPaths=imageUrls`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ fields: { status: { stringValue: "rejected" }, imageUrls: { arrayValue: { values: [] } } } })
-            });
+        IMPORTANT: If the image is even slightly questionable, mark it UNSAFE. Er on the side of caution. This is a platform for students.
+        
+        Respond ONLY with a JSON object in the following format:
+        {"verdict": "SAFE" or "UNSAFE", "reason": "Short explanation"}
+        `;
 
-            // CREATE REPORT
-            const reportUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/reports?key=${FB_KEY}`;
-            await fetch(reportUrl, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    fields: {
-                        reporterName: { stringValue: "AI Guard" },
-                        reason: { stringValue: "Automatic NSFW Block" },
-                        details: { stringValue: `Listing "${title}" was blocked by AI.` },
-                        targetUid: { stringValue: "system" },
-                        targetUserName: { stringValue: "AI Block" },
-                        timestamp: { timestampValue: new Date().toISOString() }
+        // --- Step 3: Check each image sequentially (stop on first unsafe) ---
+        let isUnsafe = false;
+        let finalReason = "";
+
+        for (const img of imageDataArray) {
+            const aiRes = await fetch(
+                `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [
+                                { text: prompt },
+                                { inlineData: { mimeType: "image/jpeg", data: img.base64 } }
+                            ]
+                        }]
+                    })
+                }
+            );
+
+            const aiData = await aiRes.json();
+
+            // Check if the AI blocked the request (safety filters)
+            if (aiData.candidates && aiData.candidates[0]?.finishReason === "SAFETY") {
+                isUnsafe = true;
+                finalReason = "Google safety filters blocked the image.";
+                break;
+            }
+
+            // Parse AI response
+            if (aiData.candidates && aiData.candidates[0]?.content?.parts?.[0]?.text) {
+                const aiText = aiData.candidates[0].content.parts[0].text;
+                try {
+                    const result = JSON.parse(aiText);
+                    if (result.verdict === "UNSAFE") {
+                        isUnsafe = true;
+                        finalReason = result.reason || "AI flagged as unsafe";
+                        break;
                     }
-                })
-            });
-        } else {
-            // SAFE: Activate and ADD TAGS NOW (Securely)
-            await fetch(`${fbDocUrl}&updateMask.fieldPaths=status`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ fields: { status: { stringValue: "active" } } })
-            });
-
-            // Handle Global Tag Increments here via REST if needed, 
-            // but the most important part is that status is now 'active' only for safe items.
+                } catch (e) {
+                    // Fallback: check if text contains "UNSAFE"
+                    if (aiText.toUpperCase().includes("UNSAFE")) {
+                        isUnsafe = true;
+                        finalReason = "AI response indicated unsafe (parsing fallback)";
+                        break;
+                    }
+                }
+            } else {
+                // No valid response – treat as unsafe
+                isUnsafe = true;
+                finalReason = "No valid AI response";
+                break;
+            }
         }
 
-        return { statusCode: 200, body: JSON.stringify({ status: isUnsafe ? "rejected" : "active" }) };
+        // --- Step 4: Apply verdict to Firestore ---
+        if (isUnsafe) {
+            return await rejectListing(listingId, title, posterUid, posterName, FB_KEY, PROJ_ID, finalReason);
+        } else {
+            return await approveListing(listingId, FB_KEY, PROJ_ID);
+        }
 
     } catch (error) {
-        console.error(error);
-        return { statusCode: 500, body: "Error" };
+        console.error("Moderation error:", error);
+        return { statusCode: 500, body: JSON.stringify({ error: "Internal server error" }) };
     }
 };
+
+// Helper: Reject listing, clear images, and create a report for admin center
+async function rejectListing(listingId, title, posterUid, posterName, FB_KEY, PROJ_ID, reason) {
+    const fbDocUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?key=${FB_KEY}`;
+    // Update status to "rejected" and clear imageUrls
+    await fetch(`${fbDocUrl}&updateMask.fieldPaths=status&updateMask.fieldPaths=imageUrls`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            fields: {
+                status: { stringValue: "rejected" },
+                imageUrls: { arrayValue: { values: [] } }
+            }
+        })
+    }).catch(err => console.error("Firestore update failed:", err));
+
+    // Create a report so admins see it in the admin center
+    const reportUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/reports?key=${FB_KEY}`;
+    const reportData = {
+        fields: {
+            reporterName: { stringValue: "AI Guard" },
+            reporterUid: { stringValue: "system" },               // Added for consistency
+            targetUid: { stringValue: posterUid },                // Now points to the actual user
+            targetUserName: { stringValue: posterName },
+            reason: { stringValue: "Automatic Content Block" },
+            details: { stringValue: `Listing "${title}" (ID: ${listingId}) was blocked by AI. Reason: ${reason}` },
+            timestamp: { timestampValue: new Date().toISOString() },
+            type: { stringValue: "auto" }                         // Optional: mark as auto‑generated
+        }
+    };
+    await fetch(reportUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reportData)
+    }).catch(err => console.error("Report creation failed:", err));
+
+    return { statusCode: 200, body: JSON.stringify({ status: "rejected", reason }) };
+}
+
+// Helper: Approve listing (set status to active)
+async function approveListing(listingId, FB_KEY, PROJ_ID) {
+    const fbDocUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?key=${FB_KEY}`;
+    await fetch(`${fbDocUrl}&updateMask.fieldPaths=status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fields: { status: { stringValue: "active" } } })
+    }).catch(err => console.error("Firestore update failed:", err));
+
+    return { statusCode: 200, body: JSON.stringify({ status: "active" }) };
+}
