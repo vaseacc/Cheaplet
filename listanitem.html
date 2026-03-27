@@ -165,7 +165,7 @@
     <div class="page-hero">
         <div class="page-hero-inner">
             <h1 id="ui-main-title">List an Item</h1>
-            <p id="ui-main-subtitle">Fill in the details below and your book will be reviewed by our AI system.</p>
+            <p id="ui-main-subtitle">Fill in the details below and your book will be reviewed by our AI safety system.</p>
         </div>
     </div>
 
@@ -583,16 +583,16 @@
                     });
 
                     // TRIGGER AI MODERATION IN BACKGROUND
-                    // TRIGGER AI MODERATION IN BACKGROUND
-fetch('/.netlify/functions/moderate-listing', {
-    method: 'POST',
-    body: JSON.stringify({ 
-        listingId: docRef.id, 
-        imageUrls: imageUrls, // <-- FIXED: Send the whole array of URLs
-        title: title, 
-        description: desc 
-    })
-}).catch(err => console.log("AI trigger delay"));;
+                    fetch('/.netlify/functions/moderate-listing', {
+                        method: 'POST',
+                        keepalive: true, // Prevents browser from cancelling request on redirect
+                        body: JSON.stringify({ 
+                            listingId: docRef.id, 
+                            imageUrls: imageUrls, 
+                            title: title, 
+                            description: desc 
+                        })
+                    }).catch(err => console.error("AI trigger error:", err));
 
                     window.location.href = `/my-listings.html`;
                 } catch (err) {
