@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
+        /* (unchanged – keep all existing CSS) */
         :root {
             --ink:       #0C1446;
             --deep:      #2B5C92;
@@ -90,6 +91,7 @@
         .sheet-content { padding: 20px; overflow-y: auto; flex-grow: 1; }
         .sheet-section { margin-bottom: 25px; }
         .sheet-section-title { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; }
+        .empty-message { text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem; background: var(--off-white); border-radius: 12px; }
 
         .feed-column { display: flex; flex-direction: column; gap: 24px; padding-bottom: 60px; width: 100%; min-width: 0; overflow-x: hidden; }
 
@@ -339,17 +341,17 @@
                     </a>
                 </div>
 
-                <div id="d-sec-my" style="display: none;">
+                <div id="d-sec-my">
                     <div class="topic-section-title" style="margin-top: 20px;" data-i18n="my_topics">My Topics</div>
                     <div id="d-list-my" style="display:flex; flex-direction:column; gap:4px;"></div>
                 </div>
 
-                <div id="d-sec-pinned" style="display: none;">
+                <div id="d-sec-pinned">
                     <div class="topic-section-title" style="margin-top: 20px;" data-i18n="saved_topics">Saved Topics</div>
                     <div id="d-list-pinned" style="display:flex; flex-direction:column; gap:4px;"></div>
                 </div>
 
-                <div id="d-sec-discover" style="display: none;">
+                <div id="d-sec-discover">
                     <div class="topic-section-title" style="margin-top: 20px;" data-i18n="discover_topics">Discover</div>
                     <div id="d-list-discover" style="display:flex; flex-direction:column; gap:4px;"></div>
                 </div>
@@ -972,8 +974,12 @@
                 
                 if (!dListMy || !mListMy) return; 
 
-                dListMy.innerHTML = ''; dListPinned.innerHTML = ''; dListDiscover.innerHTML = '';
-                mListMy.innerHTML = ''; mListPinned.innerHTML = ''; mListDiscover.innerHTML = '';
+                dListMy.innerHTML = '';
+                dListPinned.innerHTML = '';
+                dListDiscover.innerHTML = '';
+                mListMy.innerHTML = '';
+                mListPinned.innerHTML = '';
+                mListDiscover.innerHTML = '';
                 
                 mobileWaysList.innerHTML = '';
                 const mGeneral = document.createElement('a');
@@ -999,15 +1005,46 @@
                     else discT.push(d);
                 });
 
-                document.getElementById('d-sec-my').style.display = myT.length ? 'block' : 'none';
-                document.getElementById('d-sec-pinned').style.display = pinT.length ? 'block' : 'none';
-                document.getElementById('d-sec-discover').style.display = discT.length ? 'block' : 'none';
+                // Always show sections, even if empty (with placeholder)
+                const emptyPlaceholder = `<div class="empty-message">No topics yet</div>`;
 
-                document.getElementById('m-sec-my').style.display = myT.length ? 'block' : 'none';
-                document.getElementById('m-sec-pinned').style.display = pinT.length ? 'block' : 'none';
-                document.getElementById('m-sec-discover').style.display = discT.length ? 'block' : 'none';
+                // My Topics
+                if (myT.length) {
+                    myT.forEach(t => {
+                        dListMy.appendChild(createItemHtml(t, true, true));
+                        mListMy.appendChild(createMobileItemHtml(t));
+                        mobileWaysList.appendChild(createTopBarItem(t));
+                    });
+                } else {
+                    dListMy.innerHTML = emptyPlaceholder;
+                    mListMy.innerHTML = emptyPlaceholder;
+                }
 
-                const createItemHtml = (t, isDesktop, isMyTopic) => {
+                // Saved Topics (Pinned)
+                if (pinT.length) {
+                    pinT.forEach(t => {
+                        dListPinned.appendChild(createItemHtml(t, true, false));
+                        mListPinned.appendChild(createMobileItemHtml(t));
+                        mobileWaysList.appendChild(createTopBarItem(t));
+                    });
+                } else {
+                    dListPinned.innerHTML = emptyPlaceholder;
+                    mListPinned.innerHTML = emptyPlaceholder;
+                }
+
+                // Discover Topics
+                if (discT.length) {
+                    discT.forEach(t => {
+                        dListDiscover.appendChild(createItemHtml(t, true, false));
+                        mListDiscover.appendChild(createMobileItemHtml(t));
+                        // Not adding to top bar to keep it clean
+                    });
+                } else {
+                    dListDiscover.innerHTML = emptyPlaceholder;
+                    mListDiscover.innerHTML = emptyPlaceholder;
+                }
+
+                function createItemHtml(t, isDesktop, isMyTopic) {
                     const count = formatCount(t.postCount);
                     const lock = t.visibility === 'private' ? ' <i class="fas fa-lock" style="font-size:0.65rem; margin-left:4px;"></i>' : '';
                     const editBtn = isMyTopic ? `<a href="/edittopic.html?id=${t.id}" class="edit-way-btn" onclick="event.stopPropagation()"><i class="fas fa-cog"></i></a>` : '';
@@ -1018,9 +1055,33 @@
                     item.href = `/topic.html?id=${t.id}`;
                     item.innerHTML = `<i class="fas fa-hashtag"></i> <span style="flex-grow:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${t.name}${lock}</span> <span class="way-count">${count}</span>${editBtn}`;
                     return item;
-                };
+                }
 
-                const createTopBarItem = (t) => {
+                function createMobileItemHtml(t) {
+                    const count = formatCount(t.postCount);
+                    const lock = t.visibility === 'private' ? ' <i class="fas fa-lock" style="font-size:0.65rem; margin-left:4px;"></i>' : '';
+                    const isActive = topicId === t.id;
+
+                    const item = document.createElement('a');
+                    item.className = `topic-modal-item ${isActive ? 'active' : ''}`;
+                    item.style.display = 'flex';
+                    item.style.alignItems = 'center';
+                    item.style.justifyContent = 'space-between';
+                    item.style.padding = '10px 8px';
+                    item.style.borderBottom = '1px solid #e2e8f0';
+                    item.style.textDecoration = 'none';
+                    item.style.color = 'inherit';
+                    item.href = `/topic.html?id=${t.id}`;
+                    item.innerHTML = `
+                        <div class="topic-modal-name" style="font-weight:600; display:flex; align-items:center; gap:6px;">
+                            <i class="fas fa-hashtag"></i> ${t.name}${lock}
+                        </div>
+                        <span class="topic-modal-count" style="font-size:0.75rem; color:var(--text-muted); background:var(--off-white); padding:2px 8px; border-radius:12px;">${count}</span>
+                    `;
+                    return item;
+                }
+
+                function createTopBarItem(t) {
                     const count = formatCount(t.postCount);
                     const lock = t.visibility === 'private' ? ' <i class="fas fa-lock" style="font-size:0.65rem; margin-left:4px;"></i>' : '';
                     const isActive = topicId === t.id;
@@ -1030,22 +1091,7 @@
                     item.href = `/topic.html?id=${t.id}`;
                     item.innerHTML = `<i class="fas fa-hashtag"></i> ${t.name}${lock} <span class="m-way-count">${count}</span>`;
                     return item;
-                };
-
-                myT.forEach(t => {
-                    dListMy.appendChild(createItemHtml(t, true, true));
-                    mobileWaysList.appendChild(createTopBarItem(t)); // Priority in top bar
-                });
-
-                pinT.forEach(t => {
-                    dListPinned.appendChild(createItemHtml(t, true, false));
-                    mobileWaysList.appendChild(createTopBarItem(t)); // Secondary in top bar
-                });
-
-                discT.forEach(t => {
-                    dListDiscover.appendChild(createItemHtml(t, true, false));
-                    // Intentionally NOT adding to mobileWaysList to keep top bar clean
-                });
+                }
             }
 
             document.getElementById('btn-create-way').onclick = () => window.location.href = '/createtopic.html';
