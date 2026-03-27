@@ -160,7 +160,8 @@ exports.handler = async (event, context) => {
 async function approveListing(listingId, FB_KEY, PROJ_ID, corsHeaders, authHeader) {
     const fbDocUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?key=${FB_KEY}`;
     
-    const response = await fetch(`${fbDocUrl}?updateMask.fieldPaths=status`, {
+    // FIXED: Changed ? to & for the updateMask
+    const response = await fetch(`${fbDocUrl}&updateMask.fieldPaths=status`, {
         method: "PATCH",
         headers: { 
             "Content-Type": "application/json",
@@ -183,8 +184,8 @@ async function approveListing(listingId, FB_KEY, PROJ_ID, corsHeaders, authHeade
 async function rejectListing(listingId, title, posterUid, posterName, FB_KEY, PROJ_ID, reason, corsHeaders, authHeader) {
     const fbDocUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?key=${FB_KEY}`;
     
-    // 1. Mark rejected
-    const response = await fetch(`${fbDocUrl}?updateMask.fieldPaths=status&updateMask.fieldPaths=imageUrls`, {
+    // FIXED: Changed ? to & for the updateMask
+    const response = await fetch(`${fbDocUrl}&updateMask.fieldPaths=status&updateMask.fieldPaths=imageUrls`, {
         method: "PATCH",
         headers: { 
             "Content-Type": "application/json",
@@ -200,6 +201,7 @@ async function rejectListing(listingId, title, posterUid, posterName, FB_KEY, PR
     });
 
     if (!response.ok) console.error("FIRESTORE REJECT ERROR:", JSON.stringify(await response.json()));
+    else console.log("FIRESTORE SUCCESS: Listing marked as rejected.");
 
     // 2. Create Admin Report
     const reportUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/reports?key=${FB_KEY}`;
