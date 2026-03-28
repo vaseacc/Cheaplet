@@ -72,7 +72,7 @@ exports.handler = async (event, context) => {
 
         const imageDataArray = (await Promise.all(imagePromises)).filter(img => img !== null);
 
-        // --- REVISED AI PROMPT (allows book covers, movie posters, etc.) ---
+        // --- AI Prompt ---
         const prompt = `You are a strict safety AI for a college student marketplace. 
         The user is selling an item and the image is of the item itself (book, textbook, clothing, electronics, etc.).
 
@@ -190,8 +190,7 @@ async function approveListing(listingId, FB_KEY, PROJ_ID, corsHeaders, authHeade
 async function rejectListing(listingId, title, posterUid, posterName, FB_KEY, PROJ_ID, reason, corsHeaders, authHeader) {
     const fbDocUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?key=${FB_KEY}`;
     
-    // 1. Mark rejected and store the reason
-    const response = await fetch(`${fbDocUrl}&updateMask.fieldPaths=status&updateMask.fieldPaths=imageUrls&updateMask.fieldPaths=rejectionReason&updateMask.fieldPaths=rejectionNotified`, {
+    const response = await fetch(`${fbDocUrl}&updateMask.fieldPaths=status&updateMask.fieldPaths=imageUrls`, {
         method: "PATCH",
         headers: { 
             "Content-Type": "application/json",
@@ -201,9 +200,7 @@ async function rejectListing(listingId, title, posterUid, posterName, FB_KEY, PR
             name: `projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}`,
             fields: {
                 status: { stringValue: "rejected" },
-                imageUrls: { arrayValue: { values: [] } },
-                rejectionReason: { stringValue: reason },
-                rejectionNotified: { booleanValue: false }
+                imageUrls: { arrayValue: { values: [] } }
             }
         })
     });
@@ -211,7 +208,7 @@ async function rejectListing(listingId, title, posterUid, posterName, FB_KEY, PR
     if (!response.ok) console.error("FIRESTORE REJECT ERROR:", JSON.stringify(await response.json()));
     else console.log("FIRESTORE SUCCESS: Listing marked as rejected.");
 
-    // 2. Create Admin Report
+    // 2. Create Admin Report (with listingId added)
     const reportUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/reports?key=${FB_KEY}`;
     await fetch(reportUrl, {
         method: "POST",
@@ -228,7 +225,8 @@ async function rejectListing(listingId, title, posterUid, posterName, FB_KEY, PR
                 reason: { stringValue: "Automatic Content Block" },
                 details: { stringValue: `Listing "${title}" (ID: ${listingId}) was blocked by AI. Reason: ${reason}` },
                 timestamp: { timestampValue: new Date().toISOString() },
-                type: { stringValue: "auto" }                         
+                type: { stringValue: "auto" },
+                listingId: { stringValue: listingId }      // 👈 ADDED
             }
         })
     }).catch(err => console.error("Report creation failed:", err));
