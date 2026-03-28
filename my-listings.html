@@ -199,13 +199,12 @@
 
             btnCloseModal.onclick = () => { rejectedModal.style.display = 'none'; };
 
-            // Helper to fetch rejection reason from reports (with retry)
+            // Enhanced helper to fetch rejection reason with debugging
             async function fetchRejectionReason(listingId, attempt = 0) {
                 try {
                     const q = query(collection(db, "reports"), where("listingId", "==", listingId), where("type", "==", "auto"));
                     const snap = await getDocs(q);
                     if (snap.empty) {
-                        // If no report found and this is the first attempt, wait 1 second and retry
                         if (attempt === 0) {
                             await new Promise(resolve => setTimeout(resolve, 1000));
                             return fetchRejectionReason(listingId, 1);
@@ -215,10 +214,11 @@
                     }
                     const report = snap.docs[0].data();
                     const details = report.details || "";
-                    console.log("Report details:", details); // Helpful for debugging (visible in browser console)
+                    console.log("Report details for listing", listingId, ":", details); // Debug output
                     
-                    // Try to extract the reason after "Reason: "
+                    // Try to extract a clean reason
                     let reason = "";
+                    // First, try to get the reason after "Reason:"
                     const match = details.match(/Reason: (.+?)(?:\n|$)/i);
                     if (match) {
                         reason = match[1].trim();
@@ -226,7 +226,7 @@
                         // If the details are short, just use them
                         reason = details;
                     } else {
-                        // Fallback: try to get first sentence or use default
+                        // Fallback: use the first sentence or a truncated version
                         const firstSentence = details.split(/[.!?]/)[0];
                         if (firstSentence && firstSentence.length < 150) {
                             reason = firstSentence.replace(/^.*?Reason: /i, '');
@@ -330,7 +330,6 @@
                 const imgDiv = card.querySelector('.listing-image');
                 imgDiv.onclick = async () => {
                     if (isRejected) {
-                        // Show loading state
                         reasonBox.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading reason...';
                         rejectedModal.style.display = 'flex';
                         const reason = await fetchRejectionReason(listingDoc.id);
