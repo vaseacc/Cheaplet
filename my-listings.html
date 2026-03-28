@@ -158,7 +158,7 @@
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, query, where, onSnapshot, orderBy, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, query, where, onSnapshot, orderBy, doc, deleteDoc, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -204,6 +204,26 @@
             btnCloseModal.textContent = ui.btnUnderstand;
 
             btnCloseModal.onclick = () => { rejectedModal.style.display = 'none'; };
+
+            // Helper to fetch rejection reason from reports
+            async function fetchRejectionReason(listingId) {
+                try {
+                    const q = query(collection(db, "reports"), where("listingId", "==", listingId), where("type", "==", "auto"));
+                    const snap = await getDocs(q);
+                    if (!snap.empty) {
+                        const report = snap.docs[0].data();
+                        // Extract the reason from the details field (which contains "Reason: ...")
+                        const details = report.details || "";
+                        const match = details.match(/Reason: (.+?)(?:\n|$)/i);
+                        if (match) return match[1];
+                        return details;
+                    }
+                    return ui.defaultReason;
+                } catch (e) {
+                    console.error("Error fetching rejection reason:", e);
+                    return ui.defaultReason;
+                }
+            }
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
@@ -292,10 +312,13 @@
 
                 // Handle Image Click (Modal for rejected, link for active)
                 const imgDiv = card.querySelector('.listing-image');
-                imgDiv.onclick = () => {
+                imgDiv.onclick = async () => {
                     if (isRejected) {
-                        reasonBox.textContent = data.rejectReason || ui.defaultReason;
+                        // Show loading state
+                        reasonBox.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading reason...';
                         rejectedModal.style.display = 'flex';
+                        const reason = await fetchRejectionReason(listingDoc.id);
+                        reasonBox.innerHTML = reason;
                     } else if (isPending) {
                         // Do nothing, let them wait
                     } else {
