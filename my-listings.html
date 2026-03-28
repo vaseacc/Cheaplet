@@ -92,7 +92,7 @@
         .modal-icon { font-size: 3.5rem; margin-bottom: 20px; }
         .modal-card h2 { font-family: var(--font-display); font-size: 1.8rem; color: var(--ink); margin-bottom: 12px; }
         .modal-card p { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 20px; line-height: 1.5; }
-        .reason-box { background: #fee2e2; border: 1px solid #fecaca; color: #b91c1c; padding: 15px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; margin-bottom: 25px; text-align: left; }
+        .reason-box { background: #fee2e2; border: 1px solid #fecaca; color: #b91c1c; padding: 15px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; margin-bottom: 25px; text-align: left; word-break: break-word; white-space: pre-wrap; }
         .btn-understand { background: var(--ink); color: white; border: none; padding: 14px 30px; border-radius: 30px; font-weight: 800; font-size: 1rem; cursor: pointer; width: 100%; transition: 0.2s; }
         .btn-understand:hover { background: var(--deep); transform: translateY(-2px); }
 
@@ -212,11 +212,21 @@
                     const snap = await getDocs(q);
                     if (!snap.empty) {
                         const report = snap.docs[0].data();
-                        // Extract the reason from the details field (which contains "Reason: ...")
                         const details = report.details || "";
+                        // Try to extract the reason after "Reason: "
+                        let reason = "";
                         const match = details.match(/Reason: (.+?)(?:\n|$)/i);
-                        if (match) return match[1];
-                        return details;
+                        if (match) {
+                            reason = match[1];
+                        } else if (details.length < 200) {
+                            // If the details are short, just use them
+                            reason = details;
+                        } else {
+                            // Fallback: cut the first sentence or use default
+                            reason = details.split('\n')[0].replace(/^.*?Reason: /i, '');
+                            if (!reason || reason.length > 150) reason = ui.defaultReason;
+                        }
+                        return reason || ui.defaultReason;
                     }
                     return ui.defaultReason;
                 } catch (e) {
