@@ -34,7 +34,7 @@
         .logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: -0.5px; flex-shrink: 0; }
         .logo em { color: var(--gold); font-style: normal; }
 
-        /* ── RESTRICTED ACCESS SCREEN (now only for non‑logged‑in) ── */
+        /* ── RESTRICTED ACCESS SCREEN (only for non‑logged‑in) ── */
         .locked-screen { display: none; flex-direction: column; align-items: center; justify-content: center; height: calc(100vh - 68px); padding: 20px; text-align: center; }
         .locked-card { background: var(--white); padding: 40px; border-radius: var(--radius); box-shadow: var(--shadow); border: var(--border); max-width: 450px; width: 100%; animation: fadeUp 0.4s ease both; }
         .locked-icon { font-size: 3rem; color: var(--red); margin-bottom: 20px; }
@@ -50,9 +50,10 @@
         .sidebar { position: sticky; top: 100px; display: flex; flex-direction: column; gap: 20px; width: 100%; max-height: calc(100vh - 120px); overflow-y: auto; padding-right: 5px; }
         .sidebar::-webkit-scrollbar { width: 4px; }
         .sidebar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        .school-header { margin-bottom: 5px; }
+        .school-header { margin-bottom: 5px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
         .school-name { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 900; color: var(--ink); line-height: 1.2; }
-        .school-sub { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-top: 4px; }
+        .verified-check { color: var(--green); font-size: 1rem; margin-left: 4px; }
+        .school-sub { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-top: 4px; width: 100%; }
         
         .topics-menu { display: flex; flex-direction: column; gap: 4px; }
         .topic-section-title { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin: 15px 0 5px 10px; }
@@ -94,10 +95,12 @@
         .feed-column { display: flex; flex-direction: column; gap: 24px; padding-bottom: 60px; width: 100%; min-width: 0; overflow-x: hidden; }
 
         /* ── VERIFICATION BANNER ── */
-        .verify-banner { background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 12px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; animation: fadeUp 0.4s ease both; }
+        .verify-banner { background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 12px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; animation: fadeUp 0.4s ease both; position: relative; }
         .verify-banner p { color: #b45309; font-size: 0.9rem; font-weight: 500; margin: 0; flex: 1; }
         .verify-banner button { background: var(--gold); border: none; padding: 6px 18px; border-radius: 30px; font-weight: 700; color: var(--ink); cursor: pointer; transition: 0.2s; }
-        .verify-banner button:hover { transform: translateY(-1px); background: var(--gold-light); }
+        .verify-banner button:hover { transform: translateY(-1px); background: #ddb97a; }
+        .banner-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #b45309; padding: 0 5px; transition: opacity 0.2s; }
+        .banner-close:hover { opacity: 0.7; }
 
         /* ── SCHOOL FILTER ── */
         .filter-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; background: var(--white); border-radius: 30px; padding: 5px 15px; width: fit-content; border: var(--border); box-shadow: var(--shadow); }
@@ -153,6 +156,7 @@
         .post-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #f1f5f9; border: 1px solid #e2e8f0; flex-shrink: 0; }
         .post-meta { display: flex; flex-direction: column; overflow: hidden; }
         .post-author { font-weight: 800; font-size: 1.05rem; color: var(--ink); letter-spacing: -0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.2s; }
+        .verified-check-icon { color: var(--green); font-size: 0.9rem; margin-left: 6px; }
         .post-time { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; font-weight: 500; display: flex; align-items: center; gap: 5px; }
         .edited-badge { font-size: 0.75rem; color: var(--text-muted); font-style: italic; }
         
@@ -334,6 +338,7 @@
         <aside class="sidebar">
             <div class="school-header">
                 <div class="school-name" id="d-user-school">Campus</div>
+                <span id="verified-check-sidebar" class="verified-check" style="display: none;"><i class="fas fa-check-circle"></i></span>
                 <div class="school-sub">Community Hub</div>
             </div>
             
@@ -368,10 +373,11 @@
 
         <main class="feed-column">
             
-            <!-- VERIFICATION BANNER (only for non‑verified users) -->
+            <!-- VERIFICATION BANNER (only for non‑verified users, dismissible) -->
             <div id="verify-banner" class="verify-banner" style="display: none;">
-                <p><i class="fas fa-graduation-cap"></i> <span id="verify-banner-text">To filter posts by your school and earn a Verified Student badge, add your school email in your profile settings.</span></p>
-                <a href="/profile.html"><button>Update Profile</button></a>
+                <p><i class="fas fa-graduation-cap"></i> <span id="verify-banner-text">Get the Verified Student badge and filter posts by your school – create an account with your school email address.</span></p>
+                <a href="/LoginInToCheaplet.html?redirect=/social.html"><button>Create School Account</button></a>
+                <button class="banner-close" id="close-banner-btn">&times;</button>
             </div>
 
             <!-- SCHOOL FILTER BAR (only for verified users) -->
@@ -491,7 +497,7 @@
                     attach_title: "Attach a Listing", attach_desc: "Select one of your active listings to share.", attach_empty: "You have no active listings.", upload_fail: "Image upload failed.",
                     search_social_place: "Search posts, topics, people...", edit_post_title: "Edit Post", save_changes: "Save Changes", edited_label: " • Edited",
                     my_topics: "My Topics", saved_topics: "Saved Topics", discover_topics: "Discover", topics_directory: "Topics Directory",
-                    verify_banner_text: "To filter posts by your school and earn a Verified Student badge, add your school email in your profile settings."
+                    verify_banner_text: "Get the Verified Student badge and filter posts by your school – create an account with your school email address."
                 },
                 fr: { 
                     topics_public: "Canaux Publics", topics_campus: "Campus Public", topics_custom: "Sujets Personnalisés", topics_new: "Nouveau Sujet",
@@ -503,7 +509,7 @@
                     attach_title: "Joindre une annonce", attach_desc: "Sélectionnez l'une de vos annonces actives.", attach_empty: "Vous n'avez aucune annonce active.", upload_fail: "Échec du téléchargement.",
                     search_social_place: "Rechercher messages, sujets, personnes...", edit_post_title: "Modifier le message", save_changes: "Enregistrer", edited_label: " • Modifié",
                     my_topics: "Mes Sujets", saved_topics: "Sujets Enregistrés", discover_topics: "Découvrir", topics_directory: "Annuaire des Sujets",
-                    verify_banner_text: "Pour filtrer les messages par votre établissement et obtenir le badge « Étudiant vérifié », ajoutez votre adresse e-mail scolaire dans les paramètres de votre profil."
+                    verify_banner_text: "Obtenez le badge « Étudiant vérifié » et filtrez les messages par votre établissement – créez un compte avec votre adresse e-mail scolaire."
                 }
             };
             const ui = allStrings[lang] || allStrings['en'];
@@ -593,6 +599,7 @@
             // School filter elements
             const filterBar = document.getElementById('filter-bar');
             const verifyBanner = document.getElementById('verify-banner');
+            const closeBannerBtn = document.getElementById('close-banner-btn');
             const allFilterBtn = document.querySelector('.school-filter[data-filter="all"]');
             const myFilterBtn = document.getElementById('my-school-filter');
             let currentSchoolFilter = 'all'; // 'all' or 'my'
@@ -862,6 +869,7 @@
                         
                         // Show/hide verification banner and school filter
                         if (isStudent) {
+                            // Hide banner if already dismissed? No, for verified users it's never shown anyway.
                             verifyBanner.style.display = 'none';
                             filterBar.style.display = 'flex';
                             // Set up filter button text (school name)
@@ -874,10 +882,22 @@
                                 myFilterBtn.classList.remove('active');
                                 allFilterBtn.classList.add('active');
                             }
+                            // Show verified checkmark in sidebar
+                            const sidebarCheck = document.getElementById('verified-check-sidebar');
+                            if (sidebarCheck) sidebarCheck.style.display = 'inline-block';
                         } else {
-                            verifyBanner.style.display = 'flex';
+                            // For non-verified, check localStorage for dismissal
+                            const bannerDismissed = localStorage.getItem('verify_banner_dismissed') === 'true';
+                            if (!bannerDismissed) {
+                                verifyBanner.style.display = 'flex';
+                            } else {
+                                verifyBanner.style.display = 'none';
+                            }
                             filterBar.style.display = 'none';
                             currentSchoolFilter = 'all'; // reset to all
+                            // Hide sidebar checkmark
+                            const sidebarCheck = document.getElementById('verified-check-sidebar');
+                            if (sidebarCheck) sidebarCheck.style.display = 'none';
                         }
                         
                         showHubLayout();
@@ -891,6 +911,12 @@
                     showLockedScreen();
                 }
             });
+
+            // Dismiss banner with X button
+            closeBannerBtn.onclick = () => {
+                verifyBanner.style.display = 'none';
+                localStorage.setItem('verify_banner_dismissed', 'true');
+            };
 
             function showLockedScreen() {
                 document.getElementById('hub-layout').style.display = 'none';
@@ -1048,7 +1074,6 @@
                         // Apply school filter if needed
                         const postsData = filteredDocs.map(doc => ({ id: doc.id, data: doc.data() }));
                         const filteredBySchool = filterPostsBySchool(postsData.map(p => ({ schoolName: p.data.schoolName, data: p.data, id: p.id })));
-                        // Re‑fetch the original docs for those IDs to keep full data
                         const filteredIds = filteredBySchool.map(p => p.id);
                         filteredDocs = filteredDocs.filter(doc => filteredIds.includes(doc.id));
 
@@ -1118,6 +1143,8 @@
                 let pfp = d.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${d.authorUid}&backgroundColor=EBF2FA`;
                 let timeStr = d.timestamp ? formatTime(d.timestamp.toDate()) : ui.justNow;
                 const isLiked = currentUser && d.likedBy && d.likedBy.includes(currentUser.uid);
+                const isAuthorVerified = currentUserData && currentUserData.isStudent && d.authorUid === currentUser.uid;
+                const verifiedIcon = isAuthorVerified ? `<span class="verified-check-icon"><i class="fas fa-check-circle"></i></span>` : '';
                 
                 // 3-DOT MENU LOGIC
                 const canEdit = currentUser && currentUser.uid === d.authorUid;
@@ -1149,7 +1176,7 @@
                         <a href="/user.html?id=${d.authorUid}" class="post-author-link">
                             <img src="${pfp}" class="post-avatar" alt="Avatar">
                             <div class="post-meta">
-                                <span class="post-author">${d.authorName}</span>
+                                <span class="post-author">${d.authorName}${verifiedIcon}</span>
                                 <span class="post-time">${timeStr}${editedLabel}</span>
                             </div>
                         </a>
