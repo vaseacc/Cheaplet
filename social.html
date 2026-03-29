@@ -34,7 +34,7 @@
         .logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: -0.5px; flex-shrink: 0; }
         .logo em { color: var(--gold); font-style: normal; }
 
-        /* ── RESTRICTED ACCESS SCREEN ── */
+        /* ── RESTRICTED ACCESS SCREEN (now only for non‑logged‑in) ── */
         .locked-screen { display: none; flex-direction: column; align-items: center; justify-content: center; height: calc(100vh - 68px); padding: 20px; text-align: center; }
         .locked-card { background: var(--white); padding: 40px; border-radius: var(--radius); box-shadow: var(--shadow); border: var(--border); max-width: 450px; width: 100%; animation: fadeUp 0.4s ease both; }
         .locked-icon { font-size: 3rem; color: var(--red); margin-bottom: 20px; }
@@ -78,7 +78,6 @@
         .m-way-count { opacity: 0.6; font-size: 0.75rem; margin-left: 4px; }
         .mobile-fade { width: 40px; height: 100%; background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,1)); position: absolute; right: 55px; pointer-events: none; }
         
-        /* New Mobile Menu Button */
         .m-menu-btn { width: 38px; height: 38px; border-radius: 12px; background: var(--off-white); border: var(--border); color: var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; margin-right: 15px; z-index: 2; transition: 0.2s; font-size: 1.1rem; }
         .m-menu-btn:hover { color: var(--deep); border-color: var(--deep); background: #f1f5f9; }
 
@@ -93,6 +92,19 @@
         .sheet-section-title { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; border-bottom: 1px solid #f1f5f9; padding-bottom: 5px; }
 
         .feed-column { display: flex; flex-direction: column; gap: 24px; padding-bottom: 60px; width: 100%; min-width: 0; overflow-x: hidden; }
+
+        /* ── VERIFICATION BANNER ── */
+        .verify-banner { background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 12px 18px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; animation: fadeUp 0.4s ease both; }
+        .verify-banner p { color: #b45309; font-size: 0.9rem; font-weight: 500; margin: 0; flex: 1; }
+        .verify-banner button { background: var(--gold); border: none; padding: 6px 18px; border-radius: 30px; font-weight: 700; color: var(--ink); cursor: pointer; transition: 0.2s; }
+        .verify-banner button:hover { transform: translateY(-1px); background: var(--gold-light); }
+
+        /* ── SCHOOL FILTER ── */
+        .filter-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; background: var(--white); border-radius: 30px; padding: 5px 15px; width: fit-content; border: var(--border); box-shadow: var(--shadow); }
+        .filter-bar span { font-size: 0.85rem; color: var(--text-muted); }
+        .school-filter { background: none; border: none; padding: 8px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
+        .school-filter.active { background: var(--ink); color: white; }
+        .school-filter.disabled { opacity: 0.5; cursor: not-allowed; background: none; color: var(--text-muted); pointer-events: none; }
 
         /* ── SEARCH BAR ── */
         .social-search-bar { display: flex; align-items: center; background: var(--white); border: var(--border); border-radius: 30px; padding: 5px 15px; box-shadow: var(--shadow); margin-bottom: -5px; transition: border-color 0.2s; }
@@ -125,7 +137,7 @@
         .tool-btn { background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; padding: 8px; border-radius: 50%; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
         .tool-btn:hover { background: #e2e8f0; color: var(--deep); }
         
-        .btn-composer-send { background: var(--deep); color: var(--white); border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-bottom: 5px; margin-left: 10px; transition: 0.2s; flex-shrink: 0; }
+        .btn-composer-send { background: var(--deep); color: var(--white); border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; flex-shrink: 0; margin-bottom: 5px; margin-left: 10px; }
         .btn-composer-send:disabled { background: #cbd5e1; cursor: not-allowed; }
         .btn-composer-send:not(:disabled):hover { background: var(--ink); transform: translateY(-2px); }
 
@@ -267,12 +279,12 @@
         </div>
     </header>
 
-    <!-- LOCKED SCREEN -->
+    <!-- LOCKED SCREEN (only for non‑logged‑in users) -->
     <div class="locked-screen" id="locked-screen">
         <div class="locked-card">
             <i class="fas fa-lock locked-icon"></i>
             <h2 class="locked-title" id="ui-locked-title">Restricted Access</h2>
-            <p class="locked-desc" id="ui-locked-desc">The Campus Hub is an exclusive space for verified students. To join the conversation, please log in using your official school email address.</p>
+            <p class="locked-desc" id="ui-locked-desc">The Campus Hub is an exclusive space for students. Please log in to join the conversation.</p>
             <a href="/LoginInToCheaplet.html?redirect=/social.html" class="btn-locked" id="ui-locked-btn">Log In or Register</a>
         </div>
     </div>
@@ -356,7 +368,20 @@
 
         <main class="feed-column">
             
-            <!-- SEARCH BAR (NEW) -->
+            <!-- VERIFICATION BANNER (only for non‑verified users) -->
+            <div id="verify-banner" class="verify-banner" style="display: none;">
+                <p><i class="fas fa-graduation-cap"></i> <span id="verify-banner-text">To filter posts by your school and earn a Verified Student badge, add your school email in your profile settings.</span></p>
+                <a href="/profile.html"><button>Update Profile</button></a>
+            </div>
+
+            <!-- SCHOOL FILTER BAR (only for verified users) -->
+            <div id="filter-bar" class="filter-bar" style="display: none;">
+                <span><i class="fas fa-filter"></i> Show:</span>
+                <button class="school-filter active" data-filter="all">All Campuses</button>
+                <button class="school-filter" data-filter="my" id="my-school-filter">My School</button>
+            </div>
+
+            <!-- SEARCH BAR -->
             <div class="social-search-bar">
                 <i class="fas fa-search" style="color:var(--text-muted); margin-left:5px;"></i>
                 <input type="text" class="social-search-input" id="social-search-input" data-i18n-placeholder="search_social_place" placeholder="Search posts, topics, people...">
@@ -399,7 +424,6 @@
             <span class="close-modal" id="close-listing-modal">&times;</span>
             <h2 id="ui-modal-attach-title">Attach a Listing</h2>
             <p id="ui-modal-attach-desc">Select one of your active listings to share in this post.</p>
-            
             <div class="listing-selector-list" id="listing-selector-list">
                 <div style="text-align:center; padding:20px; color:#888;">Loading your listings...</div>
             </div>
@@ -462,22 +486,24 @@
                     post_placeholder: "What's happening on campus?", loading_hub: "Loading campus hub...",
                     noPosts: "No posts yet. Be the first to share something!", justNow: "Just now", suggest: "Campus Marketplace", browse: "Browse All →", 
                     guest: "Campus Hub", sell: "List a Book", comment_placeholder: "Write a comment...", no_comments: "No comments yet.",
-                    lock_title: "Restricted Access", lock_desc: "The Campus Hub is an exclusive space for verified students. To join the conversation, please log in or register using your official school email address.", lock_btn: "Log In or Register",
+                    lock_title: "Restricted Access", lock_desc: "The Campus Hub is an exclusive space for students. Please log in to join the conversation.", lock_btn: "Log In or Register",
                     rep_title: "Report Post", rep_desc: "Help us keep Scoralia safe.", rep_place: "Details...", rep_cancel: "Cancel", rep_submit: "Submit", rep_success: "Report submitted.",
                     attach_title: "Attach a Listing", attach_desc: "Select one of your active listings to share.", attach_empty: "You have no active listings.", upload_fail: "Image upload failed.",
                     search_social_place: "Search posts, topics, people...", edit_post_title: "Edit Post", save_changes: "Save Changes", edited_label: " • Edited",
-                    my_topics: "My Topics", saved_topics: "Saved Topics", discover_topics: "Discover", topics_directory: "Topics Directory"
+                    my_topics: "My Topics", saved_topics: "Saved Topics", discover_topics: "Discover", topics_directory: "Topics Directory",
+                    verify_banner_text: "To filter posts by your school and earn a Verified Student badge, add your school email in your profile settings."
                 },
                 fr: { 
                     topics_public: "Canaux Publics", topics_campus: "Campus Public", topics_custom: "Sujets Personnalisés", topics_new: "Nouveau Sujet",
                     post_placeholder: "Que se passe-t-il sur le campus ?", loading_hub: "Chargement du hub...",
                     noPosts: "Aucune publication. Soyez le premier à partager !", justNow: "À l'instant", suggest: "Marché du Campus", browse: "Voir tout →", 
                     guest: "Hub Campus", sell: "Vendre un livre", comment_placeholder: "Écrire un commentaire...", no_comments: "Aucun commentaire pour le moment.",
-                    lock_title: "Accès Restreint", lock_desc: "Le Hub Campus est un espace exclusif pour les étudiants vérifiés. Pour rejoindre la conversation, veuillez vous connecter ou vous inscrire avec votre adresse courriel scolaire officielle.", lock_btn: "Se Connecter ou S'inscrire",
+                    lock_title: "Accès Restreint", lock_desc: "Le Hub Campus est un espace exclusif pour les étudiants. Connectez-vous pour rejoindre la conversation.", lock_btn: "Se Connecter ou S'inscrire",
                     rep_title: "Signaler le message", rep_desc: "Aidez-nous à protéger Scoralia.", rep_place: "Détails...", rep_cancel: "Annuler", rep_submit: "Envoyer", rep_success: "Signalement envoyé.",
                     attach_title: "Joindre une annonce", attach_desc: "Sélectionnez l'une de vos annonces actives.", attach_empty: "Vous n'avez aucune annonce active.", upload_fail: "Échec du téléchargement.",
                     search_social_place: "Rechercher messages, sujets, personnes...", edit_post_title: "Modifier le message", save_changes: "Enregistrer", edited_label: " • Modifié",
-                    my_topics: "Mes Sujets", saved_topics: "Sujets Enregistrés", discover_topics: "Découvrir", topics_directory: "Annuaire des Sujets"
+                    my_topics: "Mes Sujets", saved_topics: "Sujets Enregistrés", discover_topics: "Découvrir", topics_directory: "Annuaire des Sujets",
+                    verify_banner_text: "Pour filtrer les messages par votre établissement et obtenir le badge « Étudiant vérifié », ajoutez votre adresse e-mail scolaire dans les paramètres de votre profil."
                 }
             };
             const ui = allStrings[lang] || allStrings['en'];
@@ -498,6 +524,7 @@
 
             document.getElementById('ui-modal-attach-title').textContent = ui.attach_title;
             document.getElementById('ui-modal-attach-desc').textContent = ui.attach_desc;
+            document.getElementById('verify-banner-text').textContent = ui.verify_banner_text;
 
             // --- BOTTOM SHEET LOGIC ---
             const sheetOverlay = document.getElementById('sheet-overlay');
@@ -507,7 +534,7 @@
 
             btnOpenMenu.onclick = () => {
                 sheetOverlay.style.display = 'block';
-                void sheetOverlay.offsetWidth; // Trigger reflow
+                void sheetOverlay.offsetWidth; 
                 sheetOverlay.style.opacity = '1';
                 bottomSheet.style.transform = 'translateY(0)';
             };
@@ -537,6 +564,7 @@
             function formatCount(num) { return !num ? 0 : (num > 999 ? (num / 1000).toFixed(1) + 'k' : num); }
 
             let currentUser = null;
+            let currentUserData = null;
             let internalSchoolName = "Global Campus"; 
             let unsubscribePosts = null;
             let commentUnsubscribes = {}; 
@@ -561,6 +589,13 @@
             const imgUploadInput = document.getElementById('post-img-upload');
             const attachListingModal = document.getElementById('attach-listing-modal');
             const listingSelectorList = document.getElementById('listing-selector-list');
+
+            // School filter elements
+            const filterBar = document.getElementById('filter-bar');
+            const verifyBanner = document.getElementById('verify-banner');
+            const allFilterBtn = document.querySelector('.school-filter[data-filter="all"]');
+            const myFilterBtn = document.getElementById('my-school-filter');
+            let currentSchoolFilter = 'all'; // 'all' or 'my'
 
             // --- COMPOSER LOGIC ---
             function updateComposerSendButton() {
@@ -661,7 +696,6 @@
 
             document.getElementById('close-listing-modal').onclick = () => { attachListingModal.style.display = 'none'; };
 
-            // Upload helper
             async function uploadImageToCloudinary(file) {
                 const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
                 const formData = new FormData();
@@ -807,28 +841,52 @@
             // --- AUTH & SECURITY LOGIC ---
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    onSnapshot(doc(db, "users", user.uid), (uSnap) => {
-                        if (uSnap.exists()) {
-                            const data = uSnap.data();
-                            
-                            if (!data.isStudent && data.role !== 'admin') {
-                                showLockedScreen();
-                                return;
-                            }
-
-                            currentUser = { ...user, ...data };
-                            internalSchoolName = data.schoolName || "Global Campus";
-                            
-                            dSchoolName.textContent = internalSchoolName === "Global Campus" && data.role === 'admin' ? "Global Admin" : internalSchoolName;
-                            document.getElementById('composer-pfp').src = data.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
-                            
-                            showHubLayout();
-                            loadTopics(); 
-                            preloadBooksAndLoadFeed();
-                        } else {
-                            showLockedScreen();
+                    const uSnap = await getDoc(doc(db, "users", user.uid));
+                    if (uSnap.exists()) {
+                        const data = uSnap.data();
+                        
+                        // ANY authenticated user with verified email can access
+                        if (!user.emailVerified && !user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com')) {
+                            // Not email verified and not OAuth – treat as unverified
+                            window.location.href = '/LoginInToCheaplet.html?redirect=/social.html';
+                            return;
                         }
-                    });
+
+                        currentUser = { ...user, ...data };
+                        currentUserData = data;
+                        internalSchoolName = data.schoolName || "Global Campus";
+                        const isStudent = data.isStudent === true;
+                        
+                        dSchoolName.textContent = internalSchoolName === "Global Campus" && data.role === 'admin' ? "Global Admin" : internalSchoolName;
+                        document.getElementById('composer-pfp').src = data.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
+                        
+                        // Show/hide verification banner and school filter
+                        if (isStudent) {
+                            verifyBanner.style.display = 'none';
+                            filterBar.style.display = 'flex';
+                            // Set up filter button text (school name)
+                            myFilterBtn.textContent = data.schoolName || "My School";
+                            // Set active filter based on currentSchoolFilter
+                            if (currentSchoolFilter === 'my') {
+                                myFilterBtn.classList.add('active');
+                                allFilterBtn.classList.remove('active');
+                            } else {
+                                myFilterBtn.classList.remove('active');
+                                allFilterBtn.classList.add('active');
+                            }
+                        } else {
+                            verifyBanner.style.display = 'flex';
+                            filterBar.style.display = 'none';
+                            currentSchoolFilter = 'all'; // reset to all
+                        }
+                        
+                        showHubLayout();
+                        loadTopics(); 
+                        preloadBooksAndLoadFeed();
+                    } else {
+                        // No user doc – redirect to login
+                        window.location.href = '/LoginInToCheaplet.html?redirect=/social.html';
+                    }
                 } else {
                     showLockedScreen();
                 }
@@ -906,14 +964,9 @@
                     
                     if (isPrivate && !isOwner && !isMember && !isAdmin && !isPinned) return; 
                     
-                    // 🔥 FIX: pinned topics always go to Saved Topics, regardless of ownership
-                    if (isPinned) {
-                        pinT.push(d);
-                    } else if (isOwner) {
-                        myT.push(d);
-                    } else {
-                        discT.push(d);
-                    }
+                    if (isOwner) myT.push(d);
+                    else if (isPinned) pinT.push(d);
+                    else discT.push(d);
                 });
 
                 document.getElementById('d-sec-my').style.display = myT.length ? 'block' : 'none';
@@ -961,30 +1014,19 @@
                 discT.forEach(t => {
                     dListDiscover.appendChild(createItemHtml(t, true, false));
                     mListDiscover.appendChild(createItemHtml(t, false, false));
-                    mobileWaysList.appendChild(createTopBarItem(t));
+                    // Do not add to top bar (to keep it from being crowded)
                 });
             }
 
             document.getElementById('btn-create-way').onclick = () => window.location.href = '/createtopic.html';
             document.getElementById('m-sheet-create-way').onclick = () => window.location.href = '/createtopic.html';
 
-            async function preloadBooksAndLoadFeed() {
-                let bookQ = query(collection(db, "listings"), where("status", "==", "active"), orderBy("timestamp", "desc"), limit(6));
-                
-                if (currentUser && internalSchoolName !== "Global Campus" && currentUser.role !== 'admin') {
-                    try {
-                        const sBookQ = query(collection(db, "listings"), where("location", "==", internalSchoolName), where("status", "==", "active"), limit(6));
-                        const bSnap = await getDocs(sBookQ);
-                        if (!bSnap.empty) bookQ = sBookQ;
-                    } catch(e) {}
+            // --- FEED FILTERING LOGIC ---
+            function filterPostsBySchool(posts) {
+                if (currentSchoolFilter === 'my' && currentUserData && currentUserData.isStudent && internalSchoolName !== "Global Campus") {
+                    return posts.filter(post => post.schoolName === internalSchoolName);
                 }
-                
-                try {
-                    const snap = await getDocs(bookQ);
-                    listings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                } catch (e) { console.error("Error preloading books", e); }
-                
-                loadFeed();
+                return posts;
             }
 
             function loadFeed() {
@@ -1000,15 +1042,15 @@
                     unsubscribePosts = onSnapshot(q, (snapshot) => {
                         feedContainer.innerHTML = '';
                         
+                        // Always start with all posts from general way
                         let filteredDocs = snapshot.docs.filter(d => d.data().wayId === 'general');
                         
-                        // NEW FILTERING: Show (User's School OR Global Campus)
-                        if (internalSchoolName !== "Global Campus" && (!currentUser || currentUser.role !== 'admin')) {
-                            filteredDocs = filteredDocs.filter(d => {
-                                const postSchool = d.data().schoolName;
-                                return postSchool === internalSchoolName || postSchool === "Global Campus";
-                            });
-                        }
+                        // Apply school filter if needed
+                        const postsData = filteredDocs.map(doc => ({ id: doc.id, data: doc.data() }));
+                        const filteredBySchool = filterPostsBySchool(postsData.map(p => ({ schoolName: p.data.schoolName, data: p.data, id: p.id })));
+                        // Re‑fetch the original docs for those IDs to keep full data
+                        const filteredIds = filteredBySchool.map(p => p.id);
+                        filteredDocs = filteredDocs.filter(doc => filteredIds.includes(doc.id));
 
                         if (filteredDocs.length === 0) {
                             feedContainer.innerHTML = `<div class="loader-msg">${ui.noPosts}</div>`;
@@ -1035,6 +1077,41 @@
                         feedContainer.appendChild(frag);
                     });
                 } catch (e) { console.error(e); }
+            }
+
+            // School filter event handlers
+            allFilterBtn.onclick = () => {
+                currentSchoolFilter = 'all';
+                allFilterBtn.classList.add('active');
+                myFilterBtn.classList.remove('active');
+                loadFeed();
+            };
+            myFilterBtn.onclick = () => {
+                if (currentUserData && currentUserData.isStudent) {
+                    currentSchoolFilter = 'my';
+                    myFilterBtn.classList.add('active');
+                    allFilterBtn.classList.remove('active');
+                    loadFeed();
+                }
+            };
+
+            async function preloadBooksAndLoadFeed() {
+                let bookQ = query(collection(db, "listings"), where("status", "==", "active"), orderBy("timestamp", "desc"), limit(6));
+                
+                if (currentUser && internalSchoolName !== "Global Campus" && currentUser.role !== 'admin') {
+                    try {
+                        const sBookQ = query(collection(db, "listings"), where("location", "==", internalSchoolName), where("status", "==", "active"), limit(6));
+                        const bSnap = await getDocs(sBookQ);
+                        if (!bSnap.empty) bookQ = sBookQ;
+                    } catch(e) {}
+                }
+                
+                try {
+                    const snap = await getDocs(bookQ);
+                    listings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                } catch (e) { console.error("Error preloading books", e); }
+                
+                loadFeed();
             }
 
             function createPostElement(id, d) {
