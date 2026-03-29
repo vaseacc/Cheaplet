@@ -283,12 +283,12 @@
         </div>
     </header>
 
-    <!-- LOCKED SCREEN (only for non‑logged‑in users) -->
+    <!-- LOCKED SCREEN -->
     <div class="locked-screen" id="locked-screen">
         <div class="locked-card">
             <i class="fas fa-lock locked-icon"></i>
             <h2 class="locked-title" id="ui-locked-title">Restricted Access</h2>
-            <p class="locked-desc" id="ui-locked-desc">The Campus Hub is an exclusive space for students. Please log in to join the conversation.</p>
+            <p class="locked-desc" id="ui-locked-desc">The Campus Hub is an exclusive space for verified students. To join the conversation, please log in using your official school email address.</p>
             <a href="/LoginInToCheaplet.html?redirect=/social.html" class="btn-locked" id="ui-locked-btn">Log In or Register</a>
         </div>
     </div>
@@ -373,14 +373,14 @@
 
         <main class="feed-column">
             
-            <!-- VERIFICATION BANNER (only for non‑verified users, dismissible) -->
+            <!-- VERIFICATION BANNER -->
             <div id="verify-banner" class="verify-banner" style="display: none;">
                 <p><i class="fas fa-graduation-cap"></i> <span id="verify-banner-text">Get the Verified Student badge and filter posts by your school – create an account with your school email address.</span></p>
                 <a href="/LoginInToCheaplet.html?redirect=/social.html"><button>Create School Account</button></a>
                 <button class="banner-close" id="close-banner-btn">&times;</button>
             </div>
 
-            <!-- SCHOOL FILTER BAR (only for verified users) -->
+            <!-- SCHOOL FILTER BAR -->
             <div id="filter-bar" class="filter-bar" style="display: none;">
                 <span><i class="fas fa-filter"></i> Show:</span>
                 <button class="school-filter active" data-filter="all">All Campuses</button>
@@ -430,6 +430,7 @@
             <span class="close-modal" id="close-listing-modal">&times;</span>
             <h2 id="ui-modal-attach-title">Attach a Listing</h2>
             <p id="ui-modal-attach-desc">Select one of your active listings to share in this post.</p>
+            
             <div class="listing-selector-list" id="listing-selector-list">
                 <div style="text-align:center; padding:20px; color:#888;">Loading your listings...</div>
             </div>
@@ -492,7 +493,7 @@
                     post_placeholder: "What's happening on campus?", loading_hub: "Loading campus hub...",
                     noPosts: "No posts yet. Be the first to share something!", justNow: "Just now", suggest: "Campus Marketplace", browse: "Browse All →", 
                     guest: "Campus Hub", sell: "List a Book", comment_placeholder: "Write a comment...", no_comments: "No comments yet.",
-                    lock_title: "Restricted Access", lock_desc: "The Campus Hub is an exclusive space for students. Please log in to join the conversation.", lock_btn: "Log In or Register",
+                    lock_title: "Restricted Access", lock_desc: "The Campus Hub is an exclusive space for verified students. To join the conversation, please log in using your official school email address.", lock_btn: "Log In or Register",
                     rep_title: "Report Post", rep_desc: "Help us keep Scoralia safe.", rep_place: "Details...", rep_cancel: "Cancel", rep_submit: "Submit", rep_success: "Report submitted.",
                     attach_title: "Attach a Listing", attach_desc: "Select one of your active listings to share.", attach_empty: "You have no active listings.", upload_fail: "Image upload failed.",
                     search_social_place: "Search posts, topics, people...", edit_post_title: "Edit Post", save_changes: "Save Changes", edited_label: " • Edited",
@@ -504,7 +505,7 @@
                     post_placeholder: "Que se passe-t-il sur le campus ?", loading_hub: "Chargement du hub...",
                     noPosts: "Aucune publication. Soyez le premier à partager !", justNow: "À l'instant", suggest: "Marché du Campus", browse: "Voir tout →", 
                     guest: "Hub Campus", sell: "Vendre un livre", comment_placeholder: "Écrire un commentaire...", no_comments: "Aucun commentaire pour le moment.",
-                    lock_title: "Accès Restreint", lock_desc: "Le Hub Campus est un espace exclusif pour les étudiants. Connectez-vous pour rejoindre la conversation.", lock_btn: "Se Connecter ou S'inscrire",
+                    lock_title: "Accès Restreint", lock_desc: "Le Hub Campus est un espace exclusif pour les étudiants vérifiés. Pour rejoindre la conversation, veuillez vous connecter avec votre adresse courriel scolaire officielle.", lock_btn: "Se Connecter ou S'inscrire",
                     rep_title: "Signaler le message", rep_desc: "Aidez-nous à protéger Scoralia.", rep_place: "Détails...", rep_cancel: "Annuler", rep_submit: "Envoyer", rep_success: "Signalement envoyé.",
                     attach_title: "Joindre une annonce", attach_desc: "Sélectionnez l'une de vos annonces actives.", attach_empty: "Vous n'avez aucune annonce active.", upload_fail: "Échec du téléchargement.",
                     search_social_place: "Rechercher messages, sujets, personnes...", edit_post_title: "Modifier le message", save_changes: "Enregistrer", edited_label: " • Modifié",
@@ -540,7 +541,7 @@
 
             btnOpenMenu.onclick = () => {
                 sheetOverlay.style.display = 'block';
-                void sheetOverlay.offsetWidth; 
+                void sheetOverlay.offsetWidth; // Trigger reflow
                 sheetOverlay.style.opacity = '1';
                 bottomSheet.style.transform = 'translateY(0)';
             };
@@ -703,6 +704,7 @@
 
             document.getElementById('close-listing-modal').onclick = () => { attachListingModal.style.display = 'none'; };
 
+            // Upload helper
             async function uploadImageToCloudinary(file) {
                 const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
                 const formData = new FormData();
@@ -848,65 +850,58 @@
             // --- AUTH & SECURITY LOGIC ---
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    const uSnap = await getDoc(doc(db, "users", user.uid));
-                    if (uSnap.exists()) {
-                        const data = uSnap.data();
-                        
-                        // ANY authenticated user with verified email can access
-                        if (!user.emailVerified && !user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com')) {
-                            // Not email verified and not OAuth – treat as unverified
-                            window.location.href = '/LoginInToCheaplet.html?redirect=/social.html';
-                            return;
-                        }
+                    onSnapshot(doc(db, "users", user.uid), (uSnap) => {
+                        if (uSnap.exists()) {
+                            const data = uSnap.data();
+                            
+                            // ANY authenticated user with verified email can access (we removed the strict "must be student" check here per prompt)
+                            if (!user.emailVerified && !user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com')) {
+                                window.location.href = '/LoginInToCheaplet.html?redirect=/social.html';
+                                return;
+                            }
 
-                        currentUser = { ...user, ...data };
-                        currentUserData = data;
-                        internalSchoolName = data.schoolName || "Global Campus";
-                        const isStudent = data.isStudent === true;
-                        
-                        dSchoolName.textContent = internalSchoolName === "Global Campus" && data.role === 'admin' ? "Global Admin" : internalSchoolName;
-                        document.getElementById('composer-pfp').src = data.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
-                        
-                        // Show/hide verification banner and school filter
-                        if (isStudent) {
-                            // Hide banner if already dismissed? No, for verified users it's never shown anyway.
-                            verifyBanner.style.display = 'none';
-                            filterBar.style.display = 'flex';
-                            // Set up filter button text (school name)
-                            myFilterBtn.textContent = data.schoolName || "My School";
-                            // Set active filter based on currentSchoolFilter
-                            if (currentSchoolFilter === 'my') {
-                                myFilterBtn.classList.add('active');
-                                allFilterBtn.classList.remove('active');
-                            } else {
-                                myFilterBtn.classList.remove('active');
-                                allFilterBtn.classList.add('active');
-                            }
-                            // Show verified checkmark in sidebar
-                            const sidebarCheck = document.getElementById('verified-check-sidebar');
-                            if (sidebarCheck) sidebarCheck.style.display = 'inline-block';
-                        } else {
-                            // For non-verified, check localStorage for dismissal
-                            const bannerDismissed = localStorage.getItem('verify_banner_dismissed') === 'true';
-                            if (!bannerDismissed) {
-                                verifyBanner.style.display = 'flex';
-                            } else {
+                            currentUser = { ...user, ...data };
+                            currentUserData = data;
+                            internalSchoolName = data.schoolName || "Global Campus";
+                            const isStudent = data.isStudent === true;
+                            
+                            dSchoolName.textContent = internalSchoolName === "Global Campus" && data.role === 'admin' ? "Global Admin" : internalSchoolName;
+                            document.getElementById('composer-pfp').src = data.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
+                            
+                            // Show/hide verification banner and school filter
+                            if (isStudent) {
                                 verifyBanner.style.display = 'none';
+                                filterBar.style.display = 'flex';
+                                myFilterBtn.textContent = data.schoolName || "My School";
+                                if (currentSchoolFilter === 'my') {
+                                    myFilterBtn.classList.add('active');
+                                    allFilterBtn.classList.remove('active');
+                                } else {
+                                    myFilterBtn.classList.remove('active');
+                                    allFilterBtn.classList.add('active');
+                                }
+                                const sidebarCheck = document.getElementById('verified-check-sidebar');
+                                if (sidebarCheck) sidebarCheck.style.display = 'inline-block';
+                            } else {
+                                const bannerDismissed = localStorage.getItem('verify_banner_dismissed') === 'true';
+                                if (!bannerDismissed) {
+                                    verifyBanner.style.display = 'flex';
+                                } else {
+                                    verifyBanner.style.display = 'none';
+                                }
+                                filterBar.style.display = 'none';
+                                currentSchoolFilter = 'all'; 
+                                const sidebarCheck = document.getElementById('verified-check-sidebar');
+                                if (sidebarCheck) sidebarCheck.style.display = 'none';
                             }
-                            filterBar.style.display = 'none';
-                            currentSchoolFilter = 'all'; // reset to all
-                            // Hide sidebar checkmark
-                            const sidebarCheck = document.getElementById('verified-check-sidebar');
-                            if (sidebarCheck) sidebarCheck.style.display = 'none';
+                            
+                            showHubLayout();
+                            loadTopics(); 
+                            preloadBooksAndLoadFeed();
+                        } else {
+                            window.location.href = '/LoginInToCheaplet.html?redirect=/social.html';
                         }
-                        
-                        showHubLayout();
-                        loadTopics(); 
-                        preloadBooksAndLoadFeed();
-                    } else {
-                        // No user doc – redirect to login
-                        window.location.href = '/LoginInToCheaplet.html?redirect=/social.html';
-                    }
+                    });
                 } else {
                     showLockedScreen();
                 }
@@ -949,10 +944,12 @@
 
             // --- SMART TOPICS DIRECTORY ---
             function loadTopics() {
-                // 1. Listen to all topics
-                const q = query(collection(db, "social_channels"), orderBy("postCount", "desc"));
+                // Removed orderBy from query to prevent Firestore from hiding old topics missing the 'postCount' field
+                const q = query(collection(db, "social_channels"));
                 onSnapshot(q, (snapshot) => {
                     allTopicsData = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+                    // Sort descending by postCount in JavaScript instead
+                    allTopicsData.sort((a, b) => (b.postCount || 0) - (a.postCount || 0));
                     renderTopics();
                 });
             }
@@ -990,9 +987,14 @@
                     
                     if (isPrivate && !isOwner && !isMember && !isAdmin && !isPinned) return; 
                     
-                    if (isOwner) myT.push(d);
-                    else if (isPinned) pinT.push(d);
-                    else discT.push(d);
+                    // Fixed order: Pinned takes precedence so they always show in Saved Topics
+                    if (isPinned) {
+                        pinT.push(d);
+                    } else if (isOwner) {
+                        myT.push(d);
+                    } else {
+                        discT.push(d);
+                    }
                 });
 
                 document.getElementById('d-sec-my').style.display = myT.length ? 'block' : 'none';
@@ -1040,7 +1042,6 @@
                 discT.forEach(t => {
                     dListDiscover.appendChild(createItemHtml(t, true, false));
                     mListDiscover.appendChild(createItemHtml(t, false, false));
-                    // Do not add to top bar (to keep it from being crowded)
                 });
             }
 
@@ -1068,10 +1069,8 @@
                     unsubscribePosts = onSnapshot(q, (snapshot) => {
                         feedContainer.innerHTML = '';
                         
-                        // Always start with all posts from general way
                         let filteredDocs = snapshot.docs.filter(d => d.data().wayId === 'general');
                         
-                        // Apply school filter if needed
                         const postsData = filteredDocs.map(doc => ({ id: doc.id, data: doc.data() }));
                         const filteredBySchool = filterPostsBySchool(postsData.map(p => ({ schoolName: p.data.schoolName, data: p.data, id: p.id })));
                         const filteredIds = filteredBySchool.map(p => p.id);
@@ -1342,8 +1341,9 @@
                 const list = document.getElementById(`comment-list-${postId}`);
                 commentUnsubscribes[postId] = onSnapshot(query(collection(db, "social_posts", postId, "comments"), orderBy("timestamp", "asc")), (snap) => {
                     list.innerHTML = snap.empty ? `<div style="text-align:center; font-size:0.85rem; color:#888;">${ui.no_comments}</div>` : '';
-                    snap.forEach(doc => {
-                        const c = doc.data();
+                    snap.forEach(commentDoc => {
+                        const c = commentDoc.data();
+                        const commentId = commentDoc.id;
                         let timeStr = ui.justNow;
                         if (c.timestamp) {
                             const diffMins = Math.round((new Date() - c.timestamp.toDate()) / 60000);
@@ -1354,12 +1354,21 @@
                         const pfp = c.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${c.authorUid}&backgroundColor=EBF2FA`;
                         const imgHtml = c.imageUrl ? `<img src="${c.imageUrl}" class="comment-image-attachment" onclick="window.open('${c.imageUrl}', '_blank')">` : '';
                         
+                        const isCommentAuthor = currentUser && currentUser.uid === c.authorUid;
+                        const isAdmin = currentUser && currentUser.role === 'admin';
+                        const deleteBtnHtml = (isCommentAuthor || isAdmin) 
+                            ? `<button onclick="window.deleteComment('${postId}', '${commentId}')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:0.75rem; margin-left:10px;"><i class="fas fa-trash-alt"></i></button>` 
+                            : '';
+
                         const div = document.createElement('div');
                         div.className = 'comment-item';
                         div.innerHTML = `
                             <a href="/user.html?id=${c.authorUid}"><img src="${pfp}" class="comment-avatar"></a>
                             <div class="comment-content">
-                                <a href="/user.html?id=${c.authorUid}" class="comment-author-link"><div class="comment-author">${c.authorName}</div></a>
+                                <div style="display:flex; justify-content:space-between; align-items:start;">
+                                    <a href="/user.html?id=${c.authorUid}" class="comment-author-link"><div class="comment-author">${c.authorName}</div></a>
+                                    ${deleteBtnHtml}
+                                </div>
                                 <div class="comment-text">${c.text}</div>
                                 ${imgHtml}
                                 <div class="comment-time">${timeStr}</div>
@@ -1370,6 +1379,18 @@
                     list.scrollTop = list.scrollHeight;
                 });
             }
+
+            window.deleteComment = async (postId, commentId) => {
+                if(confirm("Delete this comment?")) {
+                    try {
+                        await deleteDoc(doc(db, "social_posts", postId, "comments", commentId));
+                        await updateDoc(doc(db, "social_posts", postId), { commentCount: increment(-1) });
+                    } catch(e) {
+                        console.error(e);
+                        alert("Permission denied or error deleting.");
+                    }
+                }
+            };
 
             window.postComment = async (postId) => {
                 if (!currentUser) return;
