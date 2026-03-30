@@ -155,7 +155,7 @@
         .post-author-link:hover .post-author { color: var(--deep); text-decoration: underline; }
         .post-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #f1f5f9; border: 1px solid #e2e8f0; flex-shrink: 0; }
         .post-meta { display: flex; flex-direction: column; overflow: hidden; }
-        .post-author { font-weight: 800; font-size: 1.05rem; color: var(--ink); letter-spacing: -0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.2s; }
+        .post-author { font-weight: 800; font-size: 1.05rem; color: var(--ink); letter-spacing: -0.3px; transition: color 0.2s; }
         .verified-check-icon { color: var(--green); font-size: 0.9rem; margin-left: 6px; }
         .post-time { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; font-weight: 500; display: flex; align-items: center; gap: 5px; }
         .edited-badge { font-size: 0.75rem; color: var(--text-muted); font-style: italic; }
@@ -521,7 +521,7 @@
             document.getElementById('ui-locked-title').textContent = ui.lock_title;
             document.getElementById('ui-locked-desc').textContent = ui.lock_desc;
             document.getElementById('ui-locked-btn').textContent = ui.lock_btn;
-            document.getElementById('ui-locked-btn').href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent('/social.html')}`;
+            document.getElementById('ui-locked-btn').href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent('/social.html')}&msg=social`;
 
             document.getElementById('report-modal-title').textContent = ui.rep_title;
             document.getElementById('report-modal-desc').textContent = ui.rep_desc;
@@ -842,7 +842,7 @@
                     alert(ui.upload_fail); 
                 } finally { 
                     btnEl.innerHTML = origIcon;
-                    btnEl.disabled = true; 
+                    btnEl.disabled = true; // since it's empty now
                 }
             };
 
@@ -854,7 +854,7 @@
                         if (uSnap.exists()) {
                             const data = uSnap.data();
                             
-                            // Check if they are verified. If not, redirect.
+                            // ANY authenticated user with verified email can access (we removed the strict "must be student" check here per prompt)
                             if (!user.emailVerified && !user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com')) {
                                 window.location.href = '/LoginInToCheaplet.html?redirect=/social.html&msg=social';
                                 return;
@@ -872,13 +872,22 @@
                             const btnCreateWay = document.getElementById('btn-create-way');
                             const mSheetCreateWay = document.getElementById('m-sheet-create-way');
 
-                            if (isStudent || data.role === 'admin') {
-                                if (btnCreateWay) btnCreateWay.style.display = 'flex';
-                                if (mSheetCreateWay) mSheetCreateWay.style.display = 'flex';
-                            } else {
-                                if (btnCreateWay) btnCreateWay.style.display = 'none';
-                                if (mSheetCreateWay) mSheetCreateWay.style.display = 'none';
-                            }
+                            if (btnCreateWay) btnCreateWay.style.display = 'flex';
+                            if (mSheetCreateWay) mSheetCreateWay.style.display = 'flex';
+
+                            const handleCreateTopic = (e) => {
+                                e.preventDefault();
+                                if (isStudent || data.role === 'admin') {
+                                    window.location.href = '/createtopic.html';
+                                } else {
+                                    alert(lang === 'fr' 
+                                        ? "Vous devez avoir un compte scolaire vérifié (avec une adresse e-mail de l'école) pour créer un sujet." 
+                                        : "You need to be a verified school account with a school email to create a topic.");
+                                }
+                            };
+
+                            if (btnCreateWay) btnCreateWay.onclick = handleCreateTopic;
+                            if (mSheetCreateWay) mSheetCreateWay.onclick = handleCreateTopic;
                             
                             // Show/hide verification banner and school filter
                             if (isStudent) {
@@ -915,7 +924,7 @@
                         }
                     });
                 } else {
-                    showLockedScreen();
+                    window.location.href = '/LoginInToCheaplet.html?redirect=/social.html&msg=social';
                 }
             });
 
@@ -928,7 +937,8 @@
             function showLockedScreen() {
                 document.getElementById('hub-layout').style.display = 'none';
                 document.getElementById('mobile-topics-wrapper').style.display = 'none';
-                document.getElementById('locked-screen').style.display = 'flex';
+                // Rather than showing the local locked screen, instantly redirect to login
+                window.location.href = '/LoginInToCheaplet.html?redirect=/social.html&msg=social';
             }
 
             function showHubLayout() {
@@ -956,9 +966,11 @@
 
             // --- SMART TOPICS DIRECTORY ---
             function loadTopics() {
+                // Removed orderBy from query to prevent Firestore from hiding old topics missing the 'postCount' field
                 const q = query(collection(db, "social_channels"));
                 onSnapshot(q, (snapshot) => {
                     allTopicsData = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+                    // Sort descending by postCount in JavaScript instead
                     allTopicsData.sort((a, b) => (b.postCount || 0) - (a.postCount || 0));
                     renderTopics();
                 });
@@ -997,6 +1009,7 @@
                     
                     if (isPrivate && !isOwner && !isMember && !isAdmin && !isPinned) return; 
                     
+                    // Fixed order: Pinned takes precedence so they always show in Saved Topics
                     if (isPinned) {
                         pinT.push(d);
                     } else if (isOwner) {
@@ -1077,8 +1090,10 @@
                     unsubscribePosts = onSnapshot(q, (snapshot) => {
                         feedContainer.innerHTML = '';
                         
+                        // Always start with all posts from general way
                         let filteredDocs = snapshot.docs.filter(d => d.data().wayId === 'general');
                         
+                        // Apply school filter if needed
                         const postsData = filteredDocs.map(doc => ({ id: doc.id, data: doc.data() }));
                         const filteredBySchool = filterPostsBySchool(postsData.map(p => ({ schoolName: p.data.schoolName, data: p.data, id: p.id })));
                         const filteredIds = filteredBySchool.map(p => p.id);
@@ -1151,14 +1166,13 @@
                 let timeStr = d.timestamp ? formatTime(d.timestamp.toDate()) : ui.justNow;
                 const isLiked = currentUser && d.likedBy && d.likedBy.includes(currentUser.uid);
                 
-                // Safely check if the author is verified
-                let authorIsStudent = false;
-                if (d.authorUid === currentUser?.uid) {
-                    authorIsStudent = currentUserData?.isStudent;
-                }
-                // (Optional: fetch other users' student status here if needed, 
-                // but since it's not stored on the post, we only show it for the logged-in user for now to save reads)
-                const verifiedIcon = authorIsStudent ? `<span class="verified-check-icon"><i class="fas fa-check-circle"></i></span>` : '';
+                // Author verify/school display logic
+                const isAuthorVerified = currentUserData && currentUserData.isStudent && d.authorUid === currentUser.uid;
+                const verifiedIcon = isAuthorVerified ? `<span class="verified-check-icon"><i class="fas fa-check-circle"></i></span>` : '';
+                
+                const schoolTagHtml = (d.schoolName && d.schoolName !== 'Global Campus') 
+                    ? `<span style="font-size: 0.7rem; color: var(--deep); background: var(--surface); padding: 2px 8px; border-radius: 12px; margin-left: 8px; font-weight: 700; white-space: nowrap;"><i class="fas fa-university"></i> ${d.schoolName}</span>` 
+                    : '';
                 
                 // 3-DOT MENU LOGIC
                 const canEdit = currentUser && currentUser.uid === d.authorUid;
@@ -1190,7 +1204,7 @@
                         <a href="/user.html?id=${d.authorUid}" class="post-author-link">
                             <img src="${pfp}" class="post-avatar" alt="Avatar">
                             <div class="post-meta">
-                                <span class="post-author">${d.authorName}${verifiedIcon}</span>
+                                <span class="post-author" style="display:flex; align-items:center; flex-wrap:wrap;">${d.authorName}${verifiedIcon}${schoolTagHtml}</span>
                                 <span class="post-time">${timeStr}${editedLabel}</span>
                             </div>
                         </a>
@@ -1450,7 +1464,7 @@
                     alert(ui.upload_fail); 
                 } finally { 
                     btnEl.innerHTML = origIcon;
-                    btnEl.disabled = true; 
+                    btnEl.disabled = true; // since it's empty now
                 }
             };
 
