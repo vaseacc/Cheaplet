@@ -564,7 +564,6 @@
             let commentUnsubscribes = {}; 
             let listings = []; 
             let allTopicsData = [];
-            let currentWayId = "general"; // track the active topic (way) in the sidebar
 
             // --- COMPOSER STATE ---
             let postImageFile = null;
@@ -593,28 +592,13 @@
             const myFilterBtn = document.getElementById('my-school-filter');
             let currentSchoolFilter = 'all'; // 'all' or 'my'
 
-            // --- Helper to update composer send button based on permissions ---
-            function updateComposerPermissions() {
-                const canPost = currentUserData && (currentWayId === 'general' || currentUserData.isStudent === true);
-                const hasContent = postInput.value.trim().length > 0 || postImageFile || postAttachedListing;
-                btnSendPost.disabled = !hasContent || !canPost;
-                if (!canPost && hasContent) {
-                    btnSendPost.title = ui.posting_disabled;
-                } else {
-                    btnSendPost.title = '';
-                }
-            }
-
-            // --- COMPOSER LOGIC (modified to respect permissions) ---
+            // --- COMPOSER LOGIC ---
             function updateComposerSendButton() {
                 const hasContent = postInput.value.trim().length > 0 || postImageFile || postAttachedListing;
-                const canPost = currentUserData && (currentWayId === 'general' || currentUserData.isStudent === true);
-                btnSendPost.disabled = !hasContent || !canPost;
-                if (!canPost && hasContent) {
-                    btnSendPost.title = ui.posting_disabled;
-                } else {
-                    btnSendPost.title = '';
-                }
+                // Non‑verified users cannot post in custom topics (but the general feed is always allowed)
+                // We don't need currentWayId here because posts are always to "general" on this page.
+                // Custom topics are handled by topic.html, so we always allow posting here (it's the general feed).
+                btnSendPost.disabled = !hasContent;
             }
 
             postInput.addEventListener('input', function() {
@@ -723,11 +707,6 @@
 
             btnSendPost.onclick = async () => {
                 if (!currentUser) return;
-                // Check permissions again just before posting
-                if (currentWayId !== 'general' && !currentUserData.isStudent) {
-                    alert(ui.posting_disabled);
-                    return;
-                }
                 const text = postInput.value.trim();
                 
                 btnSendPost.disabled = true;
@@ -743,7 +722,7 @@
                     let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
                     
                     const postData = {
-                        wayId: currentWayId,
+                        wayId: 'general',
                         schoolName: internalSchoolName,
                         text: text,
                         authorUid: currentUser.uid,
@@ -757,14 +736,6 @@
                     if (postAttachedListing) postData.attachedListing = postAttachedListing;
 
                     await addDoc(collection(db, "social_posts"), postData);
-                    
-                    // If posting to a custom topic, update its post count
-                    if (currentWayId !== 'general') {
-                        await updateDoc(doc(db, "social_channels", currentWayId), { 
-                            postCount: increment(1),
-                            members: arrayUnion(currentUser.uid) 
-                        });
-                    }
 
                     // Reset Composer
                     postInput.value = '';
@@ -1021,22 +992,7 @@
                     item.className = 'way-item'; 
                     item.href = `/topic.html?id=${t.id}`;
                     item.innerHTML = `<i class="fas fa-hashtag"></i> <span style="flex-grow:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${t.name}${lock}</span> <span class="way-count">${count}</span>${editBtn}`;
-                    // On click, we need to update the current wayId and permissions
-                    item.onclick = (e) => {
-                        e.preventDefault();
-                        // Update currentWayId and then load feed
-                        currentWayId = t.id;
-                        // Update UI to show active item
-                        document.querySelectorAll('.way-item').forEach(el => el.classList.remove('active'));
-                        item.classList.add('active');
-                        document.querySelectorAll('.m-way-pill').forEach(el => el.classList.remove('active'));
-                        const mItem = document.querySelector(`.m-way-pill[href="/topic.html?id=${t.id}"]`);
-                        if (mItem) mItem.classList.add('active');
-                        // Reload feed for this topic
-                        loadFeedForWay(currentWayId);
-                        // Update composer permissions based on new topic
-                        updateComposerSendButton();
-                    };
+                    // Do NOT override onclick – let it navigate normally
                     return item;
                 };
 
@@ -1047,17 +1003,6 @@
                     item.className = 'm-way-pill'; 
                     item.href = `/topic.html?id=${t.id}`;
                     item.innerHTML = `<i class="fas fa-hashtag"></i> ${t.name}${lock} <span class="m-way-count">${count}</span>`;
-                    item.onclick = (e) => {
-                        e.preventDefault();
-                        currentWayId = t.id;
-                        document.querySelectorAll('.way-item').forEach(el => el.classList.remove('active'));
-                        document.querySelectorAll('.m-way-pill').forEach(el => el.classList.remove('active'));
-                        item.classList.add('active');
-                        const dItem = document.querySelector(`.way-item[href="/topic.html?id=${t.id}"]`);
-                        if (dItem) dItem.classList.add('active');
-                        loadFeedForWay(currentWayId);
-                        updateComposerSendButton();
-                    };
                     return item;
                 };
 
@@ -1082,21 +1027,27 @@
             document.getElementById('btn-create-way').onclick = () => window.location.href = '/createtopic.html';
             document.getElementById('m-sheet-create-way').onclick = () => window.location.href = '/createtopic.html';
 
-            // --- FEED LOADING WITH WAY ID ---
-            function loadFeedForWay(wayId) {
+            // --- FEED LOADING FOR GENERAL ---
+            function loadFeed() {
                 if (unsubscribePosts) unsubscribePosts();
                 Object.values(commentUnsubscribes).forEach(unsub => unsub());
                 commentUnsubscribes = {};
 
                 feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub}</span></div>`;
 
-                let q = query(collection(db, "social_posts"), where("wayId", "==", wayId), orderBy("timestamp", "desc"), limit(100));
+                let q = query(collection(db, "social_posts"), where("wayId", "==", "general"), orderBy("timestamp", "desc"), limit(100));
                 
                 try {
                     unsubscribePosts = onSnapshot(q, (snapshot) => {
                         feedContainer.innerHTML = '';
                         
-                        if (snapshot.empty) {
+                        // Apply school filter if needed (only for verified users)
+                        let filteredDocs = snapshot.docs;
+                        if (currentSchoolFilter === 'my' && currentUserData && currentUserData.isStudent && internalSchoolName !== "Global Campus") {
+                            filteredDocs = snapshot.docs.filter(doc => doc.data().schoolName === internalSchoolName);
+                        }
+
+                        if (filteredDocs.length === 0) {
                             feedContainer.innerHTML = `<div class="loader-msg">${ui.noPosts}</div>`;
                             return;
                         }
@@ -1104,7 +1055,7 @@
                         const frag = document.createDocumentFragment();
                         let postCounter = 0;
 
-                        snapshot.docs.forEach(docSnap => {
+                        filteredDocs.forEach(docSnap => {
                             const d = docSnap.data();
                             frag.appendChild(createPostElement(docSnap.id, d));
                             postCounter++;
@@ -1123,19 +1074,19 @@
                 } catch (e) { console.error(e); }
             }
 
-            // School filter event handlers (unchanged)
+            // School filter event handlers
             allFilterBtn.onclick = () => {
                 currentSchoolFilter = 'all';
                 allFilterBtn.classList.add('active');
                 myFilterBtn.classList.remove('active');
-                loadFeedForWay(currentWayId);
+                loadFeed();
             };
             myFilterBtn.onclick = () => {
                 if (currentUserData && currentUserData.isStudent) {
                     currentSchoolFilter = 'my';
                     myFilterBtn.classList.add('active');
                     allFilterBtn.classList.remove('active');
-                    loadFeedForWay(currentWayId);
+                    loadFeed();
                 }
             };
 
@@ -1155,9 +1106,7 @@
                     listings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 } catch (e) { console.error("Error preloading books", e); }
                 
-                // Initial load for general feed
-                currentWayId = 'general';
-                loadFeedForWay('general');
+                loadFeed();
             }
 
             function createPostElement(id, d) {
@@ -1273,9 +1222,7 @@
                 if(confirm("Are you sure you want to delete this post?")) {
                     try {
                         await deleteDoc(doc(db, "social_posts", id));
-                        if (currentWayId !== 'general') {
-                            await updateDoc(doc(db, "social_channels", currentWayId), { postCount: increment(-1) });
-                        }
+                        // No decrement needed for general
                     } catch(e) { alert("Error deleting post."); }
                 }
             };
@@ -1301,7 +1248,7 @@
                         reporterUid: currentUser.uid, reporterName: currentUser.displayName,
                         targetUid: reportTargetId, targetUserName: reportTargetName,
                         reason: `Post Report: ${reason}`,
-                        details: `Post ID: ${reportTargetPostId}\nTopic: ${currentWayId}\n\n${details}`,
+                        details: `Post ID: ${reportTargetPostId}\nTopic: General\n\n${details}`,
                         timestamp: serverTimestamp()
                     });
                     alert(ui.rep_success);
