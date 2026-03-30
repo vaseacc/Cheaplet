@@ -384,8 +384,8 @@
                 <button class="banner-close" id="close-banner-btn">&times;</button>
             </div>
 
-            <!-- SCHOOL FILTER BAR (only for verified) -->
-            <div id="filter-bar" class="filter-bar" style="display: none;">
+            <!-- SCHOOL FILTER BAR (always visible) -->
+            <div id="filter-bar" class="filter-bar">
                 <span><i class="fas fa-filter"></i> Show:</span>
                 <button class="school-filter active" data-filter="all">All Campuses</button>
                 <button class="school-filter" data-filter="my" id="my-school-filter">My School</button>
@@ -504,7 +504,8 @@
                     verify_banner_text: "Get the Verified Student badge and filter posts by your school – create an account with your school email address.",
                     restricted_title: "Verified Student Required",
                     restricted_desc: "To create custom topics, you need a verified student account with a school email address.",
-                    restricted_btn: "Create School Account"
+                    restricted_btn: "Create School Account",
+                    filter_my_school: "My School"
                 },
                 fr: { 
                     topics_public: "Canaux Publics", topics_campus: "Campus Public", topics_custom: "Sujets Personnalisés", topics_new: "Nouveau Sujet",
@@ -519,7 +520,8 @@
                     verify_banner_text: "Obtenez le badge « Étudiant vérifié » et filtrez les messages par votre établissement – créez un compte avec votre adresse e-mail scolaire.",
                     restricted_title: "Compte étudiant requis",
                     restricted_desc: "Pour créer des sujets personnalisés, vous avez besoin d'un compte étudiant vérifié avec une adresse e-mail scolaire.",
-                    restricted_btn: "Créer un compte scolaire"
+                    restricted_btn: "Créer un compte scolaire",
+                    filter_my_school: "Mon école"
                 }
             };
             const ui = allStrings[lang] || allStrings['en'];
@@ -541,6 +543,7 @@
             document.getElementById('ui-modal-attach-title').textContent = ui.attach_title;
             document.getElementById('ui-modal-attach-desc').textContent = ui.attach_desc;
             document.getElementById('verify-banner-text').textContent = ui.verify_banner_text;
+            document.getElementById('my-school-filter').textContent = ui.filter_my_school;
 
             // Restricted modal translations
             document.getElementById('restricted-title').textContent = ui.restricted_title;
@@ -881,20 +884,17 @@
                             dSchoolName.textContent = internalSchoolName === "Global Campus" && data.role === 'admin' ? "Global Admin" : internalSchoolName;
                             document.getElementById('composer-pfp').src = data.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
                             
-                            // Show/hide verification banner and school filter
+                            // Show/hide verification banner
                             if (isStudent) {
                                 verifyBanner.style.display = 'none';
-                                filterBar.style.display = 'flex';
-                                myFilterBtn.textContent = data.schoolName || "My School";
-                                if (currentSchoolFilter === 'my') {
-                                    myFilterBtn.classList.add('active');
-                                    allFilterBtn.classList.remove('active');
-                                } else {
-                                    myFilterBtn.classList.remove('active');
-                                    allFilterBtn.classList.add('active');
-                                }
+                                // Show verified checkmark in sidebar
                                 const sidebarCheck = document.getElementById('verified-check-sidebar');
                                 if (sidebarCheck) sidebarCheck.style.display = 'inline-block';
+                                // Enable the "My School" filter button
+                                myFilterBtn.classList.remove('disabled');
+                                myFilterBtn.style.pointerEvents = 'auto';
+                                myFilterBtn.style.opacity = '1';
+                                myFilterBtn.title = '';
                             } else {
                                 const bannerDismissed = localStorage.getItem('verify_banner_dismissed') === 'true';
                                 if (!bannerDismissed) {
@@ -902,10 +902,13 @@
                                 } else {
                                     verifyBanner.style.display = 'none';
                                 }
-                                filterBar.style.display = 'none';
-                                currentSchoolFilter = 'all';
                                 const sidebarCheck = document.getElementById('verified-check-sidebar');
                                 if (sidebarCheck) sidebarCheck.style.display = 'none';
+                                // Disable the "My School" filter button
+                                myFilterBtn.classList.add('disabled');
+                                myFilterBtn.style.pointerEvents = 'none';
+                                myFilterBtn.style.opacity = '0.5';
+                                myFilterBtn.title = 'You need a verified student account to filter by your school.';
                             }
                             
                             showHubLayout();
