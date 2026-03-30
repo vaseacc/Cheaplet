@@ -283,13 +283,13 @@
         </div>
     </header>
 
-    <!-- LOCKED SCREEN -->
+    <!-- LOCKED SCREEN (only for non‑logged‑in users) -->
     <div class="locked-screen" id="locked-screen">
         <div class="locked-card">
             <i class="fas fa-lock locked-icon"></i>
             <h2 class="locked-title" id="ui-locked-title">Restricted Access</h2>
-            <p class="locked-desc" id="ui-locked-desc">The Campus Hub is an exclusive space for verified students. To join the conversation, please log in using your official school email address.</p>
-            <a href="/LoginInToCheaplet.html?redirect=/social.html" class="btn-locked" id="ui-locked-btn">Log In or Register</a>
+            <p class="locked-desc" id="ui-locked-desc">The Campus Hub is an exclusive space for students. Please log in to join the conversation.</p>
+            <a href="/LoginInToCheaplet.html?redirect=/social.html&msg=social" class="btn-locked" id="ui-locked-btn">Log In or Register</a>
         </div>
     </div>
 
@@ -373,14 +373,14 @@
 
         <main class="feed-column">
             
-            <!-- VERIFICATION BANNER -->
+            <!-- VERIFICATION BANNER (only for non‑verified users, dismissible) -->
             <div id="verify-banner" class="verify-banner" style="display: none;">
                 <p><i class="fas fa-graduation-cap"></i> <span id="verify-banner-text">Get the Verified Student badge and filter posts by your school – create an account with your school email address.</span></p>
                 <a href="/LoginInToCheaplet.html?redirect=/social.html"><button>Create School Account</button></a>
                 <button class="banner-close" id="close-banner-btn">&times;</button>
             </div>
 
-            <!-- SCHOOL FILTER BAR -->
+            <!-- SCHOOL FILTER BAR (only for verified users) -->
             <div id="filter-bar" class="filter-bar" style="display: none;">
                 <span><i class="fas fa-filter"></i> Show:</span>
                 <button class="school-filter active" data-filter="all">All Campuses</button>
@@ -430,6 +430,7 @@
             <span class="close-modal" id="close-listing-modal">&times;</span>
             <h2 id="ui-modal-attach-title">Attach a Listing</h2>
             <p id="ui-modal-attach-desc">Select one of your active listings to share in this post.</p>
+            
             <div class="listing-selector-list" id="listing-selector-list">
                 <div style="text-align:center; padding:20px; color:#888;">Loading your listings...</div>
             </div>
@@ -853,7 +854,7 @@
                         if (uSnap.exists()) {
                             const data = uSnap.data();
                             
-                            // ANY authenticated user with verified email can access
+                            // Check if they are verified. If not, redirect.
                             if (!user.emailVerified && !user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com')) {
                                 window.location.href = '/LoginInToCheaplet.html?redirect=/social.html&msg=social';
                                 return;
@@ -867,14 +868,23 @@
                             dSchoolName.textContent = internalSchoolName === "Global Campus" && data.role === 'admin' ? "Global Admin" : internalSchoolName;
                             document.getElementById('composer-pfp').src = data.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
                             
+                            // --- SHOW OR HIDE "CREATE TOPIC" BUTTONS ---
+                            const btnCreateWay = document.getElementById('btn-create-way');
+                            const mSheetCreateWay = document.getElementById('m-sheet-create-way');
+
+                            if (isStudent || data.role === 'admin') {
+                                if (btnCreateWay) btnCreateWay.style.display = 'flex';
+                                if (mSheetCreateWay) mSheetCreateWay.style.display = 'flex';
+                            } else {
+                                if (btnCreateWay) btnCreateWay.style.display = 'none';
+                                if (mSheetCreateWay) mSheetCreateWay.style.display = 'none';
+                            }
+                            
                             // Show/hide verification banner and school filter
                             if (isStudent) {
-                                // Hide banner if already dismissed? No, for verified users it's never shown anyway.
                                 verifyBanner.style.display = 'none';
                                 filterBar.style.display = 'flex';
-                                // Set up filter button text (school name)
                                 myFilterBtn.textContent = data.schoolName || "My School";
-                                // Set active filter based on currentSchoolFilter
                                 if (currentSchoolFilter === 'my') {
                                     myFilterBtn.classList.add('active');
                                     allFilterBtn.classList.remove('active');
@@ -882,11 +892,9 @@
                                     myFilterBtn.classList.remove('active');
                                     allFilterBtn.classList.add('active');
                                 }
-                                // Show verified checkmark in sidebar
                                 const sidebarCheck = document.getElementById('verified-check-sidebar');
                                 if (sidebarCheck) sidebarCheck.style.display = 'inline-block';
                             } else {
-                                // For non-verified, check localStorage for dismissal
                                 const bannerDismissed = localStorage.getItem('verify_banner_dismissed') === 'true';
                                 if (!bannerDismissed) {
                                     verifyBanner.style.display = 'flex';
@@ -894,8 +902,7 @@
                                     verifyBanner.style.display = 'none';
                                 }
                                 filterBar.style.display = 'none';
-                                currentSchoolFilter = 'all'; // reset to all
-                                // Hide sidebar checkmark
+                                currentSchoolFilter = 'all'; // Reset to all for unverified
                                 const sidebarCheck = document.getElementById('verified-check-sidebar');
                                 if (sidebarCheck) sidebarCheck.style.display = 'none';
                             }
@@ -908,7 +915,7 @@
                         }
                     });
                 } else {
-                    window.location.href = '/LoginInToCheaplet.html?redirect=/social.html&msg=social';
+                    showLockedScreen();
                 }
             });
 
@@ -936,7 +943,7 @@
             }
 
             window.addEventListener('resize', () => {
-                if(currentUser && (currentUser.isStudent || currentUser.role === 'admin')) {
+                if(currentUser) { // Just check if logged in
                     if(window.innerWidth <= 850) {
                         document.getElementById('hub-layout').style.display = 'flex';
                         document.getElementById('mobile-topics-wrapper').style.display = 'flex';
@@ -949,11 +956,9 @@
 
             // --- SMART TOPICS DIRECTORY ---
             function loadTopics() {
-                // Removed orderBy from query to prevent Firestore from hiding old topics missing the 'postCount' field
                 const q = query(collection(db, "social_channels"));
                 onSnapshot(q, (snapshot) => {
                     allTopicsData = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
-                    // Sort descending by postCount in JavaScript instead
                     allTopicsData.sort((a, b) => (b.postCount || 0) - (a.postCount || 0));
                     renderTopics();
                 });
@@ -992,7 +997,6 @@
                     
                     if (isPrivate && !isOwner && !isMember && !isAdmin && !isPinned) return; 
                     
-                    // Fixed order: Pinned takes precedence so they always show in Saved Topics
                     if (isPinned) {
                         pinT.push(d);
                     } else if (isOwner) {
@@ -1050,14 +1054,13 @@
                 });
             }
 
-            document.getElementById('btn-create-way').onclick = () => window.location.href = '/createtopic.html';
-            document.getElementById('m-sheet-create-way').onclick = () => window.location.href = '/createtopic.html';
-
             // --- FEED FILTERING LOGIC ---
             function filterPostsBySchool(posts) {
+                // If user selected "My School" AND they are a verified student AND not "Global Campus"
                 if (currentSchoolFilter === 'my' && currentUserData && currentUserData.isStudent && internalSchoolName !== "Global Campus") {
                     return posts.filter(post => post.schoolName === internalSchoolName);
                 }
+                // If filter is "All" OR user is unverified (internalSchoolName is "Global Campus"), return everything
                 return posts;
             }
 
@@ -1074,10 +1077,8 @@
                     unsubscribePosts = onSnapshot(q, (snapshot) => {
                         feedContainer.innerHTML = '';
                         
-                        // Always start with all posts from general way
                         let filteredDocs = snapshot.docs.filter(d => d.data().wayId === 'general');
                         
-                        // Apply school filter if needed
                         const postsData = filteredDocs.map(doc => ({ id: doc.id, data: doc.data() }));
                         const filteredBySchool = filterPostsBySchool(postsData.map(p => ({ schoolName: p.data.schoolName, data: p.data, id: p.id })));
                         const filteredIds = filteredBySchool.map(p => p.id);
@@ -1149,8 +1150,15 @@
                 let pfp = d.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${d.authorUid}&backgroundColor=EBF2FA`;
                 let timeStr = d.timestamp ? formatTime(d.timestamp.toDate()) : ui.justNow;
                 const isLiked = currentUser && d.likedBy && d.likedBy.includes(currentUser.uid);
-                const isAuthorVerified = currentUserData && currentUserData.isStudent && d.authorUid === currentUser.uid;
-                const verifiedIcon = isAuthorVerified ? `<span class="verified-check-icon"><i class="fas fa-check-circle"></i></span>` : '';
+                
+                // Safely check if the author is verified
+                let authorIsStudent = false;
+                if (d.authorUid === currentUser?.uid) {
+                    authorIsStudent = currentUserData?.isStudent;
+                }
+                // (Optional: fetch other users' student status here if needed, 
+                // but since it's not stored on the post, we only show it for the logged-in user for now to save reads)
+                const verifiedIcon = authorIsStudent ? `<span class="verified-check-icon"><i class="fas fa-check-circle"></i></span>` : '';
                 
                 // 3-DOT MENU LOGIC
                 const canEdit = currentUser && currentUser.uid === d.authorUid;
