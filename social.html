@@ -34,6 +34,15 @@
         .logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: -0.5px; flex-shrink: 0; }
         .logo em { color: var(--gold); font-style: normal; }
 
+        /* ── RESTRICTED ACCESS SCREEN (only for non‑logged‑in) ── */
+        .locked-screen { display: none; flex-direction: column; align-items: center; justify-content: center; height: calc(100vh - 68px); padding: 20px; text-align: center; }
+        .locked-card { background: var(--white); padding: 40px; border-radius: var(--radius); box-shadow: var(--shadow); border: var(--border); max-width: 450px; width: 100%; animation: fadeUp 0.4s ease both; }
+        .locked-icon { font-size: 3rem; color: var(--red); margin-bottom: 20px; }
+        .locked-title { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--ink); margin-bottom: 15px; }
+        .locked-desc { color: var(--text-muted); font-size: 1rem; line-height: 1.6; margin-bottom: 25px; }
+        .btn-locked { background: var(--gold); color: var(--ink); border: none; padding: 12px 30px; border-radius: 30px; font-weight: 800; font-size: 1rem; cursor: pointer; text-decoration: none; display: inline-block; transition: 0.2s; }
+        .btn-locked:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(200, 169, 110, 0.4); }
+
         /* ── MAIN LAYOUT ── */
         .hub-layout { display: none; max-width: 1100px; margin: 30px auto; grid-template-columns: 260px minmax(0, 1fr); gap: 40px; padding: 0 20px; align-items: start; width: 100%; }
 
@@ -98,6 +107,7 @@
         .filter-bar span { font-size: 0.85rem; color: var(--text-muted); }
         .school-filter { background: none; border: none; padding: 8px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
         .school-filter.active { background: var(--ink); color: white; }
+        .school-filter.disabled { opacity: 0.5; cursor: not-allowed; background: none; color: var(--text-muted); pointer-events: none; }
 
         /* ── SEARCH BAR ── */
         .social-search-bar { display: flex; align-items: center; background: var(--white); border: var(--border); border-radius: 30px; padding: 5px 15px; box-shadow: var(--shadow); margin-bottom: -5px; transition: border-color 0.2s; }
@@ -761,6 +771,7 @@
                         currentSchoolFilter = 'all';
                         allFilterBtn.classList.add('active');
                         myFilterBtn.classList.remove('active');
+                        loadFeed(); // Reload feed to show the new post instantly
                     }
 
                     // Reset Composer
@@ -867,12 +878,6 @@
                         if (uSnap.exists()) {
                             const data = uSnap.data();
                             
-                            // ANY authenticated user with verified email can access (we removed the strict "must be student" check here per prompt)
-                            if (!user.emailVerified && !user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com')) {
-                                window.location.href = '/LoginInToCheaplet.html?redirect=/social.html&msg=social';
-                                return;
-                            }
-
                             currentUser = { ...user, ...data };
                             currentUserData = data;
                             internalSchoolName = data.schoolName || "Global Campus";
@@ -900,7 +905,19 @@
                             if (btnCreateWay) btnCreateWay.onclick = handleCreateTopic;
                             if (mSheetCreateWay) mSheetCreateWay.onclick = handleCreateTopic;
                             
-                            // Show/hide verification banner and set up school filter
+                            // For unverified users, "internalSchoolName" is "Global Campus". We fallback to "Cégep de Rosemont".
+                            const targetSchool = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Cégep de Rosemont";
+                            myFilterBtn.textContent = targetSchool;
+
+                            if (currentSchoolFilter === 'my') {
+                                myFilterBtn.classList.add('active');
+                                allFilterBtn.classList.remove('active');
+                            } else {
+                                myFilterBtn.classList.remove('active');
+                                allFilterBtn.classList.add('active');
+                            }
+                            
+                            // Show/hide verification banner and checkmark
                             if (isStudent) {
                                 verifyBanner.style.display = 'none';
                                 const sidebarCheck = document.getElementById('verified-check-sidebar');
@@ -916,21 +933,6 @@
                                 if (sidebarCheck) sidebarCheck.style.display = 'none';
                             }
                             
-                            // ALWAYS show filter bar for logged-in users
-                            document.getElementById('filter-bar').style.display = 'flex';
-                            
-                            // For unverified users, "internalSchoolName" is "Global Campus". We fallback to "Collège de Rosemont".
-                            const targetSchool = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Collège de Rosemont";
-                            myFilterBtn.textContent = targetSchool;
-
-                            if (currentSchoolFilter === 'my') {
-                                myFilterBtn.classList.add('active');
-                                allFilterBtn.classList.remove('active');
-                            } else {
-                                myFilterBtn.classList.remove('active');
-                                allFilterBtn.classList.add('active');
-                            }
-                            
                             showHubLayout();
                             loadTopics(); 
                             preloadBooksAndLoadFeed();
@@ -939,7 +941,6 @@
                         }
                     });
                 } else {
-                    // Non-logged-in user redirect
                     window.location.href = '/LoginInToCheaplet.html?redirect=/social.html&msg=social';
                 }
             });
@@ -951,6 +952,7 @@
             };
 
             function showHubLayout() {
+                document.getElementById('locked-screen').style.display = 'none';
                 document.getElementById('hub-layout').style.display = 'grid'; 
                 if(window.innerWidth <= 850) {
                     document.getElementById('hub-layout').style.display = 'flex';
@@ -961,7 +963,7 @@
             }
 
             window.addEventListener('resize', () => {
-                if(currentUser) { 
+                if(currentUser) { // Just check if logged in
                     if(window.innerWidth <= 850) {
                         document.getElementById('hub-layout').style.display = 'flex';
                         document.getElementById('mobile-topics-wrapper').style.display = 'flex';
@@ -974,9 +976,11 @@
 
             // --- SMART TOPICS DIRECTORY ---
             function loadTopics() {
+                // Removed orderBy from query to prevent Firestore from hiding old topics missing the 'postCount' field
                 const q = query(collection(db, "social_channels"));
                 onSnapshot(q, (snapshot) => {
                     allTopicsData = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
+                    // Sort descending by postCount in JavaScript instead
                     allTopicsData.sort((a, b) => (b.postCount || 0) - (a.postCount || 0));
                     renderTopics();
                 });
@@ -1015,6 +1019,7 @@
                     
                     if (isPrivate && !isOwner && !isMember && !isAdmin && !isPinned) return; 
                     
+                    // Fixed order: Pinned takes precedence so they always show in Saved Topics
                     if (isPinned) {
                         pinT.push(d);
                     } else if (isOwner) {
@@ -1075,10 +1080,11 @@
             // --- FEED FILTERING LOGIC ---
             function filterPostsBySchool(posts) {
                 if (currentSchoolFilter === 'my') {
-                    // Target school is either the verified user's school, or "Collège de Rosemont" for unverified
-                    const targetSchool = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Collège de Rosemont";
+                    // Target school is either the verified user's school, or "Cégep de Rosemont" for unverified
+                    const targetSchool = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Cégep de Rosemont";
                     return posts.filter(post => post.schoolName === targetSchool);
                 }
+                // If filter is "All" return everything
                 return posts;
             }
 
@@ -1149,11 +1155,13 @@
             async function preloadBooksAndLoadFeed() {
                 let bookQ = query(collection(db, "listings"), where("status", "==", "active"), orderBy("timestamp", "desc"), limit(6));
                 
-                const targetSchool = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Collège de Rosemont";
+                const targetLocation = (internalSchoolName && internalSchoolName !== "Global Campus") 
+                    ? (internalSchoolName === "Cégep de Rosemont" ? "Collège de Rosemont" : internalSchoolName) 
+                    : "Collège de Rosemont";
 
                 if (currentUser && currentUser.role !== 'admin') {
                     try {
-                        const sBookQ = query(collection(db, "listings"), where("location", "==", targetSchool), where("status", "==", "active"), limit(6));
+                        const sBookQ = query(collection(db, "listings"), where("location", "==", targetLocation), where("status", "==", "active"), limit(6));
                         const bSnap = await getDocs(sBookQ);
                         if (!bSnap.empty) bookQ = sBookQ;
                     } catch(e) {}
