@@ -103,11 +103,11 @@
         .banner-close { background: none; border: none; font-size: 1.2rem; cursor: pointer; color: #b45309; padding: 0 5px; transition: opacity 0.2s; }
         .banner-close:hover { opacity: 0.7; }
 
-        /* ── FEED SWITCHER BAR (renamed from filter-bar) ── */
-        .feed-switcher { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; background: var(--white); border-radius: 30px; padding: 5px 15px; width: fit-content; border: var(--border); box-shadow: var(--shadow); }
-        .feed-switcher span { font-size: 0.85rem; color: var(--text-muted); }
-        .feed-btn { background: none; border: none; padding: 8px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
-        .feed-btn.active { background: var(--ink); color: white; }
+        /* ── SCHOOL FILTER ── */
+        .filter-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; background: var(--white); border-radius: 30px; padding: 5px 15px; width: fit-content; border: var(--border); box-shadow: var(--shadow); }
+        .filter-bar span { font-size: 0.85rem; color: var(--text-muted); }
+        .school-filter { background: none; border: none; padding: 8px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
+        .school-filter.active { background: var(--ink); color: white; }
 
         /* ── SEARCH BAR ── */
         .social-search-bar { display: flex; align-items: center; background: var(--white); border: var(--border); border-radius: 30px; padding: 5px 15px; box-shadow: var(--shadow); margin-bottom: -5px; transition: border-color 0.2s; }
@@ -300,8 +300,9 @@
     <!-- MOBILE TOPICS BAR WITH ☰ MENU BUTTON -->
     <div class="mobile-topics-wrapper" id="mobile-topics-wrapper">
         <div class="mobile-ways-bar" id="mobile-ways-list">
-            <button class="m-way-pill active" data-feed="global">Global Feed</button>
-            <button class="m-way-pill" data-feed="rosemont">Collège de Rosemont</button>
+            <a href="/social.html" class="m-way-pill active">
+                <i class="fas fa-globe-americas"></i> <span data-i18n="topics_campus">Campus Public</span>
+            </a>
         </div>
         <div class="mobile-fade"></div>
         <button class="m-menu-btn" id="m-btn-open-menu"><i class="fas fa-bars"></i></button>
@@ -339,7 +340,7 @@
         <div class="modal-card">
             <div class="modal-icon"><i class="fas fa-graduation-cap"></i></div>
             <h2 id="restricted-title">Verified Student Required</h2>
-            <p id="restricted-desc">To create custom topics or post in the Collège de Rosemont feed, you need a verified student account with a school email address.</p>
+            <p id="restricted-desc">To create custom topics or post in a specific school's feed, you need a verified student account with a school email address.</p>
             <div class="modal-buttons" style="justify-content: center;">
                 <a href="/LoginInToCheaplet.html?redirect=/social.html" class="btn btn-login" style="background: var(--gold); color: var(--ink); padding: 10px 24px; border-radius: 30px; text-decoration: none; font-weight: 700;">Create School Account</a>
                 <button class="btn btn-ghost" id="close-restricted-btn" style="background: var(--surface); color: var(--text-main);">Cancel</button>
@@ -361,8 +362,8 @@
             <div class="topics-menu">
                 <div class="topic-section-title" data-i18n="topics_public">Public Channels</div>
                 <div id="desktop-general-list">
-                    <a href="#" class="way-item active" data-feed="global">
-                        <i class="fas fa-globe-americas"></i> <span data-i18n="topics_campus">Global Feed</span>
+                    <a href="/social.html" class="way-item active">
+                        <i class="fas fa-globe-americas"></i> <span data-i18n="topics_campus">Campus Public</span>
                     </a>
                 </div>
 
@@ -391,16 +392,16 @@
             
             <!-- VERIFICATION BANNER -->
             <div id="verify-banner" class="verify-banner" style="display: none;">
-                <p><i class="fas fa-graduation-cap"></i> <span id="verify-banner-text">Get the Verified Student badge and post in the Collège de Rosemont feed – create an account with your school email address.</span></p>
+                <p><i class="fas fa-graduation-cap"></i> <span id="verify-banner-text">Get the Verified Student badge and filter posts by your school – create an account with your school email address.</span></p>
                 <a href="/LoginInToCheaplet.html?redirect=/social.html"><button>Create School Account</button></a>
                 <button class="banner-close" id="close-banner-btn">&times;</button>
             </div>
 
-            <!-- FEED SWITCHER -->
-            <div class="feed-switcher" id="feed-switcher">
-                <span><i class="fas fa-filter"></i> Feed:</span>
-                <button class="feed-btn active" data-feed="global">Global</button>
-                <button class="feed-btn" data-feed="rosemont">Collège de Rosemont</button>
+            <!-- SCHOOL FILTER BAR -->
+            <div id="filter-bar" class="filter-bar" style="display: none;">
+                <span><i class="fas fa-filter"></i> Show:</span>
+                <button class="school-filter active" data-filter="all">All Campuses</button>
+                <button class="school-filter" data-filter="my" id="my-school-filter">My School</button>
             </div>
 
             <!-- SEARCH BAR -->
@@ -412,7 +413,7 @@
 
             <!-- COMPOSER WITH ATTACHMENTS -->
             <div class="composer" id="composer-card" style="position: relative;">
-                <!-- Overlay to block unverified users from posting on Rosemont feed -->
+                <!-- Overlay to block unverified users from posting on specific school feeds -->
                 <div id="composer-restricted-overlay" style="position:absolute; inset:0; z-index:10; cursor:pointer; display:none; border-radius: var(--radius);"></div>
                 
                 <img src="" id="composer-pfp" class="composer-pfp" alt="Avatar">
@@ -507,7 +508,7 @@
             const lang = localStorage.getItem('preferred_language') || 'en';
             const allStrings = {
                 en: { 
-                    topics_public: "Public Channels", topics_campus: "Global Feed", topics_custom: "Custom Topics", topics_new: "Create Topic",
+                    topics_public: "Public Channels", topics_campus: "Campus Public", topics_custom: "Custom Topics", topics_new: "Create Topic",
                     post_placeholder: "What's happening on campus?", loading_hub: "Loading campus hub...",
                     noPosts: "No posts yet. Be the first to share something!", justNow: "Just now", suggest: "Campus Marketplace", browse: "Browse All →", 
                     guest: "Campus Hub", sell: "List a Book", comment_placeholder: "Write a comment...", no_comments: "No comments yet.",
@@ -516,13 +517,13 @@
                     attach_title: "Attach a Listing", attach_desc: "Select one of your active listings to share.", attach_empty: "You have no active listings.", upload_fail: "Image upload failed.",
                     search_social_place: "Search posts, topics, people...", edit_post_title: "Edit Post", save_changes: "Save Changes", edited_label: " • Edited",
                     my_topics: "My Topics", saved_topics: "Saved Topics", discover_topics: "Discover", topics_directory: "Topics Directory",
-                    verify_banner_text: "Get the Verified Student badge and post in the Collège de Rosemont feed – create an account with your school email address.",
+                    verify_banner_text: "Get the Verified Student badge and filter posts by your school – create an account with your school email address.",
                     restricted_title: "Verified Student Required",
-                    restricted_desc: "To create custom topics or post in the Collège de Rosemont feed, you need a verified student account with a school email address.",
+                    restricted_desc: "To create custom topics or post in a specific school's feed, you need a verified student account with a school email address.",
                     restricted_btn: "Create School Account"
                 },
                 fr: { 
-                    topics_public: "Canaux Publics", topics_campus: "Fil Global", topics_custom: "Sujets Personnalisés", topics_new: "Nouveau Sujet",
+                    topics_public: "Canaux Publics", topics_campus: "Campus Public", topics_custom: "Sujets Personnalisés", topics_new: "Nouveau Sujet",
                     post_placeholder: "Que se passe-t-il sur le campus ?", loading_hub: "Chargement du hub...",
                     noPosts: "Aucune publication. Soyez le premier à partager !", justNow: "À l'instant", suggest: "Marché du Campus", browse: "Voir tout →", 
                     guest: "Hub Campus", sell: "Vendre un livre", comment_placeholder: "Écrire un commentaire...", no_comments: "Aucun commentaire pour le moment.",
@@ -531,9 +532,9 @@
                     attach_title: "Joindre une annonce", attach_desc: "Sélectionnez l'une de vos annonces actives.", attach_empty: "Vous n'avez aucune annonce active.", upload_fail: "Échec du téléchargement.",
                     search_social_place: "Rechercher messages, sujets, personnes...", edit_post_title: "Modifier le message", save_changes: "Enregistrer", edited_label: " • Modifié",
                     my_topics: "Mes Sujets", saved_topics: "Sujets Enregistrés", discover_topics: "Découvrir", topics_directory: "Annuaire des Sujets",
-                    verify_banner_text: "Obtenez le badge « Étudiant vérifié » et publiez dans le fil du Collège de Rosemont – créez un compte avec votre adresse e-mail scolaire.",
+                    verify_banner_text: "Obtenez le badge « Étudiant vérifié » et filtrez les messages par votre établissement – créez un compte avec votre adresse e-mail scolaire.",
                     restricted_title: "Compte étudiant requis",
-                    restricted_desc: "Pour créer des sujets personnalisés ou publier dans le fil du Collège de Rosemont, vous avez besoin d'un compte étudiant vérifié avec une adresse e-mail scolaire.",
+                    restricted_desc: "Pour créer des sujets personnalisés ou publier dans le fil d'une école spécifique, vous avez besoin d'un compte étudiant vérifié avec une adresse e-mail scolaire.",
                     restricted_btn: "Créer un compte scolaire"
                 }
             };
@@ -607,14 +608,11 @@
             let currentUser = null;
             let currentUserData = null;
             let internalSchoolName = "Global Campus"; 
-            let targetSchool = "Collège de Rosemont";
+            let targetSchool = "Collège de Rosemont"; // Calculated globally
             let unsubscribePosts = null;
             let commentUnsubscribes = {}; 
             let listings = []; 
             let allTopicsData = [];
-
-            // Feed state: 'global' or 'rosemont'
-            let currentFeed = 'global';
 
             // --- COMPOSER STATE ---
             let postImageFile = null;
@@ -635,33 +633,19 @@
             const attachListingModal = document.getElementById('attach-listing-modal');
             const listingSelectorList = document.getElementById('listing-selector-list');
 
-            // Feed switcher elements
-            const feedSwitcher = document.getElementById('feed-switcher');
-            const globalFeedBtn = document.querySelector('.feed-btn[data-feed="global"]');
-            const rosemontFeedBtn = document.querySelector('.feed-btn[data-feed="rosemont"]');
-            const desktopGlobalLink = document.querySelector('#desktop-general-list .way-item');
-            const desktopRosemontLink = document.getElementById('d-tab-rosemont'); // we'll create this if needed
-
-            // Also we need to update the sidebar to include Rosemont link
-            // We'll create it dynamically or add it in HTML. For simplicity, add a second link in the sidebar.
-            // Since the original complex HTML doesn't have a Rosemont link in the sidebar, we'll add one now via JS or HTML.
-            // We'll add it in the desktop-general-list after the global link.
-            const desktopGeneralList = document.getElementById('desktop-general-list');
-            if (desktopGeneralList && !document.getElementById('rosemont-link')) {
-                const rosemontLink = document.createElement('a');
-                rosemontLink.href = '#';
-                rosemontLink.className = 'way-item';
-                rosemontLink.id = 'rosemont-link';
-                rosemontLink.setAttribute('data-feed', 'rosemont');
-                rosemontLink.innerHTML = '<i class="fas fa-university"></i> <span>Collège de Rosemont</span>';
-                desktopGeneralList.appendChild(rosemontLink);
-            }
+            // School filter elements
+            const filterBar = document.getElementById('filter-bar');
+            const verifyBanner = document.getElementById('verify-banner');
+            const closeBannerBtn = document.getElementById('close-banner-btn');
+            const allFilterBtn = document.querySelector('.school-filter[data-filter="all"]');
+            const myFilterBtn = document.getElementById('my-school-filter');
+            let currentSchoolFilter = 'all'; // 'all' or 'my'
 
             function updateComposerState() {
                 const composerRestrictedOverlay = document.getElementById('composer-restricted-overlay');
                 
-                // If the user is on Rosemont feed AND they are NOT a verified student, restrict them from posting.
-                const isRestricted = currentFeed === 'rosemont' && currentUserData && !currentUserData.isStudent;
+                // If the user is on the "My School" filter AND they are NOT a verified student, restrict them from posting.
+                const isRestricted = currentSchoolFilter === 'my' && currentUserData && !currentUserData.isStudent;
 
                 if (isRestricted) {
                     if (composerRestrictedOverlay) composerRestrictedOverlay.style.display = 'block';
@@ -669,7 +653,7 @@
                 } else {
                     if (composerRestrictedOverlay) composerRestrictedOverlay.style.display = 'none';
                     if (postInput) {
-                        if (currentFeed === 'global') {
+                        if (currentSchoolFilter === 'all') {
                             postInput.placeholder = lang === 'fr' ? "Que se passe-t-il sur le Campus Global ?" : "What's happening on Global Campus?";
                         } else {
                             postInput.placeholder = lang === 'fr' ? `Que se passe-t-il à ${targetSchool} ?` : `What's happening at ${targetSchool}?`;
@@ -818,10 +802,12 @@
 
                     let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
                     
-                    // Determine collection based on currentFeed
-                    const collectionName = currentFeed === 'global' ? "social_posts_global" : "social_posts_rosemont";
+                    // Route post based on active filter. Unverified users will always post to "Global Campus" because they can't type in "My School"
+                    const postingToSchool = currentSchoolFilter === 'my' ? targetSchool : "Global Campus";
                     
                     const postData = {
+                        wayId: 'general',
+                        schoolName: postingToSchool,
                         text: text,
                         authorUid: currentUser.uid,
                         authorName: currentUser.displayName || "User",
@@ -833,7 +819,15 @@
                     if (uploadedImgUrl) postData.imageUrl = uploadedImgUrl;
                     if (postAttachedListing) postData.attachedListing = postAttachedListing;
 
-                    await addDoc(collection(db, collectionName), postData);
+                    await addDoc(collection(db, "social_posts"), postData);
+
+                    // If an unverified user somehow posted (e.g. from Global tab), or anyone posted, 
+                    // ensure we switch them to 'all' so they can see their post immediately
+                    if (currentSchoolFilter === 'my' && (!currentUserData || !currentUserData.isStudent)) {
+                        currentSchoolFilter = 'all';
+                        if (allFilterBtn) allFilterBtn.classList.add('active');
+                        if (myFilterBtn) myFilterBtn.classList.remove('active');
+                    }
 
                     // Reset Composer
                     postInput.value = '';
@@ -855,7 +849,7 @@
                 }
             };
 
-            // --- COMMENT IMAGE LOGIC (unchanged) ---
+            // --- COMMENT IMAGE LOGIC ---
             const globalCommentImgInput = document.getElementById('global-comment-img-upload');
             
             window.triggerCommentImg = (postId) => {
@@ -927,21 +921,8 @@
 
                     if (uploadedImgUrl) commentData.imageUrl = uploadedImgUrl;
 
-                    // Need to know which collection the post belongs to. We'll store collection name in post element attribute.
-                    // For now, assume we have a data attribute on the post card. We'll set it when rendering.
-                    // We'll need to pass collection name to this function. Let's modify: store collection name in a global map.
-                    // To keep it simple, we'll assume the post is in the same collection as the current feed? Actually comments are subcollections, so we need to know the root collection.
-                    // In the original complex version, comments were under "social_posts". Now we have two separate root collections.
-                    // We'll store the root collection name for each post when we load comments. For simplicity, we'll pass the root collection name as an attribute.
-                    // We'll refactor loadComments to know which collection the post belongs to. Let's adjust: when we create a post card, we'll store the root collection in a data attribute.
-                    // We'll then read it in postComment.
-                    
-                    // For now, we'll pass the root collection name as a parameter. We'll store it in the post card element.
-                    const postCard = document.getElementById(`post-card-${postId}`);
-                    const rootCollection = postCard ? postCard.getAttribute('data-root-collection') : (currentFeed === 'global' ? 'social_posts_global' : 'social_posts_rosemont');
-                    
-                    await addDoc(collection(db, rootCollection, postId, "comments"), commentData);
-                    await updateDoc(doc(db, rootCollection, postId), { commentCount: increment(1) });
+                    await addDoc(collection(db, "social_posts", postId, "comments"), commentData);
+                    await updateDoc(doc(db, "social_posts", postId), { commentCount: increment(1) });
 
                     // Clear UI
                     inputEl.value = '';
@@ -959,10 +940,13 @@
             // --- AUTH & SECURITY LOGIC ---
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    onSnapshot(doc(db, "users", user.uid), async (uSnap) => {
+                    onSnapshot(doc(db, "users", user.uid), async (uSnap) => {   // <-- FIX: added async here
                         if (uSnap.exists()) {
                             const data = uSnap.data();
                             
+                            // ANY authenticated user can access the feed. 
+                            // Unverified users just can't create topics or post in school feeds.
+
                             currentUser = { ...user, ...data };
                             currentUserData = data;
                             internalSchoolName = data.schoolName || "Global Campus";
@@ -991,7 +975,7 @@
                             if (btnCreateWay) btnCreateWay.onclick = handleCreateTopic;
                             if (mSheetCreateWay) mSheetCreateWay.onclick = handleCreateTopic;
                             
-                            // Calculate Target School (used for placeholder text)
+                            // Calculate Target School for unverified users (using the exact string you requested)
                             targetSchool = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Collège de Rosemont";
 
                             // Show/hide verification banner and checkmark
@@ -1006,35 +990,22 @@
                                 if (sidebarCheck) sidebarCheck.style.display = 'none';
                             }
                             
-                            // Always show feed switcher
-                            if (feedSwitcher) feedSwitcher.style.display = 'flex';
+                            // ALWAYS show filter bar
+                            if (filterBar) filterBar.style.display = 'flex';
+                            if (myFilterBtn) myFilterBtn.textContent = targetSchool;
                             
-                            // Set active feed based on currentFeed
-                            if (currentFeed === 'global') {
-                                if (globalFeedBtn) globalFeedBtn.classList.add('active');
-                                if (rosemontFeedBtn) rosemontFeedBtn.classList.remove('active');
-                                if (desktopGlobalLink) desktopGlobalLink.classList.add('active');
-                                const rosemontLink = document.getElementById('rosemont-link');
-                                if (rosemontLink) rosemontLink.classList.remove('active');
+                            if (currentSchoolFilter === 'my') {
+                                if (myFilterBtn) myFilterBtn.classList.add('active');
+                                if (allFilterBtn) allFilterBtn.classList.remove('active');
                             } else {
-                                if (globalFeedBtn) globalFeedBtn.classList.remove('active');
-                                if (rosemontFeedBtn) rosemontFeedBtn.classList.add('active');
-                                if (desktopGlobalLink) desktopGlobalLink.classList.remove('active');
-                                const rosemontLink = document.getElementById('rosemont-link');
-                                if (rosemontLink) rosemontLink.classList.add('active');
+                                if (myFilterBtn) myFilterBtn.classList.remove('active');
+                                if (allFilterBtn) allFilterBtn.classList.add('active');
                             }
-                            
-                            // Update mobile pills
-                            document.querySelectorAll('.m-way-pill').forEach(pill => {
-                                const feed = pill.getAttribute('data-feed');
-                                if (feed === currentFeed) pill.classList.add('active');
-                                else pill.classList.remove('active');
-                            });
                             
                             updateComposerState();
                             showHubLayout();
                             
-                            // Ensure the school topic exists before loading topics (optional)
+                            // Ensure the school topic exists before loading topics
                             await ensureSchoolTopic(targetSchool);
                             loadTopics(); 
                             preloadBooksAndLoadFeed();
@@ -1043,6 +1014,7 @@
                         }
                     });
                 } else {
+                    // Instantly redirect guests to login
                     window.location.href = '/LoginInToCheaplet.html?redirect=/social.html';
                 }
             });
@@ -1077,12 +1049,14 @@
                 }
             });
 
-            // --- ENSURE SCHOOL TOPIC EXISTS (optional, for social_channels) ---
+            // --- ENSURE SCHOOL TOPIC EXISTS ---
             async function ensureSchoolTopic(schoolName) {
                 if (!schoolName) return;
+                // Check if a topic with this name already exists
                 const q = query(collection(db, "social_channels"), where("name", "==", schoolName));
                 const snap = await getDocs(q);
                 if (snap.empty) {
+                    // Create the topic
                     try {
                         await addDoc(collection(db, "social_channels"), {
                             name: schoolName,
@@ -1099,7 +1073,7 @@
                 }
             }
 
-            // --- SMART TOPICS DIRECTORY (unchanged) ---
+            // --- SMART TOPICS DIRECTORY ---
             function loadTopics() {
                 const q = query(collection(db, "social_channels"));
                 onSnapshot(q, (snapshot) => {
@@ -1124,7 +1098,12 @@
                 mListMy.innerHTML = ''; mListPinned.innerHTML = ''; mListDiscover.innerHTML = '';
                 
                 if (mobileWaysList) {
-                    // Already have pills; we don't add topics to the mobile bar because they are separate.
+                    mobileWaysList.innerHTML = '';
+                    const mGeneral = document.createElement('a');
+                    mGeneral.className = 'm-way-pill active';
+                    mGeneral.href = '/social.html';
+                    mGeneral.innerHTML = `<i class="fas fa-globe-americas"></i> ${ui.topics_campus}`;
+                    mobileWaysList.appendChild(mGeneral);
                 }
 
                 const myT = [], pinT = [], discT = [];
@@ -1174,16 +1153,26 @@
                     return item;
                 };
 
-                // No need to add topics to mobile bar as pills; they are in bottom sheet.
+                const createTopBarItem = (t) => {
+                    const count = formatCount(t.postCount);
+                    const lock = t.visibility === 'private' ? ' <i class="fas fa-lock" style="font-size:0.65rem; margin-left:4px;"></i>' : '';
+                    const item = document.createElement('a');
+                    item.className = 'm-way-pill'; 
+                    item.href = `/topic.html?id=${t.id}`;
+                    item.innerHTML = `<i class="fas fa-hashtag"></i> ${t.name}${lock} <span class="m-way-count">${count}</span>`;
+                    return item;
+                };
 
                 myT.forEach(t => {
                     dListMy.appendChild(createItemHtml(t, true, true));
                     mListMy.appendChild(createItemHtml(t, false, true));
+                    if (mobileWaysList) mobileWaysList.appendChild(createTopBarItem(t));
                 });
 
                 pinT.forEach(t => {
                     dListPinned.appendChild(createItemHtml(t, true, false));
                     mListPinned.appendChild(createItemHtml(t, false, false));
+                    if (mobileWaysList) mobileWaysList.appendChild(createTopBarItem(t));
                 });
 
                 discT.forEach(t => {
@@ -1192,7 +1181,16 @@
                 });
             }
 
-            // --- FEED LOADING ---
+            // --- FEED FILTERING LOGIC ---
+            function filterPostsBySchool(posts) {
+                if (currentSchoolFilter === 'my') {
+                    return posts.filter(post => post.schoolName === targetSchool);
+                } else {
+                    // Global filter shows everything
+                    return posts;
+                }
+            }
+
             function loadFeed() {
                 if (unsubscribePosts) unsubscribePosts();
                 Object.values(commentUnsubscribes).forEach(unsub => unsub());
@@ -1200,15 +1198,22 @@
 
                 if (feedContainer) feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub}</span></div>`;
 
-                const collectionName = currentFeed === 'global' ? "social_posts_global" : "social_posts_rosemont";
-                const q = query(collection(db, collectionName), orderBy("timestamp", "desc"), limit(100));
+                let q = query(collection(db, "social_posts"), orderBy("timestamp", "desc"), limit(100));
                 
                 try {
                     unsubscribePosts = onSnapshot(q, (snapshot) => {
                         if (!feedContainer) return;
                         feedContainer.innerHTML = '';
                         
-                        if (snapshot.empty) {
+                        let filteredDocs = snapshot.docs.filter(d => d.data().wayId === 'general');
+                        
+                        // Apply school filter
+                        const postsData = filteredDocs.map(doc => ({ id: doc.id, data: doc.data() }));
+                        const filteredBySchool = filterPostsBySchool(postsData.map(p => ({ schoolName: p.data.schoolName, data: p.data, id: p.id })));
+                        const filteredIds = filteredBySchool.map(p => p.id);
+                        filteredDocs = filteredDocs.filter(doc => filteredIds.includes(doc.id));
+
+                        if (filteredDocs.length === 0) {
                             feedContainer.innerHTML = `<div class="loader-msg">${ui.noPosts}</div>`;
                             return;
                         }
@@ -1216,9 +1221,9 @@
                         const frag = document.createDocumentFragment();
                         let postCounter = 0;
 
-                        snapshot.forEach(docSnap => {
+                        filteredDocs.forEach(docSnap => {
                             const d = docSnap.data();
-                            frag.appendChild(createPostElement(docSnap.id, d, collectionName));
+                            frag.appendChild(createPostElement(docSnap.id, d));
                             postCounter++;
 
                             if (postCounter === 3 && listings.length > 0) {
@@ -1235,37 +1240,22 @@
                 } catch (e) { console.error(e); }
             }
 
-            // Feed switcher event handlers
-            function switchFeed(feed) {
-                if (feed === currentFeed) return;
-                currentFeed = feed;
-                // Update UI
-                if (globalFeedBtn) globalFeedBtn.classList.toggle('active', feed === 'global');
-                if (rosemontFeedBtn) rosemontFeedBtn.classList.toggle('active', feed === 'rosemont');
-                if (desktopGlobalLink) desktopGlobalLink.classList.toggle('active', feed === 'global');
-                const rosemontLink = document.getElementById('rosemont-link');
-                if (rosemontLink) rosemontLink.classList.toggle('active', feed === 'rosemont');
-                document.querySelectorAll('.m-way-pill').forEach(pill => {
-                    const pillFeed = pill.getAttribute('data-feed');
-                    if (pillFeed === feed) pill.classList.add('active');
-                    else pill.classList.remove('active');
-                });
+            // School filter event handlers
+            if (allFilterBtn) allFilterBtn.onclick = () => {
+                currentSchoolFilter = 'all';
+                allFilterBtn.classList.add('active');
+                if (myFilterBtn) myFilterBtn.classList.remove('active');
                 updateComposerState();
                 loadFeed();
-            }
-
-            if (globalFeedBtn) globalFeedBtn.onclick = () => switchFeed('global');
-            if (rosemontFeedBtn) rosemontFeedBtn.onclick = () => switchFeed('rosemont');
-            if (desktopGlobalLink) desktopGlobalLink.onclick = (e) => { e.preventDefault(); switchFeed('global'); };
-            const rosemontLink = document.getElementById('rosemont-link');
-            if (rosemontLink) rosemontLink.onclick = (e) => { e.preventDefault(); switchFeed('rosemont'); };
-            document.querySelectorAll('.m-way-pill').forEach(pill => {
-                pill.onclick = (e) => {
-                    e.preventDefault();
-                    const feed = pill.getAttribute('data-feed');
-                    if (feed) switchFeed(feed);
-                };
-            });
+            };
+            
+            if (myFilterBtn) myFilterBtn.onclick = () => {
+                currentSchoolFilter = 'my';
+                myFilterBtn.classList.add('active');
+                if (allFilterBtn) allFilterBtn.classList.remove('active');
+                updateComposerState();
+                loadFeed();
+            };
 
             async function preloadBooksAndLoadFeed() {
                 let bookQ = query(collection(db, "listings"), where("status", "==", "active"), orderBy("timestamp", "desc"), limit(6));
@@ -1286,21 +1276,23 @@
                 loadFeed();
             }
 
-            function createPostElement(id, d, rootCollection) {
+            function createPostElement(id, d) {
                 let pfp = d.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${d.authorUid}&backgroundColor=EBF2FA`;
                 let timeStr = d.timestamp ? formatTime(d.timestamp.toDate()) : ui.justNow;
                 const isLiked = currentUser && d.likedBy && d.likedBy.includes(currentUser.uid);
                 
-                // No school badge needed since feed is separate
-                const schoolTagHtml = '';
+                // Show school badge if not Global Campus
+                const schoolTagHtml = (d.schoolName && d.schoolName !== 'Global Campus') 
+                    ? `<span style="font-size: 0.7rem; color: var(--deep); background: var(--surface); padding: 2px 8px; border-radius: 12px; margin-left: 8px; font-weight: 700; white-space: nowrap;"><i class="fas fa-university"></i> ${d.schoolName}</span>` 
+                    : '';
 
                 // 3-DOT MENU LOGIC
                 const canEdit = currentUser && currentUser.uid === d.authorUid;
                 const canDelete = currentUser && (currentUser.uid === d.authorUid || currentUser.role === 'admin');
                 
                 const safeText = d.text ? d.text.replace(/'/g, "&#39;").replace(/"/g, "&quot;").replace(/\n/g, "\\n") : '';
-                const editBtnHtml = canEdit ? `<button class="post-dropdown-item" onclick="window.openEditPost('${id}', '${safeText}', '${rootCollection}')"><i class="fas fa-edit"></i> Edit Post</button>` : '';
-                const deleteBtnHtml = canDelete ? `<button class="post-dropdown-item danger" onclick="window.deletePost('${id}', '${rootCollection}')"><i class="fas fa-trash-alt"></i> Delete Post</button>` : '';
+                const editBtnHtml = canEdit ? `<button class="post-dropdown-item" onclick="window.openEditPost('${id}', '${safeText}')"><i class="fas fa-edit"></i> Edit Post</button>` : '';
+                const deleteBtnHtml = canDelete ? `<button class="post-dropdown-item danger" onclick="window.deletePost('${id}')"><i class="fas fa-trash-alt"></i> Delete Post</button>` : '';
                 const editedLabel = d.edited ? `<span class="edited-badge" data-i18n="edited_label">${ui.edited_label}</span>` : '';
 
                 let attachedImgHtml = d.imageUrl ? `<img src="${d.imageUrl}" class="post-image-attachment" onclick="window.open('${d.imageUrl}', '_blank')">` : '';
@@ -1319,8 +1311,6 @@
 
                 const card = document.createElement('div');
                 card.className = 'post-card';
-                card.id = `post-card-${id}`;
-                card.setAttribute('data-root-collection', rootCollection);
                 card.innerHTML = `
                     <div class="post-header-top">
                         <a href="/user.html?id=${d.authorUid}" class="post-author-link">
@@ -1334,7 +1324,7 @@
                             <button class="post-menu-btn" onclick="window.togglePostMenu('${id}')"><i class="fas fa-ellipsis-h"></i></button>
                             <div class="post-dropdown" id="post-dropdown-${id}">
                                 ${editBtnHtml}
-                                <button class="post-dropdown-item" onclick="window.reportPost('${id}', '${d.authorUid}', '${d.authorName.replace(/'/g, "\\'")}', '${rootCollection}')"><i class="fas fa-flag"></i> Report</button>
+                                <button class="post-dropdown-item" onclick="window.reportPost('${id}', '${d.authorUid}', '${d.authorName.replace(/'/g, "\\'")}')"><i class="fas fa-flag"></i> Report</button>
                                 ${deleteBtnHtml}
                             </div>
                         </div>
@@ -1346,10 +1336,10 @@
                     ${attachedListHtml}
 
                     <div class="post-actions">
-                        <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="window.likePost('${id}', ${isLiked}, '${rootCollection}')">
+                        <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="window.likePost('${id}', ${isLiked})">
                             <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i> ${d.likes || 0}
                         </button>
-                        <button class="action-btn" onclick="window.toggleComments('${id}', '${rootCollection}')">
+                        <button class="action-btn" onclick="window.toggleComments('${id}')">
                             <i class="far fa-comment"></i> ${d.commentCount || 0}
                         </button>
                     </div>
@@ -1401,19 +1391,20 @@
                 }
             });
 
-            window.deletePost = async (id, rootCollection) => {
+            window.deletePost = async (id) => {
                 if(confirm("Are you sure you want to delete this post?")) {
                     try {
-                        await deleteDoc(doc(db, rootCollection, id));
+                        await deleteDoc(doc(db, "social_posts", id));
+                        // No decrement needed for general
                     } catch(e) { alert("Error deleting post."); }
                 }
             };
 
-            let reportTargetId = null; let reportTargetName = null; let reportTargetPostId = null; let reportRootCollection = null;
+            let reportTargetId = null; let reportTargetName = null; let reportTargetPostId = null;
 
-            window.reportPost = (postId, authorUid, authorName, rootCollection) => {
+            window.reportPost = (postId, authorUid, authorName) => {
                 document.querySelectorAll('.post-dropdown').forEach(d => d.classList.remove('show'));
-                reportTargetId = authorUid; reportTargetName = authorName; reportTargetPostId = postId; reportRootCollection = rootCollection;
+                reportTargetId = authorUid; reportTargetName = authorName; reportTargetPostId = postId;
                 const reportDetails = document.getElementById('report-details');
                 if (reportDetails) reportDetails.value = '';
                 const reportModal = document.getElementById('report-modal');
@@ -1442,7 +1433,7 @@
                         reporterUid: currentUser.uid, reporterName: currentUser.displayName,
                         targetUid: reportTargetId, targetUserName: reportTargetName,
                         reason: `Post Report: ${reason}`,
-                        details: `Post ID: ${reportTargetPostId}\nCollection: ${reportRootCollection}\n\n${details}`,
+                        details: `Post ID: ${reportTargetPostId}\nTopic: General\n\n${details}`,
                         timestamp: serverTimestamp()
                     });
                     alert(ui.rep_success);
@@ -1454,12 +1445,10 @@
 
             // --- EDIT POST LOGIC ---
             let editTargetPostId = null;
-            let editTargetCollection = null;
 
-            window.openEditPost = (postId, encodedText, rootCollection) => {
+            window.openEditPost = (postId, encodedText) => {
                 document.querySelectorAll('.post-dropdown').forEach(d => d.classList.remove('show'));
                 editTargetPostId = postId;
-                editTargetCollection = rootCollection;
                 
                 const textarea = document.createElement('textarea');
                 textarea.innerHTML = encodedText;
@@ -1486,7 +1475,7 @@
                 btnSubmitEdit.disabled = true;
 
                 try {
-                    await updateDoc(doc(db, editTargetCollection, editTargetPostId), {
+                    await updateDoc(doc(db, "social_posts", editTargetPostId), {
                         text: newText,
                         edited: true
                     });
@@ -1497,9 +1486,9 @@
                 btnSubmitEdit.disabled = false;
             };
 
-            window.likePost = async (id, alreadyLiked, rootCollection) => {
+            window.likePost = async (id, alreadyLiked) => {
                 if (!currentUser) return;
-                const ref = doc(db, rootCollection, id);
+                const ref = doc(db, "social_posts", id);
                 if(alreadyLiked) {
                     await updateDoc(ref, { likes: increment(-1), likedBy: arrayRemove(currentUser.uid) });
                 } else {
@@ -1507,18 +1496,18 @@
                 }
             };
 
-            window.toggleComments = (id, rootCollection) => {
+            window.toggleComments = (id) => {
                 const sec = document.getElementById(`comments-section-${id}`);
                 if (!sec) return;
                 if (sec.style.display === 'block') { sec.style.display = 'none'; if(commentUnsubscribes[id]) commentUnsubscribes[id](); }
-                else { sec.style.display = 'block'; loadComments(id, rootCollection); }
+                else { sec.style.display = 'block'; loadComments(id); }
             };
 
-            function loadComments(postId, rootCollection) {
+            function loadComments(postId) {
                 const list = document.getElementById(`comment-list-${postId}`);
                 if (!list) return;
                 
-                commentUnsubscribes[postId] = onSnapshot(query(collection(db, rootCollection, postId, "comments"), orderBy("timestamp", "asc")), (snap) => {
+                commentUnsubscribes[postId] = onSnapshot(query(collection(db, "social_posts", postId, "comments"), orderBy("timestamp", "asc")), (snap) => {
                     list.innerHTML = snap.empty ? `<div style="text-align:center; font-size:0.85rem; color:#888;">${ui.no_comments}</div>` : '';
                     snap.forEach(docSnap => {
                         const c = docSnap.data();
@@ -1537,7 +1526,7 @@
                         const isCommentAuthor = currentUser && currentUser.uid === c.authorUid;
                         const isAdmin = currentUser && currentUser.role === 'admin';
                         const deleteBtnHtml = (isCommentAuthor || isAdmin) 
-                            ? `<button onclick="window.deleteComment('${postId}', '${commentId}', '${rootCollection}')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:0.75rem; margin-left:10px;"><i class="fas fa-trash-alt"></i></button>` 
+                            ? `<button onclick="window.deleteComment('${postId}', '${commentId}')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:0.75rem; margin-left:10px;"><i class="fas fa-trash-alt"></i></button>` 
                             : '';
 
                         const div = document.createElement('div');
@@ -1560,11 +1549,11 @@
                 });
             }
 
-            window.deleteComment = async (postId, commentId, rootCollection) => {
+            window.deleteComment = async (postId, commentId) => {
                 if(confirm("Delete this comment?")) {
                     try {
-                        await deleteDoc(doc(db, rootCollection, postId, "comments", commentId));
-                        await updateDoc(doc(db, rootCollection, postId), { commentCount: increment(-1) });
+                        await deleteDoc(doc(db, "social_posts", postId, "comments", commentId));
+                        await updateDoc(doc(db, "social_posts", postId), { commentCount: increment(-1) });
                     } catch(e) {
                         console.error(e);
                         alert("Permission denied or error deleting.");
@@ -1572,7 +1561,53 @@
                 }
             };
 
-            // The global postComment function already defined; it uses the root collection from the post card's data attribute.
+            window.postComment = async (postId) => {
+                if (!currentUser) return;
+                const inputEl = document.getElementById(`comment-input-${postId}`);
+                const btnEl = document.getElementById(`btn-send-comment-${postId}`);
+                if (!inputEl || !btnEl) return;
+                
+                const text = inputEl.value.trim();
+                const file = commentImageFiles[postId];
+                
+                if (!text && !file) return;
+                
+                btnEl.disabled = true;
+                const origIcon = btnEl.innerHTML;
+                btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                
+                try {
+                    let uploadedImgUrl = null;
+                    if (file) {
+                        uploadedImgUrl = await uploadImageToCloudinary(file);
+                    }
+
+                    let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
+
+                    const commentData = {
+                        text: text,
+                        authorUid: currentUser.uid,
+                        authorName: currentUser.displayName || "User",
+                        authorPhoto: photoToSave,
+                        timestamp: serverTimestamp()
+                    };
+
+                    if (uploadedImgUrl) commentData.imageUrl = uploadedImgUrl;
+
+                    await addDoc(collection(db, "social_posts", postId, "comments"), commentData);
+                    await updateDoc(doc(db, "social_posts", postId), { commentCount: increment(1) });
+
+                    // Clear UI
+                    inputEl.value = '';
+                    window.removeCommentImg(postId);
+                } catch(e) { 
+                    console.error(e); 
+                    alert(ui.upload_fail); 
+                } finally { 
+                    btnEl.innerHTML = origIcon;
+                    btnEl.disabled = true; 
+                }
+            };
 
             document.body.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && e.target.classList.contains('comment-input')) {
