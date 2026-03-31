@@ -34,15 +34,6 @@
         .logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: -0.5px; flex-shrink: 0; }
         .logo em { color: var(--gold); font-style: normal; }
 
-        /* ── RESTRICTED ACCESS SCREEN (only for non‑logged‑in) ── */
-        .locked-screen { display: none; flex-direction: column; align-items: center; justify-content: center; height: calc(100vh - 68px); padding: 20px; text-align: center; }
-        .locked-card { background: var(--white); padding: 40px; border-radius: var(--radius); box-shadow: var(--shadow); border: var(--border); max-width: 450px; width: 100%; animation: fadeUp 0.4s ease both; }
-        .locked-icon { font-size: 3rem; color: var(--red); margin-bottom: 20px; }
-        .locked-title { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--ink); margin-bottom: 15px; }
-        .locked-desc { color: var(--text-muted); font-size: 1rem; line-height: 1.6; margin-bottom: 25px; }
-        .btn-locked { background: var(--gold); color: var(--ink); border: none; padding: 12px 30px; border-radius: 30px; font-weight: 800; font-size: 1rem; cursor: pointer; text-decoration: none; display: inline-block; transition: 0.2s; }
-        .btn-locked:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(200, 169, 110, 0.4); }
-
         /* ── MAIN LAYOUT ── */
         .hub-layout { display: none; max-width: 1100px; margin: 30px auto; grid-template-columns: 260px minmax(0, 1fr); gap: 40px; padding: 0 20px; align-items: start; width: 100%; }
 
@@ -107,7 +98,6 @@
         .filter-bar span { font-size: 0.85rem; color: var(--text-muted); }
         .school-filter { background: none; border: none; padding: 8px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
         .school-filter.active { background: var(--ink); color: white; }
-        .school-filter.disabled { opacity: 0.5; cursor: not-allowed; background: none; color: var(--text-muted); pointer-events: none; }
 
         /* ── SEARCH BAR ── */
         .social-search-bar { display: flex; align-items: center; background: var(--white); border: var(--border); border-radius: 30px; padding: 5px 15px; box-shadow: var(--shadow); margin-bottom: -5px; transition: border-color 0.2s; }
@@ -286,16 +276,6 @@
             <div class="header-right"></div>
         </div>
     </header>
-
-    <!-- LOCKED SCREEN -->
-    <div class="locked-screen" id="locked-screen">
-        <div class="locked-card">
-            <i class="fas fa-lock locked-icon"></i>
-            <h2 class="locked-title" id="ui-locked-title">Restricted Access</h2>
-            <p class="locked-desc" id="ui-locked-desc">The Campus Hub is an exclusive space for verified students. To join the conversation, please log in using your official school email address.</p>
-            <a href="/LoginInToCheaplet.html?redirect=/social.html" class="btn-locked" id="ui-locked-btn">Log In or Register</a>
-        </div>
-    </div>
 
     <!-- MOBILE TOPICS BAR WITH ☰ MENU BUTTON -->
     <div class="mobile-topics-wrapper" id="mobile-topics-wrapper">
@@ -542,11 +522,6 @@
             document.querySelectorAll('[data-i18n]').forEach(el => { if (ui[el.getAttribute('data-i18n')]) el.textContent = ui[el.getAttribute('data-i18n')]; });
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { if (ui[el.getAttribute('data-i18n-placeholder')]) el.placeholder = ui[el.getAttribute('data-i18n-placeholder')]; });
             
-            document.getElementById('ui-locked-title').textContent = ui.lock_title;
-            document.getElementById('ui-locked-desc').textContent = ui.lock_desc;
-            document.getElementById('ui-locked-btn').textContent = ui.lock_btn;
-            document.getElementById('ui-locked-btn').href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent('/social.html')}`;
-
             document.getElementById('report-modal-title').textContent = ui.rep_title;
             document.getElementById('report-modal-desc').textContent = ui.rep_desc;
             document.getElementById('report-details').placeholder = ui.rep_place;
@@ -781,6 +756,13 @@
 
                     await addDoc(collection(db, "social_posts"), postData);
 
+                    // Switch filter to 'all' if unverified user is on 'my' school, so they see their global post immediately.
+                    if (currentUserData && !currentUserData.isStudent && currentSchoolFilter === 'my') {
+                        currentSchoolFilter = 'all';
+                        allFilterBtn.classList.add('active');
+                        myFilterBtn.classList.remove('active');
+                    }
+
                     // Reset Composer
                     postInput.value = '';
                     postInput.style.height = '40px'; 
@@ -885,7 +867,7 @@
                         if (uSnap.exists()) {
                             const data = uSnap.data();
                             
-                            // ANY authenticated user with verified email can access
+                            // ANY authenticated user with verified email can access (we removed the strict "must be student" check here per prompt)
                             if (!user.emailVerified && !user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com')) {
                                 window.location.href = '/LoginInToCheaplet.html?redirect=/social.html&msg=social';
                                 return;
@@ -911,29 +893,14 @@
                                 if (isStudent || data.role === 'admin') {
                                     window.location.href = '/createtopic.html';
                                 } else {
-                                    restrictedModal.style.display = 'flex';
+                                    document.getElementById('restricted-modal').style.display = 'flex';
                                 }
                             };
 
                             if (btnCreateWay) btnCreateWay.onclick = handleCreateTopic;
                             if (mSheetCreateWay) mSheetCreateWay.onclick = handleCreateTopic;
                             
-                            // --- SCHOOL FILTER BAR ---
-                            filterBar.style.display = 'flex';
-                            
-                            // For unverified users, "internalSchoolName" is "Global Campus". We fallback to "Collège de Rosemont".
-                            const targetSchool = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Collège de Rosemont";
-                            myFilterBtn.textContent = targetSchool;
-
-                            if (currentSchoolFilter === 'my') {
-                                myFilterBtn.classList.add('active');
-                                allFilterBtn.classList.remove('active');
-                            } else {
-                                myFilterBtn.classList.remove('active');
-                                allFilterBtn.classList.add('active');
-                            }
-
-                            // Show/hide verification banner and checkmark
+                            // Show/hide verification banner and set up school filter
                             if (isStudent) {
                                 verifyBanner.style.display = 'none';
                                 const sidebarCheck = document.getElementById('verified-check-sidebar');
@@ -949,6 +916,21 @@
                                 if (sidebarCheck) sidebarCheck.style.display = 'none';
                             }
                             
+                            // ALWAYS show filter bar for logged-in users
+                            document.getElementById('filter-bar').style.display = 'flex';
+                            
+                            // For unverified users, "internalSchoolName" is "Global Campus". We fallback to "Collège de Rosemont".
+                            const targetSchool = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Collège de Rosemont";
+                            myFilterBtn.textContent = targetSchool;
+
+                            if (currentSchoolFilter === 'my') {
+                                myFilterBtn.classList.add('active');
+                                allFilterBtn.classList.remove('active');
+                            } else {
+                                myFilterBtn.classList.remove('active');
+                                allFilterBtn.classList.add('active');
+                            }
+                            
                             showHubLayout();
                             loadTopics(); 
                             preloadBooksAndLoadFeed();
@@ -957,7 +939,8 @@
                         }
                     });
                 } else {
-                    showLockedScreen();
+                    // Non-logged-in user redirect
+                    window.location.href = '/LoginInToCheaplet.html?redirect=/social.html&msg=social';
                 }
             });
 
@@ -967,14 +950,7 @@
                 localStorage.setItem('verify_banner_dismissed', 'true');
             };
 
-            function showLockedScreen() {
-                document.getElementById('hub-layout').style.display = 'none';
-                document.getElementById('mobile-topics-wrapper').style.display = 'none';
-                document.getElementById('locked-screen').style.display = 'flex';
-            }
-
             function showHubLayout() {
-                document.getElementById('locked-screen').style.display = 'none';
                 document.getElementById('hub-layout').style.display = 'grid'; 
                 if(window.innerWidth <= 850) {
                     document.getElementById('hub-layout').style.display = 'flex';
