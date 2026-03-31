@@ -11,7 +11,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* (all existing CSS – unchanged) */
         :root {
             --ink:       #0C1446;
             --deep:      #2B5C92;
@@ -118,6 +117,7 @@
 
         /* ── COMPOSER ── */
         .composer { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border: var(--border); width: 100%; display: flex; gap: 15px; align-items: flex-start; flex-direction: row; position: relative; }
+        .composer-shield { position: absolute; inset: 0; z-index: 50; cursor: pointer; display: none; border-radius: var(--radius); }
         .composer-pfp { width: 45px; height: 45px; border-radius: 50%; background: #eee; object-fit: cover; border: 2px solid var(--off-white); flex-shrink: 0; }
         .composer-content { flex-grow: 1; display: flex; flex-direction: column; background: var(--off-white); border: 1px solid #e2e8f0; border-radius: 18px; padding: 5px; transition: border-color 0.2s, background 0.2s; }
         .composer-content:focus-within { border-color: var(--deep); background: var(--white); }
@@ -155,7 +155,7 @@
         .post-author-link:hover .post-author { color: var(--deep); text-decoration: underline; }
         .post-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #f1f5f9; border: 1px solid #e2e8f0; flex-shrink: 0; }
         .post-meta { display: flex; flex-direction: column; overflow: hidden; }
-        .post-author { font-weight: 800; font-size: 1.05rem; color: var(--ink); letter-spacing: -0.3px; transition: color 0.2s; }
+        .post-author { font-weight: 800; font-size: 1.05rem; color: var(--ink); letter-spacing: -0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.2s; }
         .verified-check-icon { color: var(--green); font-size: 0.9rem; margin-left: 6px; }
         .post-time { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; font-weight: 500; display: flex; align-items: center; gap: 5px; }
         .edited-badge { font-size: 0.75rem; color: var(--text-muted); font-style: italic; }
@@ -287,21 +287,11 @@
         </div>
     </header>
 
-    <!-- LOCKED SCREEN -->
-    <div class="locked-screen" id="locked-screen">
-        <div class="locked-card">
-            <i class="fas fa-lock locked-icon"></i>
-            <h2 class="locked-title" id="ui-locked-title">Restricted Access</h2>
-            <p class="locked-desc" id="ui-locked-desc">The Campus Hub is an exclusive space for verified students. To join the conversation, please log in using your official school email address.</p>
-            <a href="/LoginInToCheaplet.html?redirect=/social.html" class="btn-locked" id="ui-locked-btn">Log In or Register</a>
-        </div>
-    </div>
-
     <!-- MOBILE TOPICS BAR WITH ☰ MENU BUTTON -->
     <div class="mobile-topics-wrapper" id="mobile-topics-wrapper">
         <div class="mobile-ways-bar" id="mobile-ways-list">
             <a href="/social.html" class="m-way-pill active">
-                <i class="fas fa-globe-americas"></i> <span data-i18n="topics_campus">Campus Public</span>
+                <i class="fas fa-globe-americas"></i> <span data-i18n="topics_campus">Global Campus</span>
             </a>
         </div>
         <div class="mobile-fade"></div>
@@ -363,7 +353,7 @@
                 <div class="topic-section-title" data-i18n="topics_public">Public Channels</div>
                 <div id="desktop-general-list">
                     <a href="/social.html" class="way-item active">
-                        <i class="fas fa-globe-americas"></i> <span data-i18n="topics_campus">Campus Public</span>
+                        <i class="fas fa-globe-americas"></i> <span data-i18n="topics_campus">Global Campus</span>
                     </a>
                 </div>
 
@@ -390,17 +380,17 @@
 
         <main class="feed-column">
             
-            <!-- VERIFICATION BANNER -->
+            <!-- VERIFICATION BANNER (only for non‑verified) -->
             <div id="verify-banner" class="verify-banner" style="display: none;">
                 <p><i class="fas fa-graduation-cap"></i> <span id="verify-banner-text">Get the Verified Student badge and filter posts by your school – create an account with your school email address.</span></p>
                 <a href="/LoginInToCheaplet.html?redirect=/social.html"><button>Create School Account</button></a>
                 <button class="banner-close" id="close-banner-btn">&times;</button>
             </div>
 
-            <!-- SCHOOL FILTER BAR -->
-            <div id="filter-bar" class="filter-bar" style="display: none;">
-                <span><i class="fas fa-filter"></i> Show:</span>
-                <button class="school-filter active" data-filter="all">All Campuses</button>
+            <!-- SCHOOL FILTER BAR (always visible) -->
+            <div id="filter-bar" class="filter-bar">
+                <span><i class="fas fa-filter"></i> Feed:</span>
+                <button class="school-filter active" data-filter="all">Global Campus</button>
                 <button class="school-filter" data-filter="my" id="my-school-filter">My School</button>
             </div>
 
@@ -419,7 +409,7 @@
                 <img src="" id="composer-pfp" class="composer-pfp" alt="Avatar">
                 
                 <div class="composer-content">
-                    <textarea class="composer-input" id="post-input" data-i18n-placeholder="post_placeholder" placeholder="What's happening on campus?"></textarea>
+                    <textarea class="composer-input" id="post-input" data-i18n-placeholder="post_placeholder" placeholder="What's happening on Global Campus?"></textarea>
                     
                     <!-- Previews -->
                     <div class="composer-preview-area" id="composer-preview-area"></div>
@@ -494,7 +484,7 @@
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, doc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, limit, getDocs, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, doc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, limit, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 
         async function main() {
@@ -508,26 +498,25 @@
             const lang = localStorage.getItem('preferred_language') || 'en';
             const allStrings = {
                 en: { 
-                    topics_public: "Public Channels", topics_campus: "Campus Public", topics_custom: "Custom Topics", topics_new: "Create Topic",
+                    topics_public: "Public Channels", topics_campus: "Global Campus", topics_custom: "Custom Topics", topics_new: "Create Topic",
                     post_placeholder: "What's happening on campus?", loading_hub: "Loading campus hub...",
                     noPosts: "No posts yet. Be the first to share something!", justNow: "Just now", suggest: "Campus Marketplace", browse: "Browse All →", 
                     guest: "Campus Hub", sell: "List a Book", comment_placeholder: "Write a comment...", no_comments: "No comments yet.",
-                    lock_title: "Restricted Access", lock_desc: "The Campus Hub is an exclusive space for verified students. To join the conversation, please log in using your official school email address.", lock_btn: "Log In or Register",
                     rep_title: "Report Post", rep_desc: "Help us keep Scoralia safe.", rep_place: "Details...", rep_cancel: "Cancel", rep_submit: "Submit", rep_success: "Report submitted.",
                     attach_title: "Attach a Listing", attach_desc: "Select one of your active listings to share.", attach_empty: "You have no active listings.", upload_fail: "Image upload failed.",
                     search_social_place: "Search posts, topics, people...", edit_post_title: "Edit Post", save_changes: "Save Changes", edited_label: " • Edited",
                     my_topics: "My Topics", saved_topics: "Saved Topics", discover_topics: "Discover", topics_directory: "Topics Directory",
-                    verify_banner_text: "Get the Verified Student badge and filter posts by your school – create an account with your school email address.",
+                    verify_banner_text: "Get the Verified Student badge to filter posts by your school – create an account with your school email address.",
                     restricted_title: "Verified Student Required",
                     restricted_desc: "To create custom topics or post in a specific school's feed, you need a verified student account with a school email address.",
-                    restricted_btn: "Create School Account"
+                    restricted_btn: "Create School Account",
+                    filter_my_school: "My School"
                 },
                 fr: { 
-                    topics_public: "Canaux Publics", topics_campus: "Campus Public", topics_custom: "Sujets Personnalisés", topics_new: "Nouveau Sujet",
+                    topics_public: "Canaux Publics", topics_campus: "Campus Global", topics_custom: "Sujets Personnalisés", topics_new: "Nouveau Sujet",
                     post_placeholder: "Que se passe-t-il sur le campus ?", loading_hub: "Chargement du hub...",
                     noPosts: "Aucune publication. Soyez le premier à partager !", justNow: "À l'instant", suggest: "Marché du Campus", browse: "Voir tout →", 
                     guest: "Hub Campus", sell: "Vendre un livre", comment_placeholder: "Écrire un commentaire...", no_comments: "Aucun commentaire pour le moment.",
-                    lock_title: "Accès Restreint", lock_desc: "Le Hub Campus est un espace exclusif pour les étudiants vérifiés. Pour rejoindre la conversation, veuillez vous connecter avec votre adresse courriel scolaire officielle.", lock_btn: "Se Connecter ou S'inscrire",
                     rep_title: "Signaler le message", rep_desc: "Aidez-nous à protéger Scoralia.", rep_place: "Détails...", rep_cancel: "Annuler", rep_submit: "Envoyer", rep_success: "Signalement envoyé.",
                     attach_title: "Joindre une annonce", attach_desc: "Sélectionnez l'une de vos annonces actives.", attach_empty: "Vous n'avez aucune annonce active.", upload_fail: "Échec du téléchargement.",
                     search_social_place: "Rechercher messages, sujets, personnes...", edit_post_title: "Modifier le message", save_changes: "Enregistrer", edited_label: " • Modifié",
@@ -535,7 +524,8 @@
                     verify_banner_text: "Obtenez le badge « Étudiant vérifié » et filtrez les messages par votre établissement – créez un compte avec votre adresse e-mail scolaire.",
                     restricted_title: "Compte étudiant requis",
                     restricted_desc: "Pour créer des sujets personnalisés ou publier dans le fil d'une école spécifique, vous avez besoin d'un compte étudiant vérifié avec une adresse e-mail scolaire.",
-                    restricted_btn: "Créer un compte scolaire"
+                    restricted_btn: "Créer un compte scolaire",
+                    filter_my_school: "Mon école"
                 }
             };
             const ui = allStrings[lang] || allStrings['en'];
@@ -543,24 +533,29 @@
             document.querySelectorAll('[data-i18n]').forEach(el => { if (ui[el.getAttribute('data-i18n')]) el.textContent = ui[el.getAttribute('data-i18n')]; });
             document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { if (ui[el.getAttribute('data-i18n-placeholder')]) el.placeholder = ui[el.getAttribute('data-i18n-placeholder')]; });
             
-            document.getElementById('ui-locked-title').textContent = ui.lock_title;
-            document.getElementById('ui-locked-desc').textContent = ui.lock_desc;
-            document.getElementById('ui-locked-btn').textContent = ui.lock_btn;
-            document.getElementById('ui-locked-btn').href = `/LoginInToCheaplet.html?redirect=${encodeURIComponent('/social.html')}`;
+            const repTitle = document.getElementById('report-modal-title');
+            if (repTitle) repTitle.textContent = ui.rep_title;
+            const repDesc = document.getElementById('report-modal-desc');
+            if (repDesc) repDesc.textContent = ui.rep_desc;
+            const repDetails = document.getElementById('report-details');
+            if (repDetails) repDetails.placeholder = ui.rep_place;
+            const btnCancelRep = document.getElementById('btn-cancel-report');
+            if (btnCancelRep) btnCancelRep.textContent = ui.rep_cancel;
+            const btnSubmitRep = document.getElementById('btn-submit-report');
+            if (btnSubmitRep) btnSubmitRep.textContent = ui.rep_submit;
 
-            document.getElementById('report-modal-title').textContent = ui.rep_title;
-            document.getElementById('report-modal-desc').textContent = ui.rep_desc;
-            document.getElementById('report-details').placeholder = ui.rep_place;
-            document.getElementById('btn-cancel-report').textContent = ui.rep_cancel;
-            document.getElementById('btn-submit-report').textContent = ui.rep_submit;
-
-            document.getElementById('ui-modal-attach-title').textContent = ui.attach_title;
-            document.getElementById('ui-modal-attach-desc').textContent = ui.attach_desc;
-            document.getElementById('verify-banner-text').textContent = ui.verify_banner_text;
+            const attTitle = document.getElementById('ui-modal-attach-title');
+            if (attTitle) attTitle.textContent = ui.attach_title;
+            const attDesc = document.getElementById('ui-modal-attach-desc');
+            if (attDesc) attDesc.textContent = ui.attach_desc;
+            const verifBannerText = document.getElementById('verify-banner-text');
+            if (verifBannerText) verifBannerText.textContent = ui.verify_banner_text;
 
             // Restricted modal translations
-            document.getElementById('restricted-title').textContent = ui.restricted_title;
-            document.getElementById('restricted-desc').textContent = ui.restricted_desc;
+            const restrictedTitle = document.getElementById('restricted-title');
+            if (restrictedTitle) restrictedTitle.textContent = ui.restricted_title;
+            const restrictedDesc = document.getElementById('restricted-desc');
+            if (restrictedDesc) restrictedDesc.textContent = ui.restricted_desc;
             const restrictedModal = document.getElementById('restricted-modal');
             const closeRestrictedBtn = document.getElementById('close-restricted-btn');
             if (closeRestrictedBtn) closeRestrictedBtn.onclick = () => restrictedModal.style.display = 'none';
@@ -802,11 +797,10 @@
 
                     let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
                     
-                    // Route post based on active filter. Unverified users will always post to "Global Campus" because they can't type in "My School"
+                    const collectionName = currentSchoolFilter === 'my' ? "social_posts_rosemont" : "social_posts_global";
                     const postingToSchool = currentSchoolFilter === 'my' ? targetSchool : "Global Campus";
                     
                     const postData = {
-                        wayId: 'general',
                         schoolName: postingToSchool,
                         text: text,
                         authorUid: currentUser.uid,
@@ -819,15 +813,7 @@
                     if (uploadedImgUrl) postData.imageUrl = uploadedImgUrl;
                     if (postAttachedListing) postData.attachedListing = postAttachedListing;
 
-                    await addDoc(collection(db, "social_posts"), postData);
-
-                    // If an unverified user somehow posted (e.g. from Global tab), or anyone posted, 
-                    // ensure we switch them to 'all' so they can see their post immediately
-                    if (currentSchoolFilter === 'my' && (!currentUserData || !currentUserData.isStudent)) {
-                        currentSchoolFilter = 'all';
-                        if (allFilterBtn) allFilterBtn.classList.add('active');
-                        if (myFilterBtn) myFilterBtn.classList.remove('active');
-                    }
+                    await addDoc(collection(db, collectionName), postData);
 
                     // Reset Composer
                     postInput.value = '';
@@ -852,11 +838,14 @@
             // --- COMMENT IMAGE LOGIC ---
             const globalCommentImgInput = document.getElementById('global-comment-img-upload');
             
-            window.triggerCommentImg = (postId) => {
+            window.triggerCommentImg = (postId, coll) => {
                 if (!currentUser) return;
                 activeCommentPostId = postId;
+                activeCommentColl = coll;
                 if (globalCommentImgInput) globalCommentImgInput.click();
             };
+
+            let activeCommentColl = null;
 
             if (globalCommentImgInput) globalCommentImgInput.onchange = (e) => {
                 if (e.target.files[0] && activeCommentPostId) {
@@ -888,7 +877,7 @@
                 if (btnSend && inputEl) btnSend.disabled = inputEl.value.trim().length === 0;
             };
 
-            window.postComment = async (postId) => {
+            window.postComment = async (postId, coll) => {
                 if (!currentUser) return;
                 const inputEl = document.getElementById(`comment-input-${postId}`);
                 const btnEl = document.getElementById(`btn-send-comment-${postId}`);
@@ -921,8 +910,8 @@
 
                     if (uploadedImgUrl) commentData.imageUrl = uploadedImgUrl;
 
-                    await addDoc(collection(db, "social_posts", postId, "comments"), commentData);
-                    await updateDoc(doc(db, "social_posts", postId), { commentCount: increment(1) });
+                    await addDoc(collection(db, coll, postId, "comments"), commentData);
+                    await updateDoc(doc(db, coll, postId), { commentCount: increment(1) });
 
                     // Clear UI
                     inputEl.value = '';
@@ -940,12 +929,11 @@
             // --- AUTH & SECURITY LOGIC ---
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    onSnapshot(doc(db, "users", user.uid), async (uSnap) => {   // <-- FIX: added async here
+                    onSnapshot(doc(db, "users", user.uid), (uSnap) => {
                         if (uSnap.exists()) {
                             const data = uSnap.data();
                             
                             // ANY authenticated user can access the feed. 
-                            // Unverified users just can't create topics or post in school feeds.
 
                             currentUser = { ...user, ...data };
                             currentUserData = data;
@@ -1004,12 +992,10 @@
                             
                             updateComposerState();
                             showHubLayout();
-                            
-                            // Ensure the school topic exists before loading topics
-                            await ensureSchoolTopic(targetSchool);
                             loadTopics(); 
                             preloadBooksAndLoadFeed();
                         } else {
+                            // Instantly redirect guests to login if db check fails
                             window.location.href = '/LoginInToCheaplet.html?redirect=/social.html';
                         }
                     });
@@ -1048,30 +1034,6 @@
                     }
                 }
             });
-
-            // --- ENSURE SCHOOL TOPIC EXISTS ---
-            async function ensureSchoolTopic(schoolName) {
-                if (!schoolName) return;
-                // Check if a topic with this name already exists
-                const q = query(collection(db, "social_channels"), where("name", "==", schoolName));
-                const snap = await getDocs(q);
-                if (snap.empty) {
-                    // Create the topic
-                    try {
-                        await addDoc(collection(db, "social_channels"), {
-                            name: schoolName,
-                            schoolName: schoolName,
-                            createdBy: "system",
-                            visibility: "public",
-                            postCount: 0,
-                            createdAt: serverTimestamp()
-                        });
-                        console.log(`Topic "${schoolName}" created.`);
-                    } catch (err) {
-                        console.error("Failed to create school topic:", err);
-                    }
-                }
-            }
 
             // --- SMART TOPICS DIRECTORY ---
             function loadTopics() {
@@ -1181,16 +1143,6 @@
                 });
             }
 
-            // --- FEED FILTERING LOGIC ---
-            function filterPostsBySchool(posts) {
-                if (currentSchoolFilter === 'my') {
-                    return posts.filter(post => post.schoolName === targetSchool);
-                } else {
-                    // Global filter shows everything
-                    return posts;
-                }
-            }
-
             function loadFeed() {
                 if (unsubscribePosts) unsubscribePosts();
                 Object.values(commentUnsubscribes).forEach(unsub => unsub());
@@ -1198,22 +1150,15 @@
 
                 if (feedContainer) feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub}</span></div>`;
 
-                let q = query(collection(db, "social_posts"), orderBy("timestamp", "desc"), limit(100));
+                const collectionName = currentSchoolFilter === 'my' ? "social_posts_rosemont" : "social_posts_global";
+                let q = query(collection(db, collectionName), orderBy("timestamp", "desc"), limit(100));
                 
                 try {
                     unsubscribePosts = onSnapshot(q, (snapshot) => {
                         if (!feedContainer) return;
                         feedContainer.innerHTML = '';
-                        
-                        let filteredDocs = snapshot.docs.filter(d => d.data().wayId === 'general');
-                        
-                        // Apply school filter
-                        const postsData = filteredDocs.map(doc => ({ id: doc.id, data: doc.data() }));
-                        const filteredBySchool = filterPostsBySchool(postsData.map(p => ({ schoolName: p.data.schoolName, data: p.data, id: p.id })));
-                        const filteredIds = filteredBySchool.map(p => p.id);
-                        filteredDocs = filteredDocs.filter(doc => filteredIds.includes(doc.id));
 
-                        if (filteredDocs.length === 0) {
+                        if (snapshot.empty) {
                             feedContainer.innerHTML = `<div class="loader-msg">${ui.noPosts}</div>`;
                             return;
                         }
@@ -1221,9 +1166,9 @@
                         const frag = document.createDocumentFragment();
                         let postCounter = 0;
 
-                        filteredDocs.forEach(docSnap => {
+                        snapshot.docs.forEach(docSnap => {
                             const d = docSnap.data();
-                            frag.appendChild(createPostElement(docSnap.id, d));
+                            frag.appendChild(createPostElement(docSnap.id, d, collectionName));
                             postCounter++;
 
                             if (postCounter === 3 && listings.length > 0) {
@@ -1260,6 +1205,8 @@
             async function preloadBooksAndLoadFeed() {
                 let bookQ = query(collection(db, "listings"), where("status", "==", "active"), orderBy("timestamp", "desc"), limit(6));
                 
+                const targetSchool = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Collège de Rosemont";
+
                 if (currentUser && currentUser.role !== 'admin') {
                     try {
                         const sBookQ = query(collection(db, "listings"), where("location", "==", targetSchool), where("status", "==", "active"), limit(6));
@@ -1276,7 +1223,7 @@
                 loadFeed();
             }
 
-            function createPostElement(id, d) {
+            function createPostElement(id, d, coll) {
                 let pfp = d.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${d.authorUid}&backgroundColor=EBF2FA`;
                 let timeStr = d.timestamp ? formatTime(d.timestamp.toDate()) : ui.justNow;
                 const isLiked = currentUser && d.likedBy && d.likedBy.includes(currentUser.uid);
@@ -1291,8 +1238,8 @@
                 const canDelete = currentUser && (currentUser.uid === d.authorUid || currentUser.role === 'admin');
                 
                 const safeText = d.text ? d.text.replace(/'/g, "&#39;").replace(/"/g, "&quot;").replace(/\n/g, "\\n") : '';
-                const editBtnHtml = canEdit ? `<button class="post-dropdown-item" onclick="window.openEditPost('${id}', '${safeText}')"><i class="fas fa-edit"></i> Edit Post</button>` : '';
-                const deleteBtnHtml = canDelete ? `<button class="post-dropdown-item danger" onclick="window.deletePost('${id}')"><i class="fas fa-trash-alt"></i> Delete Post</button>` : '';
+                const editBtnHtml = canEdit ? `<button class="post-dropdown-item" onclick="window.openEditPost('${id}', '${safeText}', '${coll}')"><i class="fas fa-edit"></i> Edit Post</button>` : '';
+                const deleteBtnHtml = canDelete ? `<button class="post-dropdown-item danger" onclick="window.deletePost('${id}', '${coll}')"><i class="fas fa-trash-alt"></i> Delete Post</button>` : '';
                 const editedLabel = d.edited ? `<span class="edited-badge" data-i18n="edited_label">${ui.edited_label}</span>` : '';
 
                 let attachedImgHtml = d.imageUrl ? `<img src="${d.imageUrl}" class="post-image-attachment" onclick="window.open('${d.imageUrl}', '_blank')">` : '';
@@ -1324,7 +1271,7 @@
                             <button class="post-menu-btn" onclick="window.togglePostMenu('${id}')"><i class="fas fa-ellipsis-h"></i></button>
                             <div class="post-dropdown" id="post-dropdown-${id}">
                                 ${editBtnHtml}
-                                <button class="post-dropdown-item" onclick="window.reportPost('${id}', '${d.authorUid}', '${d.authorName.replace(/'/g, "\\'")}')"><i class="fas fa-flag"></i> Report</button>
+                                <button class="post-dropdown-item" onclick="window.reportPost('${id}', '${d.authorUid}', '${d.authorName.replace(/'/g, "\\'")}', '${coll}')"><i class="fas fa-flag"></i> Report</button>
                                 ${deleteBtnHtml}
                             </div>
                         </div>
@@ -1336,10 +1283,10 @@
                     ${attachedListHtml}
 
                     <div class="post-actions">
-                        <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="window.likePost('${id}', ${isLiked})">
+                        <button class="action-btn ${isLiked ? 'liked' : ''}" onclick="window.likePost('${id}', ${isLiked}, '${coll}')">
                             <i class="${isLiked ? 'fas' : 'far'} fa-heart"></i> ${d.likes || 0}
                         </button>
-                        <button class="action-btn" onclick="window.toggleComments('${id}')">
+                        <button class="action-btn" onclick="window.toggleComments('${id}', '${coll}')">
                             <i class="far fa-comment"></i> ${d.commentCount || 0}
                         </button>
                     </div>
@@ -1351,10 +1298,10 @@
                         <div class="comment-composer-area">
                             <div class="comment-preview-area" id="comment-preview-area-${id}"></div>
                             <div class="comment-input-wrapper">
-                                <textarea class="comment-input" id="comment-input-${id}" placeholder="${ui.comment_placeholder}" oninput="window.checkCommentInput('${id}')"></textarea>
+                                <textarea class="comment-input" id="comment-input-${id}" placeholder="${ui.comment_placeholder}" data-coll="${coll}" oninput="window.checkCommentInput('${id}')"></textarea>
                                 <div class="comment-tools">
-                                    <button class="tool-btn" onclick="window.triggerCommentImg('${id}')"><i class="fas fa-camera"></i></button>
-                                    <button class="btn-comment-send" onclick="window.postComment('${id}')" id="btn-send-comment-${id}" disabled><i class="fas fa-paper-plane"></i></button>
+                                    <button class="tool-btn" onclick="window.triggerCommentImg('${id}', '${coll}')"><i class="fas fa-camera"></i></button>
+                                    <button class="btn-comment-send" onclick="window.postComment('${id}', '${coll}')" id="btn-send-comment-${id}" disabled><i class="fas fa-paper-plane"></i></button>
                                 </div>
                             </div>
                         </div>
@@ -1391,20 +1338,19 @@
                 }
             });
 
-            window.deletePost = async (id) => {
+            window.deletePost = async (id, coll) => {
                 if(confirm("Are you sure you want to delete this post?")) {
                     try {
-                        await deleteDoc(doc(db, "social_posts", id));
-                        // No decrement needed for general
+                        await deleteDoc(doc(db, coll, id));
                     } catch(e) { alert("Error deleting post."); }
                 }
             };
 
-            let reportTargetId = null; let reportTargetName = null; let reportTargetPostId = null;
+            let reportTargetId = null; let reportTargetName = null; let reportTargetPostId = null; let reportTargetColl = null;
 
-            window.reportPost = (postId, authorUid, authorName) => {
+            window.reportPost = (postId, authorUid, authorName, coll) => {
                 document.querySelectorAll('.post-dropdown').forEach(d => d.classList.remove('show'));
-                reportTargetId = authorUid; reportTargetName = authorName; reportTargetPostId = postId;
+                reportTargetId = authorUid; reportTargetName = authorName; reportTargetPostId = postId; reportTargetColl = coll;
                 const reportDetails = document.getElementById('report-details');
                 if (reportDetails) reportDetails.value = '';
                 const reportModal = document.getElementById('report-modal');
@@ -1433,7 +1379,7 @@
                         reporterUid: currentUser.uid, reporterName: currentUser.displayName,
                         targetUid: reportTargetId, targetUserName: reportTargetName,
                         reason: `Post Report: ${reason}`,
-                        details: `Post ID: ${reportTargetPostId}\nTopic: General\n\n${details}`,
+                        details: `Post ID: ${reportTargetPostId}\nCollection: ${reportTargetColl}\n\n${details}`,
                         timestamp: serverTimestamp()
                     });
                     alert(ui.rep_success);
@@ -1445,10 +1391,12 @@
 
             // --- EDIT POST LOGIC ---
             let editTargetPostId = null;
+            let editTargetColl = null;
 
-            window.openEditPost = (postId, encodedText) => {
+            window.openEditPost = (postId, encodedText, coll) => {
                 document.querySelectorAll('.post-dropdown').forEach(d => d.classList.remove('show'));
                 editTargetPostId = postId;
+                editTargetColl = coll;
                 
                 const textarea = document.createElement('textarea');
                 textarea.innerHTML = encodedText;
@@ -1475,7 +1423,7 @@
                 btnSubmitEdit.disabled = true;
 
                 try {
-                    await updateDoc(doc(db, "social_posts", editTargetPostId), {
+                    await updateDoc(doc(db, editTargetColl, editTargetPostId), {
                         text: newText,
                         edited: true
                     });
@@ -1486,9 +1434,9 @@
                 btnSubmitEdit.disabled = false;
             };
 
-            window.likePost = async (id, alreadyLiked) => {
+            window.likePost = async (id, alreadyLiked, coll) => {
                 if (!currentUser) return;
-                const ref = doc(db, "social_posts", id);
+                const ref = doc(db, coll, id);
                 if(alreadyLiked) {
                     await updateDoc(ref, { likes: increment(-1), likedBy: arrayRemove(currentUser.uid) });
                 } else {
@@ -1496,18 +1444,18 @@
                 }
             };
 
-            window.toggleComments = (id) => {
+            window.toggleComments = (id, coll) => {
                 const sec = document.getElementById(`comments-section-${id}`);
                 if (!sec) return;
                 if (sec.style.display === 'block') { sec.style.display = 'none'; if(commentUnsubscribes[id]) commentUnsubscribes[id](); }
-                else { sec.style.display = 'block'; loadComments(id); }
+                else { sec.style.display = 'block'; loadComments(id, coll); }
             };
 
-            function loadComments(postId) {
+            function loadComments(postId, coll) {
                 const list = document.getElementById(`comment-list-${postId}`);
                 if (!list) return;
                 
-                commentUnsubscribes[postId] = onSnapshot(query(collection(db, "social_posts", postId, "comments"), orderBy("timestamp", "asc")), (snap) => {
+                commentUnsubscribes[postId] = onSnapshot(query(collection(db, coll, postId, "comments"), orderBy("timestamp", "asc")), (snap) => {
                     list.innerHTML = snap.empty ? `<div style="text-align:center; font-size:0.85rem; color:#888;">${ui.no_comments}</div>` : '';
                     snap.forEach(docSnap => {
                         const c = docSnap.data();
@@ -1522,11 +1470,10 @@
                         const pfp = c.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${c.authorUid}&backgroundColor=EBF2FA`;
                         const imgHtml = c.imageUrl ? `<img src="${c.imageUrl}" class="comment-image-attachment" onclick="window.open('${c.imageUrl}', '_blank')">` : '';
                         
-                        // Delete logic: Author or Admin
                         const isCommentAuthor = currentUser && currentUser.uid === c.authorUid;
                         const isAdmin = currentUser && currentUser.role === 'admin';
                         const deleteBtnHtml = (isCommentAuthor || isAdmin) 
-                            ? `<button onclick="window.deleteComment('${postId}', '${commentId}')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:0.75rem; margin-left:10px;"><i class="fas fa-trash-alt"></i></button>` 
+                            ? `<button onclick="window.deleteComment('${postId}', '${commentId}', '${coll}')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:0.75rem; margin-left:10px;"><i class="fas fa-trash-alt"></i></button>` 
                             : '';
 
                         const div = document.createElement('div');
@@ -1549,11 +1496,11 @@
                 });
             }
 
-            window.deleteComment = async (postId, commentId) => {
+            window.deleteComment = async (postId, commentId, coll) => {
                 if(confirm("Delete this comment?")) {
                     try {
-                        await deleteDoc(doc(db, "social_posts", postId, "comments", commentId));
-                        await updateDoc(doc(db, "social_posts", postId), { commentCount: increment(-1) });
+                        await deleteDoc(doc(db, coll, postId, "comments", commentId));
+                        await updateDoc(doc(db, coll, postId), { commentCount: increment(-1) });
                     } catch(e) {
                         console.error(e);
                         alert("Permission denied or error deleting.");
@@ -1561,58 +1508,11 @@
                 }
             };
 
-            window.postComment = async (postId) => {
-                if (!currentUser) return;
-                const inputEl = document.getElementById(`comment-input-${postId}`);
-                const btnEl = document.getElementById(`btn-send-comment-${postId}`);
-                if (!inputEl || !btnEl) return;
-                
-                const text = inputEl.value.trim();
-                const file = commentImageFiles[postId];
-                
-                if (!text && !file) return;
-                
-                btnEl.disabled = true;
-                const origIcon = btnEl.innerHTML;
-                btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                
-                try {
-                    let uploadedImgUrl = null;
-                    if (file) {
-                        uploadedImgUrl = await uploadImageToCloudinary(file);
-                    }
-
-                    let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
-
-                    const commentData = {
-                        text: text,
-                        authorUid: currentUser.uid,
-                        authorName: currentUser.displayName || "User",
-                        authorPhoto: photoToSave,
-                        timestamp: serverTimestamp()
-                    };
-
-                    if (uploadedImgUrl) commentData.imageUrl = uploadedImgUrl;
-
-                    await addDoc(collection(db, "social_posts", postId, "comments"), commentData);
-                    await updateDoc(doc(db, "social_posts", postId), { commentCount: increment(1) });
-
-                    // Clear UI
-                    inputEl.value = '';
-                    window.removeCommentImg(postId);
-                } catch(e) { 
-                    console.error(e); 
-                    alert(ui.upload_fail); 
-                } finally { 
-                    btnEl.innerHTML = origIcon;
-                    btnEl.disabled = true; 
-                }
-            };
-
             document.body.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' && e.target.classList.contains('comment-input')) {
                     e.preventDefault();
-                    window.postComment(e.target.id.replace('comment-input-', ''));
+                    const coll = e.target.getAttribute('data-coll');
+                    window.postComment(e.target.id.replace('comment-input-', ''), coll);
                 }
             });
 
