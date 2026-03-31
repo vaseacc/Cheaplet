@@ -155,7 +155,7 @@
         .post-author-link:hover .post-author { color: var(--deep); text-decoration: underline; }
         .post-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #f1f5f9; border: 1px solid #e2e8f0; flex-shrink: 0; }
         .post-meta { display: flex; flex-direction: column; overflow: hidden; }
-        .post-author { font-weight: 800; font-size: 1.05rem; color: var(--ink); letter-spacing: -0.3px; transition: color 0.2s; }
+        .post-author { font-weight: 800; font-size: 1.05rem; color: var(--ink); letter-spacing: -0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.2s; }
         .verified-check-icon { color: var(--green); font-size: 0.9rem; margin-left: 6px; }
         .post-time { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; font-weight: 500; display: flex; align-items: center; gap: 5px; }
         .edited-badge { font-size: 0.75rem; color: var(--text-muted); font-style: italic; }
@@ -885,7 +885,7 @@
                         if (uSnap.exists()) {
                             const data = uSnap.data();
                             
-                            // ANY authenticated user with verified email can access (we removed the strict "must be student" check here per prompt)
+                            // ANY authenticated user with verified email can access
                             if (!user.emailVerified && !user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com')) {
                                 window.location.href = '/LoginInToCheaplet.html?redirect=/social.html&msg=social';
                                 return;
@@ -918,7 +918,22 @@
                             if (btnCreateWay) btnCreateWay.onclick = handleCreateTopic;
                             if (mSheetCreateWay) mSheetCreateWay.onclick = handleCreateTopic;
                             
-                            // Show/hide verification banner and school filter
+                            // --- SCHOOL FILTER BAR ---
+                            filterBar.style.display = 'flex';
+                            
+                            // For unverified users, "internalSchoolName" is "Global Campus". We fallback to "Collège de Rosemont".
+                            const targetSchool = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Collège de Rosemont";
+                            myFilterBtn.textContent = targetSchool;
+
+                            if (currentSchoolFilter === 'my') {
+                                myFilterBtn.classList.add('active');
+                                allFilterBtn.classList.remove('active');
+                            } else {
+                                myFilterBtn.classList.remove('active');
+                                allFilterBtn.classList.add('active');
+                            }
+
+                            // Show/hide verification banner and checkmark
                             if (isStudent) {
                                 verifyBanner.style.display = 'none';
                                 const sidebarCheck = document.getElementById('verified-check-sidebar');
@@ -932,19 +947,6 @@
                                 }
                                 const sidebarCheck = document.getElementById('verified-check-sidebar');
                                 if (sidebarCheck) sidebarCheck.style.display = 'none';
-                            }
-                            
-                            // ALWAYS show filter bar
-                            filterBar.style.display = 'flex';
-                            const targetSchool = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Collège de Rosemont";
-                            myFilterBtn.textContent = targetSchool;
-                            
-                            if (currentSchoolFilter === 'my') {
-                                myFilterBtn.classList.add('active');
-                                allFilterBtn.classList.remove('active');
-                            } else {
-                                myFilterBtn.classList.remove('active');
-                                allFilterBtn.classList.add('active');
                             }
                             
                             showHubLayout();
@@ -983,7 +985,7 @@
             }
 
             window.addEventListener('resize', () => {
-                if(currentUser) { // Just check if logged in
+                if(currentUser) { 
                     if(window.innerWidth <= 850) {
                         document.getElementById('hub-layout').style.display = 'flex';
                         document.getElementById('mobile-topics-wrapper').style.display = 'flex';
@@ -996,11 +998,9 @@
 
             // --- SMART TOPICS DIRECTORY ---
             function loadTopics() {
-                // Removed orderBy from query to prevent Firestore from hiding old topics missing the 'postCount' field
                 const q = query(collection(db, "social_channels"));
                 onSnapshot(q, (snapshot) => {
                     allTopicsData = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
-                    // Sort descending by postCount in JavaScript instead
                     allTopicsData.sort((a, b) => (b.postCount || 0) - (a.postCount || 0));
                     renderTopics();
                 });
@@ -1039,7 +1039,6 @@
                     
                     if (isPrivate && !isOwner && !isMember && !isAdmin && !isPinned) return; 
                     
-                    // Fixed order: Pinned takes precedence so they always show in Saved Topics
                     if (isPinned) {
                         pinT.push(d);
                     } else if (isOwner) {
@@ -1100,6 +1099,7 @@
             // --- FEED FILTERING LOGIC ---
             function filterPostsBySchool(posts) {
                 if (currentSchoolFilter === 'my') {
+                    // Target school is either the verified user's school, or "Collège de Rosemont" for unverified
                     const targetSchool = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Collège de Rosemont";
                     return posts.filter(post => post.schoolName === targetSchool);
                 }
@@ -1122,7 +1122,7 @@
                         // Always start with all posts from general way
                         let filteredDocs = snapshot.docs.filter(d => d.data().wayId === 'general');
                         
-                        // Apply school filter if needed
+                        // Apply school filter
                         const postsData = filteredDocs.map(doc => ({ id: doc.id, data: doc.data() }));
                         const filteredBySchool = filterPostsBySchool(postsData.map(p => ({ schoolName: p.data.schoolName, data: p.data, id: p.id })));
                         const filteredIds = filteredBySchool.map(p => p.id);
@@ -1162,6 +1162,7 @@
                 myFilterBtn.classList.remove('active');
                 loadFeed();
             };
+            
             myFilterBtn.onclick = () => {
                 currentSchoolFilter = 'my';
                 myFilterBtn.classList.add('active');
@@ -1199,9 +1200,6 @@
                 const schoolTagHtml = (d.schoolName && d.schoolName !== 'Global Campus') 
                     ? `<span style="font-size: 0.7rem; color: var(--deep); background: var(--surface); padding: 2px 8px; border-radius: 12px; margin-left: 8px; font-weight: 700; white-space: nowrap;"><i class="fas fa-university"></i> ${d.schoolName}</span>` 
                     : '';
-
-                // (Optional) if you want to show verified badge on the post, you need to check if the author is a student. 
-                // Currently, `d` doesn't store `isStudent`. For now, we skip it to prevent extra reads, or you can add it to the post data.
 
                 // 3-DOT MENU LOGIC
                 const canEdit = currentUser && currentUser.uid === d.authorUid;
@@ -1493,7 +1491,7 @@
                     alert(ui.upload_fail); 
                 } finally { 
                     btnEl.innerHTML = origIcon;
-                    btnEl.disabled = true; // since it's empty now
+                    btnEl.disabled = true; 
                 }
             };
 
