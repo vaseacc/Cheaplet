@@ -34,7 +34,7 @@
         .logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: -0.5px; flex-shrink: 0; }
         .logo em { color: var(--gold); font-style: normal; }
 
-        /* ── RESTRICTED ACCESS SCREEN (only for non‑logged‑in) ── */
+        /* ── RESTRICTED ACCESS SCREEN ── */
         .locked-screen { display: none; flex-direction: column; align-items: center; justify-content: center; height: calc(100vh - 68px); padding: 20px; text-align: center; }
         .locked-card { background: var(--white); padding: 40px; border-radius: var(--radius); box-shadow: var(--shadow); border: var(--border); max-width: 450px; width: 100%; animation: fadeUp 0.4s ease both; }
         .locked-icon { font-size: 3rem; color: var(--red); margin-bottom: 20px; }
@@ -107,7 +107,6 @@
         .filter-bar span { font-size: 0.85rem; color: var(--text-muted); }
         .school-filter { background: none; border: none; padding: 8px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
         .school-filter.active { background: var(--ink); color: white; }
-        .school-filter.disabled { opacity: 0.5; cursor: not-allowed; background: none; color: var(--text-muted); pointer-events: none; }
 
         /* ── SEARCH BAR ── */
         .social-search-bar { display: flex; align-items: center; background: var(--white); border: var(--border); border-radius: 30px; padding: 5px 15px; box-shadow: var(--shadow); margin-bottom: -5px; transition: border-color 0.2s; }
@@ -499,7 +498,6 @@
                     post_placeholder: "What's happening on campus?", loading_hub: "Loading campus hub...",
                     noPosts: "No posts yet. Be the first to share something!", justNow: "Just now", suggest: "Campus Marketplace", browse: "Browse All →", 
                     guest: "Campus Hub", sell: "List a Book", comment_placeholder: "Write a comment...", no_comments: "No comments yet.",
-                    lock_title: "Restricted Access", lock_desc: "The Campus Hub is an exclusive space for students. Please log in to join the conversation.", lock_btn: "Log In or Register",
                     rep_title: "Report Post", rep_desc: "Help us keep Scoralia safe.", rep_place: "Details...", rep_cancel: "Cancel", rep_submit: "Submit", rep_success: "Report submitted.",
                     attach_title: "Attach a Listing", attach_desc: "Select one of your active listings to share.", attach_empty: "You have no active listings.", upload_fail: "Image upload failed.",
                     search_social_place: "Search posts, topics, people...", edit_post_title: "Edit Post", save_changes: "Save Changes", edited_label: " • Edited",
@@ -515,7 +513,6 @@
                     post_placeholder: "Que se passe-t-il sur le campus ?", loading_hub: "Chargement du hub...",
                     noPosts: "Aucune publication. Soyez le premier à partager !", justNow: "À l'instant", suggest: "Marché du Campus", browse: "Voir tout →", 
                     guest: "Hub Campus", sell: "Vendre un livre", comment_placeholder: "Écrire un commentaire...", no_comments: "Aucun commentaire pour le moment.",
-                    lock_title: "Accès Restreint", lock_desc: "Le Hub Campus est un espace exclusif pour les étudiants. Connectez-vous pour rejoindre la conversation.", lock_btn: "Se Connecter ou S'inscrire",
                     rep_title: "Signaler le message", rep_desc: "Aidez-nous à protéger Scoralia.", rep_place: "Détails...", rep_cancel: "Annuler", rep_submit: "Envoyer", rep_success: "Signalement envoyé.",
                     attach_title: "Joindre une annonce", attach_desc: "Sélectionnez l'une de vos annonces actives.", attach_empty: "Vous n'avez aucune annonce active.", upload_fail: "Échec du téléchargement.",
                     search_social_place: "Rechercher messages, sujets, personnes...", edit_post_title: "Modifier le message", save_changes: "Enregistrer", edited_label: " • Modifié",
@@ -547,7 +544,7 @@
             document.getElementById('restricted-desc').textContent = ui.restricted_desc;
             const restrictedModal = document.getElementById('restricted-modal');
             const closeRestrictedBtn = document.getElementById('close-restricted-btn');
-            closeRestrictedBtn.onclick = () => restrictedModal.style.display = 'none';
+            if (closeRestrictedBtn) closeRestrictedBtn.onclick = () => restrictedModal.style.display = 'none';
 
             // --- BOTTOM SHEET LOGIC ---
             const sheetOverlay = document.getElementById('sheet-overlay');
@@ -555,7 +552,7 @@
             const btnOpenMenu = document.getElementById('m-btn-open-menu');
             const btnCloseSheet = document.getElementById('close-sheet-btn');
 
-            btnOpenMenu.onclick = () => {
+            if (btnOpenMenu) btnOpenMenu.onclick = () => {
                 sheetOverlay.style.display = 'block';
                 void sheetOverlay.offsetWidth; // Trigger reflow
                 sheetOverlay.style.opacity = '1';
@@ -563,13 +560,14 @@
             };
 
             const closeSheet = () => {
+                if (!sheetOverlay) return;
                 sheetOverlay.style.opacity = '0';
                 bottomSheet.style.transform = 'translateY(100%)';
                 setTimeout(() => { sheetOverlay.style.display = 'none'; }, 300);
             };
 
-            btnCloseSheet.onclick = closeSheet;
-            sheetOverlay.onclick = closeSheet;
+            if (btnCloseSheet) btnCloseSheet.onclick = closeSheet;
+            if (sheetOverlay) sheetOverlay.onclick = closeSheet;
 
             // --- SEARCH BAR LOGIC ---
             const socialSearchInput = document.getElementById('social-search-input');
@@ -579,8 +577,8 @@
                 const q = socialSearchInput.value.trim();
                 if(q) window.location.href = `/searchsocial.html?q=${encodeURIComponent(q)}`;
             }
-            btnSocialSearch.onclick = executeSocialSearch;
-            socialSearchInput.addEventListener('keydown', (e) => {
+            if (btnSocialSearch) btnSocialSearch.onclick = executeSocialSearch;
+            if (socialSearchInput) socialSearchInput.addEventListener('keydown', (e) => {
                 if(e.key === 'Enter') { e.preventDefault(); executeSocialSearch(); }
             });
 
@@ -623,19 +621,21 @@
 
             // --- COMPOSER LOGIC ---
             function updateComposerSendButton() {
+                if (!postInput) return;
                 const hasText = postInput.value.trim().length > 0;
                 const hasImg = postImageFile !== null;
                 const hasListing = postAttachedListing !== null;
-                btnSendPost.disabled = !(hasText || hasImg || hasListing);
+                if (btnSendPost) btnSendPost.disabled = !(hasText || hasImg || hasListing);
             }
 
-            postInput.addEventListener('input', function() {
+            if (postInput) postInput.addEventListener('input', function() {
                 this.style.height = '40px';
                 this.style.height = (this.scrollHeight) + 'px';
                 updateComposerSendButton();
             });
 
             function renderComposerPreview() {
+                if (!previewArea) return;
                 previewArea.innerHTML = '';
                 let hasContent = false;
 
@@ -669,8 +669,8 @@
             window.removePostImg = () => { postImageFile = null; renderComposerPreview(); };
             window.removePostListing = () => { postAttachedListing = null; renderComposerPreview(); };
 
-            btnAttachImg.onclick = () => { if(currentUser) imgUploadInput.click(); };
-            imgUploadInput.onchange = (e) => {
+            if (btnAttachImg) btnAttachImg.onclick = () => { if(currentUser && imgUploadInput) imgUploadInput.click(); };
+            if (imgUploadInput) imgUploadInput.onchange = (e) => {
                 if (e.target.files[0]) {
                     postImageFile = e.target.files[0];
                     renderComposerPreview();
@@ -678,8 +678,8 @@
                 e.target.value = '';
             };
 
-            btnAttachListing.onclick = async () => {
-                if (!currentUser) return;
+            if (btnAttachListing) btnAttachListing.onclick = async () => {
+                if (!currentUser || !attachListingModal || !listingSelectorList) return;
                 attachListingModal.style.display = 'flex';
                 listingSelectorList.innerHTML = '<div style="text-align:center; padding:20px; color:#888;"><i class="fas fa-circle-notch fa-spin"></i> Loading...</div>';
                 
@@ -718,7 +718,8 @@
                 }
             };
 
-            document.getElementById('close-listing-modal').onclick = () => { attachListingModal.style.display = 'none'; };
+            const closeListingModalBtn = document.getElementById('close-listing-modal');
+            if (closeListingModalBtn && attachListingModal) closeListingModalBtn.onclick = () => { attachListingModal.style.display = 'none'; };
 
             // Upload helper
             async function uploadImageToCloudinary(file) {
@@ -734,7 +735,7 @@
                 return res.secure_url;
             }
 
-            btnSendPost.onclick = async () => {
+            if (btnSendPost && postInput) btnSendPost.onclick = async () => {
                 if (!currentUser) return;
                 const text = postInput.value.trim();
                 
@@ -766,12 +767,11 @@
 
                     await addDoc(collection(db, "social_posts"), postData);
 
-                    // Switch filter to 'all' if unverified user is on 'my' school, so they see their global post immediately.
-                    if (currentUserData && !currentUserData.isStudent && currentSchoolFilter === 'my') {
+                    // Switch filter to 'all' if user posts on 'my' school but goes to Global Campus.
+                    if (internalSchoolName === "Global Campus" && currentSchoolFilter === 'my') {
                         currentSchoolFilter = 'all';
-                        allFilterBtn.classList.add('active');
-                        myFilterBtn.classList.remove('active');
-                        loadFeed(); // Reload feed to show the new post instantly
+                        if (allFilterBtn) allFilterBtn.classList.add('active');
+                        if (myFilterBtn) myFilterBtn.classList.remove('active');
                     }
 
                     // Reset Composer
@@ -781,6 +781,10 @@
                     postImageFile = null;
                     postAttachedListing = null;
                     renderComposerPreview();
+                    
+                    if (internalSchoolName === "Global Campus") {
+                        loadFeed(); // Reload feed to show the new post instantly
+                    }
                 } catch (e) { 
                     console.error(e);
                     alert(ui.upload_fail); 
@@ -796,38 +800,45 @@
             window.triggerCommentImg = (postId) => {
                 if (!currentUser) return;
                 activeCommentPostId = postId;
-                globalCommentImgInput.click();
+                if (globalCommentImgInput) globalCommentImgInput.click();
             };
 
-            globalCommentImgInput.onchange = (e) => {
+            if (globalCommentImgInput) globalCommentImgInput.onchange = (e) => {
                 if (e.target.files[0] && activeCommentPostId) {
                     const file = e.target.files[0];
                     commentImageFiles[activeCommentPostId] = file;
                     
                     const previewArea = document.getElementById(`comment-preview-area-${activeCommentPostId}`);
-                    previewArea.innerHTML = `
-                        <div class="preview-img-wrap" style="width: 50px; height: 50px;">
-                            <img src="${URL.createObjectURL(file)}">
-                            <button class="remove-preview-btn" onclick="window.removeCommentImg('${activeCommentPostId}')">&times;</button>
-                        </div>
-                    `;
-                    previewArea.style.display = 'flex';
-                    document.getElementById(`btn-send-comment-${activeCommentPostId}`).disabled = false;
+                    if (previewArea) {
+                        previewArea.innerHTML = `
+                            <div class="preview-img-wrap" style="width: 50px; height: 50px;">
+                                <img src="${URL.createObjectURL(file)}">
+                                <button class="remove-preview-btn" onclick="window.removeCommentImg('${activeCommentPostId}')">&times;</button>
+                            </div>
+                        `;
+                        previewArea.style.display = 'flex';
+                    }
+                    const btnSend = document.getElementById(`btn-send-comment-${activeCommentPostId}`);
+                    if (btnSend) btnSend.disabled = false;
                 }
                 e.target.value = '';
             };
 
             window.removeCommentImg = (postId) => {
                 delete commentImageFiles[postId];
-                document.getElementById(`comment-preview-area-${postId}`).style.display = 'none';
+                const previewArea = document.getElementById(`comment-preview-area-${postId}`);
+                if (previewArea) previewArea.style.display = 'none';
                 const inputEl = document.getElementById(`comment-input-${postId}`);
-                document.getElementById(`btn-send-comment-${postId}`).disabled = inputEl.value.trim().length === 0;
+                const btnSend = document.getElementById(`btn-send-comment-${postId}`);
+                if (btnSend && inputEl) btnSend.disabled = inputEl.value.trim().length === 0;
             };
 
             window.postComment = async (postId) => {
                 if (!currentUser) return;
                 const inputEl = document.getElementById(`comment-input-${postId}`);
                 const btnEl = document.getElementById(`btn-send-comment-${postId}`);
+                if (!inputEl || !btnEl) return;
+                
                 const text = inputEl.value.trim();
                 const file = commentImageFiles[postId];
                 
@@ -883,8 +894,9 @@
                             internalSchoolName = data.schoolName || "Global Campus";
                             const isStudent = data.isStudent === true;
                             
-                            dSchoolName.textContent = internalSchoolName === "Global Campus" && data.role === 'admin' ? "Global Admin" : internalSchoolName;
-                            document.getElementById('composer-pfp').src = data.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
+                            if (dSchoolName) dSchoolName.textContent = internalSchoolName === "Global Campus" && data.role === 'admin' ? "Global Admin" : internalSchoolName;
+                            const composerPfp = document.getElementById('composer-pfp');
+                            if (composerPfp) composerPfp.src = data.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
                             
                             // --- SHOW OR HIDE "CREATE TOPIC" BUTTONS ---
                             const btnCreateWay = document.getElementById('btn-create-way');
@@ -898,39 +910,38 @@
                                 if (isStudent || data.role === 'admin') {
                                     window.location.href = '/createtopic.html';
                                 } else {
-                                    document.getElementById('restricted-modal').style.display = 'flex';
+                                    if (restrictedModal) restrictedModal.style.display = 'flex';
                                 }
                             };
 
                             if (btnCreateWay) btnCreateWay.onclick = handleCreateTopic;
                             if (mSheetCreateWay) mSheetCreateWay.onclick = handleCreateTopic;
                             
-                            // For unverified users, "internalSchoolName" is "Global Campus". We fallback to "Cégep de Rosemont".
-                            const targetSchool = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Cégep de Rosemont";
-                            myFilterBtn.textContent = targetSchool;
-
-                            if (currentSchoolFilter === 'my') {
-                                myFilterBtn.classList.add('active');
-                                allFilterBtn.classList.remove('active');
-                            } else {
-                                myFilterBtn.classList.remove('active');
-                                allFilterBtn.classList.add('active');
-                            }
-                            
-                            // Show/hide verification banner and checkmark
+                            // Show/hide verification banner
                             if (isStudent) {
-                                verifyBanner.style.display = 'none';
+                                if (verifyBanner) verifyBanner.style.display = 'none';
                                 const sidebarCheck = document.getElementById('verified-check-sidebar');
                                 if (sidebarCheck) sidebarCheck.style.display = 'inline-block';
                             } else {
                                 const bannerDismissed = localStorage.getItem('verify_banner_dismissed') === 'true';
-                                if (!bannerDismissed) {
-                                    verifyBanner.style.display = 'flex';
-                                } else {
-                                    verifyBanner.style.display = 'none';
-                                }
+                                if (verifyBanner) verifyBanner.style.display = !bannerDismissed ? 'flex' : 'none';
                                 const sidebarCheck = document.getElementById('verified-check-sidebar');
                                 if (sidebarCheck) sidebarCheck.style.display = 'none';
+                            }
+                            
+                            // ALWAYS show filter bar for logged-in users
+                            if (filterBar) filterBar.style.display = 'flex';
+                            
+                            // For unverified users, "internalSchoolName" is "Global Campus". We fallback to "Collège de Rosemont".
+                            const targetSchool = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Collège de Rosemont";
+                            if (myFilterBtn) myFilterBtn.textContent = targetSchool;
+
+                            if (currentSchoolFilter === 'my') {
+                                if (myFilterBtn) myFilterBtn.classList.add('active');
+                                if (allFilterBtn) allFilterBtn.classList.remove('active');
+                            } else {
+                                if (myFilterBtn) myFilterBtn.classList.remove('active');
+                                if (allFilterBtn) allFilterBtn.classList.add('active');
                             }
                             
                             showHubLayout();
@@ -946,41 +957,32 @@
             });
 
             // Dismiss banner with X button
-            closeBannerBtn.onclick = () => {
-                verifyBanner.style.display = 'none';
+            if (closeBannerBtn) closeBannerBtn.onclick = () => {
+                if (verifyBanner) verifyBanner.style.display = 'none';
                 localStorage.setItem('verify_banner_dismissed', 'true');
             };
 
             function showHubLayout() {
-                document.getElementById('locked-screen').style.display = 'none';
-                document.getElementById('hub-layout').style.display = 'grid'; 
-                if(window.innerWidth <= 850) {
-                    document.getElementById('hub-layout').style.display = 'flex';
-                    document.getElementById('mobile-topics-wrapper').style.display = 'flex';
-                } else {
-                    document.getElementById('mobile-topics-wrapper').style.display = 'none';
-                }
+                const ls = document.getElementById('locked-screen');
+                const hl = document.getElementById('hub-layout');
+                const mtw = document.getElementById('mobile-topics-wrapper');
+                
+                if (ls) ls.style.display = 'none';
+                if (hl) hl.style.display = window.innerWidth <= 850 ? 'flex' : 'grid';
+                if (mtw) mtw.style.display = window.innerWidth <= 850 ? 'flex' : 'none';
             }
 
             window.addEventListener('resize', () => {
-                if(currentUser) { // Just check if logged in
-                    if(window.innerWidth <= 850) {
-                        document.getElementById('hub-layout').style.display = 'flex';
-                        document.getElementById('mobile-topics-wrapper').style.display = 'flex';
-                    } else {
-                        document.getElementById('hub-layout').style.display = 'grid';
-                        document.getElementById('mobile-topics-wrapper').style.display = 'none';
-                    }
+                if(currentUser) { 
+                    showHubLayout();
                 }
             });
 
             // --- SMART TOPICS DIRECTORY ---
             function loadTopics() {
-                // Removed orderBy from query to prevent Firestore from hiding old topics missing the 'postCount' field
                 const q = query(collection(db, "social_channels"));
                 onSnapshot(q, (snapshot) => {
                     allTopicsData = snapshot.docs.map(d => ({id: d.id, ...d.data()}));
-                    // Sort descending by postCount in JavaScript instead
                     allTopicsData.sort((a, b) => (b.postCount || 0) - (a.postCount || 0));
                     renderTopics();
                 });
@@ -1000,12 +1002,14 @@
                 dListMy.innerHTML = ''; dListPinned.innerHTML = ''; dListDiscover.innerHTML = '';
                 mListMy.innerHTML = ''; mListPinned.innerHTML = ''; mListDiscover.innerHTML = '';
                 
-                mobileWaysList.innerHTML = '';
-                const mGeneral = document.createElement('a');
-                mGeneral.className = 'm-way-pill active';
-                mGeneral.href = '/social.html';
-                mGeneral.innerHTML = `<i class="fas fa-globe-americas"></i> ${ui.topics_campus}`;
-                mobileWaysList.appendChild(mGeneral);
+                if (mobileWaysList) {
+                    mobileWaysList.innerHTML = '';
+                    const mGeneral = document.createElement('a');
+                    mGeneral.className = 'm-way-pill active';
+                    mGeneral.href = '/social.html';
+                    mGeneral.innerHTML = `<i class="fas fa-globe-americas"></i> ${ui.topics_campus}`;
+                    mobileWaysList.appendChild(mGeneral);
+                }
 
                 const myT = [], pinT = [], discT = [];
                 const pinnedArr = (currentUser && currentUser.pinnedTopics) || [];
@@ -1019,7 +1023,6 @@
                     
                     if (isPrivate && !isOwner && !isMember && !isAdmin && !isPinned) return; 
                     
-                    // Fixed order: Pinned takes precedence so they always show in Saved Topics
                     if (isPinned) {
                         pinT.push(d);
                     } else if (isOwner) {
@@ -1029,13 +1032,19 @@
                     }
                 });
 
-                document.getElementById('d-sec-my').style.display = myT.length ? 'block' : 'none';
-                document.getElementById('d-sec-pinned').style.display = pinT.length ? 'block' : 'none';
-                document.getElementById('d-sec-discover').style.display = discT.length ? 'block' : 'none';
+                const dSecMy = document.getElementById('d-sec-my');
+                const dSecPinned = document.getElementById('d-sec-pinned');
+                const dSecDiscover = document.getElementById('d-sec-discover');
+                if (dSecMy) dSecMy.style.display = myT.length ? 'block' : 'none';
+                if (dSecPinned) dSecPinned.style.display = pinT.length ? 'block' : 'none';
+                if (dSecDiscover) dSecDiscover.style.display = discT.length ? 'block' : 'none';
 
-                document.getElementById('m-sec-my').style.display = myT.length ? 'block' : 'none';
-                document.getElementById('m-sec-pinned').style.display = pinT.length ? 'block' : 'none';
-                document.getElementById('m-sec-discover').style.display = discT.length ? 'block' : 'none';
+                const mSecMy = document.getElementById('m-sec-my');
+                const mSecPinned = document.getElementById('m-sec-pinned');
+                const mSecDiscover = document.getElementById('m-sec-discover');
+                if (mSecMy) mSecMy.style.display = myT.length ? 'block' : 'none';
+                if (mSecPinned) mSecPinned.style.display = pinT.length ? 'block' : 'none';
+                if (mSecDiscover) mSecDiscover.style.display = discT.length ? 'block' : 'none';
 
                 const createItemHtml = (t, isDesktop, isMyTopic) => {
                     const count = formatCount(t.postCount);
@@ -1062,13 +1071,13 @@
                 myT.forEach(t => {
                     dListMy.appendChild(createItemHtml(t, true, true));
                     mListMy.appendChild(createItemHtml(t, false, true));
-                    mobileWaysList.appendChild(createTopBarItem(t));
+                    if (mobileWaysList) mobileWaysList.appendChild(createTopBarItem(t));
                 });
 
                 pinT.forEach(t => {
                     dListPinned.appendChild(createItemHtml(t, true, false));
                     mListPinned.appendChild(createItemHtml(t, false, false));
-                    mobileWaysList.appendChild(createTopBarItem(t));
+                    if (mobileWaysList) mobileWaysList.appendChild(createTopBarItem(t));
                 });
 
                 discT.forEach(t => {
@@ -1080,11 +1089,10 @@
             // --- FEED FILTERING LOGIC ---
             function filterPostsBySchool(posts) {
                 if (currentSchoolFilter === 'my') {
-                    // Target school is either the verified user's school, or "Cégep de Rosemont" for unverified
-                    const targetSchool = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Cégep de Rosemont";
+                    // Target school is either the verified user's school, or "Collège de Rosemont" for unverified
+                    const targetSchool = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Collège de Rosemont";
                     return posts.filter(post => post.schoolName === targetSchool);
                 }
-                // If filter is "All" return everything
                 return posts;
             }
 
@@ -1093,12 +1101,13 @@
                 Object.values(commentUnsubscribes).forEach(unsub => unsub());
                 commentUnsubscribes = {};
 
-                feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub}</span></div>`;
+                if (feedContainer) feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub}</span></div>`;
 
                 let q = query(collection(db, "social_posts"), orderBy("timestamp", "desc"), limit(100));
                 
                 try {
                     unsubscribePosts = onSnapshot(q, (snapshot) => {
+                        if (!feedContainer) return;
                         feedContainer.innerHTML = '';
                         
                         // Always start with all posts from general way
@@ -1138,30 +1147,28 @@
             }
 
             // School filter event handlers
-            allFilterBtn.onclick = () => {
+            if (allFilterBtn) allFilterBtn.onclick = () => {
                 currentSchoolFilter = 'all';
                 allFilterBtn.classList.add('active');
-                myFilterBtn.classList.remove('active');
+                if (myFilterBtn) myFilterBtn.classList.remove('active');
                 loadFeed();
             };
             
-            myFilterBtn.onclick = () => {
+            if (myFilterBtn) myFilterBtn.onclick = () => {
                 currentSchoolFilter = 'my';
                 myFilterBtn.classList.add('active');
-                allFilterBtn.classList.remove('active');
+                if (allFilterBtn) allFilterBtn.classList.remove('active');
                 loadFeed();
             };
 
             async function preloadBooksAndLoadFeed() {
                 let bookQ = query(collection(db, "listings"), where("status", "==", "active"), orderBy("timestamp", "desc"), limit(6));
                 
-                const targetLocation = (internalSchoolName && internalSchoolName !== "Global Campus") 
-                    ? (internalSchoolName === "Cégep de Rosemont" ? "Collège de Rosemont" : internalSchoolName) 
-                    : "Collège de Rosemont";
+                const targetSchool = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Collège de Rosemont";
 
                 if (currentUser && currentUser.role !== 'admin') {
                     try {
-                        const sBookQ = query(collection(db, "listings"), where("location", "==", targetLocation), where("status", "==", "active"), limit(6));
+                        const sBookQ = query(collection(db, "listings"), where("location", "==", targetSchool), where("status", "==", "active"), limit(6));
                         const bSnap = await getDocs(sBookQ);
                         if (!bSnap.empty) bookQ = sBookQ;
                     } catch(e) {}
@@ -1272,11 +1279,13 @@
             window.checkCommentInput = (id) => {
                 const val = document.getElementById(`comment-input-${id}`).value.trim();
                 const hasImg = !!commentImageFiles[id];
-                document.getElementById(`btn-send-comment-${id}`).disabled = (!val && !hasImg);
+                const btn = document.getElementById(`btn-send-comment-${id}`);
+                if (btn) btn.disabled = (!val && !hasImg);
             };
 
             window.togglePostMenu = (id) => {
                 const dropdown = document.getElementById(`post-dropdown-${id}`);
+                if (!dropdown) return;
                 const isShowing = dropdown.classList.contains('show');
                 document.querySelectorAll('.post-dropdown').forEach(d => d.classList.remove('show')); 
                 if (!isShowing) dropdown.classList.add('show');
@@ -1302,14 +1311,26 @@
             window.reportPost = (postId, authorUid, authorName) => {
                 document.querySelectorAll('.post-dropdown').forEach(d => d.classList.remove('show'));
                 reportTargetId = authorUid; reportTargetName = authorName; reportTargetPostId = postId;
-                document.getElementById('report-details').value = '';
-                document.getElementById('report-modal').style.display = 'flex';
+                const reportDetails = document.getElementById('report-details');
+                if (reportDetails) reportDetails.value = '';
+                const reportModal = document.getElementById('report-modal');
+                if (reportModal) reportModal.style.display = 'flex';
             };
 
-            document.getElementById('btn-cancel-report').onclick = () => { document.getElementById('report-modal').style.display = 'none'; };
-            document.getElementById('btn-submit-report').onclick = async () => {
-                const reason = document.getElementById('report-reason').value;
-                const details = document.getElementById('report-details').value.trim();
+            const btnCancelReport = document.getElementById('btn-cancel-report');
+            if (btnCancelReport) btnCancelReport.onclick = () => { 
+                const reportModal = document.getElementById('report-modal');
+                if (reportModal) reportModal.style.display = 'none'; 
+            };
+            
+            const btnSubmitReport = document.getElementById('btn-submit-report');
+            if (btnSubmitReport) btnSubmitReport.onclick = async () => {
+                const reasonEl = document.getElementById('report-reason');
+                const detailsEl = document.getElementById('report-details');
+                if (!reasonEl || !detailsEl) return;
+                
+                const reason = reasonEl.value;
+                const details = detailsEl.value.trim();
                 const btn = document.getElementById('btn-submit-report');
                 
                 btn.disabled = true;
@@ -1322,7 +1343,8 @@
                         timestamp: serverTimestamp()
                     });
                     alert(ui.rep_success);
-                    document.getElementById('report-modal').style.display = 'none';
+                    const reportModal = document.getElementById('report-modal');
+                    if (reportModal) reportModal.style.display = 'none';
                 } catch(e) { alert("Error submitting report."); }
                 btn.disabled = false;
             };
@@ -1337,28 +1359,37 @@
                 const textarea = document.createElement('textarea');
                 textarea.innerHTML = encodedText;
                 
-                document.getElementById('edit-post-text').value = textarea.value;
-                document.getElementById('edit-post-modal').style.display = 'flex';
+                const editPostText = document.getElementById('edit-post-text');
+                const editPostModal = document.getElementById('edit-post-modal');
+                if (editPostText) editPostText.value = textarea.value;
+                if (editPostModal) editPostModal.style.display = 'flex';
             };
 
-            document.getElementById('btn-cancel-edit').onclick = () => { document.getElementById('edit-post-modal').style.display = 'none'; };
-            document.getElementById('close-edit-modal').onclick = () => { document.getElementById('edit-post-modal').style.display = 'none'; };
+            const btnCancelEdit = document.getElementById('btn-cancel-edit');
+            const closeEditModal = document.getElementById('close-edit-modal');
+            const editPostModal = document.getElementById('edit-post-modal');
+            
+            if (btnCancelEdit) btnCancelEdit.onclick = () => { if (editPostModal) editPostModal.style.display = 'none'; };
+            if (closeEditModal) closeEditModal.onclick = () => { if (editPostModal) editPostModal.style.display = 'none'; };
 
-            document.getElementById('btn-submit-edit').onclick = async () => {
-                const newText = document.getElementById('edit-post-text').value.trim();
-                const btn = document.getElementById('btn-submit-edit');
-                btn.disabled = true;
+            const btnSubmitEdit = document.getElementById('btn-submit-edit');
+            if (btnSubmitEdit) btnSubmitEdit.onclick = async () => {
+                const editPostText = document.getElementById('edit-post-text');
+                if (!editPostText) return;
+                
+                const newText = editPostText.value.trim();
+                btnSubmitEdit.disabled = true;
 
                 try {
                     await updateDoc(doc(db, "social_posts", editTargetPostId), {
                         text: newText,
                         edited: true
                     });
-                    document.getElementById('edit-post-modal').style.display = 'none';
+                    if (editPostModal) editPostModal.style.display = 'none';
                 } catch(e) {
                     alert("Error updating post.");
                 }
-                btn.disabled = false;
+                btnSubmitEdit.disabled = false;
             };
 
             window.likePost = async (id, alreadyLiked) => {
@@ -1373,12 +1404,15 @@
 
             window.toggleComments = (id) => {
                 const sec = document.getElementById(`comments-section-${id}`);
+                if (!sec) return;
                 if (sec.style.display === 'block') { sec.style.display = 'none'; if(commentUnsubscribes[id]) commentUnsubscribes[id](); }
                 else { sec.style.display = 'block'; loadComments(id); }
             };
 
             function loadComments(postId) {
                 const list = document.getElementById(`comment-list-${postId}`);
+                if (!list) return;
+                
                 commentUnsubscribes[postId] = onSnapshot(query(collection(db, "social_posts", postId, "comments"), orderBy("timestamp", "asc")), (snap) => {
                     list.innerHTML = snap.empty ? `<div style="text-align:center; font-size:0.85rem; color:#888;">${ui.no_comments}</div>` : '';
                     snap.forEach(docSnap => {
@@ -1437,6 +1471,8 @@
                 if (!currentUser) return;
                 const inputEl = document.getElementById(`comment-input-${postId}`);
                 const btnEl = document.getElementById(`btn-send-comment-${postId}`);
+                if (!inputEl || !btnEl) return;
+                
                 const text = inputEl.value.trim();
                 const file = commentImageFiles[postId];
                 
@@ -1475,7 +1511,7 @@
                     alert(ui.upload_fail); 
                 } finally { 
                     btnEl.innerHTML = origIcon;
-                    btnEl.disabled = true; 
+                    btnEl.disabled = true; // since it's empty now
                 }
             };
 
