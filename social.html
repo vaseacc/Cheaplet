@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
+        /* (all existing CSS – unchanged) */
         :root {
             --ink:       #0C1446;
             --deep:      #2B5C92;
@@ -493,7 +494,7 @@
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, doc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, limit, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, doc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, limit, getDocs, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 
         async function main() {
@@ -1003,6 +1004,9 @@
                             
                             updateComposerState();
                             showHubLayout();
+                            
+                            // Ensure the school topic exists before loading topics
+                            await ensureSchoolTopic(targetSchool);
                             loadTopics(); 
                             preloadBooksAndLoadFeed();
                         } else {
@@ -1044,6 +1048,30 @@
                     }
                 }
             });
+
+            // --- ENSURE SCHOOL TOPIC EXISTS ---
+            async function ensureSchoolTopic(schoolName) {
+                if (!schoolName) return;
+                // Check if a topic with this name already exists
+                const q = query(collection(db, "social_channels"), where("name", "==", schoolName));
+                const snap = await getDocs(q);
+                if (snap.empty) {
+                    // Create the topic
+                    try {
+                        await addDoc(collection(db, "social_channels"), {
+                            name: schoolName,
+                            schoolName: schoolName,
+                            createdBy: "system",
+                            visibility: "public",
+                            postCount: 0,
+                            createdAt: serverTimestamp()
+                        });
+                        console.log(`Topic "${schoolName}" created.`);
+                    } catch (err) {
+                        console.error("Failed to create school topic:", err);
+                    }
+                }
+            }
 
             // --- SMART TOPICS DIRECTORY ---
             function loadTopics() {
