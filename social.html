@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Campus Hub — Scoralia</title>
     <script type="module" src="global.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -18,54 +20,92 @@
             --text-main: #0f172a;
             --text-muted:#64748b;
             --radius:    16px;
+            --shadow:    0 4px 20px rgba(12,20,70,0.05);
             --border:    1px solid #e2e8f0;
             --red:       #e53e3e;
+            --green:     #2E7D32;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--off-white); color: var(--text-main); }
+        body { font-family: 'DM Sans', sans-serif; background: var(--off-white); color: var(--text-main); overflow-x: hidden; width: 100%; }
 
         header { position: sticky; top: 0; z-index: 200; background: var(--ink); border-bottom: 1px solid rgba(255,255,255,0.1); width: 100%; }
         .header-inner { max-width: 1100px; margin: 0 auto; padding: 0 20px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
-        .logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: -0.5px; }
+        .logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: -0.5px; flex-shrink: 0; }
         .logo em { color: var(--gold); font-style: normal; }
 
-        .main-container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
+        /* ── MAIN LAYOUT ── */
+        .hub-layout { display: none; max-width: 1100px; margin: 30px auto; grid-template-columns: 260px minmax(0, 1fr); gap: 40px; padding: 0 20px; align-items: start; width: 100%; }
 
-        /* ── CHANNEL SELECTOR ── */
-        .hub-tabs { display: flex; background: #e2e8f0; padding: 5px; border-radius: 40px; margin-bottom: 25px; gap: 5px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05); }
-        .hub-tab { flex: 1; border: none; padding: 12px; border-radius: 35px; font-weight: 700; cursor: pointer; transition: 0.2s; color: var(--text-muted); font-size: 0.95rem; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .hub-tab.active { background: var(--white); color: var(--ink); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        .hub-tab i { font-size: 1.1rem; }
+        /* ── SIDEBAR ── */
+        .sidebar { position: sticky; top: 100px; display: flex; flex-direction: column; gap: 20px; width: 100%; max-height: calc(100vh - 120px); overflow-y: auto; padding-right: 5px; }
+        .sidebar::-webkit-scrollbar { width: 4px; }
+        .sidebar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .school-header { margin-bottom: 5px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .school-name { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 900; color: var(--ink); line-height: 1.2; }
+        .verified-check { color: var(--green); font-size: 1rem; margin-left: 4px; }
+        .school-sub { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; margin-top: 4px; width: 100%; }
+        
+        .topics-menu { display: flex; flex-direction: column; gap: 4px; }
+        .topic-section-title { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin: 15px 0 5px 10px; }
+        .way-item { padding: 8px 15px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; font-weight: 600; color: var(--text-main); transition: all 0.2s; font-size: 0.95rem; text-decoration: none; }
+        .way-item:hover { background: #f1f5f9; color: var(--deep); }
+        .way-item.active { background: var(--white); color: var(--ink); box-shadow: var(--shadow); border: var(--border); font-weight: 700; }
+        .way-item i { width: 20px; text-align: center; color: var(--text-muted); font-size: 1.1rem; }
+        .way-item.active i { color: var(--gold); }
+        .way-count { margin-left: auto; font-size: 0.75rem; color: var(--text-muted); background: var(--off-white); padding: 2px 8px; border-radius: 12px; font-weight: 700; }
+        
+        .btn-new-way { width: 100%; text-align: left; padding: 12px 15px; background: transparent; border: 1.5px dashed #cbd5e1; border-radius: 12px; color: var(--text-muted); font-weight: 600; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 12px; transition: 0.2s; margin-top: 10px; }
+
+        /* ── MOBILE TOPICS BAR ── */
+        .mobile-topics-wrapper { display: none; position: sticky; top: 68px; z-index: 150; background: var(--white); border-bottom: var(--border); width: 100%; align-items: center; }
+        .mobile-ways-bar { display: flex; padding: 12px 10px 12px 20px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; flex-grow: 1; }
+        .m-way-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; background: var(--off-white); border-radius: 20px; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-right: 10px; cursor: pointer; border: var(--border); transition: 0.2s; text-decoration: none; }
+        .m-way-pill.active { background: var(--ink); color: white; border-color: var(--ink); }
+        
+        .m-menu-btn { width: 38px; height: 38px; border-radius: 12px; background: var(--off-white); border: var(--border); color: var(--ink); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; margin-right: 15px; z-index: 2; font-size: 1.1rem; }
+
+        .feed-column { display: flex; flex-direction: column; gap: 24px; padding-bottom: 60px; width: 100%; min-width: 0; overflow-x: hidden; }
+
+        /* ── FILTER BAR ── */
+        .filter-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; background: var(--white); border-radius: 30px; padding: 5px 15px; width: fit-content; border: var(--border); box-shadow: var(--shadow); }
+        .filter-bar span { font-size: 0.85rem; color: var(--text-muted); }
+        .school-filter { background: none; border: none; padding: 8px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
+        .school-filter.active { background: var(--ink); color: white; }
 
         /* ── COMPOSER ── */
-        .composer { background: var(--white); border-radius: var(--radius); padding: 20px; border: var(--border); box-shadow: 0 4px 20px rgba(12,20,70,0.05); margin-bottom: 30px; display: none; flex-direction: column; gap: 15px; animation: fadeUp 0.4s ease; }
-        .composer-header { display: flex; align-items: center; gap: 12px; }
-        .user-pfp { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: #eee; }
-        .composer-input { width: 100%; border: none; outline: none; font-family: inherit; font-size: 1.05rem; background: var(--off-white); padding: 15px; border-radius: 12px; resize: none; min-height: 80px; }
-        .composer-footer { display: flex; justify-content: space-between; align-items: center; }
-        .btn-post { background: var(--gold); color: var(--ink); border: none; padding: 10px 25px; border-radius: 30px; font-weight: 800; cursor: pointer; transition: 0.2s; }
-        .btn-post:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        /* ── READ ONLY BANNER ── */
-        .readonly-banner { background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius); padding: 20px; text-align: center; margin-bottom: 30px; display: none; }
-        .readonly-banner i { color: var(--red); font-size: 2rem; margin-bottom: 10px; }
-        .readonly-banner h3 { font-family: 'Playfair Display'; color: var(--ink); }
-        .readonly-banner p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px; }
+        .composer { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border: var(--border); width: 100%; display: flex; gap: 15px; align-items: flex-start; position: relative; }
+        .composer-shield { position: absolute; inset: 0; z-index: 50; cursor: pointer; display: none; border-radius: var(--radius); }
+        .composer-pfp { width: 45px; height: 45px; border-radius: 50%; background: #eee; object-fit: cover; border: 2px solid var(--off-white); flex-shrink: 0; }
+        .composer-content { flex-grow: 1; display: flex; flex-direction: column; background: var(--off-white); border: 1px solid #e2e8f0; border-radius: 18px; padding: 5px; }
+        .composer-input { width: 100%; border: none; background: transparent; font-family: inherit; font-size: 1.05rem; color: var(--text-main); resize: none; outline: none; padding: 10px 15px; min-height: 44px; }
+        .composer-actions { display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; }
+        .btn-composer-send { background: var(--deep); color: var(--white); border: none; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .btn-composer-send:disabled { background: #cbd5e1; }
 
         /* ── POST CARDS ── */
-        .post-card { background: var(--white); border-radius: var(--radius); padding: 25px; border: var(--border); box-shadow: 0 4px 20px rgba(12,20,70,0.05); margin-bottom: 20px; animation: fadeUp 0.4s ease both; }
-        .post-header { display: flex; align-items: center; gap: 12px; margin-bottom: 15px; }
-        .post-author { font-weight: 800; color: var(--ink); font-size: 1rem; }
-        .post-time { font-size: 0.8rem; color: var(--text-muted); }
-        .post-body { font-size: 1.05rem; line-height: 1.6; color: #334155; white-space: pre-wrap; }
-        
-        .loader-msg { text-align: center; padding: 60px; color: var(--text-muted); }
+        .post-card { background: var(--white); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); border: var(--border); animation: fadeUp 0.4s ease both; }
+        .post-header { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+        .post-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #f1f5f9; border: 1px solid #e2e8f0; }
+        .post-author { font-weight: 800; font-size: 1.05rem; color: var(--ink); }
+        .post-time { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+        .post-body { font-size: 1.05rem; line-height: 1.6; color: #334155; white-space: pre-wrap; margin-bottom: 15px; }
+
+        /* Modals */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(12,20,70,0.9); backdrop-filter: blur(6px); z-index: 10020; display: none; justify-content: center; align-items: center; padding: 20px; }
+        .modal-card { background: white; border-radius: 24px; padding: 32px; max-width: 420px; width: 100%; text-align: center; animation: fadeUp 0.3s ease; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .modal-card h2 { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--ink); margin-bottom: 12px; }
+        .btn-modal { padding: 10px 24px; border-radius: 30px; font-weight: 700; cursor: pointer; border: none; background: var(--gold); color: var(--ink); text-decoration: none; display: inline-block; margin-top: 20px; }
+
+        .loader-msg { text-align: center; padding: 50px; color: var(--text-muted); }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-        @media (max-width: 600px) {
-            .hub-tab span { display: none; }
-            .hub-tab i { font-size: 1.4rem; }
+        @media (max-width: 850px) {
+            .hub-layout { display: flex; flex-direction: column; padding: 0; margin: 0; }
+            .sidebar { display: none; }
+            .mobile-topics-wrapper { display: flex; }
+            .feed-column { padding: 10px 0 60px; }
+            .post-card, .composer { border-radius: 0; border-left: none; border-right: none; }
         }
     </style>
 </head>
@@ -78,43 +118,62 @@
         </div>
     </header>
 
-    <main class="main-container">
-        
-        <!-- Tab System -->
-        <div class="hub-tabs">
-            <button class="hub-tab active" id="tab-global" onclick="switchFeed('global')">
-                <i class="fas fa-globe-americas"></i> <span>Global Feed</span>
-            </button>
-            <button class="hub-tab" id="tab-rosemont" onclick="switchFeed('rosemont')">
-                <i class="fas fa-university"></i> <span>Collège de Rosemont</span>
-            </button>
+    <div class="mobile-topics-wrapper">
+        <div class="mobile-ways-bar" id="mobile-ways-list">
+            <button class="m-way-pill active" onclick="switchFeed('global')">Global Feed</button>
+            <button class="m-way-pill" onclick="switchFeed('rosemont')">Rosemont Feed</button>
         </div>
+        <button class="m-menu-btn" onclick="alert('Directory coming soon')"><i class="fas fa-bars"></i></button>
+    </div>
 
-        <!-- Posting Section -->
-        <div class="composer" id="composer">
-            <div class="composer-header">
-                <img id="my-pfp" class="user-pfp" src="">
-                <span style="font-weight: 700; font-size: 0.9rem;" id="ui-posting-to">Posting to Global</span>
-            </div>
-            <textarea id="post-input" class="composer-input" placeholder="Share something with the campus..."></textarea>
-            <div class="composer-footer">
-                <div style="color: var(--text-muted); font-size: 0.8rem;">Keep it respectful.</div>
-                <button id="btn-send" class="btn-post" disabled>Post Message</button>
+    <!-- RESTRICTED MODAL -->
+    <div id="restricted-modal" class="modal-overlay">
+        <div class="modal-card">
+            <i class="fas fa-graduation-cap fa-3x" style="color: var(--gold); margin-bottom: 20px;"></i>
+            <h2 id="restricted-title">Verified Student Required</h2>
+            <p id="restricted-desc">To post in the official Collège de Rosemont feed or create custom topics, you need a verified student account with a school email address.</p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <a href="/LoginInToCheaplet.html" class="btn-modal">Get Verified</a>
+                <button class="btn-modal" style="background: #eee;" onclick="document.getElementById('restricted-modal').style.display='none'">Close</button>
             </div>
         </div>
+    </div>
 
-        <!-- Locked Section (For unverified users in Rosemont) -->
-        <div class="readonly-banner" id="readonly-banner">
-            <i class="fas fa-lock"></i>
-            <h3>Rosemont Feed is Read-Only</h3>
-            <p>To post here, you need a verified student account. You can still see what's happening and shop!</p>
-            <a href="/LoginInToCheaplet.html" class="btn-post" style="text-decoration: none; display: inline-block;">Get Verified</a>
-        </div>
+    <div class="hub-layout" id="hub-layout">
+        <aside class="sidebar">
+            <div class="school-header">
+                <div class="school-name" id="d-user-school">Campus Hub</div>
+                <div class="school-sub">Community Feed</div>
+            </div>
+            <div class="topics-menu">
+                <a href="#" class="way-item active" id="d-tab-global" onclick="switchFeed('global')"><i class="fas fa-globe-americas"></i> Global Feed</a>
+                <a href="#" class="way-item" id="d-tab-rosemont" onclick="switchFeed('rosemont')"><i class="fas fa-university"></i> Rosemont Feed</a>
+            </div>
+            <button class="btn-new-way" onclick="document.getElementById('restricted-modal').style.display='flex'"><i class="fas fa-plus"></i> Create Topic</button>
+        </aside>
 
-        <!-- Feed -->
-        <div id="feed-container"></div>
+        <main class="feed-column">
+            <div class="filter-bar">
+                <span><i class="fas fa-filter"></i> Channel:</span>
+                <button class="school-filter active" id="f-tab-global" onclick="switchFeed('global')">Global</button>
+                <button class="school-filter" id="f-tab-rosemont" onclick="switchFeed('rosemont')">Collège de Rosemont</button>
+            </div>
 
-    </main>
+            <div class="composer" id="composer-card">
+                <div class="composer-shield" id="composer-shield"></div>
+                <img src="" id="composer-pfp" class="composer-pfp">
+                <div class="composer-content">
+                    <textarea class="composer-input" id="post-input" placeholder="What's happening?"></textarea>
+                    <div class="composer-actions">
+                        <div class="composer-tools"><i class="fas fa-image" style="color: #cbd5e1;"></i></div>
+                        <button class="btn-composer-send" id="btn-send-post" disabled><i class="fas fa-paper-plane"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="feed-container"></div>
+        </main>
+    </div>
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
@@ -133,18 +192,19 @@
             let unsub = null;
 
             const feedContainer = document.getElementById('feed-container');
-            const composer = document.getElementById('composer');
-            const readonlyBanner = document.getElementById('readonly-banner');
             const postInput = document.getElementById('post-input');
-            const btnSend = document.getElementById('btn-send');
+            const btnSendPost = document.getElementById('btn-send-post');
+            const shield = document.getElementById('composer-shield');
+            const resModal = document.getElementById('restricted-modal');
 
             // --- AUTH ---
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     const uSnap = await getDoc(doc(db, "users", user.uid));
                     currentUser = { ...user, ...uSnap.data() };
-                    document.getElementById('my-pfp').src = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}`;
-                    switchFeed('global'); // Default
+                    document.getElementById('composer-pfp').src = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}`;
+                    document.getElementById('hub-layout').style.display = window.innerWidth <= 850 ? 'flex' : 'grid';
+                    switchFeed('global');
                 } else {
                     window.location.href = '/LoginInToCheaplet.html?redirect=/social.html&msg=social';
                 }
@@ -154,36 +214,30 @@
             window.switchFeed = (type) => {
                 currentFeed = type;
                 
-                // Toggle UI Tabs
-                document.getElementById('tab-global').classList.toggle('active', type === 'global');
-                document.getElementById('tab-rosemont').classList.toggle('active', type === 'rosemont');
+                // Update UI Buttons
+                document.querySelectorAll('.school-filter, .way-item, .m-way-pill').forEach(el => el.classList.remove('active'));
+                document.getElementById(`f-tab-${type}`).classList.add('active');
+                document.getElementById(`d-tab-${type}`).classList.add('active');
 
-                // Logic: Who can post?
-                const isVerified = currentUser && currentUser.isStudent === true;
-
-                if (type === 'global') {
-                    composer.style.display = 'flex';
-                    readonlyBanner.style.display = 'none';
-                    document.getElementById('ui-posting-to').textContent = "Posting to Global Feed";
+                // Posting Restrictions
+                const isStudent = currentUser && currentUser.isStudent === true;
+                if (type === 'rosemont' && !isStudent) {
+                    shield.style.display = 'block';
+                    postInput.placeholder = "Read-only: Verified account required to post.";
                 } else {
-                    // Rosemont Feed
-                    if (isVerified) {
-                        composer.style.display = 'flex';
-                        readonlyBanner.style.display = 'none';
-                        document.getElementById('ui-posting-to').textContent = "Posting to Rosemont";
-                    } else {
-                        composer.style.display = 'none';
-                        readonlyBanner.style.display = 'block';
-                    }
+                    shield.style.display = 'none';
+                    postInput.placeholder = type === 'global' ? "What's happening on Global Campus?" : "What's happening at Collège de Rosemont?";
                 }
 
-                loadPosts();
+                loadFeed();
             };
 
-            // --- LOAD DATA ---
-            function loadPosts() {
+            shield.onclick = () => { resModal.style.display = 'flex'; };
+
+            // --- DATA LOADING ---
+            function loadFeed() {
                 if (unsub) unsub();
-                feedContainer.innerHTML = '<div class="loader-msg">Loading feed...</div>';
+                feedContainer.innerHTML = '<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br>Loading Feed...</div>';
 
                 const collectionName = currentFeed === 'global' ? "social_posts_global" : "social_posts_rosemont";
                 const q = query(collection(db, collectionName), orderBy("timestamp", "desc"), limit(40));
@@ -191,36 +245,32 @@
                 unsub = onSnapshot(q, (snap) => {
                     feedContainer.innerHTML = '';
                     if (snap.empty) {
-                        feedContainer.innerHTML = '<div class="loader-msg">No posts in this channel yet.</div>';
+                        feedContainer.innerHTML = '<div class="loader-msg">No posts here yet. Be the first!</div>';
                         return;
                     }
                     snap.forEach(d => {
-                        const post = d.data();
+                        const p = d.data();
                         const card = document.createElement('div');
                         card.className = 'post-card';
-                        const time = post.timestamp ? new Date(post.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Just now';
-                        
+                        const time = p.timestamp ? new Date(p.timestamp.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Just now';
                         card.innerHTML = `
                             <div class="post-header">
-                                <img src="${post.authorPhoto}" class="user-pfp">
-                                <div>
-                                    <div class="post-author">${post.authorName}</div>
-                                    <div class="post-time">${time}</div>
-                                </div>
+                                <img src="${p.authorPhoto}" class="post-avatar">
+                                <div><div class="post-author">${p.authorName}</div><div class="post-time">${time}</div></div>
                             </div>
-                            <div class="post-body">${post.text}</div>
+                            <div class="post-body">${p.text}</div>
                         `;
                         feedContainer.appendChild(card);
                     });
                 });
             }
 
-            // --- SEND POST ---
-            btnSend.onclick = async () => {
+            // --- SENDING ---
+            btnSendPost.onclick = async () => {
                 const text = postInput.value.trim();
-                if (!text) return;
-
-                btnSend.disabled = true;
+                if (!text || !currentUser) return;
+                
+                btnSendPost.disabled = true;
                 const collectionName = currentFeed === 'global' ? "social_posts_global" : "social_posts_rosemont";
 
                 try {
@@ -229,17 +279,14 @@
                         authorUid: currentUser.uid,
                         authorName: currentUser.displayName,
                         authorPhoto: currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}`,
-                        timestamp: serverTimestamp(),
-                        likes: 0, likedBy: []
+                        timestamp: serverTimestamp()
                     });
                     postInput.value = '';
-                } catch(e) {
-                    alert("Database Error: Check your permissions.");
-                }
-                btnSend.disabled = false;
+                } catch(e) { alert("Permission Denied."); }
+                btnSendPost.disabled = false;
             };
 
-            postInput.oninput = () => btnSend.disabled = postInput.value.trim().length === 0;
+            postInput.oninput = () => { btnSendPost.disabled = postInput.value.trim().length === 0; };
         }
         main();
     </script>
