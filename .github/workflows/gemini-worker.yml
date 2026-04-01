@@ -34,24 +34,27 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           HOME: /home/runner
-          # This environment variable tells Aider it's okay to run shell commands automatically
-          AIDER_ALLOW_RUNS: "true"
+          AIDER_ALLOW_RUN_COMMANDS: "true" # The correct 2026 flag for shell commands
         run: |
           git config --global user.name "Gemini AI"
           git config --global user.email "ai@example.com"
-          
-          # We add --architect to give it more "thinking" power for file operations
-          # We add --suggest-shell-commands to let it use 'git rm'
+
+          # 1. Capture the message and strip out the '/fix' text so Aider doesn't crash
+          RAW_MSG="${{ github.event.issue.title }} ${{ github.event.issue.body }} ${{ github.event.comment.body }}"
+          CLEAN_MSG=$(echo "$RAW_MSG" | sed 's/\/fix//g')
+
+          # 2. Run Aider with the cleaned instruction
+          # --suggest-shell-commands lets it actually run 'rm' or 'mv'
           aider --model gemini/gemini-2.5-flash \
-                --message "/fix ${{ github.event.issue.title }}. ${{ github.event.issue.body }}" \
+                --message "$CLEAN_MSG" \
                 --yes-always \
                 --auto-commits \
                 --map-tokens 0 \
                 --no-stream \
                 --suggest-shell-commands \
                 --exit
-          
-          # Final safety push in case Aider didn't auto-commit a deletion
+
+          # 3. The 'Safety Net' - if the AI deleted it but didn't commit, we do it here
           git add .
-          git commit -m "AI automated cleanup" || echo "No changes"
+          git commit -m "AI autonomous update" || echo "No changes to commit"
           git push origin main
