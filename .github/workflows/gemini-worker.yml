@@ -59,10 +59,8 @@ jobs:
           SYSTEM_PROMPT="You are an autonomous AI developer operating directly in a GitHub repository via GitHub Actions. IMPORTANT: Make precise, surgical edits using SEARCH/REPLACE blocks. DO NOT output entire files. Task: "
           FINAL_PROMPT="$SYSTEM_PROMPT $CLEAN_MSG"
 
-          # 4. Run Aider
-          # If no files were found in the message, Aider will run on the whole repo (default)
-          # but if files were found, it only loads those to stay under Rate Limits.
-          aider --model gemini/gemini-2.5-flash \
+          # 4. Run Aider (Switched to 2.0-flash to prevent Rate Limit crashes)
+          aider --model gemini/gemini-2.0-flash \
                 --edit-format diff \
                 --message "$FINAL_PROMPT" \
                 $FILES_TO_LOAD \
@@ -70,7 +68,6 @@ jobs:
                 --auto-commits \
                 --map-tokens 0 \
                 --no-stream \
-                --suggest-shell-commands \
                 --exit
 
           # 5. The Enforcer (Deletions & Moves)
