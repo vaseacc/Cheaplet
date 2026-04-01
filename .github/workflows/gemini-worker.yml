@@ -36,16 +36,11 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           HOME: /home/runner
         run: |
-          # 1. Configure Git so the AI can actually save its work
           git config --global user.name "Gemini AI"
           git config --global user.email "ai@example.com"
           
-          # 2. Run Aider with "Free Tier" protections:
-          # --model gemini/gemini-1.5-flash: More stable free limits than 2.0 right now.
-          # --map-tokens 0: Prevents the AI from scanning the whole repo (saves your quota).
-          # --no-stream: Sends one request instead of 100 tiny ones.
-          # --yes-always: Automatically accepts file creations/edits.
-          aider --model gemini/gemini-1.5-flash \
+          # Added -latest to the model name to fix the 404
+          aider --model gemini/gemini-1.5-flash-latest \
                 --message "Task: ${{ github.event.issue.title }}. ${{ github.event.issue.body }} ${{ github.event.comment.body }}" \
                 --yes-always \
                 --auto-commits \
@@ -53,5 +48,4 @@ jobs:
                 --no-stream \
                 --exit
           
-          # 3. Push the changes back to your repository
           git push origin main
