@@ -1,4 +1,5 @@
 name: AI Senior Dev (Gemini)
+
 on:
   issues:
     types: [opened, edited]
@@ -47,20 +48,25 @@ jobs:
           CLEAN_MSG=$(echo "$RAW_MSG" | sed 's/\/fix//g' | xargs)
 
           # 2. SMART FILE SELECTION: Only load files mentioned in the prompt
+          #    FIX: Remove trailing punctuation only (keep dots inside filenames)
           FILES_TO_LOAD=""
           for word in $CLEAN_MSG; do
-            clean_word=$(echo "$word" | tr -d '.,!?')
+            # Remove punctuation that could appear at the end of a filename mention,
+            # but leave dots in the middle (e.g., mylisting.html -> mylisting.html)
+            clean_word=$(echo "$word" | sed 's/[.,!?]*$//')
             if [[ -f "$clean_word" ]]; then
               FILES_TO_LOAD="$FILES_TO_LOAD $clean_word"
             fi
           done
 
           # 3. Inject strict Persona Context
-          SYSTEM_PROMPT="You are an elite AI developer operating in a GitHub Action. You MUST read and strictly obey the rules in CONVENTIONS.md. Act with the precision and logic of Claude 3.5 Sonnet. IMPORTANT: Make precise, surgical edits using SEARCH/REPLACE blocks. DO NOT output entire files. Task: "
+          #    REMOVED: reference to "Claude 3.5 Sonnet" – directly describe the behaviour
+          SYSTEM_PROMPT="You are an elite AI developer operating in a GitHub Action. You MUST read and strictly obey the rules in CONVENTIONS.md. Make precise, surgical edits using SEARCH/REPLACE blocks. DO NOT output entire files. Task: "
           FINAL_PROMPT="$SYSTEM_PROMPT $CLEAN_MSG"
 
           # 4. Run Aider (Using Gemini 2.5 Flash Lite)
-          # We pass --read CONVENTIONS.md so it absorbs the project rules without editing them.
+          #    No change here, but we rely on Aider's diff format for all changes,
+          #    including deletions and moves. The custom enforcer block has been removed.
           aider --model gemini/gemini-2.5-flash-lite \
                 --edit-format diff \
                 --read CONVENTIONS.md \
@@ -72,22 +78,8 @@ jobs:
                 --no-stream \
                 --exit
 
-          # 5. The Enforcer (Deletions & Moves)
-          if [[ "$CLEAN_MSG" == *"delete"* ]] || [[ "$CLEAN_MSG" == *"rename"* ]] || [[ "$CLEAN_MSG" == *"move"* ]]; then
-            if [[ "$CLEAN_MSG" == *"contact-us.html"* ]] && [[ -f "contact.html" ]]; then
-               git mv contact.html contact-us.html
-               echo "Enforced rename to contact-us.html"
-            fi
-            
-            for word in $CLEAN_MSG; do
-              clean_word=$(echo "$word" | tr -d '.,!?')
-              if [[ -f "$clean_word" ]]; then
-                git rm "$clean_word" && echo "Enforced deletion of $clean_word"
-              fi
-            done
-          fi
-
-          # 6. Final Push
+          # 5. Final commit and push with rebase to avoid conflicts
           git add .
           git commit -m "AI surgical update: $CLEAN_MSG" || echo "No changes to commit"
+          git pull --rebase origin main   # <-- ADDED: pull latest changes before pushing
           git push origin main
