@@ -34,18 +34,24 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           HOME: /home/runner
+          # This environment variable tells Aider it's okay to run shell commands automatically
+          AIDER_ALLOW_RUNS: "true"
         run: |
           git config --global user.name "Gemini AI"
           git config --global user.email "ai@example.com"
           
-          # Added --suggest-shell-commands (so it knows it can run things)
-          # Added a "System Prompt" hint to tell it NOT to just chat
+          # We add --architect to give it more "thinking" power for file operations
+          # We add --suggest-shell-commands to let it use 'git rm'
           aider --model gemini/gemini-2.5-flash \
-                --message "Task: ${{ github.event.issue.title }}. ${{ github.event.issue.body }}. IMPORTANT: If you need to delete, move, or create files, just do it. Do not just suggest the command." \
+                --message "/fix ${{ github.event.issue.title }}. ${{ github.event.issue.body }}" \
                 --yes-always \
                 --auto-commits \
                 --map-tokens 0 \
                 --no-stream \
+                --suggest-shell-commands \
                 --exit
           
+          # Final safety push in case Aider didn't auto-commit a deletion
+          git add .
+          git commit -m "AI automated cleanup" || echo "No changes"
           git push origin main
