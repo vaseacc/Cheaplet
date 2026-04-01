@@ -30,16 +30,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install aider-chat
 
-      - name: Diagnostic - List Available Models
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: |
-          echo "--- START MODEL LIST ---"
-          curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}" \
-            -H 'Content-Type: application/json' \
-            | grep "name" || echo "Could not fetch models. Check your API key."
-          echo "--- END MODEL LIST ---"
-
       - name: Run Aider
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -48,9 +38,9 @@ jobs:
           git config --global user.name "Gemini AI"
           git config --global user.email "ai@example.com"
           
-          # Using 'gemini/gemini-1.5-flash' - if this 404s, 
-          # check the 'Diagnostic' step output for the exact name.
-          aider --model gemini/gemini-1.5-flash \
+          # We are using the exact string found in your diagnostic log:
+          # models/gemini-2.5-flash
+          aider --model gemini/gemini-2.5-flash \
                 --message "Task: ${{ github.event.issue.title }}. ${{ github.event.issue.body }} ${{ github.event.comment.body }}" \
                 --yes-always \
                 --auto-commits \
