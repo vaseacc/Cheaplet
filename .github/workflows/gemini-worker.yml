@@ -1,4 +1,46 @@
-- name: Run Aider
+name: AI Junior Dev (Aider)
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  aider-job:
+    if: contains(github.event.issue.body, '/fix') || contains(github.event.comment.body, '/fix')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Aider
+        run: |
+          python -m pip install --upgrade pip
+          pip install aider-chat
+
+      - name: Diagnostic - List Available Models
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          echo "--- START MODEL LIST ---"
+          curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}" \
+            -H 'Content-Type: application/json' \
+            | grep "name" || echo "Could not fetch models. Check your API key."
+          echo "--- END MODEL LIST ---"
+
+      - name: Run Aider
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           HOME: /home/runner
@@ -6,9 +48,10 @@
           git config --global user.name "Gemini AI"
           git config --global user.email "ai@example.com"
           
-          # Simplified model name to match the 2026 API aliases
-          aider --model gemini/gemini-flash-latest \
-                --message "Task: ${{ github.event.issue.title }}. ${{ github.event.issue.body }}" \
+          # Using 'gemini/gemini-1.5-flash' - if this 404s, 
+          # check the 'Diagnostic' step output for the exact name.
+          aider --model gemini/gemini-1.5-flash \
+                --message "Task: ${{ github.event.issue.title }}. ${{ github.event.issue.body }} ${{ github.event.comment.body }}" \
                 --yes-always \
                 --auto-commits \
                 --map-tokens 0 \
