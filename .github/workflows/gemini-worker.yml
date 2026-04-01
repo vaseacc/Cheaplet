@@ -5,9 +5,14 @@ on:
   issue_comment:
     types: [created]
 
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
 jobs:
   ai-task:
-    # Only runs if you tag @gemini-cli in a comment or the issue
+    # Runs if you mention @gemini-cli in an issue or comment
     if: contains(github.event.issue.body, '@gemini-cli') || contains(github.event.comment.body, '@gemini-cli')
     runs-on: ubuntu-latest
     steps:
@@ -17,8 +22,9 @@ jobs:
           fetch-depth: 0
 
       - name: Run Gemini
-        uses: google-github-actions/run-gemini-cli@v1
+        # We point to the main branch to ensure we get the latest version
+        uses: google-github-actions/run-gemini-cli@main
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          # This command tells the AI to solve the issue described
+          # This is the secret sauce: it tells the AI to act on your issue
           command: 'fix-issue'
