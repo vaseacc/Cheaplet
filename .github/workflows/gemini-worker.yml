@@ -61,19 +61,30 @@ jobs:
           SYSTEM_PROMPT="You are an autonomous AI developer. IMPORTANT: Make precise, surgical edits. If asked to delete, use 'git rm'. Task: "
           FINAL_PROMPT="$SYSTEM_PROMPT $CLEAN_MSG"
 
-          # 4. Run Aider with "Targeted Vision"
-          # This finds all text files in the root but ignores directories
-          FILES_IN_REPO=$(find . -maxdepth 1 -not -path '*/.*' -type f \( -name "*.html" -o -name "*.css" -o -name "*.js" -o -name "*.md" \))
+         # 4. Run Aider with "Smart Selection"
+          # Instead of '*', we only send files mentioned in your message.
+          # If no files are mentioned, it will only send index.html by default.
+          FILES_TO_ADD=""
+          for word in $CLEAN_MSG; do
+            clean_word=$(echo "$word" | tr -d '.,!?')
+            if [[ -f "$clean_word" ]]; then
+              FILES_TO_ADD="$FILES_TO_ADD $clean_word"
+            fi
+          done
+
+          # If we didn't find any specific files, just load index.html to be safe
+          if [ -z "$FILES_TO_ADD" ]; then
+            FILES_TO_ADD="index.html"
+          fi
 
           aider --model gemini/gemini-2.5-flash \
                 --edit-format diff \
                 --message "$FINAL_PROMPT" \
-                $FILES_IN_REPO \
+                $FILES_TO_ADD \
                 --yes-always \
                 --auto-commits \
                 --map-tokens 0 \
                 --no-stream \
-                --suggest-shell-commands \
                 --exit
 
           # 5. The Enforcer (Deletions & Moves)
