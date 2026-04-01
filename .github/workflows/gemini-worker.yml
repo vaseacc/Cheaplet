@@ -1,0 +1,24 @@
+name: Gemini AI Agent
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+
+jobs:
+  ai-task:
+    # Only runs if you tag @gemini-cli in a comment or the issue
+    if: contains(github.event.issue.body, '@gemini-cli') || contains(github.event.comment.body, '@gemini-cli')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gemini
+        uses: google-github-actions/run-gemini-cli@v1
+        with:
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          # This command tells the AI to solve the issue described
+          command: 'fix-issue'
