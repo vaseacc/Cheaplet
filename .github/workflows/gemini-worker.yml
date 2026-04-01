@@ -51,7 +51,7 @@ jobs:
           SYSTEM_PROMPT="You are an autonomous AI developer operating directly in a GitHub repository via GitHub Actions. IMPORTANT: Make precise, surgical edits using SEARCH/REPLACE blocks. DO NOT output entire files. Task: "
           FINAL_PROMPT="$SYSTEM_PROMPT $CLEAN_MSG"
 
-          # 3. Run Aider with the diff format flag
+          # 3. Run Aider
           aider --model gemini/gemini-2.5-flash \
                 --edit-format diff \
                 --message "$FINAL_PROMPT" \
@@ -62,7 +62,18 @@ jobs:
                 --suggest-shell-commands \
                 --exit
 
-          # 4. The 'Safety Net' - if the AI edited files but didn't commit, we do it here
+          # 4. The "Enforcer" - If the AI suggested deleting, we make sure it happens
+          # This checks if the AI mentioned 'rm' and the file still exists
+          if [[ "$CLEAN_MSG" == *"delete"* ]] || [[ "$CLEAN_MSG" == *"remove"* ]]; then
+            # Attempt to delete any files mentioned in the prompt just in case Aider was shy
+            for word in $CLEAN_MSG; do
+              if [[ -f "$word" ]]; then
+                git rm "$word" && echo "Enforced deletion of $word"
+              fi
+            done
+          fi
+
+          # 5. Final Push
           git add .
-          git commit -m "AI autonomous update via GitHub Actions" || echo "No changes to commit"
+          git commit -m "AI autonomous update: $CLEAN_MSG" || echo "No changes to commit"
           git push origin main
