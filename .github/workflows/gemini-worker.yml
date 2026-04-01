@@ -46,57 +46,41 @@ jobs:
           RAW_MSG="$ISSUE_TITLE $ISSUE_BODY $COMMENT_BODY"
           CLEAN_MSG=$(echo "$RAW_MSG" | sed 's/\/fix//g' | xargs)
 
-          # 2. FILE DISCOVERY: Automatically find files mentioned in the prompt
-          # This matches words in your message to actual files in your repo
-          FILES_TO_READ=""
+          # 2. SMART FILE SELECTION: Only load files mentioned in the prompt to save API quota
+          FILES_TO_LOAD=""
           for word in $CLEAN_MSG; do
-            # Remove common punctuation from the word to match filenames
             clean_word=$(echo "$word" | tr -d '.,!?')
             if [[ -f "$clean_word" ]]; then
-              FILES_TO_READ="$FILES_TO_READ --file $clean_word"
+              FILES_TO_LOAD="$FILES_TO_LOAD $clean_word"
             fi
           done
 
-          # 3. Inject Context
-          SYSTEM_PROMPT="You are an autonomous AI developer. IMPORTANT: Make precise, surgical edits. If asked to delete, use 'git rm'. Task: "
+          # 3. Inject strict Context
+          SYSTEM_PROMPT="You are an autonomous AI developer operating directly in a GitHub repository via GitHub Actions. IMPORTANT: Make precise, surgical edits using SEARCH/REPLACE blocks. DO NOT output entire files. Task: "
           FINAL_PROMPT="$SYSTEM_PROMPT $CLEAN_MSG"
 
-         # 4. Run Aider with "Smart Selection"
-          # Instead of '*', we only send files mentioned in your message.
-          # If no files are mentioned, it will only send index.html by default.
-          FILES_TO_ADD=""
-          for word in $CLEAN_MSG; do
-            clean_word=$(echo "$word" | tr -d '.,!?')
-            if [[ -f "$clean_word" ]]; then
-              FILES_TO_ADD="$FILES_TO_ADD $clean_word"
-            fi
-          done
-
-          # If we didn't find any specific files, just load index.html to be safe
-          if [ -z "$FILES_TO_ADD" ]; then
-            FILES_TO_ADD="index.html"
-          fi
-
+          # 4. Run Aider
+          # If no files were found in the message, Aider will run on the whole repo (default)
+          # but if files were found, it only loads those to stay under Rate Limits.
           aider --model gemini/gemini-2.5-flash \
                 --edit-format diff \
                 --message "$FINAL_PROMPT" \
-                $FILES_TO_ADD \
+                $FILES_TO_LOAD \
                 --yes-always \
                 --auto-commits \
                 --map-tokens 0 \
                 --no-stream \
+                --suggest-shell-commands \
                 --exit
 
           # 5. The Enforcer (Deletions & Moves)
-          # This catches 'git mv' and 'git rm' commands the AI suggested
           if [[ "$CLEAN_MSG" == *"delete"* ]] || [[ "$CLEAN_MSG" == *"rename"* ]] || [[ "$CLEAN_MSG" == *"move"* ]]; then
-            # If the AI suggested a move but didn't do it:
+            # Specific check for the contact-us rename as a backup
             if [[ "$CLEAN_MSG" == *"contact-us.html"* ]] && [[ -f "contact.html" ]]; then
                git mv contact.html contact-us.html
                echo "Enforced rename to contact-us.html"
             fi
             
-            # General cleanup for any other deletions
             for word in $CLEAN_MSG; do
               clean_word=$(echo "$word" | tr -d '.,!?')
               if [[ -f "$clean_word" ]]; then
