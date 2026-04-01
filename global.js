@@ -55,7 +55,8 @@ const translations = {
         "tour_username_available": "✓ Available",
         "tour_username_checking": "Checking...",
         "warning_title": "Admin Warning",
-        "warning_btn": "I Understand"
+        "warning_btn": "I Understand",
+        "contact": "Contact Us"
     },
     "fr": {
         "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", "nav_hub": "Hub Campus",
@@ -86,7 +87,8 @@ const translations = {
         "tour_username_available": "✓ Disponible",
         "tour_username_checking": "Vérification...",
         "warning_title": "Avertissement de l'Administration",
-        "warning_btn": "J'ai compris"
+        "warning_btn": "J'ai compris",
+        "contact": "Nous contacter"
     }
 };
 
@@ -95,6 +97,21 @@ window.applyLanguage = (lang) => {
         const key = el.getAttribute('data-i18n');
         if (translations[lang] && translations[lang][key]) el.textContent = translations[lang][key];
     });
+    // For footer links where textContent is explicitly set by data-i18n
+    // Ensure all footer links are properly translated if they have IDs
+    const footerLinks = [
+        { id: 'link-terms', key: 'terms' },
+        { id: 'link-privacy', key: 'priv' },
+        { id: 'link-safety', key: 'safe' },
+        { id: 'link-contact', key: 'contact' }
+    ];
+    footerLinks.forEach(linkInfo => {
+        const el = document.getElementById(linkInfo.id);
+        if (el && translations[lang] && translations[lang][linkInfo.key]) {
+            el.textContent = translations[lang][linkInfo.key];
+        }
+    });
+
     localStorage.setItem('preferred_language', lang);
 };
 
