@@ -33,16 +33,18 @@ jobs:
       - name: Run Aider
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          ANTHROPIC_API_KEY: "unused" 
+          HOME: /home/runner
         run: |
           git config --global user.name "Gemini AI"
           git config --global user.email "ai@example.com"
           
-          # We use simple arguments to avoid version conflicts
-          aider --model gemini/gemini-1.5-pro \
+          # Using the newer 2.0-flash model which is very stable
+          # Added --no-analytics to keep the log clean
+          aider --model gemini/gemini-2.0-flash \
                 --message "Task: ${{ github.event.issue.title }}. ${{ github.event.issue.body }}" \
                 --yes-always \
                 --auto-commits \
+                --no-analytics \
                 --exit
           
           git push origin main
