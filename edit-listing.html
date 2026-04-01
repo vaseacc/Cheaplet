@@ -163,7 +163,7 @@
     <div class="page-hero">
         <div class="page-hero-inner">
             <h1 id="ui-main-title">Edit Your Listing</h1>
-            <p id="ui-main-subtitle">Update your item details.</p>
+            <p id="ui-main-subtitle">Update your item details. Changes will be re-reviewed by our AI safety system.</p>
         </div>
     </div>
 
@@ -279,9 +279,9 @@
                     <div class="form-buttons">
                         <button type="button" class="btn-submit" id="updateListingBtn">
                             <i class="fas fa-save"></i>
-                            <span id="post-btn-text">Save Changes</span>
+                            <span id="post-btn-text">Save Changes & Review</span>
                         </button>
-                        <button type="button" class="btn-cancel" id="cancelEditBtn">Cancel</button>
+                        <button type="button" class="btn-cancel" id="cancelEditBtn" onclick="window.history.back()">Cancel</button>
                     </div>
 
                 </form>
@@ -306,7 +306,7 @@
             const lang = localStorage.getItem('preferred_language') || 'en';
             const ui = {
                 en: {
-                    mainTitle: "Edit Your Listing", mainSub: "Update your item details.",
+                    mainTitle: "Edit Your Listing", mainSub: "Update your item details. Changes will be re-reviewed by our AI safety system.",
                     secBasic: "Basic Info", secTags: "Tags", secCond: "Condition & Details", secLoc: "Location", secPhoto: "Photos",
                     lblTitle: "Title", lblDesc: "Description",
                     lblPrice: "Sale Price ($) — Max $1200", lblOrigPrice: "Original Price ($) — Max $5000",
@@ -315,15 +315,15 @@
                     lblCode: "Digital Access Code", optNa: "Not applicable", optAvail: "Available / Unused", optUsed: "Already used",
                     lblLoc: "Campus Location", lblMeet: "Meeting Point (Max 60 chars)", meetPlace: "e.g., Near Library",
                     lblDet: "Additional Details", chkWrite: "Writing inside", chkWater: "Water damage", chkMiss: "Missing pages",
-                    lblPhotos: "Photos (Max 5, Max 5MB each)", btnAddPhoto: "Add Photo", btnPost: "Save Changes", btnCancel: "Cancel",
+                    lblPhotos: "Photos (Max 5, Max 5MB each)", btnAddPhoto: "Add Photo", btnPost: "Save Changes & Review", btnCancel: "Cancel",
                     priceErr: "Price cannot exceed $1200.", origPriceErr: "Original price cannot exceed $5000.",
                     imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type.",
-                    imgSizeErr: "Image too large (Max 5MB).", saving: "Saving Changes…",
+                    imgSizeErr: "Image too large (Max 5MB).", saving: "AI Safety Check…",
                     tagLimit: "Max 15 tags allowed.",
                     tagUses: "uses"
                 },
                 fr: {
-                    mainTitle: "Modifier votre annonce", mainSub: "Mettez à jour les détails de votre article.",
+                    mainTitle: "Modifier votre annonce", mainSub: "Mettez à jour les détails. Les modifications seront réexaminées par notre IA de sécurité.",
                     secBasic: "Infos de base", secTags: "Mots-clés", secCond: "État et Détails", secLoc: "Emplacement", secPhoto: "Photos",
                     lblTitle: "Titre", lblDesc: "Description",
                     lblPrice: "Prix de vente ($) — Max 1200$", lblOrigPrice: "Prix d'origine ($) — Max 5000$",
@@ -332,10 +332,10 @@
                     lblCode: "Code d'accès numérique", optNa: "Non applicable", optAvail: "Disponible / Inutilisé", optUsed: "Déjà utilisé",
                     lblLoc: "Emplacement du campus", lblMeet: "Point de rencontre (Max 60 car.)", meetPlace: "ex: Près de la bibliothèque",
                     lblDet: "Détails supplémentaires", chkWrite: "Écritures à l'intérieur", chkWater: "Dommages causés par l'eau", chkMiss: "Pages manquantes",
-                    lblPhotos: "Photos (Max 5, Max 5MB chacune)", btnAddPhoto: "Ajouter une photo", btnPost: "Enregistrer", btnCancel: "Annuler",
+                    lblPhotos: "Photos (Max 5, Max 5MB chacune)", btnAddPhoto: "Ajouter une photo", btnPost: "Enregistrer et Réviser", btnCancel: "Annuler",
                     priceErr: "Le prix ne peut dépasser 1200$.", origPriceErr: "Le prix d'origine ne peut dépasser 5000$.",
                     imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté.",
-                    imgSizeErr: "Image trop lourde (Max 5MB).", saving: "Enregistrement…",
+                    imgSizeErr: "Image trop lourde (Max 5MB).", saving: "Vérification IA…",
                     tagLimit: "Maximum 15 tags autorisés.",
                     tagUses: "utilisations"
                 }
@@ -388,6 +388,7 @@
             let newImageFiles = [];
             let tags = [];
             let currentListingId = new URLSearchParams(window.location.search).get('id');
+            let currentUser = null;
 
             // --- TAG SYSTEM LOGIC ---
             function renderTags() {
@@ -514,6 +515,7 @@
 
             onAuthStateChanged(auth, user => {
                 if (user && currentListingId) {
+                    currentUser = user;
                     fetchAndPopulate(currentListingId, user.uid);
                 } else if (!user) {
                     window.location.href = '/LoginInToCheaplet.html';
@@ -563,6 +565,7 @@
 
                     const finalImages = [...existingImageUrls, ...uploadedUrls];
 
+                    // ALWAYS reset status to pending to force AI moderation on edited listings
                     await updateDoc(doc(db, 'listings', currentListingId), {
                         title: document.getElementById('listing-title').value.trim(),
                         description: document.getElementById('listing-description').value.trim(),
@@ -576,18 +579,40 @@
                         hasWaterDamage: document.getElementById('cond-water').checked,
                         hasMissingPages: document.getElementById('cond-missing').checked,
                         tags: tags,
-                        imageUrls: finalImages
+                        imageUrls: finalImages,
+                        status: 'pending' // <--- Closes the loophole
                     });
 
-                    window.location.href = `/listing.html?id=${currentListingId}`;
+                    // Trigger AI moderation securely
+                    const idToken = await currentUser.getIdToken();
+                    
+                    try {
+                        await fetch('/.netlify/functions/moderate-listing', {
+                            method: 'POST',
+                            headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${idToken}` 
+                            },
+                            keepalive: true,
+                            body: JSON.stringify({ 
+                                listingId: currentListingId, 
+                                imageUrls: finalImages, 
+                                title: document.getElementById('listing-title').value.trim(), 
+                                description: document.getElementById('listing-description').value.trim() 
+                            })
+                        });
+                    } catch (err) {
+                        console.error("AI trigger error:", err);
+                    }
+
+                    // Send them back to My Listings to see the "In Review" banner
+                    window.location.href = `/my-listings.html`;
                 } catch (e) { 
                     alert(e.message); 
                     btn.disabled = false; 
                     btnText.textContent = ui[lang].btnPost; 
                 }
             };
-
-            document.getElementById('cancelEditBtn').onclick = () => window.history.back();
         }
         main();
     </script>
