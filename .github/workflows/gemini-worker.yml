@@ -1,4 +1,4 @@
-name: AI Junior Developer (Aider)
+name: AI Junior Dev (Aider)
 on:
   issues:
     types: [opened, edited]
@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   aider-job:
-    # Only runs if you mention @aider or if it's an issue you want fixed
+    # Triggered when you type /fix in an issue or comment
     if: contains(github.event.issue.body, '/fix') || contains(github.event.comment.body, '/fix')
     runs-on: ubuntu-latest
     steps:
@@ -21,18 +21,29 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run Aider to fix issue
-        uses: p0nk/aider-github-action@main
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          # Your Gemini Key
-          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          # The model that works best for HTML/CSS
-          aider_model: gemini/gemini-1.5-pro
-          # The instructions from your GitHub Issue
-          aider_message: |
-            Fix the following issue:
-            Title: ${{ github.event.issue.title }}
-            Description: ${{ github.event.issue.body }}
-            Comment: ${{ github.event.comment.body }}
-          # Tell Aider to commit the changes
-          aider_args: "--auto-commit --no-show-diffs"
+          python-version: '3.10'
+
+      - name: Install Aider
+        run: |
+          python -m pip install --upgrade pip
+          pip install aider-chat
+
+      - name: Run Aider
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # This fixes the "home directory" and "git config" issues
+          HOME: /home/runner
+        run: |
+          git config --global user.name "Gemini AI"
+          git config --global user.email "ai@example.com"
+          
+          aider --model gemini/gemini-1.5-pro \
+                --message "Task: ${{ github.event.issue.title }}. Details: ${{ github.event.issue.body }} ${{ github.event.comment.body }}" \
+                --auto-commit \
+                --yes-create \
+                --no-show-diffs
+          
+          git push origin main
