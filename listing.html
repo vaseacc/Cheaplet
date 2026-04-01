@@ -133,10 +133,11 @@
         .description-text { font-size: 0.9rem; line-height: 1.65; color: var(--text-body); white-space: pre-wrap; margin-bottom: 20px; overflow-wrap: break-word; }
 
         /* ── SELLER ── */
-        .seller-section { display: flex; align-items: center; gap: 14px; margin-top: 10px; padding: 14px 0; border-top: 1px solid rgba(179,205,224,0.4); border-bottom: 1px solid rgba(179,205,224,0.4); }
-        #seller-avatar-small { width: 46px; height: 46px; border-radius: 50%; background-color: var(--surface); background-size: cover; background-position: center; border: 2px solid var(--mist); flex-shrink: 0; }
-        .seller-name { font-weight: 700; color: var(--ink); text-decoration: none; font-size: 0.95rem; transition: color 0.2s; }
-        .seller-name:hover { color: var(--deep); }
+        .seller-section-wrapper { display: block; text-decoration: none; color: inherit; transition: background 0.2s; border-radius: var(--radius-sm); margin-top: 10px; padding: 14px 10px; border-top: 1px solid rgba(179,205,224,0.4); border-bottom: 1px solid rgba(179,205,224,0.4); }
+        .seller-section-wrapper:hover { background: var(--surface); }
+        .seller-section { display: flex; align-items: center; gap: 14px; }
+        #seller-avatar-small { width: 46px; height: 46px; border-radius: 50%; background-color: var(--mist); background-size: cover; background-position: center; border: 2px solid var(--mist); flex-shrink: 0; }
+        .seller-name { font-weight: 700; color: var(--ink); font-size: 0.95rem; }
         .seller-rating-display { color: var(--gold); font-size: 0.82rem; margin-top: 3px; }
         .verified-student-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(46,125,94,0.1); color: var(--green); font-size: 0.73rem; font-weight: 700; padding: 2px 9px; border-radius: 50px; border: 1px solid rgba(46,125,94,0.25); margin-top: 4px; }
 
@@ -252,14 +253,18 @@
             <p class="description-text" id="listing-description"></p>
 
             <div class="section-header" data-i18n="seller_title">Seller Information</div>
-            <div class="seller-section" id="seller-section-container">
-                <div id="seller-avatar-small"></div>
-                <div>
-                    <a href="#" id="seller-name-link" class="seller-name">Loading...</a>
-                    <div id="seller-rating-container" class="seller-rating-display"></div>
-                    <div id="seller-badge-container" style="font-size:0.8rem; color:var(--text-muted);">Scoralia Member</div>
+            
+            <!-- Easy-to-click seller block -->
+            <a href="#" id="seller-section-wrapper" class="seller-section-wrapper">
+                <div class="seller-section">
+                    <div id="seller-avatar-small"></div>
+                    <div>
+                        <div class="seller-name" id="seller-name-text">Loading...</div>
+                        <div id="seller-rating-container" class="seller-rating-display"></div>
+                        <div id="seller-badge-container" style="font-size:0.8rem; color:var(--text-muted);">Scoralia Member</div>
+                    </div>
                 </div>
-            </div>
+            </a>
 
             <div class="quick-message-container" id="quick-message-area">
                 <div class="quick-msg-label" data-i18n="quick_msg_label">Send a quick message</div>
@@ -338,7 +343,7 @@
                     location_label: "Location", label_meeting_point: "Meeting Point", label_writing: "Writing inside", 
                     label_water: "Water damage", label_missing: "Missing pages", description_title: "Description", 
                     seller_title: "Seller Information", quick_msg_label: "Send a quick message", btn_send: "Send", related_title: "Related Items",
-                    unavailable: "Listing is currently under review or unavailable."
+                    unavailable: "Listing is currently under review or unavailable.", no: "No", yes: "Yes"
                 },
                 fr: { 
                     reportTitle: "Signaler l'annonce", reportDesc: "Pourquoi signalez-vous cela ?", reportPlaceholder: "Détails...", reportSuccess: "Signalé.", 
@@ -348,12 +353,12 @@
                     location_label: "Emplacement", label_meeting_point: "Point de rencontre", label_writing: "Écritures à l'intérieur", 
                     label_water: "Dommages causés par l'eau", label_missing: "Pages manquantes", description_title: "Description", 
                     seller_title: "Informations sur le vendeur", quick_msg_label: "Envoyer un message rapide", btn_send: "Envoyer", related_title: "Articles similaires",
-                    unavailable: "L'annonce est en cours de révision ou indisponible."
+                    unavailable: "L'annonce est en cours de révision ou indisponible.", no: "Non", yes: "Oui"
                 }
             };
 
             const dataTranslations = {
-                fr: { "New": "Neuf", "Like New": "Comme neuf", "Good": "Bon état", "Fair": "État correct", "Not applicable": "Non applicable", "Available / Unused": "Disponible / Inutilisé", "Already used": "Déjà utilisé", "Yes": "Oui", "No": "Non", "N/A": "N/O", "To be discussed": "À discuter" }
+                fr: { "New": "Neuf", "Like New": "Comme neuf", "Good": "Bon état", "Fair": "État correct", "Not applicable": "Non applicable", "Available / Unused": "Disponible / Inutilisé", "Already used": "Déjà utilisé", "N/A": "N/O", "To be discussed": "À discuter" }
             };
 
             document.querySelectorAll('[data-i18n]').forEach(el => {
@@ -362,7 +367,9 @@
             });
 
             function translateData(value) {
-                if (value === true) value = "Yes"; if (value === false) value = "No";
+                // FIXED: Force 'undefined' or missing checkboxes to clearly show "No" instead of blank
+                if (value === true) return strings[lang].yes;
+                if (value === false || value === undefined || value === null || value === "") return strings[lang].no;
                 if (lang === 'fr' && dataTranslations.fr[value]) return dataTranslations.fr[value];
                 return value;
             }
@@ -396,7 +403,7 @@
                             document.getElementById('listing-price').style.display = 'none';
                             document.getElementById('original-price-display').style.display = 'none';
                             document.getElementById('main-action-buttons').style.display = 'none';
-                            document.getElementById('seller-section-container').style.display = 'none';
+                            document.getElementById('seller-section-wrapper').style.display = 'none';
                             document.getElementById('quick-message-area').style.display = 'none';
                             return;
                         }
@@ -444,12 +451,17 @@
                     document.getElementById('listing-condition').textContent = translateData(data.condition || "Used");
                     document.getElementById('listing-digital-code').textContent = translateData(data.digitalCode || "N/A");
                     document.getElementById('listing-meeting-point').textContent = data.meetingPoint || (lang === 'fr' ? "À discuter" : "To be discussed");
-                    document.getElementById('listing-writing').textContent = translateData(data.hasWriting);
-                    document.getElementById('listing-water').textContent = translateData(data.hasWaterDamage);
-                    document.getElementById('listing-missing').textContent = translateData(data.hasMissingPages);
+                    
+                    // Fixed checkmarks
+                    document.getElementById('listing-writing').textContent = translateData(data.hasWriting === true);
+                    document.getElementById('listing-water').textContent = translateData(data.hasWaterDamage === true);
+                    document.getElementById('listing-missing').textContent = translateData(data.hasMissingPages === true);
+                    
                     document.getElementById('listing-description').textContent = data.description;
-                    document.getElementById('seller-name-link').textContent = data.posterDisplayName || "User";
-                    document.getElementById('seller-name-link').href = `/user.html?id=${data.posterUid}`;
+                    
+                    // Set up seller profile wrapper link
+                    document.getElementById('seller-section-wrapper').href = `/user.html?id=${data.posterUid}`;
+                    document.getElementById('seller-name-text').textContent = data.posterDisplayName || "User";
 
                     if (data.posterUid) {
                         try {
@@ -493,7 +505,7 @@
                     } else {
                         // Empty state for rejected items that had images wiped
                         mainImage.style.display = 'none';
-                        document.querySelector('.main-image-container').innerHTML = '<i class="fas fa-image" style="font-size: 4rem; color: #333;"></i><div style="color:#aaa; margin-top:10px;">No Image Available</div>';
+                        document.querySelector('.main-image-container').innerHTML = '<i class="fas fa-image" style="font-size: 4rem; color: #cbd5e1;"></i><div style="color:var(--text-muted); margin-top:10px;">No Image Available</div>';
                     }
 
                     if (currentUser) {
@@ -599,7 +611,7 @@
 
             function updateSaveIcon() {
                 const icon = saveBtn.querySelector('i');
-                if (isSaved) { icon.classList.replace('far', 'fas'); icon.style.color = '#2B5C92'; }
+                if (isSaved) { icon.classList.replace('far', 'fas'); icon.style.color = 'var(--gold)'; }
                 else { icon.classList.replace('fas', 'far'); icon.style.color = ''; }
             }
 
