@@ -35,7 +35,6 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           HOME: /home/runner
           AIDER_ALLOW_RUN_COMMANDS: "true"
-          # Safely pass GitHub text to environment variables to prevent bash syntax crashes
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
           COMMENT_BODY: ${{ github.event.comment.body }}
@@ -43,18 +42,31 @@ jobs:
           git config --global user.name "Gemini AI"
           git config --global user.email "ai@scoralia.com"
 
-          # 1. Combine the message safely and strip out the '/fix' trigger
+          # 1. Combine and clean the message
           RAW_MSG="$ISSUE_TITLE $ISSUE_BODY $COMMENT_BODY"
           CLEAN_MSG=$(echo "$RAW_MSG" | sed 's/\/fix//g' | xargs)
 
-          # 2. Inject strict Context so the AI knows exactly where it is and how to behave
-          SYSTEM_PROMPT="You are an autonomous AI developer operating directly in a GitHub repository via GitHub Actions. IMPORTANT: Make precise, surgical edits using SEARCH/REPLACE blocks. DO NOT output entire files. Task: "
+          # 2. FILE DISCOVERY: Automatically find files mentioned in the prompt
+          # This matches words in your message to actual files in your repo
+          FILES_TO_READ=""
+          for word in $CLEAN_MSG; do
+            # Remove common punctuation from the word to match filenames
+            clean_word=$(echo "$word" | tr -d '.,!?')
+            if [[ -f "$clean_word" ]]; then
+              FILES_TO_READ="$FILES_TO_READ --file $clean_word"
+            fi
+          done
+
+          # 3. Inject Context
+          SYSTEM_PROMPT="You are an autonomous AI developer. IMPORTANT: Make precise, surgical edits. If asked to delete, use 'git rm'. Task: "
           FINAL_PROMPT="$SYSTEM_PROMPT $CLEAN_MSG"
 
-          # 3. Run Aider
+          # 4. Run Aider
+          # We include $FILES_TO_READ so the AI 'sees' the files you named
           aider --model gemini/gemini-2.5-flash \
                 --edit-format diff \
                 --message "$FINAL_PROMPT" \
+                $FILES_TO_READ \
                 --yes-always \
                 --auto-commits \
                 --map-tokens 0 \
@@ -62,18 +74,17 @@ jobs:
                 --suggest-shell-commands \
                 --exit
 
-          # 4. The "Enforcer" - If the AI suggested deleting, we make sure it happens
-          # This checks if the AI mentioned 'rm' and the file still exists
+          # 5. The Enforcer (Deletions)
           if [[ "$CLEAN_MSG" == *"delete"* ]] || [[ "$CLEAN_MSG" == *"remove"* ]]; then
-            # Attempt to delete any files mentioned in the prompt just in case Aider was shy
             for word in $CLEAN_MSG; do
-              if [[ -f "$word" ]]; then
-                git rm "$word" && echo "Enforced deletion of $word"
+              clean_word=$(echo "$word" | tr -d '.,!?')
+              if [[ -f "$clean_word" ]]; then
+                git rm "$clean_word" && echo "Enforced deletion of $clean_word"
               fi
             done
           fi
 
-          # 5. Final Push
+          # 6. Final Push
           git add .
           git commit -m "AI autonomous update: $CLEAN_MSG" || echo "No changes to commit"
           git push origin main
