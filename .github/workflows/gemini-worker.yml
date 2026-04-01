@@ -47,26 +47,40 @@ jobs:
           RAW_MSG="$ISSUE_TITLE $ISSUE_BODY $COMMENT_BODY"
           CLEAN_MSG=$(echo "$RAW_MSG" | sed 's/\/fix//g' | xargs)
 
-          # 2. SMART FILE SELECTION: Only load files mentioned in the prompt
-          #    FIX: Remove trailing punctuation only (keep dots inside filenames)
+          # ========== IMPROVED FILE DETECTION ==========
           FILES_TO_LOAD=""
           for word in $CLEAN_MSG; do
-            # Remove punctuation that could appear at the end of a filename mention,
-            # but leave dots in the middle (e.g., mylisting.html -> mylisting.html)
+            # Remove trailing punctuation, keep dots inside filenames
             clean_word=$(echo "$word" | sed 's/[.,!?]*$//')
+            
+            # Try exact match first
             if [[ -f "$clean_word" ]]; then
               FILES_TO_LOAD="$FILES_TO_LOAD $clean_word"
+              continue
+            fi
+            
+            # Fuzzy match: find files containing the word (case-insensitive)
+            # Exclude .git, limit to first 3 matches to avoid overload
+            matches=$(find . -type f -not -path "./.git/*" -iname "*${clean_word}*" 2>/dev/null | head -3)
+            if [[ -n "$matches" ]]; then
+              match_count=$(echo "$matches" | wc -l)
+              if [[ $match_count -eq 1 ]]; then
+                # Strip leading './' and add to list
+                match_path=$(echo "$matches" | sed 's|^\./||')
+                FILES_TO_LOAD="$FILES_TO_LOAD $match_path"
+              else
+                # Multiple matches: log and skip (you could change to add all)
+                echo "Multiple files match '$clean_word': $matches" >&2
+              fi
             fi
           done
+          # =============================================
 
-          # 3. Inject strict Persona Context
-          #    REMOVED: reference to "Claude 3.5 Sonnet" – directly describe the behaviour
-          SYSTEM_PROMPT="You are an elite AI developer operating in a GitHub Action. You MUST read and strictly obey the rules in CONVENTIONS.md. Make precise, surgical edits using SEARCH/REPLACE blocks. DO NOT output entire files. Task: "
+          # 2. Inject strict Persona Context
+          SYSTEM_PROMPT="You are an elite AI developer. You MUST read and strictly obey the rules in CONVENTIONS.md. Make precise, surgical edits using SEARCH/REPLACE blocks. DO NOT output entire files. Task: "
           FINAL_PROMPT="$SYSTEM_PROMPT $CLEAN_MSG"
 
-          # 4. Run Aider (Using Gemini 2.5 Flash Lite)
-          #    No change here, but we rely on Aider's diff format for all changes,
-          #    including deletions and moves. The custom enforcer block has been removed.
+          # 3. Run Aider
           aider --model gemini/gemini-2.5-flash-lite \
                 --edit-format diff \
                 --read CONVENTIONS.md \
@@ -78,8 +92,8 @@ jobs:
                 --no-stream \
                 --exit
 
-          # 5. Final commit and push with rebase to avoid conflicts
+          # 4. Final commit and push with rebase
           git add .
           git commit -m "AI surgical update: $CLEAN_MSG" || echo "No changes to commit"
-          git pull --rebase origin main   # <-- ADDED: pull latest changes before pushing
+          git pull --rebase origin main
           git push origin main
