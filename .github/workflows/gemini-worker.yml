@@ -46,7 +46,7 @@ jobs:
           RAW_MSG="$ISSUE_TITLE $ISSUE_BODY $COMMENT_BODY"
           CLEAN_MSG=$(echo "$RAW_MSG" | sed 's/\/fix//g' | xargs)
 
-          # 2. SMART FILE SELECTION: Only load files mentioned in the prompt to save API quota
+          # 2. SMART FILE SELECTION
           FILES_TO_LOAD=""
           for word in $CLEAN_MSG; do
             clean_word=$(echo "$word" | tr -d '.,!?')
@@ -55,38 +55,36 @@ jobs:
             fi
           done
 
-          # 3. Inject strict Context for SURGICAL EDITS
-          SYSTEM_PROMPT="You are an elite, autonomous AI developer. CRITICAL INSTRUCTION: NEVER output the entire file. You MUST use precise SEARCH/REPLACE blocks to modify ONLY the exact lines that need changing. Do not waste tokens. Identify the minimal lines needed and replace them. Task: "
-          FINAL_PROMPT="$SYSTEM_PROMPT $CLEAN_MSG"
+          # 3. INTELLIGENT SYSTEM PROMPT
+          # We define the project rules here so the AI doesn't "hallucinate" names like Scoraplet.
+          CONTEXT="CONTEXT: We are rebranding from 'Scoralia' to 'cheaplet'. 'cheaplet' must always be lowercase. "
+          RULES="RULES: 1. Use SEARCH/REPLACE blocks for surgical edits. 2. NEVER output the whole file. 3. When replacing text inside HTML tags (like <em>), ensure the final word is exactly as requested. Do not merge names. 4. If asked to replace a name, find all occurrences in the provided files. "
+          
+          FINAL_PROMPT="$CONTEXT $RULES TASK: $CLEAN_MSG"
 
-          # 4. Run Aider (Using 2.5-flash-lite to bypass Rate Limits, and enforcing diff format)
+          # 4. Run Aider
+          # Added --map-tokens 1024 to give the AI a better 'map' of the repo without using too many tokens.
           aider --model gemini/gemini-2.5-flash-lite \
                 --edit-format diff \
                 --message "$FINAL_PROMPT" \
                 $FILES_TO_LOAD \
                 --yes-always \
                 --auto-commits \
-                --map-tokens 0 \
+                --map-tokens 1024 \
                 --no-stream \
                 --exit
 
-          # 5. The Enforcer (Deletions & Moves)
+          # 5. Safety Net for Moves/Deletions
           if [[ "$CLEAN_MSG" == *"delete"* ]] || [[ "$CLEAN_MSG" == *"rename"* ]] || [[ "$CLEAN_MSG" == *"move"* ]]; then
-            # Specific check for the contact-us rename as a backup
-            if [[ "$CLEAN_MSG" == *"contact-us.html"* ]] && [[ -f "contact.html" ]]; then
-               git mv contact.html contact-us.html
-               echo "Enforced rename to contact-us.html"
-            fi
-            
             for word in $CLEAN_MSG; do
               clean_word=$(echo "$word" | tr -d '.,!?')
               if [[ -f "$clean_word" ]]; then
-                git rm "$clean_word" && echo "Enforced deletion of $clean_word"
+                git rm "$clean_word" && echo "Deleted $clean_word"
               fi
             done
           fi
 
           # 6. Final Push
           git add .
-          git commit -m "AI autonomous update: $CLEAN_MSG" || echo "No changes to commit"
+          git commit -m "AI surgical update: $CLEAN_MSG" || echo "No changes to commit"
           git push origin main
