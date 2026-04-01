@@ -61,12 +61,14 @@ jobs:
           SYSTEM_PROMPT="You are an autonomous AI developer. IMPORTANT: Make precise, surgical edits. If asked to delete, use 'git rm'. Task: "
           FINAL_PROMPT="$SYSTEM_PROMPT $CLEAN_MSG"
 
-          # 4. Run Aider with "Global Vision"
-          # The '*' tells Aider to load every file in the current directory
+          # 4. Run Aider with "Targeted Vision"
+          # This finds all text files in the root but ignores directories
+          FILES_IN_REPO=$(find . -maxdepth 1 -not -path '*/.*' -type f \( -name "*.html" -o -name "*.css" -o -name "*.js" -o -name "*.md" \))
+
           aider --model gemini/gemini-2.5-flash \
                 --edit-format diff \
                 --message "$FINAL_PROMPT" \
-                * \
+                $FILES_IN_REPO \
                 --yes-always \
                 --auto-commits \
                 --map-tokens 0 \
