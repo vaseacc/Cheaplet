@@ -1,4 +1,4 @@
-name: AI Junior Dev (Aider)
+name: AI Senior Dev (Gemini)
 on:
   issues:
     types: [opened, edited]
@@ -40,13 +40,13 @@ jobs:
           COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
           git config --global user.name "Gemini AI"
-          git config --global user.email "ai@scoralia.com"
+          git config --global user.email "ai@cheaplet.com"
 
           # 1. Combine and clean the message
           RAW_MSG="$ISSUE_TITLE $ISSUE_BODY $COMMENT_BODY"
           CLEAN_MSG=$(echo "$RAW_MSG" | sed 's/\/fix//g' | xargs)
 
-          # 2. SMART FILE SELECTION
+          # 2. SMART FILE SELECTION: Only load files mentioned in the prompt
           FILES_TO_LOAD=""
           for word in $CLEAN_MSG; do
             clean_word=$(echo "$word" | tr -d '.,!?')
@@ -55,17 +55,15 @@ jobs:
             fi
           done
 
-          # 3. INTELLIGENT SYSTEM PROMPT
-          # We define the project rules here so the AI doesn't "hallucinate" names like Scoraplet.
-          CONTEXT="CONTEXT: We are rebranding from 'Scoralia' to 'cheaplet'. 'cheaplet' must always be lowercase. "
-          RULES="RULES: 1. Use SEARCH/REPLACE blocks for surgical edits. 2. NEVER output the whole file. 3. When replacing text inside HTML tags (like <em>), ensure the final word is exactly as requested. Do not merge names. 4. If asked to replace a name, find all occurrences in the provided files. "
-          
-          FINAL_PROMPT="$CONTEXT $RULES TASK: $CLEAN_MSG"
+          # 3. Inject strict Persona Context
+          SYSTEM_PROMPT="You are an elite AI developer operating in a GitHub Action. You MUST read and strictly obey the rules in CONVENTIONS.md. Act with the precision and logic of Claude 3.5 Sonnet. IMPORTANT: Make precise, surgical edits using SEARCH/REPLACE blocks. DO NOT output entire files. Task: "
+          FINAL_PROMPT="$SYSTEM_PROMPT $CLEAN_MSG"
 
-          # 4. Run Aider
-          # Added --map-tokens 1024 to give the AI a better 'map' of the repo without using too many tokens.
+          # 4. Run Aider (Using Gemini 2.5 Flash Lite)
+          # We pass --read CONVENTIONS.md so it absorbs the project rules without editing them.
           aider --model gemini/gemini-2.5-flash-lite \
                 --edit-format diff \
+                --read CONVENTIONS.md \
                 --message "$FINAL_PROMPT" \
                 $FILES_TO_LOAD \
                 --yes-always \
@@ -74,12 +72,17 @@ jobs:
                 --no-stream \
                 --exit
 
-          # 5. Safety Net for Moves/Deletions
+          # 5. The Enforcer (Deletions & Moves)
           if [[ "$CLEAN_MSG" == *"delete"* ]] || [[ "$CLEAN_MSG" == *"rename"* ]] || [[ "$CLEAN_MSG" == *"move"* ]]; then
+            if [[ "$CLEAN_MSG" == *"contact-us.html"* ]] && [[ -f "contact.html" ]]; then
+               git mv contact.html contact-us.html
+               echo "Enforced rename to contact-us.html"
+            fi
+            
             for word in $CLEAN_MSG; do
               clean_word=$(echo "$word" | tr -d '.,!?')
               if [[ -f "$clean_word" ]]; then
-                git rm "$clean_word" && echo "Deleted $clean_word"
+                git rm "$clean_word" && echo "Enforced deletion of $clean_word"
               fi
             done
           fi
