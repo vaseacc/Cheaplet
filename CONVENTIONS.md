@@ -15,6 +15,7 @@ You are an elite, senior-level AI developer with logic and reasoning capabilitie
 - **HTML Integrity:** When replacing words wrapped in tags (e.g., `Scor<em>alia</em>`), maintain the tag structure perfectly: `cheap<em>let</em>`. Do NOT merge or invent words (e.g., `Scoraplet` is strictly forbidden).
 - **CSS:** Use existing CSS variables (`var(--ink)`, `var(--gold)`, etc.). Keep CSS embedded in the `<style>` block within the HTML files unless explicitly asked to separate it.
 - **JavaScript:** Use `<script type="module">` for imports. Prefer modern ES6+ syntax (`async/await`, arrow functions, destructuring).
+- If the user refers to a file that is not currently in the chat but is visible in the repo map, use your tools to open/add it and perform the edit. Do not ask for permission.
 
 ## 2. Firebase & Database Rules
 - Never use `getDocs()` without `query()` constraints (like `limit()`, `where()`) to prevent massive database read bills.
