@@ -76,8 +76,16 @@ jobs:
                 --suggest-shell-commands \
                 --exit
 
-          # 5. The Enforcer (Deletions)
-          if [[ "$CLEAN_MSG" == *"delete"* ]] || [[ "$CLEAN_MSG" == *"remove"* ]]; then
+          # 5. The Enforcer (Deletions & Moves)
+          # This catches 'git mv' and 'git rm' commands the AI suggested
+          if [[ "$CLEAN_MSG" == *"delete"* ]] || [[ "$CLEAN_MSG" == *"rename"* ]] || [[ "$CLEAN_MSG" == *"move"* ]]; then
+            # If the AI suggested a move but didn't do it:
+            if [[ "$CLEAN_MSG" == *"contact-us.html"* ]] && [[ -f "contact.html" ]]; then
+               git mv contact.html contact-us.html
+               echo "Enforced rename to contact-us.html"
+            fi
+            
+            # General cleanup for any other deletions
             for word in $CLEAN_MSG; do
               clean_word=$(echo "$word" | tr -d '.,!?')
               if [[ -f "$clean_word" ]]; then
