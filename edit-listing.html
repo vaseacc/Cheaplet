@@ -3,167 +3,296 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Listing - Cheaplet</title>
+    <title>Edit Listing - cheaplet</title>
     <script type="module" src="global.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
-        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
+        :root {
+            --ink:       #0C1446;
+            --deep:      #2B5C92;
+            --mist:      #B3CDE0;
+            --white:     #FFFFFF;
+            --off-white: #F4F7FC;
+            --surface:   #EBF2FA;
+            --text-body: #1a2a4a;
+            --text-muted:#6b84a3;
+            --gold:      #C8A96E;
+            --green:     #2E7D5E;
+            --red:       #C0392B;
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --shadow-sm: 0 2px 12px rgba(12,20,70,0.08);
+            --font-display: 'Playfair Display', Georgia, serif;
+            --font-body:    'DM Sans', sans-serif;
+        }
 
-        header { background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
-        .header-content { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-        .logo { font-size: 24px; font-weight: bold; display: flex; align-items: center; cursor: pointer; color: white; text-decoration: none; }
-        .logo span { color: #FFD700; }
-        nav ul { display: flex; list-style: none; gap: 20px; }
-        .header-auth-buttons { display: flex; gap: 10px; align-items: center; }
-        
-        .firebase-form-section { background-color: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin: 30px auto; max-width: 600px; text-align: left; }
-        .firebase-form-section h2 { text-align: center; margin-bottom: 25px; color: #333; }
-        .form-field { margin-bottom: 15px; }
-        .form-field label { display: block; margin-bottom: 5px; font-weight: 600; color: #333; }
-        input, textarea, select { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; font-size: 1rem; display: block; }
-        input:focus, textarea:focus, select:focus { outline: none; border-color: #4CAF50; }
-        
-        .form-buttons { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
-        .form-buttons .btn { flex: 1; min-width: 120px; }
-        
-        .tag-container { border: 2px solid #ddd; border-radius: 6px; padding: 10px; background: #fff; display: flex; flex-wrap: wrap; gap: 8px; position: relative; }
-        .tag-container:focus-within { border-color: #4CAF50; }
-        .tag-chip { background-color: #e8f5e9; color: #2E7D32; padding: 5px 10px; border-radius: 16px; font-size: 0.9rem; font-weight: 600; }
-        #tag-input { border: none; outline: none; padding: 5px; flex-grow: 1; min-width: 120px; }
-        .suggestions-box { position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ddd; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .suggestion-item { padding: 10px 15px; cursor: pointer; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .suggestion-item:hover { background-color: #f8f9fa; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: var(--font-body);
+            background: var(--off-white);
+            color: var(--text-body);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
 
-        .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 15px; background: #fdfdfd; padding: 10px; border-radius: 8px; border: 1px solid #eee; }
-        .checkbox-item { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.9rem; cursor: pointer; color: #444; }
-        .checkbox-item input { width: 18px; height: 18px; margin: 0; cursor: pointer; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes popIn { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
 
-        .image-preview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
-        .image-preview-wrapper { position: relative; width: 80px; height: 80px; }
-        .image-preview { width: 100%; height: 100%; border-radius: 8px; object-fit: cover; border: 1px solid #ddd; }
-        .remove-image-btn { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; background-color: rgba(0,0,0,0.7); color: white; border: none; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 10px; }
-        #add-photo-label { width: 80px; height: 80px; border: 2px dashed #ccc; border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: #777; }
+        #page-loader {
+            position: fixed; inset: 0; background: var(--ink); z-index: 9999;
+            display: flex; justify-content: center; align-items: center; flex-direction: column; gap: 14px;
+        }
+        #page-loader .loader-logo { font-family: var(--font-display); font-size: 1.8rem; font-weight: 900; color: var(--white); letter-spacing: -0.5px; }
+        #page-loader .loader-logo em { color: var(--gold); font-style: normal; }
+        #page-loader .loader-dots { display: flex; gap: 7px; }
+        #page-loader .loader-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--mist); opacity: 0.4; animation: dotPulse 1.2s ease-in-out infinite; }
+        #page-loader .loader-dots span:nth-child(2) { animation-delay: 0.2s; }
+        #page-loader .loader-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes dotPulse { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 1; transform: scale(1.3); } }
 
-        .info-message { text-align: center; padding: 50px; font-size: 1.2rem; color: #777; }
-        @media (max-width: 767px) { nav { display: none; } }
+        header { position: sticky; top: 0; z-index: 200; background: rgba(12, 20, 70, 0.97); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(179,205,224,0.15); animation: slideDown 0.4s ease both; }
+        .header-inner { max-width: 1280px; margin: 0 auto; padding: 0 28px; height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+        .logo { font-family: var(--font-display); font-size: 1.6rem; font-weight: 900; color: var(--white); text-decoration: none; letter-spacing: -0.5px; }
+        .logo em { color: var(--gold); font-style: normal; }
+        nav ul { display: flex; list-style: none; gap: 28px; }
+        nav ul li a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+        nav ul li a:hover { color: var(--white); }
+        .header-right { display: flex; align-items: center; gap: 10px; }
+
+        .page-hero { background: linear-gradient(135deg, var(--ink) 0%, var(--deep) 60%, #4a7db5 100%); padding: 36px 28px 32px; position: relative; overflow: hidden; animation: fadeIn 0.5s ease both; }
+        .page-hero::after { content: ''; position: absolute; inset: 0; background-image: linear-gradient(rgba(179,205,224,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(179,205,224,0.06) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; }
+        .page-hero-inner { max-width: 680px; margin: 0 auto; position: relative; z-index: 1; text-align: center; animation: fadeUp 0.5s 0.1s ease both; opacity: 0; animation-fill-mode: forwards; }
+        .page-hero h1 { font-family: var(--font-display); font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 900; color: var(--white); letter-spacing: -0.5px; margin-bottom: 6px; }
+        .page-hero p { color: rgba(255,255,255,0.6); font-size: 0.92rem; }
+
+        .form-outer { max-width: 660px; margin: 36px auto 60px; padding: 0 20px; animation: fadeUp 0.5s 0.2s ease both; opacity: 0; animation-fill-mode: forwards; }
+        .form-wrapper { background: var(--white); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid rgba(179,205,224,0.3); padding: 36px 32px; }
+
+        .form-section { border-bottom: 1px solid var(--surface); padding-bottom: 24px; margin-bottom: 24px; }
+        .form-section:last-of-type { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+        .section-label { font-family: var(--font-display); font-size: 0.88rem; font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        .section-label i { color: var(--deep); font-size: 0.8rem; }
+
+        label.field-label { font-weight: 600; font-size: 0.85rem; margin-bottom: 5px; display: block; color: var(--text-muted); }
+        input[type="text"], input[type="number"], textarea, select { width: 100%; padding: 10px 14px; margin-bottom: 16px; border: 1.5px solid rgba(179,205,224,0.5); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 0.93rem; color: var(--text-body); background: var(--off-white); outline: none; transition: border-color 0.2s, background 0.2s, box-shadow 0.2s; display: block; }
+        input:focus, textarea:focus, select:focus { border-color: var(--deep); background: var(--white); box-shadow: 0 0 0 3px rgba(43,92,146,0.1); }
+        textarea { resize: vertical; min-height: 100px; }
+
+        .price-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .price-row > div { display: flex; flex-direction: column; }
+        .price-row input { margin-bottom: 0; }
+
+        .tag-container { border: 1.5px solid rgba(179,205,224,0.5); border-radius: var(--radius-sm); padding: 8px 10px; margin-bottom: 16px; background: var(--off-white); display: flex; flex-wrap: wrap; gap: 7px; position: relative; transition: border-color 0.2s, box-shadow 0.2s; }
+        .tag-container:focus-within { border-color: var(--deep); background: var(--white); box-shadow: 0 0 0 3px rgba(43,92,146,0.1); }
+        .tag-chip { background: var(--surface); color: var(--deep); padding: 4px 10px; border-radius: 50px; font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--mist); animation: popIn 0.18s ease both; }
+        .tag-chip .remove-tag { cursor: pointer; opacity: 0.6; font-size: 1rem; line-height: 1; transition: opacity 0.15s; }
+        .tag-chip .remove-tag:hover { opacity: 1; }
+        #tag-input { border: none; outline: none; padding: 4px 6px; flex-grow: 1; min-width: 120px; margin-bottom: 0; background: transparent; font-size: 0.9rem; box-shadow: none; }
+        #tag-input:focus { box-shadow: none; }
+        .suggestions-box { position: absolute; top: calc(100% + 4px); left: 0; width: 100%; background: var(--white); border: 1.5px solid rgba(179,205,224,0.5); border-radius: var(--radius-sm); max-height: 200px; overflow-y: auto; z-index: 50; display: none; box-shadow: var(--shadow-md); animation: fadeUp 0.15s ease both; }
+        .suggestion-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--surface); display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; color: var(--text-body); transition: background 0.15s; }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item:hover { background: var(--surface); }
+        .suggestion-count { font-size: 0.75rem; color: var(--text-muted); background: var(--surface); padding: 2px 8px; border-radius: 50px; border: 1px solid var(--mist); }
+
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .two-col > div { display: flex; flex-direction: column; }
+        .two-col select { margin-bottom: 0; }
+
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+        .checkbox-item { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.88rem; cursor: pointer; color: var(--text-body); background: var(--surface); border: 1.5px solid rgba(179,205,224,0.4); border-radius: var(--radius-sm); padding: 8px 14px; transition: background 0.18s, border-color 0.18s; user-select: none; }
+        .checkbox-item:has(input:checked) { background: var(--deep); border-color: var(--deep); color: var(--white); }
+        .checkbox-item input { width: 16px; height: 16px; margin: 0; cursor: pointer; accent-color: var(--deep); margin-bottom: 0; }
+        .checkbox-item:has(input:checked) input { accent-color: var(--white); }
+
+        .image-preview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+        .image-preview-wrapper { position: relative; width: 90px; height: 90px; animation: popIn 0.2s ease both; }
+        .image-preview { width: 100%; height: 100%; border-radius: var(--radius-sm); object-fit: cover; border: 2px solid var(--mist); }
+        .remove-image-btn { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; background: var(--red); color: var(--white); border: 2px solid var(--white); border-radius: 50%; cursor: pointer; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: transform 0.15s; }
+        .remove-image-btn:hover { transform: scale(1.15); }
+        #add-photo-label { width: 90px; height: 90px; border: 2px dashed rgba(179,205,224,0.7); border-radius: var(--radius-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); gap: 5px; font-size: 0.75rem; transition: border-color 0.2s, background 0.2s, color 0.2s; }
+        #add-photo-label i { font-size: 1.3rem; }
+        #add-photo-label:hover { border-color: var(--deep); background: var(--surface); color: var(--deep); }
+        #listing-image-input { display: none; }
+
+        .form-buttons { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+        .btn-submit { flex: 1; min-width: 140px; background: var(--ink); color: var(--white); border: none; border-radius: var(--radius-sm); padding: 12px 20px; font-family: var(--font-body); font-size: 0.95rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s, transform 0.15s; }
+        .btn-submit:hover:not(:disabled) { background: var(--deep); transform: translateY(-1px); }
+        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .btn-cancel { flex: 1; min-width: 120px; background: var(--surface); color: var(--text-muted); border: 1.5px solid rgba(179,205,224,0.5); border-radius: var(--radius-sm); padding: 12px 20px; font-family: var(--font-body); font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s, color 0.2s; }
+        .btn-cancel:hover { background: var(--mist); color: var(--ink); }
+
+        @media (max-width: 767px) {
+            nav { display: none; }
+            .page-hero { padding: 28px 16px; }
+            .form-outer { padding: 0 12px; margin: 24px auto 40px; }
+            .form-wrapper { padding: 24px 18px; }
+            .price-row { grid-template-columns: 1fr; }
+            .two-col { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
+
+    <div id="page-loader">
+        <div class="loader-logo">cheap<em>let</em></div>
+        <div class="loader-dots">
+            <span></span><span></span><span></span>
+        </div>
+    </div>
+
     <header>
-        <div class="container header-content">
-            <a href="/index.html" class="logo">Cheap<span>let</span></a>
-            <nav><ul></ul></nav>
-            <div class="header-auth-buttons"></div>
+        <div class="header-inner">
+            <a href="/index.html" class="logo">cheap<em>let</em></a>
+            <nav>
+                <ul>
+                    <li><a href="/search.html">Browse</a></li>
+                    <li><a href="/my-listings.html">My Listings</a></li>
+                    <li><a href="/messages.html">Messages</a></li>
+                </ul>
+            </nav>
+            <div class="header-right"></div>
         </div>
     </header>
 
-    <main class="container">
-        <div id="info-container">
-            <p class="info-message">Loading listing...</p>
+    <div class="page-hero">
+        <div class="page-hero-inner">
+            <h1 id="ui-main-title">Edit Your Listing</h1>
+            <p id="ui-main-subtitle">Update your item details.</p>
         </div>
+    </div>
 
-        <section id="edit-form-container" class="firebase-form-section" style="display: none;">
-            <h2 id="ui-main-title">Edit Your Listing</h2>
-            
-            <div class="form-field">
-                <label id="ui-label-title">Title</label>
-                <input type="text" id="listing-title" required>
-            </div>
+    <div class="form-outer">
+        <div id="main-form-section" style="display: none;">
+            <div class="form-wrapper">
+                <form id="listing-form">
 
-            <div class="form-field">
-                <label id="ui-label-desc">Description</label>
-                <textarea id="listing-description" required></textarea>
-            </div>
+                    <div class="form-section">
+                        <div class="section-label"><i class="fas fa-pen"></i> <span id="ui-sec-basic">Basic Info</span></div>
 
-            <div style="display: flex; gap: 15px;">
-                <div style="flex: 1;" class="form-field">
-                    <label id="ui-label-price">Sale Price ($) - Max $1200</label>
-                    <input type="text" inputmode="decimal" id="listing-price" placeholder="0.00" required 
-                           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 1200) this.value = '1200';">
-                </div>
-                <div style="flex: 1;" class="form-field">
-                    <label id="ui-label-orig-price">Original Price ($) - Max $5000</label>
-                    <input type="text" inputmode="decimal" id="listing-original-price" placeholder="0.00" 
-                           oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 5000) this.value = '5000';">
-                </div>
-            </div>
+                        <label class="field-label" id="ui-label-title">Title</label>
+                        <input type="text" id="listing-title" maxlength="80" required>
 
-            <div class="form-field">
-                <label id="ui-label-condition">Condition</label>
-                <select id="listing-condition" required>
-                    <option value="" id="opt-cond-select">Select Condition</option>
-                    <option value="New" id="opt-cond-new">New</option>
-                    <option value="Like New" id="opt-cond-likenew">Like New</option>
-                    <option value="Good" id="opt-cond-good">Good</option>
-                    <option value="Fair" id="opt-cond-fair">Fair</option>
-                </select>
-            </div>
+                        <label class="field-label" id="ui-label-desc">Description</label>
+                        <textarea id="listing-description" maxlength="1500" required></textarea>
 
-            <div class="form-field">
-                <label id="ui-label-details">Additional Details</label>
-                <div class="checkbox-group">
-                    <label class="checkbox-item"><input type="checkbox" id="cond-writing"> <span id="ui-check-writing">Writing inside</span></label>
-                    <label class="checkbox-item"><input type="checkbox" id="cond-water"> <span id="ui-check-water">Water damage</span></label>
-                    <label class="checkbox-item"><input type="checkbox" id="cond-missing"> <span id="ui-check-missing">Missing pages</span></label>
-                </div>
-            </div>
+                        <div class="price-row">
+                            <div>
+                                <label class="field-label" id="ui-label-price">Sale Price ($)</label>
+                                <input type="text" inputmode="decimal" id="listing-price" placeholder="0.00" required
+                                       oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 1200) this.value = '1200';">
+                            </div>
+                            <div>
+                                <label class="field-label" id="ui-label-orig-price">Original Price ($)</label>
+                                <input type="text" inputmode="decimal" id="listing-original-price" placeholder="0.00"
+                                       oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 5000) this.value = '5000';">
+                            </div>
+                        </div>
+                    </div>
 
-            <div class="form-field">
-                <label id="ui-label-code">Digital Access Code</label>
-                <select id="listing-digital-code">
-                    <option value="Not applicable" id="opt-code-na">Not applicable</option>
-                    <option value="Available / Unused" id="opt-code-avail">Available / Unused</option>
-                    <option value="Already used" id="opt-code-used">Already used</option>
-                </select>
-            </div>
+                    <div class="form-section">
+                        <div class="section-label"><i class="fas fa-tags"></i> <span id="ui-sec-tags">Tags</span></div>
+                        <label class="field-label" id="ui-label-tags">Tags (Max 15)</label>
+                        <div class="tag-container" id="tag-container">
+                            <div id="selected-tags"></div>
+                            <input type="text" id="tag-input" autocomplete="off">
+                            <div class="suggestions-box" id="suggestions-box"></div>
+                        </div>
+                    </div>
 
-            <div class="form-field">
-                <label id="ui-label-tags">Tags</label>
-                <div class="tag-container" id="tag-container">
-                    <div id="selected-tags" style="display: flex; flex-wrap: wrap; gap: 8px;"></div>
-                    <input type="text" id="tag-input" autocomplete="off">
-                    <div class="suggestions-box" id="suggestions-box"></div>
-                </div>
-            </div>
+                    <div class="form-section">
+                        <div class="section-label"><i class="fas fa-book"></i> <span id="ui-sec-cond">Condition & Details</span></div>
 
-            <!-- 🔥 FIXED: Restricted strictly to Rosemont -->
-            <div class="form-field">
-                <label id="ui-label-location">Campus Location</label>
-                <select id="listing-location" required>
-                    <option value="Collège de Rosemont" selected>Collège de Rosemont</option>
-                </select>
-            </div>
+                        <div class="two-col">
+                            <div>
+                                <label class="field-label" id="ui-label-condition">Condition</label>
+                                <select id="listing-condition" required>
+                                    <option value="" id="opt-cond-select">Select Condition</option>
+                                    <option value="New" id="opt-cond-new">New</option>
+                                    <option value="Like New" id="opt-cond-likenew">Like New</option>
+                                    <option value="Good" id="opt-cond-good">Good</option>
+                                    <option value="Fair" id="opt-cond-fair">Fair</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label" id="ui-label-code">Digital Access Code</label>
+                                <select id="listing-digital-code">
+                                    <option value="Not applicable" id="opt-code-na">Not applicable</option>
+                                    <option value="Available / Unused" id="opt-code-avail">Available / Unused</option>
+                                    <option value="Already used" id="opt-code-used">Already used</option>
+                                </select>
+                            </div>
+                        </div>
 
-            <div class="form-field">
-                <label id="ui-label-meet">Meeting Point</label>
-                <input type="text" id="listing-meeting-point">
+                        <label class="field-label" id="ui-label-details">Additional Details</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-item"><input type="checkbox" id="cond-writing"> <span id="ui-check-writing">Writing inside</span></label>
+                            <label class="checkbox-item"><input type="checkbox" id="cond-water"> <span id="ui-check-water">Water damage</span></label>
+                            <label class="checkbox-item"><input type="checkbox" id="cond-missing"> <span id="ui-check-missing">Missing pages</span></label>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="section-label"><i class="fas fa-location-dot"></i> <span id="ui-sec-loc">Location</span></div>
+
+                        <div class="two-col">
+                            <div>
+                                <label class="field-label" id="ui-label-location">Campus Location</label>
+                                <select id="listing-location" required>
+                                    <option value="Collège de Rosemont">Collège de Rosemont</option>
+                                    <option value="Cégep de Jonquière">Cégep de Jonquière</option>
+                                    <option value="Cégep de Lanaudière">Cégep de Lanaudière</option>
+                                    <option value="Cégep Maisonneuve">Cégep Maisonneuve</option>
+                                    <option value="Cégep Marie-Victorin">Cégep Marie-Victorin</option>
+                                    <option value="Collège Ahuntsic">Collège Ahuntsic</option>
+                                    <option value="Dawson College">Dawson College</option>
+                                    <option value="Université de Sherbrooke">Université de Sherbrooke</option>
+                                    <option value="Université Laval">Université Laval</option>
+                                    <option value="Global Campus">Other / Global Campus</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label" id="ui-label-meet">Meeting Point</label>
+                                <input type="text" id="listing-meeting-point" maxlength="60">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <div class="section-label"><i class="fas fa-camera"></i> <span id="ui-sec-photo">Photos</span></div>
+                        <label class="field-label" id="ui-label-photos">Photos (Max 5, Max 5MB each)</label>
+                        <div id="image-uploader">
+                            <div class="image-preview-grid" id="image-preview-container"></div>
+                            <label for="listing-image-input" id="add-photo-label">
+                                <i class="fas fa-plus"></i>
+                                <span id="ui-btn-add-photo">Add Photo</span>
+                            </label>
+                            <input type="file" id="listing-image-input" accept="image/*">
+                        </div>
+                    </div>
+
+                    <div class="form-buttons">
+                        <button type="button" class="btn-submit" id="updateListingBtn">
+                            <i class="fas fa-save"></i>
+                            <span id="post-btn-text">Save Changes</span>
+                        </button>
+                        <button type="button" class="btn-cancel" id="cancelEditBtn">Cancel</button>
+                    </div>
+
+                </form>
             </div>
-            
-            <div class="form-field">
-                <label id="ui-label-photos">Photos (Max 5, Max 5MB each)</label>
-                <div id="image-uploader">
-                    <div class="image-preview-grid" id="image-preview-container"></div>
-                    <label for="listing-image-input" id="add-photo-label" style="margin-top:10px;">
-                        <i class="fas fa-camera"></i>
-                        <span style="font-size: 10px;" id="ui-btn-add-photo">Add Photo</span>
-                    </label>
-                    <input type="file" id="listing-image-input" accept="image/*" style="display:none;">
-                </div>
-            </div>
-            
-            <div class="form-buttons">
-                <button class="btn" id="updateListingBtn">Save Changes</button>
-                <button class="btn btn-secondary" id="cancelEditBtn">Cancel</button>
-            </div>
-        </section>
-    </main>
+        </div>
+    </div>
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, updateDoc, setDoc, increment, query, where, collection, getDocs, limit } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, collection, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -171,52 +300,54 @@
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
-
-            const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`;
+            
             const UPLOAD_PRESET = config.cloudinary.uploadPreset;
 
-            const infoContainer = document.getElementById('info-container');
-            const editFormContainer = document.getElementById('edit-form-container');
-            const tagInput = document.getElementById('tag-input');
-            const selectedTagsContainer = document.getElementById('selected-tags');
-            const suggestionsBox = document.getElementById('suggestions-box');
-            const previewContainer = document.getElementById('image-preview-container');
-
-            let existingImageUrls = [];
-            let newImageFiles = [];
-            let tags = [];
-
-            // 🔥 FIXED: Direct Local Translations
             const lang = localStorage.getItem('preferred_language') || 'en';
             const ui = {
                 en: {
-                    mainTitle: "Edit Your Listing", lblTitle: "Title", lblDesc: "Description", lblPrice: "Sale Price ($) - Max $1200", 
-                    lblOrigPrice: "Original Price ($) - Max $5000", lblTags: "Tags (Max 15)", tagPlace: "Type and press Enter...",
+                    mainTitle: "Edit Your Listing", mainSub: "Update your item details.",
+                    secBasic: "Basic Info", secTags: "Tags", secCond: "Condition & Details", secLoc: "Location", secPhoto: "Photos",
+                    lblTitle: "Title", lblDesc: "Description",
+                    lblPrice: "Sale Price ($) — Max $1200", lblOrigPrice: "Original Price ($) — Max $5000",
+                    lblTags: "Tags (Max 15)", tagPlace: "Type and press Enter…",
                     lblCond: "Condition", optCondSel: "Select Condition", optNew: "New", optLikeNew: "Like New", optGood: "Good", optFair: "Fair",
                     lblCode: "Digital Access Code", optNa: "Not applicable", optAvail: "Available / Unused", optUsed: "Already used",
                     lblLoc: "Campus Location", lblMeet: "Meeting Point (Max 60 chars)", meetPlace: "e.g., Near Library",
                     lblDet: "Additional Details", chkWrite: "Writing inside", chkWater: "Water damage", chkMiss: "Missing pages",
                     lblPhotos: "Photos (Max 5, Max 5MB each)", btnAddPhoto: "Add Photo", btnPost: "Save Changes", btnCancel: "Cancel",
-                    priceErr: "Max price is $1200.", origPriceErr: "Original price cannot exceed $5000.", 
-                    imgTypeErr: "Unsupported file type. Please upload an image.", imgSizeErr: "Image too large (Max 5MB).", 
-                    saving: "Saving...", tagUses: "uses"
+                    priceErr: "Price cannot exceed $1200.", origPriceErr: "Original price cannot exceed $5000.",
+                    imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type.",
+                    imgSizeErr: "Image too large (Max 5MB).", saving: "Saving Changes…",
+                    tagLimit: "Max 15 tags allowed.",
+                    tagUses: "uses"
                 },
                 fr: {
-                    mainTitle: "Modifier votre annonce", lblTitle: "Titre", lblDesc: "Description", lblPrice: "Prix de vente ($) - Max 1200$", 
-                    lblOrigPrice: "Prix d'origine ($) - Max 5000$", lblTags: "Mots-clés (Max 15)", tagPlace: "Tapez et appuyez sur Entrée...",
+                    mainTitle: "Modifier votre annonce", mainSub: "Mettez à jour les détails de votre article.",
+                    secBasic: "Infos de base", secTags: "Mots-clés", secCond: "État et Détails", secLoc: "Emplacement", secPhoto: "Photos",
+                    lblTitle: "Titre", lblDesc: "Description",
+                    lblPrice: "Prix de vente ($) — Max 1200$", lblOrigPrice: "Prix d'origine ($) — Max 5000$",
+                    lblTags: "Mots-clés (Max 15)", tagPlace: "Tapez et appuyez sur Entrée…",
                     lblCond: "État", optCondSel: "Sélectionner l'état", optNew: "Neuf", optLikeNew: "Comme neuf", optGood: "Bon état", optFair: "Acceptable",
                     lblCode: "Code d'accès numérique", optNa: "Non applicable", optAvail: "Disponible / Inutilisé", optUsed: "Déjà utilisé",
                     lblLoc: "Emplacement du campus", lblMeet: "Point de rencontre (Max 60 car.)", meetPlace: "ex: Près de la bibliothèque",
                     lblDet: "Détails supplémentaires", chkWrite: "Écritures à l'intérieur", chkWater: "Dommages causés par l'eau", chkMiss: "Pages manquantes",
                     lblPhotos: "Photos (Max 5, Max 5MB chacune)", btnAddPhoto: "Ajouter une photo", btnPost: "Enregistrer", btnCancel: "Annuler",
-                    priceErr: "Le prix max est de 1200$.", origPriceErr: "Le prix d'origine ne peut dépasser 5000$.", 
-                    imgTypeErr: "Format non supporté. Veuillez télécharger une image.", imgSizeErr: "Image trop lourde (Max 5MB).", 
-                    saving: "Enregistrement...", tagUses: "utilisations"
+                    priceErr: "Le prix ne peut dépasser 1200$.", origPriceErr: "Le prix d'origine ne peut dépasser 5000$.",
+                    imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté.",
+                    imgSizeErr: "Image trop lourde (Max 5MB).", saving: "Enregistrement…",
+                    tagLimit: "Maximum 15 tags autorisés.",
+                    tagUses: "utilisations"
                 }
             };
 
-            // Apply translations to UI
             document.getElementById('ui-main-title').textContent = ui[lang].mainTitle;
+            document.getElementById('ui-main-subtitle').textContent = ui[lang].mainSub;
+            document.getElementById('ui-sec-basic').textContent = ui[lang].secBasic;
+            document.getElementById('ui-sec-tags').textContent = ui[lang].secTags;
+            document.getElementById('ui-sec-cond').textContent = ui[lang].secCond;
+            document.getElementById('ui-sec-loc').textContent = ui[lang].secLoc;
+            document.getElementById('ui-sec-photo').textContent = ui[lang].secPhoto;
             document.getElementById('ui-label-title').textContent = ui[lang].lblTitle;
             document.getElementById('ui-label-desc').textContent = ui[lang].lblDesc;
             document.getElementById('ui-label-price').textContent = ui[lang].lblPrice;
@@ -242,9 +373,21 @@
             document.getElementById('ui-check-missing').textContent = ui[lang].chkMiss;
             document.getElementById('ui-label-photos').textContent = ui[lang].lblPhotos;
             document.getElementById('ui-btn-add-photo').textContent = ui[lang].btnAddPhoto;
-            document.getElementById('updateListingBtn').textContent = ui[lang].btnPost;
+            document.getElementById('post-btn-text').textContent = ui[lang].btnPost;
             document.getElementById('cancelEditBtn').textContent = ui[lang].btnCancel;
 
+            const pageLoader = document.getElementById('page-loader');
+            const mainForm = document.getElementById('main-form-section');
+            const tagInput = document.getElementById('tag-input');
+            const selectedTagsContainer = document.getElementById('selected-tags');
+            const suggestionsBox = document.getElementById('suggestions-box');
+            const previewContainer = document.getElementById('image-preview-container');
+            const imageInput = document.getElementById('listing-image-input');
+
+            let existingImageUrls = [];
+            let newImageFiles = [];
+            let tags = [];
+            let currentListingId = new URLSearchParams(window.location.search).get('id');
 
             // --- TAG SYSTEM LOGIC ---
             function renderTags() {
@@ -252,13 +395,15 @@
                 tags.forEach((tag, index) => {
                     const chip = document.createElement('div');
                     chip.className = 'tag-chip';
-                    chip.innerHTML = `${tag} <span style="cursor:pointer; margin-left:5px;" onclick="window.removeTag(${index})">&times;</span>`;
+                    chip.innerHTML = `${tag} <span class="remove-tag" onclick="window.removeTag(${index})">&times;</span>`;
                     selectedTagsContainer.appendChild(chip);
                 });
             }
             window.removeTag = (index) => { tags.splice(index, 1); renderTags(); };
+            
             function addTag(tagName) {
                 const cleaned = tagName.trim();
+                if (tags.length >= 15) { alert(ui[lang].tagLimit); return; }
                 if (cleaned && !tags.includes(cleaned)) { tags.push(cleaned); renderTags(); }
                 tagInput.value = ''; suggestionsBox.style.display = 'none';
             }
@@ -266,25 +411,19 @@
             tagInput.oninput = async (e) => {
                 const val = e.target.value.trim().toLowerCase();
                 if (val.length < 1) { suggestionsBox.style.display = 'none'; return; }
-                const q = query(collection(db, "global_tags"), where("tag_lowercase", ">=", val), where("tag_lowercase", "<=", val + "\uf8ff"), limit(5));
-                const snap = await getDocs(q);
+                const snap = await getDocs(query(collection(db, "global_tags"), where("tag_lowercase", ">=", val), where("tag_lowercase", "<=", val + "\uf8ff"), limit(5)));
                 suggestionsBox.innerHTML = '';
                 if (!snap.empty) {
                     suggestionsBox.style.display = 'block';
                     snap.forEach(doc => {
-                        const d = doc.data();
                         const div = document.createElement('div');
                         div.className = 'suggestion-item';
-                        div.innerHTML = `<span>${d.tag}</span> <span style="font-size:0.8rem; color:#888; background:#f0f0f0; padding:2px 8px; border-radius:10px;">${d.count || 1} ${ui[lang].tagUses}</span>`;
-                        div.onclick = () => addTag(d.tag);
+                        div.innerHTML = `<span>${doc.data().tag}</span><span class="suggestion-count">${doc.data().count || 1} ${ui[lang].tagUses}</span>`;
+                        div.onmousedown = (ev) => { ev.preventDefault(); addTag(doc.data().tag); };
                         suggestionsBox.appendChild(div);
                     });
-                } else {
-                    suggestionsBox.style.display = 'block';
-                    suggestionsBox.innerHTML = `<div class="suggestion-item" onclick="window.addTagManual()">Create: "${tagInput.value}"</div>`;
                 }
             };
-            window.addTagManual = () => addTag(tagInput.value);
             tagInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput.value); } };
 
             // --- IMAGE LOGIC WITH VALIDATION ---
@@ -300,6 +439,7 @@
                     const btn = document.createElement('button');
                     btn.className = 'remove-image-btn';
                     btn.innerHTML = '&times;';
+                    btn.type = 'button';
                     btn.onclick = () => {
                         if (typeof img === 'string') existingImageUrls.splice(existingImageUrls.indexOf(img), 1);
                         else newImageFiles.splice(newImageFiles.indexOf(img), 1);
@@ -311,52 +451,84 @@
                 document.getElementById('add-photo-label').style.display = all.length < 5 ? 'flex' : 'none';
             }
             
-            document.getElementById('listing-image-input').onchange = (e) => {
+            imageInput.onchange = (e) => {
                 const file = e.target.files[0];
                 if (file) {
                     if (!file.type.startsWith('image/')) { alert(ui[lang].imgTypeErr); e.target.value = ''; return; }
                     if (file.size > 5 * 1024 * 1024) { alert(ui[lang].imgSizeErr); e.target.value = ''; return; }
                     newImageFiles.push(file); renderPreviews(); 
                 }
+                e.target.value = ''; // Reset input
             };
 
             // --- DATA LOAD ---
             async function fetchAndPopulate(listingId, userId) {
-                const snap = await getDoc(doc(db, 'listings', listingId));
-                if (snap.exists()) {
-                    const d = snap.data();
-                    if (d.posterUid !== userId) { infoContainer.innerHTML = "<p>Unauthorized</p>"; return; }
-                    
-                    document.getElementById('listing-title').value = d.title;
-                    document.getElementById('listing-description').value = d.description;
-                    document.getElementById('listing-price').value = d.price;
-                    document.getElementById('listing-original-price').value = d.originalPrice || "";
-                    document.getElementById('listing-condition').value = d.condition || "";
-                    document.getElementById('listing-digital-code').value = d.digitalCode || "Not applicable";
-                    
-                    // Always default to Rosemont since it's the only option now
-                    document.getElementById('listing-location').value = "Collège de Rosemont";
+                try {
+                    const snap = await getDoc(doc(db, 'listings', listingId));
+                    if (snap.exists()) {
+                        const d = snap.data();
+                        
+                        // Check if user is owner or admin
+                        const userSnap = await getDoc(doc(db, "users", userId));
+                        const isAdmin = userSnap.exists() && userSnap.data().role === 'admin';
+                        
+                        if (d.posterUid !== userId && !isAdmin) { 
+                            window.location.href = '/index.html'; 
+                            return; 
+                        }
+                        
+                        document.getElementById('listing-title').value = d.title || "";
+                        document.getElementById('listing-description').value = d.description || "";
+                        document.getElementById('listing-price').value = d.price || "";
+                        document.getElementById('listing-original-price').value = d.originalPrice || "";
+                        document.getElementById('listing-condition').value = d.condition || "";
+                        document.getElementById('listing-digital-code').value = d.digitalCode || "Not applicable";
+                        
+                        // Try to set location, otherwise fallback to first option
+                        const locSelect = document.getElementById('listing-location');
+                        if (d.location) {
+                            let optionExists = Array.from(locSelect.options).some(opt => opt.value === d.location);
+                            if (optionExists) locSelect.value = d.location;
+                        }
 
-                    document.getElementById('listing-meeting-point').value = d.meetingPoint || "";
-                    document.getElementById('cond-writing').checked = d.hasWriting || false;
-                    document.getElementById('cond-water').checked = d.hasWaterDamage || false;
-                    document.getElementById('cond-missing').checked = d.hasMissingPages || false;
-                    
-                    tags = d.tags || [];
-                    existingImageUrls = d.imageUrls || [];
-                    renderTags(); renderPreviews();
-                    infoContainer.style.display = 'none'; editFormContainer.style.display = 'block';
+                        document.getElementById('listing-meeting-point').value = d.meetingPoint || "";
+                        document.getElementById('cond-writing').checked = d.hasWriting === true;
+                        document.getElementById('cond-water').checked = d.hasWaterDamage === true;
+                        document.getElementById('cond-missing').checked = d.hasMissingPages === true;
+                        
+                        tags = d.tags || [];
+                        existingImageUrls = d.imageUrls || [];
+                        renderTags(); 
+                        renderPreviews();
+                        
+                        pageLoader.style.display = 'none';
+                        mainForm.style.display = 'block';
+                    } else {
+                        window.location.href = '/index.html';
+                    }
+                } catch(e) {
+                    console.error("Error loading listing:", e);
+                    window.location.href = '/index.html';
                 }
             }
 
             onAuthStateChanged(auth, user => {
-                const id = new URLSearchParams(window.location.search).get('id');
-                if (user && id) fetchAndPopulate(id, user.uid);
-                else if (!user) window.location.href = '/LoginInToCheaplet.html';
+                if (user && currentListingId) {
+                    fetchAndPopulate(currentListingId, user.uid);
+                } else if (!user) {
+                    window.location.href = '/LoginInToCheaplet.html';
+                } else {
+                    window.location.href = '/index.html';
+                }
             });
 
             // --- SAVE ---
             document.getElementById('updateListingBtn').onclick = async () => {
+                if(!document.getElementById('listing-title').checkValidity() || !document.getElementById('listing-price').checkValidity() || !document.getElementById('listing-description').checkValidity()) {
+                    document.getElementById('listing-form').reportValidity();
+                    return;
+                }
+
                 const priceVal = document.getElementById('listing-price').value;
                 const price = priceVal ? parseFloat(priceVal) : 0;
                 if (price > 1200) { alert(ui[lang].priceErr); return; }
@@ -365,18 +537,33 @@
                 const originalPrice = originalPriceVal ? parseFloat(originalPriceVal) : null;
                 if (originalPrice && originalPrice > 5000) { alert(ui[lang].origPriceErr); return; }
                 
+                if (existingImageUrls.length === 0 && newImageFiles.length === 0) {
+                    alert(ui[lang].imgErr); return;
+                }
+
                 const btn = document.getElementById('updateListingBtn');
-                btn.disabled = true; btn.textContent = ui[lang].saving;
+                const btnText = document.getElementById('post-btn-text');
+                btn.disabled = true; 
+                btnText.textContent = ui[lang].saving;
 
                 try {
-                    const uploaded = [];
-                    for (const f of newImageFiles) {
-                        const fd = new FormData(); fd.append('file', f); fd.append('upload_preset', UPLOAD_PRESET);
-                        const res = await fetch(CLOUDINARY_URL, { method: 'POST', body: fd }).then(r => r.json());
-                        uploaded.push(res.secure_url);
+                    const uploadedUrls = [];
+                    for (const file of newImageFiles) {
+                        const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
+                        const formData = new FormData(); 
+                        formData.append('file', file); 
+                        formData.append('api_key', signRes.apiKey);
+                        formData.append('timestamp', signRes.timestamp); 
+                        formData.append('signature', signRes.signature);
+                        formData.append('upload_preset', signRes.uploadPreset);
+
+                        const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { method: 'POST', body: formData }).then(r => r.json());
+                        if(res.secure_url) uploadedUrls.push(res.secure_url);
                     }
 
-                    await updateDoc(doc(db, 'listings', new URLSearchParams(window.location.search).get('id')), {
+                    const finalImages = [...existingImageUrls, ...uploadedUrls];
+
+                    await updateDoc(doc(db, 'listings', currentListingId), {
                         title: document.getElementById('listing-title').value.trim(),
                         description: document.getElementById('listing-description').value.trim(),
                         price: price,
@@ -389,12 +576,15 @@
                         hasWaterDamage: document.getElementById('cond-water').checked,
                         hasMissingPages: document.getElementById('cond-missing').checked,
                         tags: tags,
-                        imageUrls: [...existingImageUrls, ...uploaded]
+                        imageUrls: finalImages
                     });
 
-                    alert("Updated!");
-                    window.location.href = `/listing.html?id=${new URLSearchParams(window.location.search).get('id')}`;
-                } catch (e) { alert(e.message); btn.disabled = false; btn.textContent = ui[lang].btnPost; }
+                    window.location.href = `/listing.html?id=${currentListingId}`;
+                } catch (e) { 
+                    alert(e.message); 
+                    btn.disabled = false; 
+                    btnText.textContent = ui[lang].btnPost; 
+                }
             };
 
             document.getElementById('cancelEditBtn').onclick = () => window.history.back();
