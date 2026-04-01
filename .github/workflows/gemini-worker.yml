@@ -12,7 +12,6 @@ permissions:
 
 jobs:
   ai-task:
-    # Runs if you mention @gemini-cli in an issue or comment
     if: contains(github.event.issue.body, '@gemini-cli') || contains(github.event.comment.body, '@gemini-cli')
     runs-on: ubuntu-latest
     steps:
@@ -21,10 +20,22 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fix Gemini Config Directory
+        run: mkdir -p /home/runner/.gemini
+
       - name: Run Gemini
-        # We point to the main branch to ensure we get the latest version
         uses: google-github-actions/run-gemini-cli@main
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          # This is the secret sauce: it tells the AI to act on your issue
-          command: 'fix-issue'
+          # We pass the actual issue text as the prompt
+          prompt: |
+            You are a helpful assistant. Please look at the following GitHub issue and implement the requested changes in the repository.
+            
+            Issue Title: ${{ github.event.issue.title }}
+            Issue Body: ${{ github.event.issue.body }}
+            Comment Body: ${{ github.event.comment.body }}
+            
+            Instructions:
+            1. Modify the HTML files as requested.
+            2. If you create new files, ensure they are valid HTML.
+            3. When finished, use the git command to commit and push to a new branch.
