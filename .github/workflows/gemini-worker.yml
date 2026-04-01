@@ -1,37 +1,4 @@
-name: AI Junior Dev (Aider)
-on:
-  issues:
-    types: [opened, edited]
-  issue_comment:
-    types: [created]
-
-permissions:
-  contents: write
-  issues: write
-  pull-requests: write
-
-jobs:
-  aider-job:
-    # Only runs if the issue or comment contains the /fix command
-    if: contains(github.event.issue.body, '/fix') || contains(github.event.comment.body, '/fix')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-
-      - name: Install Aider
-        run: |
-          python -m pip install --upgrade pip
-          pip install aider-chat
-
-      - name: Run Aider
+- name: Run Aider
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           HOME: /home/runner
@@ -39,9 +6,9 @@ jobs:
           git config --global user.name "Gemini AI"
           git config --global user.email "ai@example.com"
           
-          # Added -latest to the model name to fix the 404
-          aider --model gemini/gemini-1.5-flash-latest \
-                --message "Task: ${{ github.event.issue.title }}. ${{ github.event.issue.body }} ${{ github.event.comment.body }}" \
+          # Simplified model name to match the 2026 API aliases
+          aider --model gemini/gemini-flash-latest \
+                --message "Task: ${{ github.event.issue.title }}. ${{ github.event.issue.body }}" \
                 --yes-always \
                 --auto-commits \
                 --map-tokens 0 \
