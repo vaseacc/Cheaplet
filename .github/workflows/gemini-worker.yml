@@ -34,19 +34,27 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           HOME: /home/runner
-          AIDER_ALLOW_RUN_COMMANDS: "true" # The correct 2026 flag for shell commands
+          AIDER_ALLOW_RUN_COMMANDS: "true"
+          # Safely pass GitHub text to environment variables to prevent bash syntax crashes
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
           git config --global user.name "Gemini AI"
-          git config --global user.email "ai@example.com"
+          git config --global user.email "ai@scoralia.com"
 
-          # 1. Capture the message and strip out the '/fix' text so Aider doesn't crash
-          RAW_MSG="${{ github.event.issue.title }} ${{ github.event.issue.body }} ${{ github.event.comment.body }}"
-          CLEAN_MSG=$(echo "$RAW_MSG" | sed 's/\/fix//g')
+          # 1. Combine the message safely and strip out the '/fix' trigger
+          RAW_MSG="$ISSUE_TITLE $ISSUE_BODY $COMMENT_BODY"
+          CLEAN_MSG=$(echo "$RAW_MSG" | sed 's/\/fix//g' | xargs)
 
-          # 2. Run Aider with the cleaned instruction
-          # --suggest-shell-commands lets it actually run 'rm' or 'mv'
+          # 2. Inject strict Context so the AI knows exactly where it is and how to behave
+          SYSTEM_PROMPT="You are an autonomous AI developer operating directly in a GitHub repository via GitHub Actions. IMPORTANT: Make precise, surgical edits using SEARCH/REPLACE blocks. DO NOT output entire files. Task: "
+          FINAL_PROMPT="$SYSTEM_PROMPT $CLEAN_MSG"
+
+          # 3. Run Aider with the diff format flag
           aider --model gemini/gemini-2.5-flash \
-                --message "$CLEAN_MSG" \
+                --edit-format diff \
+                --message "$FINAL_PROMPT" \
                 --yes-always \
                 --auto-commits \
                 --map-tokens 0 \
@@ -54,7 +62,7 @@ jobs:
                 --suggest-shell-commands \
                 --exit
 
-          # 3. The 'Safety Net' - if the AI deleted it but didn't commit, we do it here
+          # 4. The 'Safety Net' - if the AI edited files but didn't commit, we do it here
           git add .
-          git commit -m "AI autonomous update" || echo "No changes to commit"
+          git commit -m "AI autonomous update via GitHub Actions" || echo "No changes to commit"
           git push origin main
