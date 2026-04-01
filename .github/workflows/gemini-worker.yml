@@ -1,4 +1,4 @@
-name: Gemini AI Agent
+name: AI Junior Developer (Aider)
 on:
   issues:
     types: [opened, edited]
@@ -11,31 +11,28 @@ permissions:
   pull-requests: write
 
 jobs:
-  ai-task:
-    if: contains(github.event.issue.body, '@gemini-cli') || contains(github.event.comment.body, '@gemini-cli')
+  aider-job:
+    # Only runs if you mention @aider or if it's an issue you want fixed
+    if: contains(github.event.issue.body, '/fix') || contains(github.event.comment.body, '/fix')
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repo
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Fix Gemini Config Directory
-        run: mkdir -p /home/runner/.gemini
-
-      - name: Run Gemini
-        uses: google-github-actions/run-gemini-cli@main
+      - name: Run Aider to fix issue
+        uses: p0nk/aider-github-action@main
         with:
+          # Your Gemini Key
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          # We pass the actual issue text as the prompt
-          prompt: |
-            You are a helpful assistant. Please look at the following GitHub issue and implement the requested changes in the repository.
-            
-            Issue Title: ${{ github.event.issue.title }}
-            Issue Body: ${{ github.event.issue.body }}
-            Comment Body: ${{ github.event.comment.body }}
-            
-            Instructions:
-            1. Modify the HTML files as requested.
-            2. If you create new files, ensure they are valid HTML.
-            3. When finished, use the git command to commit and push to a new branch.
+          # The model that works best for HTML/CSS
+          aider_model: gemini/gemini-1.5-pro
+          # The instructions from your GitHub Issue
+          aider_message: |
+            Fix the following issue:
+            Title: ${{ github.event.issue.title }}
+            Description: ${{ github.event.issue.body }}
+            Comment: ${{ github.event.comment.body }}
+          # Tell Aider to commit the changes
+          aider_args: "--auto-commit --no-show-diffs"
