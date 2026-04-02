@@ -1,5 +1,4 @@
 exports.handler = async (event, context) => {
-    // 1. CORS Headers
     const corsHeaders = {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Headers": "Content-Type",
@@ -12,13 +11,18 @@ exports.handler = async (event, context) => {
         const data = JSON.parse(event.body);
         let { imageUrls, title, description } = data;
 
-        if (!imageUrls || imageUrls.length === 0) {
-            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Listings must include at least one valid image." }) };
+        // 1. STRICT INPUT CHECK
+        if (!imageUrls || !Array.isArray(imageUrls) || imageUrls.length === 0) {
+            return { 
+                statusCode: 200, 
+                headers: corsHeaders, 
+                body: JSON.stringify({ verdict: "UNSAFE", reason: "No images detected. You must upload a clear photo of the item." }) 
+            };
         }
 
         const GEMINI_KEY = process.env.VITE_GEMINI_API_KEY;
 
-        // --- Step 2: Download images in Parallel ---
+        // 2. DOWNLOAD IMAGES WITH ERROR TRACKING
         const imagesToScan = imageUrls.slice(0, 3); 
         const imagePromises = imagesToScan.map(async (imgUrl) => {
             try {
@@ -33,35 +37,34 @@ exports.handler = async (event, context) => {
 
         const imageDataArray = (await Promise.all(imagePromises)).filter(img => img !== null);
 
+        // FAIL-CLOSED: If we couldn't download the images, don't let it through.
         if (imageDataArray.length === 0) {
-            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Failed to process the uploaded images." }) };
+            return { 
+                statusCode: 200, 
+                headers: corsHeaders, 
+                body: JSON.stringify({ verdict: "UNSAFE", reason: "Image processing failed. Please ensure your photos are valid JPG/PNG files." }) 
+            };
         }
 
-        // --- Step 3: ULTRA-STRICT AI PROMPT ---
-        const prompt = `You are a ruthless, zero-tolerance safety AI for a college student marketplace. 
-        Analyze the image(s) AND the text provided below.
+        // 3. ULTRA-STRICT PROMPT
+        const prompt = `You are a ruthless Safety AI for a student marketplace. 
+        Analyze the image and text: Title: "${title}", Desc: "${description}".
 
-        LISTING TITLE: "${title}"
-        LISTING DESCRIPTION: "${description}"
+        REJECT (UNSAFE) IMMEDIATELY IF:
+        - The image is PITCH BLACK, extremely dark, or empty.
+        - The image is a random landscape, nature photo, or meme (SPAM).
+        - The image is pornographic, suggestive, or shows lingerie/swimwear.
+        - The text contains the word "porn" or other explicit slurs.
+        - The image is a screenshot of a website or an advertisement.
 
-        CRITICAL REJECTION RULES (MARK UNSAFE IMMEDIATELY IF ANY ARE TRUE):
-        1. PORNOGRAPHY & NUDITY: Any nudity, sexual poses, lingerie, swimwear, hentai, or sexually explicit text/titles (e.g. the word "porn").
-        2. SPAM & IRRELEVANCE: If the image is a random landscape, nature photo, meme, screenshot of text, pitch-black image, blurry mess, or clearly NOT a product being sold.
-        3. DANGEROUS ITEMS: Weapons, drugs, vaping, alcohol.
-        4. INAPPROPRIATE TEXT: If the title or description contains profanity, sexual words, or slurs.
+        APPROVE (SAFE) ONLY IF:
+        - It is a CLEAR photo of a physical student item (textbook, laptop, clothes, furniture).
 
-        APPROVAL RULES:
-        - Mark SAFE ONLY if the image clearly shows a legitimate physical item for sale (e.g., textbook, laptop, calculator, desk, jacket) AND the text is appropriate.
+        JSON OUTPUT ONLY:
+        {"verdict": "SAFE", "reason": "valid"} or {"verdict": "UNSAFE", "reason": "reason here"}`;
 
-        OUTPUT EXACTLY THIS RAW JSON FORMAT AND NOTHING ELSE:
-        {"verdict": "SAFE", "reason": "Valid item."}
-        or
-        {"verdict": "UNSAFE", "reason": "Detailed explanation of what rule was broken"}
-        `;
-
-        // --- Step 4: Ask Gemini 2.0 Flash (Smarter Model) ---
-        let isUnsafe = false;
-        let finalReason = "";
+        // 4. CALL GEMINI
+        let finalVerdict = { verdict: "UNSAFE", reason: "Security system timeout or error." };
 
         const aiPromises = imageDataArray.map(async (img) => {
             const aiRes = await fetch(
@@ -80,43 +83,32 @@ exports.handler = async (event, context) => {
         const aiResults = await Promise.all(aiPromises);
 
         for (const aiData of aiResults) {
-            // Check Google's hard filters
+            // Check for Google Safety Block
             if (aiData.candidates && aiData.candidates[0]?.finishReason === "SAFETY") {
-                isUnsafe = true;
-                finalReason = "Google internal safety filters blocked the explicit content.";
-                break;
+                return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Content blocked by safety filters." }) };
             }
 
             if (aiData.candidates && aiData.candidates[0]?.content?.parts?.[0]?.text) {
-                let aiText = aiData.candidates[0].content.parts[0].text;
-                aiText = aiText.replace(/```json/gi, '').replace(/```/g, '').trim();
-
+                let aiText = aiData.candidates[0].content.parts[0].text.replace(/```json/gi, '').replace(/```/g, '').trim();
                 try {
                     const result = JSON.parse(aiText);
                     if (result.verdict === "UNSAFE") {
-                        isUnsafe = true;
-                        finalReason = result.reason;
-                        break; 
+                        return { statusCode: 200, headers: corsHeaders, body: JSON.stringify(result) };
                     }
+                    finalVerdict = { verdict: "SAFE" }; // If we reach here and it's not unsafe, it's safe.
                 } catch (e) {
+                    // Fail-closed on parsing error
                     if (aiText.toUpperCase().includes("UNSAFE")) {
-                        isUnsafe = true;
-                        finalReason = "AI flagged as unsafe.";
-                        break;
+                        return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "AI flagged content." }) };
                     }
                 }
             }
         }
 
-        // --- Step 5: Return Verdict to Frontend ---
-        if (isUnsafe) {
-            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: finalReason }) };
-        } else {
-            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "SAFE" }) };
-        }
+        return { statusCode: 200, headers: corsHeaders, body: JSON.stringify(finalVerdict) };
 
     } catch (error) {
-        console.error("Moderation error:", error);
-        return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: "Internal server error" }) };
+        // FAIL-CLOSED on system error
+        return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Moderation system error." }) };
     }
 };
