@@ -56,7 +56,18 @@ const translations = {
         "tour_username_checking": "Checking...",
         "warning_title": "Admin Warning",
         "warning_btn": "I Understand",
-        "contact": "Contact Us"
+        "contact": "Contact Us",
+
+        // Social Tour strings
+        "social_tour_title_1": "Welcome to the Campus Hub!",
+        "social_tour_desc_1": "This is where the campus community connects. Share updates, ask questions, and engage with fellow students.",
+        "social_tour_title_2": "Post & Share",
+        "social_tour_desc_2": "Write what's on your mind in the composer. You can attach images and even link your marketplace listings directly to your post.",
+        "social_tour_title_3": "School Feeds",
+        "social_tour_desc_3": "Use the filter bar to switch between <strong>Global Campus</strong> (everyone) and <strong>My School</strong> (verified students only). To access your school feed, you need a verified email from your institution.",
+        "social_tour_title_4": "Create Your Own Topic",
+        "social_tour_desc_4": "Click the <strong>Create Topic</strong> button in the sidebar. Start a discussion about study groups, events, or anything relevant to your campus.",
+        "social_tour_gotit": "Got it!"
     },
     "fr": {
         "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", "nav_hub": "Hub Campus",
@@ -88,7 +99,18 @@ const translations = {
         "tour_username_checking": "Vérification...",
         "warning_title": "Avertissement de l'Administration",
         "warning_btn": "J'ai compris",
-        "contact": "Nous contacter"
+        "contact": "Nous contacter",
+
+        // Social Tour strings (French)
+        "social_tour_title_1": "Bienvenue sur le Hub Campus !",
+        "social_tour_desc_1": "C'est l'espace où la communauté étudiante se connecte. Partagez des nouvelles, posez des questions et interagissez avec d'autres étudiants.",
+        "social_tour_title_2": "Publier et partager",
+        "social_tour_desc_2": "Écrivez ce qui vous passe par la tête dans le composeur. Vous pouvez joindre des images et même lier vos annonces de marché directement à votre publication.",
+        "social_tour_title_3": "Flux d'établissement",
+        "social_tour_desc_3": "Utilisez le filtre pour basculer entre <strong>Campus Global</strong> (tout le monde) et <strong>Mon école</strong> (étudiants vérifiés seulement). Pour accéder au fil de votre école, vous devez avoir un email scolaire vérifié.",
+        "social_tour_title_4": "Créez votre propre sujet",
+        "social_tour_desc_4": "Cliquez sur le bouton <strong>Créer un sujet</strong> dans la barre latérale. Lancez une discussion sur les groupes d'étude, les événements ou tout ce qui est pertinent pour votre campus.",
+        "social_tour_gotit": "Compris !"
     }
 };
 
@@ -273,6 +295,15 @@ onAuthStateChanged(auth, (user) => {
                 if (!currentUserData.hasSeenTour && !localStorage.getItem(tourKey)) {
                     showWelcomeTour();
                 }
+                // Social tour (separate key, only on social/topic pages)
+                const socialTourKey = `scoralia_social_tour_seen_${user.uid}`;
+                if (!currentUserData.hasSeenSocialTour && !localStorage.getItem(socialTourKey)) {
+                    // Check if we are on social.html or topic.html
+                    const path = window.location.pathname;
+                    if (path.includes('/social.html') || path.includes('/topic.html')) {
+                        showSocialTour();
+                    }
+                }
             } else {
                 const schoolInfo = getSchoolInfo(user.email);
                 setDoc(doc(db, "users", user.uid), {
@@ -343,6 +374,7 @@ function triggerHardLockdown(expireTimestamp) {
     setTimeout(() => { signOut(auth).then(() => { window.location.href = '/LoginInToCheaplet.html'; }); }, 5000);
 }
 
+// --- WELCOME TOUR (profile setup) ---
 function showWelcomeTour() {
     const user = auth.currentUser;
     if (!user) return;
@@ -536,11 +568,89 @@ function showWelcomeTour() {
     };
 }
 
+// --- SOCIAL TOUR (explains Campus Hub features) ---
+window.showSocialTour = () => {
+    const user = auth.currentUser;
+    if (!user) return;
+    const socialTourKey = `scoralia_social_tour_seen_${user.uid}`;
+    if (localStorage.getItem(socialTourKey) === 'true') return;
+    if (currentUserData && currentUserData.hasSeenSocialTour) { localStorage.setItem(socialTourKey, 'true'); return; }
+    if (document.querySelector('.lang-modal-overlay')) return;
+
+    const lang = localStorage.getItem('preferred_language') || 'en';
+    const t = translations[lang];
+
+    const overlay = document.createElement('div');
+    overlay.className = 'lang-modal-overlay';
+    overlay.style.zIndex = '10006';
+    overlay.innerHTML = `
+        <div class="lang-modal" style="padding: 30px 25px;">
+            <div id="social-tour-step-1">
+                <i class="fas fa-users fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
+                <h2 style="color:#0C1446; margin-bottom:12px; font-family:'Playfair Display', serif;">${t.social_tour_title_1}</h2>
+                <p style="color:#6b84a3; margin-bottom:25px; line-height:1.6; font-size:0.95rem;">${t.social_tour_desc_1}</p>
+                <button class="btn" id="social-tour-btn-1" style="width:100%;">${t.tour_next}</button>
+            </div>
+            <div id="social-tour-step-2" style="display:none;">
+                <i class="fas fa-edit fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
+                <h2 style="color:#0C1446; margin-bottom:12px; font-family:'Playfair Display', serif;">${t.social_tour_title_2}</h2>
+                <p style="color:#6b84a3; margin-bottom:25px; line-height:1.6; font-size:0.95rem;">${t.social_tour_desc_2}</p>
+                <button class="btn" id="social-tour-btn-2" style="width:100%;">${t.tour_next}</button>
+            </div>
+            <div id="social-tour-step-3" style="display:none;">
+                <i class="fas fa-filter fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
+                <h2 style="color:#0C1446; margin-bottom:12px; font-family:'Playfair Display', serif;">${t.social_tour_title_3}</h2>
+                <p style="color:#6b84a3; margin-bottom:25px; line-height:1.6; font-size:0.95rem;">${t.social_tour_desc_3}</p>
+                <button class="btn" id="social-tour-btn-3" style="width:100%;">${t.tour_next}</button>
+            </div>
+            <div id="social-tour-step-4" style="display:none;">
+                <i class="fas fa-plus-circle fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
+                <h2 style="color:#0C1446; margin-bottom:12px; font-family:'Playfair Display', serif;">${t.social_tour_title_4}</h2>
+                <p style="color:#6b84a3; margin-bottom:25px; line-height:1.6; font-size:0.95rem;">${t.social_tour_desc_4}</p>
+                <button class="btn" id="social-tour-btn-4" style="width:100%;">${t.social_tour_gotit}</button>
+            </div>
+            <div style="display:flex; justify-content:center; gap:8px; margin-top:25px;" id="social-tour-dots">
+                <div class="tour-dot active" id="social-dot-1"></div><div class="tour-dot" id="social-dot-2"></div>
+                <div class="tour-dot" id="social-dot-3"></div><div class="tour-dot" id="social-dot-4"></div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    document.getElementById('social-tour-btn-1').onclick = () => {
+        document.getElementById('social-tour-step-1').style.display = 'none';
+        document.getElementById('social-tour-step-2').style.display = 'block';
+        document.getElementById('social-dot-1').classList.remove('active');
+        document.getElementById('social-dot-2').classList.add('active');
+    };
+    document.getElementById('social-tour-btn-2').onclick = () => {
+        document.getElementById('social-tour-step-2').style.display = 'none';
+        document.getElementById('social-tour-step-3').style.display = 'block';
+        document.getElementById('social-dot-2').classList.remove('active');
+        document.getElementById('social-dot-3').classList.add('active');
+    };
+    document.getElementById('social-tour-btn-3').onclick = () => {
+        document.getElementById('social-tour-step-3').style.display = 'none';
+        document.getElementById('social-tour-step-4').style.display = 'block';
+        document.getElementById('social-dot-3').classList.remove('active');
+        document.getElementById('social-dot-4').classList.add('active');
+    };
+    document.getElementById('social-tour-btn-4').onclick = async () => {
+        await updateDoc(doc(db, "users", user.uid), { hasSeenSocialTour: true });
+        localStorage.setItem(socialTourKey, 'true');
+        overlay.remove();
+    };
+};
+
 function refreshUI() {
     if (currentUserData) { updateHeaderToLoggedIn(currentUserData); } 
     else {
         updateHeaderToLoggedOut();
-        if (globalSettings.enableLanguagePrompt && !sessionStorage.getItem('lang_picked_this_session')) { showLanguagePopup(); }
+        // Language prompt: only show if never selected (permanent) – no session flag needed
+        const langSelected = localStorage.getItem('preferred_language');
+        if (globalSettings.enableLanguagePrompt && !langSelected && !document.getElementById('lang-modal')) {
+            showLanguagePopup();
+        }
     }
     window.applyLanguage(localStorage.getItem('preferred_language') || 'en');
     showTermsBanner();
@@ -657,8 +767,14 @@ function showLanguagePopup() {
         </div>
     `;
     document.body.appendChild(modal);
-    document.getElementById('btn-en').onclick = () => { localStorage.setItem('preferred_language', 'en'); sessionStorage.setItem('lang_picked_this_session', 'true'); location.reload(); };
-    document.getElementById('btn-fr').onclick = () => { localStorage.setItem('preferred_language', 'fr'); sessionStorage.setItem('lang_picked_this_session', 'true'); location.reload(); };
+    document.getElementById('btn-en').onclick = () => {
+        localStorage.setItem('preferred_language', 'en');
+        location.reload();
+    };
+    document.getElementById('btn-fr').onclick = () => {
+        localStorage.setItem('preferred_language', 'fr');
+        location.reload();
+    };
 }
 
 function showTermsBanner() {
