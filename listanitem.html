@@ -597,9 +597,9 @@
                         if (res.secure_url) imageUrls.push(res.secure_url);
                     }
 
-                    postBtnText.textContent = "AI Safety Check...";
+                    postBtnText.innerHTML = `<i class="fas fa-shield-alt fa-spin"></i> Checking Safety...`;
 
-                    // CALL MODERATION BEFORE SAVING TO DB
+                    // CALL MODERATION
                     const aiRes = await fetch('/.netlify/functions/moderate-listing', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -613,17 +613,15 @@
                     const aiData = await aiRes.json();
 
                     if (aiData.verdict === "UNSAFE") {
-                        // SHOW POPUP AND STOP UPLOAD
                         reasonBox.textContent = aiData.reason || "Violates community guidelines.";
                         rejectedModal.style.display = 'flex';
                         submitBtn.disabled = false;
                         postBtnText.textContent = ui[lang].btnPost;
-                        return; // DO NOT SAVE TO DB!
+                        return; 
                     }
 
-                    // IF SAFE, SAVE AS ACTIVE DIRECTLY
+                    // IF SAFE, SAVE TO FIRESTORE
                     postBtnText.textContent = "Publishing...";
-                    
                     await addDoc(collection(db, 'listings'), {
                         title, description: desc, price, 
                         condition: document.getElementById('listing-condition').value,
@@ -632,14 +630,14 @@
                         tags, imageUrls,
                         posterUid: currentUser.uid,
                         posterDisplayName: currentUser.displayName || "User",
-                        status: 'active', // NO MORE PENDING!
+                        status: 'active',
                         timestamp: serverTimestamp()
                     });
 
                     window.location.href = `/my-listings.html`;
 
                 } catch (err) {
-                    alert(err.message);
+                    alert("Error: " + err.message);
                     submitBtn.disabled = false;
                     postBtnText.textContent = ui[lang].btnPost;
                 }
