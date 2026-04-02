@@ -2,110 +2,70 @@ exports.handler = async (event, context) => {
     // 1. CORS Headers
     const corsHeaders = {
         "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Headers": "Content-Type",
         "Access-Control-Allow-Methods": "POST, OPTIONS"
     };
 
-    if (event.httpMethod === "OPTIONS") {
-        return { statusCode: 200, headers: corsHeaders, body: "" };
-    }
-
-    if (event.httpMethod !== "POST") {
-        return { statusCode: 405, headers: corsHeaders, body: "Method Not Allowed" };
-    }
+    if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: corsHeaders, body: "" };
 
     try {
-        // Extract the user's login token from the frontend request
-        const authHeader = event.headers.authorization || event.headers.Authorization;
-        if (!authHeader) {
-            console.error("Missing Authorization header");
-            return { statusCode: 401, headers: corsHeaders, body: JSON.stringify({ error: "Unauthorized" }) };
-        }
-
         const data = JSON.parse(event.body);
-        let { listingId, imageUrls, title, description } = data;
+        let { imageUrls, title, description } = data;
 
-        if (!imageUrls) {
-            imageUrls = data.imageUrl ? [data.imageUrl] : [];
-        } else if (!Array.isArray(imageUrls)) {
-            imageUrls = [imageUrls];
+        if (!imageUrls || imageUrls.length === 0) {
+            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Listings must include at least one valid image." }) };
         }
-
-        if (!listingId) throw new Error("Missing listingId");
 
         const GEMINI_KEY = process.env.VITE_GEMINI_API_KEY;
-        const FB_KEY = process.env.VITE_FIREBASE_API_KEY;
-        const PROJ_ID = process.env.VITE_FIREBASE_PROJECT_ID;
 
-        console.log(`Starting AI scan for listing: ${listingId}`);
-
-        // --- Fetch listing details (Anonymous read allowed by rules) ---
-        const listingDocUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?key=${FB_KEY}`;
-        const listingRes = await fetch(listingDocUrl);
-        let posterUid = "unknown";
-        let posterName = "Unknown User";
-        if (listingRes.ok) {
-            const listingData = await listingRes.json();
-            const fields = listingData.fields || {};
-            posterUid = fields.posterUid?.stringValue || "unknown";
-            posterName = fields.posterDisplayName?.stringValue || "Unknown User";
-        }
-
-        if (imageUrls.length === 0) {
-            console.log("No images found. Approving automatically.");
-            return await approveListing(listingId, FB_KEY, PROJ_ID, corsHeaders, authHeader);
-        }
-
-        // --- Download images ---
+        // --- Step 2: Download images in Parallel ---
         const imagesToScan = imageUrls.slice(0, 3); 
         const imagePromises = imagesToScan.map(async (imgUrl) => {
             try {
                 const imgRes = await fetch(imgUrl);
                 if (!imgRes.ok) return null;
                 const buffer = await imgRes.arrayBuffer();
-                return { url: imgUrl, base64: Buffer.from(buffer).toString('base64') };
+                return { base64: Buffer.from(buffer).toString('base64') };
             } catch (err) {
-                console.error(`Failed to download ${imgUrl}:`, err.message);
                 return null; 
             }
         });
 
         const imageDataArray = (await Promise.all(imagePromises)).filter(img => img !== null);
 
-        // --- AI Prompt ---
-        const prompt = `You are a strict safety AI for a college student marketplace. 
-        The user is selling an item and the image is of the item itself (book, textbook, clothing, electronics, etc.).
+        if (imageDataArray.length === 0) {
+            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Failed to process the uploaded images." }) };
+        }
 
-        RULES:
-        - If the image contains nudity, pornography, lingerie, swimwear, sexual poses, or any sexually suggestive content -> UNSAFE.
-        - If the image shows actual weapons (real guns, knives, explosives, etc.) -> UNSAFE.
-        - If the image shows drugs, marijuana, alcohol, vaping, smoking paraphernalia, or pills -> UNSAFE.
-        - If the image shows counterfeit items, fake IDs, or illegal goods -> UNSAFE.
-        - If the image is irrelevant (spam, memes, screenshots of text, QR codes not related to the item) -> UNSAFE.
-        
-        IMPORTANT EXCEPTIONS (SAFE):
-        - Book covers, movie posters, video game covers, or any product packaging that contains illustrations or depictions of weapons (e.g., an arrow on a book cover) are SAFE because they are part of the product being sold.
-        - Clothing items (except underwear/swimwear) are SAFE.
-        - Textbooks, school supplies, electronics, and normal student items are SAFE.
-        
-        If you are even 1% unsure about a legitimate product, mark SAFE. Only mark UNSAFE if you are confident the image violates the above unsafe rules.
+        // --- Step 3: ULTRA-STRICT AI PROMPT ---
+        const prompt = `You are a ruthless, zero-tolerance safety AI for a college student marketplace. 
+        Analyze the image(s) AND the text provided below.
 
         LISTING TITLE: "${title}"
         LISTING DESCRIPTION: "${description}"
 
-        OUTPUT EXACTLY THIS RAW JSON FORMAT AND NOTHING ELSE. DO NOT USE MARKDOWN BACKTICKS:
-        {"verdict": "SAFE", "reason": "Brief explanation"}
+        CRITICAL REJECTION RULES (MARK UNSAFE IMMEDIATELY IF ANY ARE TRUE):
+        1. PORNOGRAPHY & NUDITY: Any nudity, sexual poses, lingerie, swimwear, hentai, or sexually explicit text/titles (e.g. the word "porn").
+        2. SPAM & IRRELEVANCE: If the image is a random landscape, nature photo, meme, screenshot of text, pitch-black image, blurry mess, or clearly NOT a product being sold.
+        3. DANGEROUS ITEMS: Weapons, drugs, vaping, alcohol.
+        4. INAPPROPRIATE TEXT: If the title or description contains profanity, sexual words, or slurs.
+
+        APPROVAL RULES:
+        - Mark SAFE ONLY if the image clearly shows a legitimate physical item for sale (e.g., textbook, laptop, calculator, desk, jacket) AND the text is appropriate.
+
+        OUTPUT EXACTLY THIS RAW JSON FORMAT AND NOTHING ELSE:
+        {"verdict": "SAFE", "reason": "Valid item."}
         or
-        {"verdict": "UNSAFE", "reason": "Brief explanation"}
+        {"verdict": "UNSAFE", "reason": "Detailed explanation of what rule was broken"}
         `;
 
-        // --- Ask Gemini ---
+        // --- Step 4: Ask Gemini 2.0 Flash (Smarter Model) ---
         let isUnsafe = false;
         let finalReason = "";
 
         const aiPromises = imageDataArray.map(async (img) => {
             const aiRes = await fetch(
-                `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
+                `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -120,9 +80,10 @@ exports.handler = async (event, context) => {
         const aiResults = await Promise.all(aiPromises);
 
         for (const aiData of aiResults) {
+            // Check Google's hard filters
             if (aiData.candidates && aiData.candidates[0]?.finishReason === "SAFETY") {
                 isUnsafe = true;
-                finalReason = "Google internal safety filters blocked the image.";
+                finalReason = "Google internal safety filters blocked the explicit content.";
                 break;
             }
 
@@ -132,104 +93,30 @@ exports.handler = async (event, context) => {
 
                 try {
                     const result = JSON.parse(aiText);
-                    console.log("AI Verdict:", result);
                     if (result.verdict === "UNSAFE") {
                         isUnsafe = true;
-                        finalReason = result.reason || "AI flagged as unsafe";
+                        finalReason = result.reason;
                         break; 
                     }
                 } catch (e) {
                     if (aiText.toUpperCase().includes("UNSAFE")) {
                         isUnsafe = true;
-                        finalReason = "AI response indicated unsafe (fallback parsed)";
+                        finalReason = "AI flagged as unsafe.";
                         break;
                     }
                 }
             }
         }
 
-        // --- Apply verdict ---
+        // --- Step 5: Return Verdict to Frontend ---
         if (isUnsafe) {
-            console.log(`Verdict: UNSAFE. Reason: ${finalReason}`);
-            return await rejectListing(listingId, title, posterUid, posterName, FB_KEY, PROJ_ID, finalReason, corsHeaders, authHeader);
+            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: finalReason }) };
         } else {
-            console.log(`Verdict: SAFE. Approving listing...`);
-            return await approveListing(listingId, FB_KEY, PROJ_ID, corsHeaders, authHeader);
+            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "SAFE" }) };
         }
 
     } catch (error) {
         console.error("Moderation error:", error);
-        return { statusCode: 500, headers: { "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ error: "Internal server error" }) };
+        return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: "Internal server error" }) };
     }
 };
-
-// Helper: Approve listing (Authenticated request)
-async function approveListing(listingId, FB_KEY, PROJ_ID, corsHeaders, authHeader) {
-    const fbDocUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?key=${FB_KEY}`;
-    
-    const response = await fetch(`${fbDocUrl}&updateMask.fieldPaths=status`, {
-        method: "PATCH",
-        headers: { 
-            "Content-Type": "application/json",
-            "Authorization": authHeader
-        },
-        body: JSON.stringify({ 
-            name: `projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}`,
-            fields: { status: { stringValue: "active" } } 
-        })
-    });
-
-    const resData = await response.json();
-    if (!response.ok) console.error("FIRESTORE APPROVE ERROR:", JSON.stringify(resData));
-    else console.log("FIRESTORE SUCCESS: Listing marked as active.");
-
-    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ status: "active" }) };
-}
-
-// Helper: Reject listing and create report (Authenticated request)
-async function rejectListing(listingId, title, posterUid, posterName, FB_KEY, PROJ_ID, reason, corsHeaders, authHeader) {
-    const fbDocUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}?key=${FB_KEY}`;
-    
-    const response = await fetch(`${fbDocUrl}&updateMask.fieldPaths=status&updateMask.fieldPaths=imageUrls`, {
-        method: "PATCH",
-        headers: { 
-            "Content-Type": "application/json",
-            "Authorization": authHeader 
-        },
-        body: JSON.stringify({
-            name: `projects/${PROJ_ID}/databases/(default)/documents/listings/${listingId}`,
-            fields: {
-                status: { stringValue: "rejected" },
-                imageUrls: { arrayValue: { values: [] } }
-            }
-        })
-    });
-
-    if (!response.ok) console.error("FIRESTORE REJECT ERROR:", JSON.stringify(await response.json()));
-    else console.log("FIRESTORE SUCCESS: Listing marked as rejected.");
-
-    // 2. Create Admin Report (with listingId added)
-    const reportUrl = `https://firestore.googleapis.com/v1/projects/${PROJ_ID}/databases/(default)/documents/reports?key=${FB_KEY}`;
-    await fetch(reportUrl, {
-        method: "POST",
-        headers: { 
-            "Content-Type": "application/json",
-            "Authorization": authHeader 
-        },
-        body: JSON.stringify({
-            fields: {
-                reporterName: { stringValue: "AI Guard" },
-                reporterUid: { stringValue: "system" },               
-                targetUid: { stringValue: posterUid },                
-                targetUserName: { stringValue: posterName },
-                reason: { stringValue: "Automatic Content Block" },
-                details: { stringValue: `Listing "${title}" (ID: ${listingId}) was blocked by AI. Reason: ${reason}` },
-                timestamp: { timestampValue: new Date().toISOString() },
-                type: { stringValue: "auto" },
-                listingId: { stringValue: listingId }      // 👈 ADDED
-            }
-        })
-    }).catch(err => console.error("Report creation failed:", err));
-
-    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ status: "rejected", reason }) };
-}
