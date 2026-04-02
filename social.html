@@ -1,4 +1,4 @@
-this is the new social: <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -11,6 +11,7 @@ this is the new social: <!DOCTYPE html>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
+        /* (all existing CSS – unchanged) */
         :root {
             --ink:       #0C1446;
             --deep:      #2B5C92;
@@ -152,11 +153,6 @@ this is the new social: <!DOCTYPE html>
         .btn-action { background: var(--gold); color: var(--ink); border: none; padding: 10px 28px; border-radius: 30px; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(200, 169, 110, 0.2); }
         .btn-action:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(200, 169, 110, 0.4); }
 
-        /* ── BLURRED & LOCKED FEED OVERLAY ── */
-        .private-feed-wrapper { position: relative; min-height: 400px; overflow: hidden; border-radius: var(--radius); }
-        .private-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; padding: 20px; }
-        .blurred-post { filter: blur(8px); opacity: 0.5; pointer-events: none; user-select: none; background: var(--white); border-radius: var(--radius); padding: 24px; border: var(--border); margin-bottom: 20px; width: 100%; }
-
         /* ── POST CARDS & 3-DOT MENU ── */
         .post-card { background: var(--white); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); border: var(--border); animation: fadeUp 0.4s ease both; width: 100%; overflow: visible; position: relative; }
         .post-header-top { display: flex; justify-content: space-between; align-items: flex-start; }
@@ -165,8 +161,8 @@ this is the new social: <!DOCTYPE html>
         .post-author-link:hover .post-author { color: var(--deep); text-decoration: underline; }
         .post-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #f1f5f9; border: 1px solid #e2e8f0; flex-shrink: 0; }
         .post-meta { display: flex; flex-direction: column; overflow: hidden; }
-        .post-author { font-weight: 800; font-size: 1.05rem; color: var(--ink); letter-spacing: -0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.2s; }
-        .verified-check-icon { color: var(--green); font-size: 0.9rem; margin-left: 6px; }
+        .post-author { font-weight: 800; font-size: 1.05rem; color: var(--ink); letter-spacing: -0.3px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+        .verified-check-icon { color: var(--green); font-size: 0.9rem; margin-left: 2px; }
         .post-time { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; font-weight: 500; display: flex; align-items: center; gap: 5px; }
         .edited-badge { font-size: 0.75rem; color: var(--text-muted); font-style: italic; }
         
@@ -207,7 +203,7 @@ this is the new social: <!DOCTYPE html>
         .comment-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; background: #f1f5f9; flex-shrink: 0; }
         .comment-content { background: var(--off-white); padding: 10px 14px; border-radius: 12px; flex-grow: 1; border: 1px solid #f1f5f9; }
         .comment-author-link { text-decoration: none; color: inherit; }
-        .comment-author { font-weight: 700; font-size: 0.85rem; color: var(--ink); margin-bottom: 2px; transition: color 0.2s; }
+        .comment-author { font-weight: 700; font-size: 0.85rem; color: var(--ink); margin-bottom: 2px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; transition: color 0.2s; }
         .comment-author-link:hover .comment-author { color: var(--deep); text-decoration: underline; }
         .comment-text { font-size: 0.9rem; color: #334155; word-wrap: break-word; line-height: 1.4; }
         .comment-image-attachment { max-width: 200px; max-height: 200px; border-radius: 8px; margin-top: 8px; display: block; cursor: pointer; border: 1px solid #e2e8f0; }
@@ -807,6 +803,7 @@ this is the new social: <!DOCTYPE html>
                         authorUid: currentUser.uid,
                         authorName: currentUser.displayName || "User",
                         authorPhoto: photoToSave,
+                        authorIsStudent: currentUserData?.isStudent === true,
                         likes: 0, likedBy: [], commentCount: 0,
                         timestamp: serverTimestamp()
                     };
@@ -903,6 +900,7 @@ this is the new social: <!DOCTYPE html>
                         authorUid: currentUser.uid,
                         authorName: currentUser.displayName || "User",
                         authorPhoto: photoToSave,
+                        authorIsStudent: currentUserData?.isStudent === true,
                         timestamp: serverTimestamp()
                     };
 
@@ -1299,6 +1297,9 @@ this is the new social: <!DOCTYPE html>
                     ? `<span style="font-size: 0.7rem; color: var(--deep); background: var(--surface); padding: 2px 8px; border-radius: 12px; margin-left: 8px; font-weight: 700; white-space: nowrap;"><i class="fas fa-university"></i> ${d.schoolName}</span>` 
                     : '';
 
+                // Verification badge (green checkmark)
+                const verifiedBadge = d.authorIsStudent ? '<i class="fas fa-check-circle verified-check-icon"></i>' : '';
+
                 // 3-DOT MENU LOGIC
                 const canEdit = currentUser && currentUser.uid === d.authorUid;
                 const canDelete = currentUser && (currentUser.uid === d.authorUid || currentUser.role === 'admin');
@@ -1329,7 +1330,7 @@ this is the new social: <!DOCTYPE html>
                         <a href="/user.html?id=${d.authorUid}" class="post-author-link">
                             <img src="${pfp}" class="post-avatar" alt="Avatar">
                             <div class="post-meta">
-                                <span class="post-author" style="display:flex; align-items:center; flex-wrap:wrap;">${d.authorName}${schoolTagHtml}</span>
+                                <span class="post-author" style="display:flex; align-items:center; flex-wrap:wrap;">${d.authorName} ${verifiedBadge} ${schoolTagHtml}</span>
                                 <span class="post-time">${timeStr}${editedLabel}</span>
                             </div>
                         </a>
@@ -1536,6 +1537,9 @@ this is the new social: <!DOCTYPE html>
                         const pfp = c.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${c.authorUid}&backgroundColor=EBF2FA`;
                         const imgHtml = c.imageUrl ? `<img src="${c.imageUrl}" class="comment-image-attachment" onclick="window.open('${c.imageUrl}', '_blank')">` : '';
                         
+                        // Verification badge for comment authors
+                        const commentVerifiedBadge = c.authorIsStudent ? '<i class="fas fa-check-circle verified-check-icon" style="font-size: 0.7rem;"></i>' : '';
+
                         // Delete logic: Author or Admin
                         const isCommentAuthor = currentUser && currentUser.uid === c.authorUid;
                         const isAdmin = currentUser && currentUser.role === 'admin';
@@ -1549,7 +1553,7 @@ this is the new social: <!DOCTYPE html>
                             <a href="/user.html?id=${c.authorUid}"><img src="${pfp}" class="comment-avatar"></a>
                             <div class="comment-content">
                                 <div style="display:flex; justify-content:space-between; align-items:start;">
-                                    <a href="/user.html?id=${c.authorUid}" class="comment-author-link"><div class="comment-author">${c.authorName}</div></a>
+                                    <a href="/user.html?id=${c.authorUid}" class="comment-author-link"><div class="comment-author">${c.authorName} ${commentVerifiedBadge}</div></a>
                                     ${deleteBtnHtml}
                                 </div>
                                 <div class="comment-text">${c.text}</div>
@@ -1603,6 +1607,7 @@ this is the new social: <!DOCTYPE html>
                         authorUid: currentUser.uid,
                         authorName: currentUser.displayName || "User",
                         authorPhoto: photoToSave,
+                        authorIsStudent: currentUserData?.isStudent === true,
                         timestamp: serverTimestamp()
                     };
 
