@@ -113,6 +113,7 @@
         .filter-bar span { font-size: 0.85rem; color: var(--text-muted); }
         .school-filter { background: none; border: none; padding: 8px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
         .school-filter.active { background: var(--ink); color: white; }
+        .school-filter.disabled { opacity: 0.5; cursor: not-allowed; background: none; color: var(--text-muted); pointer-events: none; }
 
         /* ── SEARCH BAR ── */
         .social-search-bar { display: flex; align-items: center; background: var(--white); border: var(--border); border-radius: 30px; padding: 5px 15px; box-shadow: var(--shadow); margin-bottom: -5px; transition: border-color 0.2s; }
@@ -123,6 +124,7 @@
 
         /* ── COMPOSER ── */
         .composer { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border: var(--border); width: 100%; display: flex; gap: 15px; align-items: flex-start; flex-direction: row; position: relative; }
+        .composer-shield { position: absolute; inset: 0; z-index: 50; cursor: pointer; display: none; border-radius: var(--radius); }
         .composer-pfp { width: 45px; height: 45px; border-radius: 50%; background: #eee; object-fit: cover; border: 2px solid var(--off-white); flex-shrink: 0; }
         .composer-content { flex-grow: 1; display: flex; flex-direction: column; background: var(--off-white); border: 1px solid #e2e8f0; border-radius: 18px; padding: 5px; transition: border-color 0.2s, background 0.2s; }
         .composer-content:focus-within { border-color: var(--deep); background: var(--white); }
@@ -152,11 +154,6 @@
         .btn-action { background: var(--gold); color: var(--ink); border: none; padding: 10px 28px; border-radius: 30px; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(200, 169, 110, 0.2); }
         .btn-action:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(200, 169, 110, 0.4); }
 
-        /* ── BLURRED & LOCKED FEED OVERLAY ── */
-        .private-feed-wrapper { position: relative; min-height: 400px; overflow: hidden; border-radius: var(--radius); }
-        .private-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; padding: 20px; }
-        .blurred-post { filter: blur(8px); opacity: 0.5; pointer-events: none; user-select: none; background: var(--white); border-radius: var(--radius); padding: 24px; border: var(--border); margin-bottom: 20px; width: 100%; }
-
         /* ── POST CARDS & 3-DOT MENU ── */
         .post-card { background: var(--white); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); border: var(--border); animation: fadeUp 0.4s ease both; width: 100%; overflow: visible; position: relative; }
         .post-header-top { display: flex; justify-content: space-between; align-items: flex-start; }
@@ -165,7 +162,7 @@
         .post-author-link:hover .post-author { color: var(--deep); text-decoration: underline; }
         .post-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #f1f5f9; border: 1px solid #e2e8f0; flex-shrink: 0; }
         .post-meta { display: flex; flex-direction: column; overflow: hidden; }
-        .post-author { font-weight: 800; font-size: 1.05rem; color: var(--ink); letter-spacing: -0.3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: color 0.2s; }
+        .post-author { font-weight: 800; font-size: 1.05rem; color: var(--ink); letter-spacing: -0.3px; transition: color 0.2s; }
         .verified-check-icon { color: var(--green); font-size: 0.9rem; margin-left: 6px; }
         .post-time { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; font-weight: 500; display: flex; align-items: center; gap: 5px; }
         .edited-badge { font-size: 0.75rem; color: var(--text-muted); font-style: italic; }
@@ -251,9 +248,8 @@
         .login-modal-card h2, .modal-card h2 { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--ink); margin-bottom: 12px; }
         .login-modal-card p, .modal-card p { color: var(--text-muted); margin-bottom: 24px; font-size: 0.9rem; }
         .login-modal-buttons, .modal-buttons { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
-        .login-modal-buttons .btn, .modal-buttons .btn { padding: 10px 24px; min-width: 120px; border-radius: 30px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; }
-        .btn-login { background: var(--gold); color: var(--ink); text-decoration: none; display: inline-block; }
-        .btn-register { background: transparent; border: 2px solid var(--gold); color: var(--ink); }
+        .btn-login { background: var(--gold); color: var(--ink); text-decoration: none; display: inline-block; padding: 10px 24px; border-radius: 30px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-ghost { background: var(--surface); color: var(--text-main); padding: 10px 24px; border-radius: 30px; font-weight: 700; border: none; cursor: pointer; transition: 0.2s; }
         .close-modal { position: absolute; top: 16px; right: 20px; font-size: 1.4rem; cursor: pointer; color: #aaa; z-index: 10; }
         
         .modal-card { text-align: left; }
@@ -263,7 +259,6 @@
         .modal-buttons { justify-content: flex-end; }
         .btn-danger { background: var(--red); color: var(--white); padding: 10px 24px; border-radius: 30px; font-weight: 700; border: none; cursor: pointer; transition: 0.2s; }
         .btn-danger:hover { background: #b91c1c; }
-        .btn-ghost { background: var(--surface); color: var(--text-main); padding: 10px 24px; border-radius: 30px; font-weight: 700; border: none; cursor: pointer; transition: 0.2s; }
         .btn-ghost:hover { background: #e2e8f0; }
 
         .listing-selector-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 400px; margin-bottom: 10px; padding-right: 5px; }
@@ -275,8 +270,10 @@
         .ls-price { color: var(--deep); font-weight: 700; font-size: 0.85rem; }
 
         /* Additional modal for create topic restriction */
-        .restricted-modal .modal-card { text-align: center; }
+        .restricted-modal { text-align: center; }
         .restricted-modal .modal-icon { font-size: 3rem; color: var(--gold); margin-bottom: 20px; }
+        .restricted-modal h2 { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--ink); margin-bottom: 12px; }
+        .restricted-modal p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px; text-align: center; }
 
         @media (max-width: 850px) {
             .hub-layout { display: flex; flex-direction: column; padding: 0; gap: 0; margin: 0; width: 100%; }
@@ -287,6 +284,9 @@
             .composer-input { font-size: 1rem; min-height: 40px; }
             .post-card { padding: 16px 15px; border-radius: 0; border-left: none; border-right: none; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; box-shadow: none; margin-bottom: 0; width: 100%; }
             .market-break { padding: 20px 15px; margin: 0; border-radius: 0; border-left: none; border-right: none; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; box-shadow: none; width: 100%; }
+            
+            /* Add Mobile Navigation */
+            nav { display: none; }
         }
     </style>
 </head>
@@ -306,16 +306,6 @@
             <div class="header-right"></div>
         </div>
     </header>
-
-    <!-- LOCKED SCREEN -->
-    <div class="locked-screen" id="locked-screen">
-        <div class="locked-card">
-            <i class="fas fa-lock locked-icon"></i>
-            <h2 class="locked-title" id="ui-locked-title">Restricted Access</h2>
-            <p class="locked-desc" id="ui-locked-desc">The Campus Hub is an exclusive space for students. Please log in to join the conversation.</p>
-            <a href="/LoginInToCheaplet.html?redirect=/social.html&msg=social" class="btn-locked" id="ui-locked-btn">Log In or Register</a>
-        </div>
-    </div>
 
     <!-- MOBILE TOPICS BAR WITH ☰ MENU BUTTON -->
     <div class="mobile-topics-wrapper" id="mobile-topics-wrapper">
@@ -351,19 +341,6 @@
             <div class="sheet-section" id="m-sec-discover">
                 <div class="sheet-section-title" data-i18n="discover_topics">Discover</div>
                 <div id="m-list-discover" style="display:flex; flex-direction:column; gap:8px;"></div>
-            </div>
-        </div>
-    </div>
-
-    <!-- RESTRICTED MODAL -->
-    <div id="restricted-modal" class="modal-overlay" style="display: none;">
-        <div class="modal-card restricted-modal">
-            <div class="modal-icon"><i class="fas fa-graduation-cap"></i></div>
-            <h2 id="restricted-title">Verified Student Required</h2>
-            <p id="restricted-desc">To create custom topics or post in a specific school's feed, you need a verified student account with a school email address.</p>
-            <div class="modal-buttons" style="justify-content: center;">
-                <a href="/LoginInToCheaplet.html?redirect=/social.html" class="btn btn-login">Create School Account</a>
-                <button class="btn btn-ghost" id="close-restricted-btn">Cancel</button>
             </div>
         </div>
     </div>
@@ -410,20 +387,6 @@
 
         <main class="feed-column">
             
-            <!-- VERIFICATION BANNER (only for non‑verified) -->
-            <div id="verify-banner" class="verify-banner" style="display: none;">
-                <p><i class="fas fa-graduation-cap"></i> <span id="verify-banner-text">Get the Verified Student badge and filter posts by your school – create an account with your school email address.</span></p>
-                <a href="/LoginInToCheaplet.html?redirect=/social.html"><button>Create School Account</button></a>
-                <button class="banner-close" id="close-banner-btn">&times;</button>
-            </div>
-
-            <!-- SCHOOL FILTER BAR (always visible) -->
-            <div id="filter-bar" class="filter-bar">
-                <span><i class="fas fa-filter"></i> Feed:</span>
-                <button class="school-filter active" data-filter="all">Global Campus</button>
-                <button class="school-filter" data-filter="my" id="my-school-filter">My School</button>
-            </div>
-
             <!-- SEARCH BAR -->
             <div class="social-search-bar">
                 <i class="fas fa-search" style="color:var(--text-muted); margin-left:5px;"></i>
@@ -530,7 +493,6 @@
                     post_placeholder: "What's happening on campus?", loading_hub: "Loading campus hub...",
                     noPosts: "No posts yet. Be the first to share something!", justNow: "Just now", suggest: "Campus Marketplace", browse: "Browse All →", 
                     guest: "Campus Hub", sell: "List a Book", comment_placeholder: "Write a comment...", no_comments: "No comments yet.",
-                    lock_title: "Restricted Access", lock_desc: "The Campus Hub is an exclusive space for students. Please log in to join the conversation.", lock_btn: "Log In or Register",
                     rep_title: "Report Post", rep_desc: "Help us keep Scoralia safe.", rep_place: "Details...", rep_cancel: "Cancel", rep_submit: "Submit", rep_success: "Report submitted.",
                     attach_title: "Attach a Listing", attach_desc: "Select one of your active listings to share.", attach_empty: "You have no active listings.", upload_fail: "Image upload failed.",
                     search_social_place: "Search posts, topics, people...", edit_post_title: "Edit Post", save_changes: "Save Changes", edited_label: " • Edited",
@@ -546,7 +508,6 @@
                     post_placeholder: "Que se passe-t-il sur le campus ?", loading_hub: "Chargement du hub...",
                     noPosts: "Aucune publication. Soyez le premier à partager !", justNow: "À l'instant", suggest: "Marché du Campus", browse: "Voir tout →", 
                     guest: "Hub Campus", sell: "Vendre un livre", comment_placeholder: "Écrire un commentaire...", no_comments: "Aucun commentaire pour le moment.",
-                    lock_title: "Accès Restreint", lock_desc: "Le Hub Campus est un espace exclusif pour les étudiants. Connectez-vous pour rejoindre la conversation.", lock_btn: "Se Connecter ou S'inscrire",
                     rep_title: "Signaler le message", rep_desc: "Aidez-nous à protéger Scoralia.", rep_place: "Détails...", rep_cancel: "Annuler", rep_submit: "Envoyer", rep_success: "Signalement envoyé.",
                     attach_title: "Joindre une annonce", attach_desc: "Sélectionnez l'une de vos annonces actives.", attach_empty: "Vous n'avez aucune annonce active.", upload_fail: "Échec du téléchargement.",
                     search_social_place: "Rechercher messages, sujets, personnes...", edit_post_title: "Modifier le message", save_changes: "Enregistrer", edited_label: " • Modifié",
@@ -578,17 +539,6 @@
             if (attTitle) attTitle.textContent = ui.attach_title;
             const attDesc = document.getElementById('ui-modal-attach-desc');
             if (attDesc) attDesc.textContent = ui.attach_desc;
-            const verifBannerText = document.getElementById('verify-banner-text');
-            if (verifBannerText) verifBannerText.textContent = ui.verify_banner_text;
-
-            // Restricted modal translations
-            const restrictedTitle = document.getElementById('restricted-title');
-            if (restrictedTitle) restrictedTitle.textContent = ui.restricted_title;
-            const restrictedDesc = document.getElementById('restricted-desc');
-            if (restrictedDesc) restrictedDesc.textContent = ui.restricted_desc;
-            const restrictedModal = document.getElementById('restricted-modal');
-            const closeRestrictedBtn = document.getElementById('close-restricted-btn');
-            if (closeRestrictedBtn) closeRestrictedBtn.onclick = () => restrictedModal.style.display = 'none';
 
             // --- BOTTOM SHEET LOGIC ---
             const sheetOverlay = document.getElementById('sheet-overlay');
@@ -657,14 +607,6 @@
             const imgUploadInput = document.getElementById('post-img-upload');
             const attachListingModal = document.getElementById('attach-listing-modal');
             const listingSelectorList = document.getElementById('listing-selector-list');
-
-            // School filter elements
-            const filterBar = document.getElementById('filter-bar');
-            const verifyBanner = document.getElementById('verify-banner');
-            const closeBannerBtn = document.getElementById('close-banner-btn');
-            const allFilterBtn = document.querySelector('.school-filter[data-filter="all"]');
-            const myFilterBtn = document.getElementById('my-school-filter');
-            let currentSchoolFilter = 'all'; // 'all' or 'my'
 
             // --- COMPOSER LOGIC ---
             function updateComposerSendButton() {
@@ -798,8 +740,8 @@
 
                     let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
                     
-                    const collectionName = currentSchoolFilter === 'my' ? "social_posts_rosemont" : "social_posts_global";
-                    const postingToSchool = currentSchoolFilter === 'my' ? targetSchool : "Global Campus";
+                    const collectionName = "social_posts_global";
+                    const postingToSchool = "Global Campus";
                     
                     const postData = {
                         schoolName: postingToSchool,
@@ -807,6 +749,7 @@
                         authorUid: currentUser.uid,
                         authorName: currentUser.displayName || "User",
                         authorPhoto: photoToSave,
+                        isStudent: currentUserData.isStudent || false,
                         likes: 0, likedBy: [], commentCount: 0,
                         timestamp: serverTimestamp()
                     };
@@ -903,6 +846,7 @@
                         authorUid: currentUser.uid,
                         authorName: currentUser.displayName || "User",
                         authorPhoto: photoToSave,
+                        isStudent: currentUserData.isStudent || false,
                         timestamp: serverTimestamp()
                     };
 
@@ -931,8 +875,6 @@
                         if (uSnap.exists()) {
                             const data = uSnap.data();
                             
-                            // ANY authenticated user can access the feed. 
-
                             currentUser = { ...user, ...data };
                             currentUserData = data;
                             internalSchoolName = data.schoolName || "Global Campus";
@@ -951,58 +893,22 @@
 
                             const handleCreateTopic = (e) => {
                                 e.preventDefault();
-                                if (isStudent || data.role === 'admin') {
-                                    window.location.href = '/createtopic.html';
-                                } else {
-                                    if (restrictedModal) restrictedModal.style.display = 'flex';
-                                }
+                                window.location.href = '/createtopic.html';
                             };
 
                             if (btnCreateWay) btnCreateWay.onclick = handleCreateTopic;
                             if (mSheetCreateWay) mSheetCreateWay.onclick = handleCreateTopic;
                             
-                            // Calculate Target School for unverified users
                             targetSchool = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Collège de Rosemont";
 
-                            // Show/hide verification banner and checkmark
                             if (isStudent) {
-                                if (verifyBanner) verifyBanner.style.display = 'none';
                                 const sidebarCheck = document.getElementById('verified-check-sidebar');
                                 if (sidebarCheck) sidebarCheck.style.display = 'inline-block';
                             } else {
-                                const bannerDismissed = localStorage.getItem('verify_banner_dismissed') === 'true';
-                                if (verifyBanner) verifyBanner.style.display = !bannerDismissed ? 'flex' : 'none';
                                 const sidebarCheck = document.getElementById('verified-check-sidebar');
                                 if (sidebarCheck) sidebarCheck.style.display = 'none';
                             }
                             
-                            // ALWAYS show filter bar
-                            if (filterBar) filterBar.style.display = 'flex';
-                            if (myFilterBtn) myFilterBtn.textContent = targetSchool;
-                            
-                            if (currentSchoolFilter === 'my') {
-                                if (myFilterBtn) myFilterBtn.classList.add('active');
-                                if (allFilterBtn) allFilterBtn.classList.remove('active');
-                            } else {
-                                if (myFilterBtn) myFilterBtn.classList.remove('active');
-                                if (allFilterBtn) allFilterBtn.classList.add('active');
-                            }
-                            
-                            // NEW: Initial composer state logic
-                            const composerCard = document.getElementById('composer-card');
-                            if (currentSchoolFilter === 'my' && !isStudent && data.role !== 'admin') {
-                                if (composerCard) composerCard.style.display = 'none';
-                            } else {
-                                if (composerCard) composerCard.style.display = 'flex';
-                                if (postInput) {
-                                    if (currentSchoolFilter === 'all') {
-                                        postInput.placeholder = lang === 'fr' ? "Que se passe-t-il sur le Campus Global ?" : "What's happening on Global Campus?";
-                                    } else {
-                                        postInput.placeholder = lang === 'fr' ? `Que se passe-t-il à ${targetSchool} ?` : `What's happening at ${targetSchool}?`;
-                                    }
-                                }
-                            }
-
                             showHubLayout();
                             loadTopics(); 
                             preloadBooksAndLoadFeed();
@@ -1011,16 +917,9 @@
                         }
                     });
                 } else {
-                    // Instantly redirect guests to login
                     window.location.href = '/LoginInToCheaplet.html?redirect=/social.html';
                 }
             });
-
-            // Dismiss banner with X button
-            if (closeBannerBtn) closeBannerBtn.onclick = () => {
-                if (verifyBanner) verifyBanner.style.display = 'none';
-                localStorage.setItem('verify_banner_dismissed', 'true');
-            };
 
             function showHubLayout() {
                 const ls = document.getElementById('locked-screen');
@@ -1154,78 +1053,21 @@
                 });
             }
 
-            // --- FEED FILTERING LOGIC ---
             function loadFeed() {
                 if (unsubscribePosts) unsubscribePosts();
                 Object.values(commentUnsubscribes).forEach(unsub => unsub());
                 commentUnsubscribes = {};
 
-                // 1. Check permissions immediately BEFORE making a database query.
-                // If the user wants the Rosemont feed but is NOT a verified student (and not admin), show the lock screen.
-                const isAdmin = currentUserData && currentUserData.role === 'admin';
-                const isVerifiedStudent = currentUserData && currentUserData.isStudent === true;
-                const matchesSchool = currentUserData && (currentUserData.schoolName === targetSchool || currentUserData.schoolName === "Cégep de Rosemont");
-
-                if (currentSchoolFilter === 'my' && !isAdmin && (!isVerifiedStudent || !matchesSchool)) {
-                    
-                    // Completely hide the composer box
-                    const composerCard = document.getElementById('composer-card');
-                    if (composerCard) composerCard.style.display = 'none';
-
-                    // Inject the blurred fake posts + Lock overlay
-                    if (feedContainer) {
-                        feedContainer.innerHTML = `
-                            <div style="position: relative; min-height: 400px; overflow: hidden; border-radius: var(--radius);">
-                                <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; padding: 20px;">
-                                    <div style="background: rgba(255,255,255,0.95); padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; max-width: 420px; margin: 0 20px;">
-                                        <i class="fas fa-lock" style="font-size: 3.5rem; color: var(--deep); margin-bottom: 20px;"></i>
-                                        <h3 style="font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--ink); margin-bottom: 12px;">Private Campus Feed</h3>
-                                        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; line-height: 1.6;">This feed is securely locked to protect student privacy. Only verified students from <strong>${targetSchool}</strong> can view or participate in this channel.</p>
-                                        <button class="btn-action" style="width: 100%;" onclick="document.getElementById('restricted-modal').style.display='flex'">Verify Student Email</button>
-                                    </div>
-                                </div>
-                                
-                                <!-- FAKE BLURRED POSTS -->
-                                <div class="post-card" style="filter: blur(8px); opacity: 0.5; pointer-events: none; user-select: none; margin-bottom: 20px;">
-                                    <div class="post-header-top"><div style="display:flex; gap:15px; align-items:center;"><div style="width:48px; height:48px; border-radius:50%; background:#cbd5e1;"></div><div><div style="width:120px; height:12px; background:#cbd5e1; border-radius:10px; margin-bottom:8px;"></div><div style="width:80px; height:10px; background:#e2e8f0; border-radius:10px;"></div></div></div></div>
-                                    <div style="width:100%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
-                                    <div style="width:85%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
-                                    <div style="width:60%; height:12px; background:#e2e8f0; border-radius:10px;"></div>
-                                </div>
-                                <div class="post-card" style="filter: blur(8px); opacity: 0.5; pointer-events: none; user-select: none;">
-                                    <div class="post-header-top"><div style="display:flex; gap:15px; align-items:center;"><div style="width:48px; height:48px; border-radius:50%; background:#cbd5e1;"></div><div><div style="width:140px; height:12px; background:#cbd5e1; border-radius:10px; margin-bottom:8px;"></div><div style="width:90px; height:10px; background:#e2e8f0; border-radius:10px;"></div></div></div></div>
-                                    <div style="width:100%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
-                                    <div style="width:95%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
-                                    <div style="width:40%; height:12px; background:#e2e8f0; border-radius:10px;"></div>
-                                </div>
-                            </div>
-                        `;
-                    }
-                    return; // 🛑 EXIT EARLY. DO NOT MAKE DATABASE QUERY.
-                }
-
-                // 2. If they ARE allowed to see it, show composer and load data.
-                const composerCard = document.getElementById('composer-card');
-                if (composerCard) composerCard.style.display = 'flex';
-                
-                if (postInput) {
-                    if (currentSchoolFilter === 'all') {
-                        postInput.placeholder = lang === 'fr' ? "Que se passe-t-il sur le Campus Global ?" : "What's happening on Global Campus?";
-                    } else {
-                        postInput.placeholder = lang === 'fr' ? `Que se passe-t-il à ${targetSchool} ?` : `What's happening at ${targetSchool}?`;
-                    }
-                }
-
                 if (feedContainer) feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub}</span></div>`;
 
-                const collectionName = currentSchoolFilter === 'my' ? "social_posts_rosemont" : "social_posts_global";
+                const collectionName = "social_posts_global";
                 let q = query(collection(db, collectionName), orderBy("timestamp", "desc"), limit(100));
                 
                 try {
                     unsubscribePosts = onSnapshot(q, (snapshot) => {
                         if (!feedContainer) return;
                         feedContainer.innerHTML = '';
-                        
+
                         if (snapshot.empty) {
                             feedContainer.innerHTML = `<div class="loader-msg">${ui.noPosts}</div>`;
                             return;
@@ -1253,21 +1095,6 @@
                 } catch (e) { console.error(e); }
             }
 
-            // School filter event handlers
-            if (allFilterBtn) allFilterBtn.onclick = () => {
-                currentSchoolFilter = 'all';
-                allFilterBtn.classList.add('active');
-                if (myFilterBtn) myFilterBtn.classList.remove('active');
-                loadFeed();
-            };
-            
-            if (myFilterBtn) myFilterBtn.onclick = () => {
-                currentSchoolFilter = 'my';
-                myFilterBtn.classList.add('active');
-                if (allFilterBtn) allFilterBtn.classList.remove('active');
-                loadFeed();
-            };
-
             async function preloadBooksAndLoadFeed() {
                 let bookQ = query(collection(db, "listings"), where("status", "==", "active"), orderBy("timestamp", "desc"), limit(6));
                 
@@ -1294,10 +1121,8 @@
                 let timeStr = d.timestamp ? formatTime(d.timestamp.toDate()) : ui.justNow;
                 const isLiked = currentUser && d.likedBy && d.likedBy.includes(currentUser.uid);
                 
-                // Show school badge if not Global Campus
-                const schoolTagHtml = (d.schoolName && d.schoolName !== 'Global Campus') 
-                    ? `<span style="font-size: 0.7rem; color: var(--deep); background: var(--surface); padding: 2px 8px; border-radius: 12px; margin-left: 8px; font-weight: 700; white-space: nowrap;"><i class="fas fa-university"></i> ${d.schoolName}</span>` 
-                    : '';
+                const isVerified = d.isStudent === true || coll === "social_posts_rosemont";
+                const verifiedIcon = isVerified ? `<i class="fas fa-check-circle verified-check-icon" title="Verified Student"></i>` : '';
 
                 // 3-DOT MENU LOGIC
                 const canEdit = currentUser && currentUser.uid === d.authorUid;
@@ -1329,7 +1154,7 @@
                         <a href="/user.html?id=${d.authorUid}" class="post-author-link">
                             <img src="${pfp}" class="post-avatar" alt="Avatar">
                             <div class="post-meta">
-                                <span class="post-author" style="display:flex; align-items:center; flex-wrap:wrap;">${d.authorName}${schoolTagHtml}</span>
+                                <span class="post-author" style="display:flex; align-items:center; flex-wrap:wrap;">${d.authorName}${verifiedIcon}</span>
                                 <span class="post-time">${timeStr}${editedLabel}</span>
                             </div>
                         </a>
@@ -1536,10 +1361,15 @@
                         const pfp = c.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${c.authorUid}&backgroundColor=EBF2FA`;
                         const imgHtml = c.imageUrl ? `<img src="${c.imageUrl}" class="comment-image-attachment" onclick="window.open('${c.imageUrl}', '_blank')">` : '';
                         
-                        // Delete logic: Author or Admin
+                        const isVerified = c.isStudent === true || coll === "social_posts_rosemont";
+                        const verifiedIcon = isVerified ? `<i class="fas fa-check-circle" style="color: var(--green); margin-left: 4px; font-size: 0.8rem;" title="Verified Student"></i>` : '';
+
+                        // Delete logic: Author, Admin, or Topic Owner
                         const isCommentAuthor = currentUser && currentUser.uid === c.authorUid;
                         const isAdmin = currentUser && currentUser.role === 'admin';
-                        const deleteBtnHtml = (isCommentAuthor || isAdmin) 
+                        const isTopicOwner = currentUser && currentTopicData && currentUser.uid === currentTopicData.createdBy;
+
+                        const deleteBtnHtml = (isCommentAuthor || isAdmin || isTopicOwner) 
                             ? `<button onclick="window.deleteComment('${postId}', '${commentId}', '${coll}')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:0.75rem; margin-left:10px;"><i class="fas fa-trash-alt"></i></button>` 
                             : '';
 
@@ -1549,7 +1379,7 @@
                             <a href="/user.html?id=${c.authorUid}"><img src="${pfp}" class="comment-avatar"></a>
                             <div class="comment-content">
                                 <div style="display:flex; justify-content:space-between; align-items:start;">
-                                    <a href="/user.html?id=${c.authorUid}" class="comment-author-link"><div class="comment-author">${c.authorName}</div></a>
+                                    <a href="/user.html?id=${c.authorUid}" class="comment-author-link"><div class="comment-author">${c.authorName}${verifiedIcon}</div></a>
                                     ${deleteBtnHtml}
                                 </div>
                                 <div class="comment-text">${c.text}</div>
@@ -1603,6 +1433,7 @@
                         authorUid: currentUser.uid,
                         authorName: currentUser.displayName || "User",
                         authorPhoto: photoToSave,
+                        isStudent: currentUserData.isStudent || false,
                         timestamp: serverTimestamp()
                     };
 
