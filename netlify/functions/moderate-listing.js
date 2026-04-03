@@ -1,3 +1,5 @@
+moderate-listing.js
+<<<<
 exports.handler = async (event, context) => {
     const corsHeaders = {
         "Access-Control-Allow-Origin": "*",
@@ -177,7 +179,7 @@ exports.handler = async (event, context) => {
 
         CRITICAL RULES - ZERO TOLERANCE FOR NSFW:
         - REJECT IMMEDIATELY if the image contains ANY nudity, partial nudity, pornography, sexual acts, lingerie, underwear, or highly suggestive posing.
-        - REJECT IMMEDIATELY if the text/Title/Description contains explicit words like "nude", "nudes", "porn", "sex", "escort", "hookup", or slurs. (The word "nude" or "nudes" is an automatic reject).
+        - REJECT IMMEDIATELY if the text/Title/Description contains explicit words like "nude", "nudes", "porn", "sex", "escort", "hookup", or slurs.
         - REJECT IMMEDIATELY if the image shows illegal drugs, weapons, or graphic violence.
         - REJECT IMMEDIATELY if the image is completely pitch black or unidentifiable spam.
 
@@ -268,3 +270,4 @@ exports.handler = async (event, context) => {
         return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "System error during moderation." }) };
     }
 };
+>>>>
