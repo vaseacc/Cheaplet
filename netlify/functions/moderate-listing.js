@@ -44,32 +44,13 @@ exports.handler = async (event, context) => {
             return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Security check failed: Image could not be processed." }) };
         }
 
-        // 4. Prompt – ask for JSON output (no schema enforcement)
-        const prompt = `You are a STRICT safety moderator for a college marketplace.
-        
-        Analyze the image and text below.
-        TEXT TITLE: "${title || ''}"
-        TEXT DESCRIPTION: "${description || ''}"
-        
-        REJECT (UNSAFE) if:
-        - ANY nudity, exposed genitals, breasts, or buttocks
-        - ANY sexual content, pornography, or suggestive/erotic poses
-        - ANY underwear, lingerie, or swimwear that is sexually suggestive
-        - ANY explicit words: "nude", "naked", "porn", "sex", "erotic", "xxx", "onlyfans", "nsfw"
-        - ANY mention of sexual services or adult content
-        - Image is black, unidentifiable, or blurry beyond recognition
-        - Image is random (nature, car, pet, meme) not related to selling an item
-        
-        APPROVE (SAFE) only if:
-        - Image shows a physical item students buy/sell (textbook, laptop, calculator, furniture, fully covering clothing)
-        - Text describes a legitimate item for sale
-        - No inappropriate keywords
-        
-        CRITICAL: The word "nude" in ANY context must be REJECTED.
-        
-        Respond with ONLY valid JSON: {"verdict": "SAFE" or "UNSAFE", "reason": "short reason"}`;
+        // 4. Simplified prompt – ask for only "SAFE" or "UNSAFE"
+        const prompt = `You are a strict safety moderator for a college marketplace.
+        Image and text: Title: "${title || ''}", Description: "${description || ''}".
+        Does this listing contain nudity, pornography, explicit content, or inappropriate words like "nude", "naked", "sex", "porn"? 
+        Answer with exactly one word: SAFE or UNSAFE. Nothing else.`;
 
-        // 5. Call Gemini without responseSchema
+        // 5. Call Gemini
         const aiPromises = imageDataArray.map(async (img) => {
             const aiRes = await fetch(
                 `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
@@ -94,6 +75,8 @@ exports.handler = async (event, context) => {
         let rejectReason = "Image flagged as inappropriate.";
 
         for (const aiData of aiResults) {
+            console.log("Raw AI response:", JSON.stringify(aiData, null, 2));
+            
             // Safety filter triggered
             if (aiData.candidates && aiData.candidates[0]?.finishReason === "SAFETY") {
                 isSafe = false;
@@ -101,27 +84,24 @@ exports.handler = async (event, context) => {
                 break;
             }
             
-            // Parse the text response
+            // Extract text response
             if (aiData.candidates && aiData.candidates[0]?.content?.parts?.[0]?.text) {
-                let aiText = aiData.candidates[0].content.parts[0].text;
-                // Try to extract JSON
-                const jsonMatch = aiText.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    try {
-                        const result = JSON.parse(jsonMatch[0]);
-                        if (result.verdict === "UNSAFE") {
-                            isSafe = false;
-                            rejectReason = result.reason || "AI flagged as unsafe";
-                            break;
-                        }
-                    } catch (e) {
-                        console.log("JSON parse error:", e);
-                    }
+                let aiText = aiData.candidates[0].content.parts[0].text.trim().toUpperCase();
+                console.log("AI text response:", aiText);
+                
+                if (aiText.includes("UNSAFE")) {
+                    isSafe = false;
+                    rejectReason = "AI flagged as unsafe (contains nudity/explicit content)";
+                    break;
+                } else if (aiText.includes("SAFE")) {
+                    // Continue checking other images – but if any says UNSAFE, reject
+                    continue;
+                } else {
+                    // Unclear response – assume unsafe
+                    isSafe = false;
+                    rejectReason = "AI returned unclear response, rejecting to be safe.";
+                    break;
                 }
-                // If no JSON, assume unsafe to be cautious
-                isSafe = false;
-                rejectReason = "Unclear AI response, rejecting to be safe.";
-                break;
             } else {
                 isSafe = false;
                 rejectReason = "AI did not return a valid response.";
