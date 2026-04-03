@@ -177,9 +177,9 @@ exports.handler = async (event, context) => {
 
         CRITICAL RULES - ZERO TOLERANCE FOR NSFW:
         - REJECT IMMEDIATELY if the image contains ANY nudity, partial nudity, pornography, sexual acts, lingerie, underwear, or highly suggestive posing.
+        - REJECT IMMEDIATELY if the text/Title/Description contains explicit words like "nude", "nudes", "porn", "sex", "escort", "hookup", or slurs. (The word "nude" or "nudes" is an automatic reject).
         - REJECT IMMEDIATELY if the image shows illegal drugs, weapons, or graphic violence.
         - REJECT IMMEDIATELY if the image is completely pitch black or unidentifiable spam.
-        - REJECT IMMEDIATELY if the text contains severe hate speech, extreme profanity, or illegal offers.
 
         RULES FOR APPROVAL (BOOKS & NORMAL ITEMS):
         - APPROVE if it is a book, textbook, novel, or biography.
@@ -188,7 +188,7 @@ exports.handler = async (event, context) => {
 
         You must evaluate based on these rules and output the result.`;
 
-        // 5. Call Gemini API using native JSON output
+        // 5. Call Gemini API using native JSON output format
         const aiPromises = imageDataArray.map(async (img) => {
             const aiRes = await fetch(
                 `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
