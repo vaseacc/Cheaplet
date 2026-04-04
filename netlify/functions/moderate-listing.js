@@ -12,85 +12,90 @@ exports.handler = async (event, context) => {
         let { imageUrls, title, description } = data;
 
         console.log("Moderation started for:", title);
-        console.log("Description preview:", description?.substring(0, 100));
 
-        // 1. TEXT MODERATION USING GROQ (primary)
+        // 1. TEXT MODERATION USING GROQ
         const GROQ_API_KEY = process.env.GROQ_API_KEY;
-        let textVerdict = "SAFE";
-        let textReason = "";
-
-        if (GROQ_API_KEY) {
-            try {
-                const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${GROQ_API_KEY}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({
-                        model: "llama-3.3-70b-versatile", // you can also use "mixtral-8x7b-32768" or "llama3-70b-8192"
-                        messages: [
-                            {
-                                role: "system",
-                                content: `You are a strict content moderator for a college student marketplace. 
-                                Your job is to decide if a listing title and description are APPROPRIATE or INAPPROPRIATE.
-                                Inappropriate content includes: nudity, sexual content, explicit language, hate speech, illegal items, drugs, weapons, spam, or anything not related to selling a legitimate student item (textbooks, electronics, furniture, school supplies).
-                                Respond with ONLY "SAFE" or "UNSAFE". No extra text.`
-                            },
-                            {
-                                role: "user",
-                                content: `Title: "${title || ''}"\nDescription: "${description || ''}"`
-                            }
-                        ],
-                        temperature: 0,
-                        max_tokens: 10
-                    })
-                });
-
-                const groqData = await groqResponse.json();
-                console.log("Groq response:", JSON.stringify(groqData, null, 2));
-
-                if (groqData.choices && groqData.choices[0]?.message?.content) {
-                    const aiReply = groqData.choices[0].message.content.trim().toUpperCase();
-                    if (aiReply.includes("UNSAFE")) {
-                        textVerdict = "UNSAFE";
-                        textReason = "Text analysis flagged as inappropriate.";
-                    } else if (aiReply.includes("SAFE")) {
-                        textVerdict = "SAFE";
-                    } else {
-                        // Unclear response: assume unsafe to be safe
-                        textVerdict = "UNSAFE";
-                        textReason = "Unclear response from moderation AI.";
-                    }
-                } else {
-                    console.warn("Groq returned unexpected format");
-                    textVerdict = "UNSAFE";
-                    textReason = "Moderation service error.";
-                }
-            } catch (groqErr) {
-                console.error("Groq error:", groqErr);
-                textVerdict = "UNSAFE";
-                textReason = "Moderation service temporarily unavailable.";
-            }
-        } else {
-            console.warn("GROQ_API_KEY not set, skipping text moderation");
+        if (!GROQ_API_KEY) {
+            console.error("GROQ_API_KEY missing");
+            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Moderation system configuration error." }) };
         }
 
-        // If text is unsafe, reject immediately
+        let textVerdict = "SAFE";
+        let textReason = "";
+        try {
+            const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${GROQ_API_KEY}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    model: "llama-3.3-70b-versatile",
+                    messages: [
+                        {
+                            role: "system",
+                            content: `You are a strict content moderator for a college student marketplace. 
+                            Your job is to decide if a listing title and description are APPROPRIATE or INAPPROPRIATE.
+                            Inappropriate content includes: nudity, sexual content, explicit language, hate speech, illegal items, drugs, weapons, spam, or anything not related to selling a legitimate student item (textbooks, electronics, furniture, school supplies).
+                            Respond with ONLY "SAFE" or "UNSAFE". No extra text.`
+                        },
+                        {
+                            role: "user",
+                            content: `Title: "${title || ''}"\nDescription: "${description || ''}"`
+                        }
+                    ],
+                    temperature: 0,
+                    max_tokens: 10
+                })
+            });
+
+            const groqData = await groqResponse.json();
+            if (groqData.choices && groqData.choices[0]?.message?.content) {
+                const aiReply = groqData.choices[0].message.content.trim().toUpperCase();
+                if (aiReply.includes("UNSAFE")) {
+                    textVerdict = "UNSAFE";
+                    textReason = "Text analysis flagged as inappropriate.";
+                }
+            } else {
+                textVerdict = "UNSAFE";
+                textReason = "Moderation service error.";
+            }
+        } catch (groqErr) {
+            console.error("Groq error:", groqErr);
+            textVerdict = "UNSAFE";
+            textReason = "Moderation service temporarily unavailable.";
+        }
+
         if (textVerdict === "UNSAFE") {
             console.log("Listing REJECTED due to text:", textReason);
             return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: textReason }) };
         }
 
-        // 2. IMAGE MODERATION (optional – if images are provided)
-        // If you don't want image moderation, you can skip this part.
-        // For now, we keep a simple keyword check on image URLs (optional)
-        // You could also integrate a free image moderation API later.
+        // 2. IMAGE MODERATION USING SELF-HOSTED NSFW API
+        const NSFW_API_URL = process.env.NSFW_API_URL; // e.g., "https://your-app.onrender.com"
+        if (!NSFW_API_URL) {
+            console.warn("NSFW_API_URL not set, skipping image moderation");
+            // Fallback: approve if no image moderation configured
+            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "SAFE" }) };
+        }
 
-        // If you want to reject listings that contain images with inappropriate filenames or no images at all, adjust here.
-        // For now, we assume images are okay if text passed.
+        for (const imageUrl of imageUrls) {
+            try {
+                const nsfwResponse = await fetch(`${NSFW_API_URL}/api/url_check?url=${encodeURIComponent(imageUrl)}`);
+                const nsfwData = await nsfwResponse.json();
+                // The API returns a field like 'is_nsfw' or 'data.is_nsfw' – adjust according to actual response
+                if (nsfwData.is_nsfw || (nsfwData.data && nsfwData.data.is_nsfw)) {
+                    console.log("Image rejected:", imageUrl);
+                    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Image contains inappropriate content." }) };
+                }
+            } catch (imgErr) {
+                console.error("Error checking image:", imageUrl, imgErr);
+                // If an image cannot be checked, reject to be safe
+                return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Could not verify image safety." }) };
+            }
+        }
 
-        console.log("Listing APPROVED (text moderation passed).");
+        console.log("Listing APPROVED (text and image moderation passed).");
         return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "SAFE" }) };
 
     } catch (error) {
