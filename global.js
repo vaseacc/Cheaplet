@@ -197,6 +197,28 @@ globalStyle.innerHTML = `
 `;
 document.head.appendChild(globalStyle);
 
+// --- 3.5 PWA: Add manifest and register service worker (for home screen app experience) ---
+(function setupPWA() {
+    // Link the manifest.json file
+    const manifestLink = document.createElement('link');
+    manifestLink.rel = 'manifest';
+    manifestLink.href = '/manifest.json';
+    document.head.appendChild(manifestLink);
+
+    // Register service worker if supported
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => {
+                    console.log('Service Worker registered with scope:', registration.scope);
+                })
+                .catch(error => {
+                    console.error('Service Worker registration failed:', error);
+                });
+        });
+    }
+})();
+
 // --- SCHOOL DOMAIN CHECKER ---
 const schoolDomains = {
     "@etu.cegepjonquiere.ca": "Cégep de Jonquière",
