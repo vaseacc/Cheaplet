@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* (all existing CSS – unchanged) */
+        /* (all existing CSS – unchanged, but we add avatar badge styles) */
         :root {
             --ink:       #0C1446;
             --deep:      #2B5C92;
@@ -34,6 +34,11 @@
         .header-inner { max-width: 1100px; margin: 0 auto; padding: 0 20px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
         .logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: -0.5px; flex-shrink: 0; }
         .logo em { color: var(--gold); font-style: normal; }
+
+        /* Desktop Navigation Links */
+        nav ul { display: flex; list-style: none; gap: 28px; margin: 0; padding: 0; }
+        nav ul li a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+        nav ul li a:hover { color: var(--white); }
 
         /* ── RESTRICTED ACCESS SCREEN ── */
         .locked-screen { display: none; flex-direction: column; align-items: center; justify-content: center; height: calc(100vh - 68px); padding: 20px; text-align: center; }
@@ -141,16 +146,57 @@
         .btn-composer-send:disabled { background: #cbd5e1; cursor: not-allowed; }
         .btn-composer-send:not(:disabled):hover { background: var(--ink); transform: translateY(-2px); }
 
-        /* ── POST CARDS ── */
+        /* ── POST CARDS & VERIFICATION BADGES ── */
         .post-card { background: var(--white); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); border: var(--border); animation: fadeUp 0.4s ease both; width: 100%; overflow: visible; position: relative; }
         .post-header-top { display: flex; justify-content: space-between; align-items: flex-start; }
         .post-author-link { text-decoration: none; color: inherit; display: flex; align-items: center; gap: 15px; margin-bottom: 18px; transition: opacity 0.2s; }
         .post-author-link:hover { opacity: 0.8; }
         .post-author-link:hover .post-author { color: var(--deep); text-decoration: underline; }
-        .post-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #f1f5f9; border: 1px solid #e2e8f0; flex-shrink: 0; }
+        
+        /* Avatar with badge styles */
+        .avatar-with-badge {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 48px;
+            flex-shrink: 0;
+        }
+        .avatar-with-badge img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid #e2e8f0;
+        }
+        .avatar-badge {
+            position: absolute;
+            bottom: -2px;
+            right: -4px;
+            background: var(--white);
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--white);
+        }
+        .avatar-badge i {
+            font-size: 12px;
+            color: var(--green);
+        }
+        .post-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            flex-shrink: 0;
+        }
         .post-meta { display: flex; flex-direction: column; overflow: hidden; }
-        .post-author { font-weight: 800; font-size: 1.05rem; color: var(--ink); letter-spacing: -0.3px; transition: color 0.2s; }
-        .verified-check-icon { color: var(--green); font-size: 0.9rem; margin-left: 6px; }
+        .post-author { font-weight: 800; font-size: 1.05rem; color: var(--ink); letter-spacing: -0.3px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+        .verified-check-icon { color: var(--green); font-size: 0.9rem; margin-left: 2px; }
         .post-time { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; font-weight: 500; display: flex; align-items: center; gap: 5px; }
         .edited-badge { font-size: 0.75rem; color: var(--text-muted); font-style: italic; }
         
@@ -188,9 +234,38 @@
         .comment-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         .comment-item { display: flex; gap: 10px; animation: fadeUp 0.2s ease both; }
         .comment-avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; background: #f1f5f9; flex-shrink: 0; }
+        .comment-avatar-wrapper {
+            position: relative;
+            width: 34px;
+            height: 34px;
+            flex-shrink: 0;
+        }
+        .comment-avatar-wrapper img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .comment-avatar-badge {
+            position: absolute;
+            bottom: -2px;
+            right: -4px;
+            background: var(--white);
+            border-radius: 50%;
+            width: 14px;
+            height: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1.5px solid var(--white);
+        }
+        .comment-avatar-badge i {
+            font-size: 9px;
+            color: var(--green);
+        }
         .comment-content { background: var(--off-white); padding: 10px 14px; border-radius: 12px; flex-grow: 1; border: 1px solid #f1f5f9; }
         .comment-author-link { text-decoration: none; color: inherit; }
-        .comment-author { font-weight: 700; font-size: 0.85rem; color: var(--ink); margin-bottom: 2px; transition: color 0.2s; }
+        .comment-author { font-weight: 700; font-size: 0.85rem; color: var(--ink); margin-bottom: 2px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; transition: color 0.2s; }
         .comment-author-link:hover .comment-author { color: var(--deep); text-decoration: underline; }
         .comment-text { font-size: 0.9rem; color: #334155; word-wrap: break-word; line-height: 1.4; }
         .comment-image-attachment { max-width: 200px; max-height: 200px; border-radius: 8px; margin-top: 8px; display: block; cursor: pointer; border: 1px solid #e2e8f0; }
@@ -349,7 +424,7 @@
                     </a>
                 </div>
 
-                <!-- 🔁 CREATE TOPIC BUTTON MOVED HERE – same position as in social.html -->
+                <!-- CREATE TOPIC BUTTON -->
                 <button class="btn-new-way" id="btn-create-way"><i class="fas fa-plus"></i> <span data-i18n="topics_new">Create Topic</span></button>
 
                 <div id="d-sec-my" style="display: none;">
@@ -737,6 +812,7 @@
                 return res.secure_url;
             }
 
+            // --- FIXED POST CREATION: fetch fresh isStudent status ---
             if (btnSendPost && postInput) btnSendPost.onclick = async () => {
                 if (!currentUser) return;
                 const text = postInput.value.trim();
@@ -751,6 +827,11 @@
                         uploadedImgUrl = await uploadImageToCloudinary(postImageFile);
                     }
 
+                    // Force fresh fetch of user data to get latest isStudent
+                    const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+                    const freshUserData = userDoc.data();
+                    const isStudent = freshUserData?.isStudent === true;
+
                     let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
                     
                     const postData = {
@@ -760,6 +841,7 @@
                         authorUid: currentUser.uid,
                         authorName: currentUser.displayName || "User",
                         authorPhoto: photoToSave,
+                        authorIsStudent: isStudent,
                         likes: 0, likedBy: [], commentCount: 0,
                         timestamp: serverTimestamp()
                     };
@@ -789,7 +871,7 @@
                 }
             };
 
-            // --- COMMENT IMAGE LOGIC ---
+            // --- COMMENT IMAGE LOGIC (updated to include isStudent) ---
             const globalCommentImgInput = document.getElementById('global-comment-img-upload');
             
             window.triggerCommentImg = (postId) => {
@@ -828,6 +910,59 @@
                 if (btnSend && inputEl) btnSend.disabled = inputEl.value.trim().length === 0;
             };
 
+            window.postComment = async (postId) => {
+                if (!currentUser) return;
+                const inputEl = document.getElementById(`comment-input-${postId}`);
+                const btnEl = document.getElementById(`btn-send-comment-${postId}`);
+                if (!inputEl || !btnEl) return;
+                
+                const text = inputEl.value.trim();
+                const file = commentImageFiles[postId];
+                
+                if (!text && !file) return;
+                
+                btnEl.disabled = true;
+                const origIcon = btnEl.innerHTML;
+                btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                
+                try {
+                    let uploadedImgUrl = null;
+                    if (file) {
+                        uploadedImgUrl = await uploadImageToCloudinary(file);
+                    }
+
+                    // Get fresh isStudent for comment as well
+                    const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+                    const freshUserData = userDoc.data();
+                    const isStudent = freshUserData?.isStudent === true;
+
+                    let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
+
+                    const commentData = {
+                        text: text,
+                        authorUid: currentUser.uid,
+                        authorName: currentUser.displayName || "User",
+                        authorPhoto: photoToSave,
+                        authorIsStudent: isStudent,
+                        timestamp: serverTimestamp()
+                    };
+
+                    if (uploadedImgUrl) commentData.imageUrl = uploadedImgUrl;
+
+                    await addDoc(collection(db, "social_posts", postId, "comments"), commentData);
+                    await updateDoc(doc(db, "social_posts", postId), { commentCount: increment(1) });
+
+                    inputEl.value = '';
+                    window.removeCommentImg(postId);
+                } catch(e) { 
+                    console.error(e); 
+                    alert(ui.upload_fail); 
+                } finally { 
+                    btnEl.innerHTML = origIcon;
+                    btnEl.disabled = true; 
+                }
+            };
+
 
             // --- AUTH & SECURITY LOGIC ---
             onAuthStateChanged(auth, async (user) => {
@@ -864,7 +999,6 @@
                             if (btnCreateWay) btnCreateWay.style.display = 'flex';
                             if (mSheetCreateWay) mSheetCreateWay.style.display = 'flex';
 
-                            // Allow any authenticated user to create a topic
                             const handleCreateTopic = (e) => {
                                 e.preventDefault();
                                 window.location.href = '/createtopic.html';
@@ -1101,6 +1235,17 @@
                 let timeStr = d.timestamp ? formatTime(d.timestamp.toDate()) : ui.justNow;
                 const isLiked = currentUser && d.likedBy && d.likedBy.includes(currentUser.uid);
                 
+                // Avatar with verification badge
+                const avatarHtml = d.authorIsStudent ? `
+                    <div class="avatar-with-badge">
+                        <img src="${pfp}" alt="Avatar">
+                        <div class="avatar-badge"><i class="fas fa-check-circle"></i></div>
+                    </div>
+                ` : `<img src="${pfp}" class="post-avatar" alt="Avatar">`;
+
+                // Text badge next to name
+                const verifiedBadge = d.authorIsStudent ? '<i class="fas fa-check-circle verified-check-icon"></i>' : '';
+
                 // 3-DOT MENU LOGIC
                 const canEdit = currentUser && currentUser.uid === d.authorUid;
                 const canDelete = currentUser && (currentUser.uid === d.authorUid || currentUser.uid === currentTopicData.createdBy || currentUser.role === 'admin');
@@ -1129,9 +1274,9 @@
                 card.innerHTML = `
                     <div class="post-header-top">
                         <a href="/user.html?id=${d.authorUid}" class="post-author-link">
-                            <img src="${pfp}" class="post-avatar" alt="Avatar">
+                            ${avatarHtml}
                             <div class="post-meta">
-                                <span class="post-author" style="display:flex; align-items:center; flex-wrap:wrap;">${d.authorName}</span>
+                                <span class="post-author" style="display:flex; align-items:center; flex-wrap:wrap;">${d.authorName} ${verifiedBadge}</span>
                                 <span class="post-time">${timeStr}${editedLabel}</span>
                             </div>
                         </a>
@@ -1337,6 +1482,16 @@
                         const pfp = c.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${c.authorUid}&backgroundColor=EBF2FA`;
                         const imgHtml = c.imageUrl ? `<img src="${c.imageUrl}" class="comment-image-attachment" onclick="window.open('${c.imageUrl}', '_blank')">` : '';
                         
+                        // Avatar with badge for comment authors
+                        const commentAvatarHtml = c.authorIsStudent ? `
+                            <div class="comment-avatar-wrapper">
+                                <img src="${pfp}" alt="Avatar">
+                                <div class="comment-avatar-badge"><i class="fas fa-check-circle"></i></div>
+                            </div>
+                        ` : `<a href="/user.html?id=${c.authorUid}"><img src="${pfp}" class="comment-avatar"></a>`;
+                        
+                        const commentVerifiedBadge = c.authorIsStudent ? '<i class="fas fa-check-circle verified-check-icon" style="font-size: 0.7rem;"></i>' : '';
+
                         // Delete logic: Author, Admin, or Topic Owner
                         const isCommentAuthor = currentUser && currentUser.uid === c.authorUid;
                         const isAdmin = currentUser && currentUser.role === 'admin';
@@ -1349,10 +1504,10 @@
                         const div = document.createElement('div');
                         div.className = 'comment-item';
                         div.innerHTML = `
-                            <a href="/user.html?id=${c.authorUid}"><img src="${pfp}" class="comment-avatar"></a>
+                            ${commentAvatarHtml}
                             <div class="comment-content">
                                 <div style="display:flex; justify-content:space-between; align-items:start;">
-                                    <a href="/user.html?id=${c.authorUid}" class="comment-author-link"><div class="comment-author">${c.authorName}</div></a>
+                                    <a href="/user.html?id=${c.authorUid}" class="comment-author-link"><div class="comment-author">${c.authorName} ${commentVerifiedBadge}</div></a>
                                     ${deleteBtnHtml}
                                 </div>
                                 <div class="comment-text">${c.text}</div>
@@ -1379,51 +1534,7 @@
             };
 
             window.postComment = async (postId) => {
-                if (!currentUser) return;
-                const inputEl = document.getElementById(`comment-input-${postId}`);
-                const btnEl = document.getElementById(`btn-send-comment-${postId}`);
-                if (!inputEl || !btnEl) return;
-                
-                const text = inputEl.value.trim();
-                const file = commentImageFiles[postId];
-                
-                if (!text && !file) return;
-                
-                btnEl.disabled = true;
-                const origIcon = btnEl.innerHTML;
-                btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                
-                try {
-                    let uploadedImgUrl = null;
-                    if (file) {
-                        uploadedImgUrl = await uploadImageToCloudinary(file);
-                    }
-
-                    let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
-
-                    const commentData = {
-                        text: text,
-                        authorUid: currentUser.uid,
-                        authorName: currentUser.displayName || "User",
-                        authorPhoto: photoToSave,
-                        timestamp: serverTimestamp()
-                    };
-
-                    if (uploadedImgUrl) commentData.imageUrl = uploadedImgUrl;
-
-                    await addDoc(collection(db, "social_posts", postId, "comments"), commentData);
-                    await updateDoc(doc(db, "social_posts", postId), { commentCount: increment(1) });
-
-                    // Clear UI
-                    inputEl.value = '';
-                    window.removeCommentImg(postId);
-                } catch(e) { 
-                    console.error(e); 
-                    alert(ui.upload_fail); 
-                } finally { 
-                    btnEl.innerHTML = origIcon;
-                    btnEl.disabled = true; 
-                }
+                // Already defined above (with isStudent)
             };
 
             document.body.addEventListener('keydown', (e) => {
