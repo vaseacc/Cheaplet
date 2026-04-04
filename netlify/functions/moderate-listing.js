@@ -12,8 +12,9 @@ exports.handler = async (event, context) => {
         let { imageUrls, title, description } = data;
 
         console.log("Moderation started for:", title);
+        console.log("Description preview:", description?.substring(0, 100));
 
-        // 1. TEXT MODERATION USING GROQ
+        // ---------- TEXT MODERATION (Groq) ----------
         const GROQ_API_KEY = process.env.GROQ_API_KEY;
         if (!GROQ_API_KEY) {
             console.error("GROQ_API_KEY missing");
@@ -50,6 +51,8 @@ exports.handler = async (event, context) => {
             });
 
             const groqData = await groqResponse.json();
+            console.log("Groq response:", JSON.stringify(groqData, null, 2));
+
             if (groqData.choices && groqData.choices[0]?.message?.content) {
                 const aiReply = groqData.choices[0].message.content.trim().toUpperCase();
                 if (aiReply.includes("UNSAFE")) {
@@ -71,27 +74,32 @@ exports.handler = async (event, context) => {
             return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: textReason }) };
         }
 
-        // 2. IMAGE MODERATION USING SELF-HOSTED NSFW API
-        const NSFW_API_URL = process.env.NSFW_API_URL; // e.g., "https://your-app.onrender.com"
+        // ---------- IMAGE MODERATION (NSFW API) ----------
+        const NSFW_API_URL = process.env.NSFW_API_URL;
         if (!NSFW_API_URL) {
             console.warn("NSFW_API_URL not set, skipping image moderation");
             // Fallback: approve if no image moderation configured
             return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "SAFE" }) };
         }
 
-        for (const imageUrl of imageUrls) {
-            try {
-                const nsfwResponse = await fetch(`${NSFW_API_URL}/api/url_check?url=${encodeURIComponent(imageUrl)}`);
-                const nsfwData = await nsfwResponse.json();
-                // The API returns a field like 'is_nsfw' or 'data.is_nsfw' – adjust according to actual response
-                if (nsfwData.is_nsfw || (nsfwData.data && nsfwData.data.is_nsfw)) {
-                    console.log("Image rejected:", imageUrl);
-                    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Image contains inappropriate content." }) };
+        if (imageUrls && imageUrls.length > 0) {
+            for (const imageUrl of imageUrls) {
+                try {
+                    console.log("Checking image:", imageUrl);
+                    const nsfwResponse = await fetch(`${NSFW_API_URL}/api/url_check?url=${encodeURIComponent(imageUrl)}`);
+                    const nsfwData = await nsfwResponse.json();
+                    console.log("NSFW API response:", JSON.stringify(nsfwData));
+
+                    // The API returns { data: { is_nsfw: true/false } }
+                    if (nsfwData.data && nsfwData.data.is_nsfw === true) {
+                        console.log("Image rejected:", imageUrl);
+                        return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Image contains inappropriate content." }) };
+                    }
+                } catch (imgErr) {
+                    console.error("Error checking image:", imageUrl, imgErr);
+                    // If an image cannot be checked, reject to be safe
+                    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Could not verify image safety." }) };
                 }
-            } catch (imgErr) {
-                console.error("Error checking image:", imageUrl, imgErr);
-                // If an image cannot be checked, reject to be safe
-                return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Could not verify image safety." }) };
             }
         }
 
