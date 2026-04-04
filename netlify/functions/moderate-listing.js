@@ -14,121 +14,84 @@ exports.handler = async (event, context) => {
         console.log("Moderation started for:", title);
         console.log("Description preview:", description?.substring(0, 100));
 
-        // 1. Give Cloudinary a moment
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // 1. TEXT MODERATION USING GROQ (primary)
+        const GROQ_API_KEY = process.env.GROQ_API_KEY;
+        let textVerdict = "SAFE";
+        let textReason = "";
 
-        // 2. Environment Keys
-        const GEMINI_KEY = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-        
-        if (!GEMINI_KEY) {
-            console.error("Internal Error: GEMINI_API_KEY is missing");
-            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Moderation system configuration error." }) };
-        }
-
-        // 3. Download images (first 3)
-        const imagePromises = imageUrls.slice(0, 3).map(async (imgUrl) => {
+        if (GROQ_API_KEY) {
             try {
-                const imgRes = await fetch(imgUrl);
-                if (!imgRes.ok) return null;
-                const buffer = await imgRes.arrayBuffer();
-                return { base64: Buffer.from(buffer).toString('base64') };
-            } catch (err) {
-                console.error("Fetch error:", err.message);
-                return null;
-            }
-        });
-
-        const imageDataArray = (await Promise.all(imagePromises)).filter(img => img !== null);
-
-        if (imageDataArray.length === 0) {
-            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Security check failed: Image could not be processed." }) };
-        }
-
-        // 4. Simplified prompt – ask for only "SAFE" or "UNSAFE"
-        const prompt = `You are a strict safety moderator for a college marketplace.
-        Image and text: Title: "${title || ''}", Description: "${description || ''}".
-        Does this listing contain nudity, pornography, explicit content, or inappropriate words like "nude", "naked", "sex", "porn"? 
-        Answer with exactly one word: SAFE or UNSAFE. Nothing else.`;
-
-        // 5. Call Gemini
-        const aiPromises = imageDataArray.map(async (img) => {
-            const aiRes = await fetch(
-                `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
-                {
+                const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: {
+                        "Authorization": `Bearer ${GROQ_API_KEY}`,
+                        "Content-Type": "application/json"
+                    },
                     body: JSON.stringify({
-                        contents: [{ 
-                            parts: [
-                                { text: prompt }, 
-                                { inlineData: { mimeType: "image/jpeg", data: img.base64 } }
-                            ] 
-                        }]
+                        model: "llama-3.3-70b-versatile", // you can also use "mixtral-8x7b-32768" or "llama3-70b-8192"
+                        messages: [
+                            {
+                                role: "system",
+                                content: `You are a strict content moderator for a college student marketplace. 
+                                Your job is to decide if a listing title and description are APPROPRIATE or INAPPROPRIATE.
+                                Inappropriate content includes: nudity, sexual content, explicit language, hate speech, illegal items, drugs, weapons, spam, or anything not related to selling a legitimate student item (textbooks, electronics, furniture, school supplies).
+                                Respond with ONLY "SAFE" or "UNSAFE". No extra text.`
+                            },
+                            {
+                                role: "user",
+                                content: `Title: "${title || ''}"\nDescription: "${description || ''}"`
+                            }
+                        ],
+                        temperature: 0,
+                        max_tokens: 10
                     })
-                }
-            );
-            return aiRes.json();
-        });
+                });
 
-        const aiResults = await Promise.all(aiPromises);
-        let isSafe = true;
-        let rejectReason = "Image flagged as inappropriate.";
+                const groqData = await groqResponse.json();
+                console.log("Groq response:", JSON.stringify(groqData, null, 2));
 
-        for (const aiData of aiResults) {
-            console.log("Raw AI response:", JSON.stringify(aiData, null, 2));
-            
-            // Safety filter triggered
-            if (aiData.candidates && aiData.candidates[0]?.finishReason === "SAFETY") {
-                isSafe = false;
-                rejectReason = "Explicit content blocked by safety filters.";
-                break;
-            }
-            
-            // Extract text response
-            if (aiData.candidates && aiData.candidates[0]?.content?.parts?.[0]?.text) {
-                let aiText = aiData.candidates[0].content.parts[0].text.trim().toUpperCase();
-                console.log("AI text response:", aiText);
-                
-                if (aiText.includes("UNSAFE")) {
-                    isSafe = false;
-                    rejectReason = "AI flagged as unsafe (contains nudity/explicit content)";
-                    break;
-                } else if (aiText.includes("SAFE")) {
-                    // Continue checking other images – but if any says UNSAFE, reject
-                    continue;
+                if (groqData.choices && groqData.choices[0]?.message?.content) {
+                    const aiReply = groqData.choices[0].message.content.trim().toUpperCase();
+                    if (aiReply.includes("UNSAFE")) {
+                        textVerdict = "UNSAFE";
+                        textReason = "Text analysis flagged as inappropriate.";
+                    } else if (aiReply.includes("SAFE")) {
+                        textVerdict = "SAFE";
+                    } else {
+                        // Unclear response: assume unsafe to be safe
+                        textVerdict = "UNSAFE";
+                        textReason = "Unclear response from moderation AI.";
+                    }
                 } else {
-                    // Unclear response – assume unsafe
-                    isSafe = false;
-                    rejectReason = "AI returned unclear response, rejecting to be safe.";
-                    break;
+                    console.warn("Groq returned unexpected format");
+                    textVerdict = "UNSAFE";
+                    textReason = "Moderation service error.";
                 }
-            } else {
-                isSafe = false;
-                rejectReason = "AI did not return a valid response.";
-                break;
+            } catch (groqErr) {
+                console.error("Groq error:", groqErr);
+                textVerdict = "UNSAFE";
+                textReason = "Moderation service temporarily unavailable.";
             }
-        }
-
-        // 6. Backup keyword check (very strict)
-        const textToCheck = `${title || ''} ${description || ''}`.toLowerCase();
-        const bannedWords = ['nude', 'naked', 'porn', 'sex', 'erotic', 'xxx', 'onlyfans', 'nsfw', 'dick', 'cock', 'pussy', 'boobs', 'tits', 'ass', 'bitch', 'fuck', 'shit', 'cunt', 'whore', 'slut'];
-        
-        for (const word of bannedWords) {
-            if (textToCheck.includes(word)) {
-                isSafe = false;
-                rejectReason = `Listing rejected: Contains inappropriate word "${word}"`;
-                console.log(`Blocked due to banned word: ${word}`);
-                break;
-            }
-        }
-
-        if (isSafe) {
-            console.log("Listing APPROVED.");
-            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "SAFE" }) };
         } else {
-            console.log("Listing REJECTED:", rejectReason);
-            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: rejectReason }) };
+            console.warn("GROQ_API_KEY not set, skipping text moderation");
         }
+
+        // If text is unsafe, reject immediately
+        if (textVerdict === "UNSAFE") {
+            console.log("Listing REJECTED due to text:", textReason);
+            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: textReason }) };
+        }
+
+        // 2. IMAGE MODERATION (optional – if images are provided)
+        // If you don't want image moderation, you can skip this part.
+        // For now, we keep a simple keyword check on image URLs (optional)
+        // You could also integrate a free image moderation API later.
+
+        // If you want to reject listings that contain images with inappropriate filenames or no images at all, adjust here.
+        // For now, we assume images are okay if text passed.
+
+        console.log("Listing APPROVED (text moderation passed).");
+        return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "SAFE" }) };
 
     } catch (error) {
         console.error("Global Catch Error:", error);
