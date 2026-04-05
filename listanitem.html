@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,700;0,900;1,700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* (all existing CSS – unchanged) */
         :root {
             --ink:       #0C1446;
             --deep:      #2B5C92;
@@ -487,24 +488,48 @@
                 scanBtn.disabled = true; manualBtn.disabled = true;
 
                 try {
-                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
-                    const data = await res.json();
+                    // Clean ISBN: remove non-digits and spaces
+                    const cleanIsbn = isbn.replace(/[^0-9]/g, '');
+                    if (cleanIsbn.length < 10) {
+                        alert("Invalid ISBN format. Please enter a valid 10 or 13 digit ISBN.");
+                        return;
+                    }
+                    // Try both 10 and 13 digit queries
+                    let url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}&maxResults=1`;
+                    let res = await fetch(url);
+                    let data = await res.json();
+                    
+                    // If no results, try searching by exact ISBN (without isbn: prefix) as fallback
+                    if (!data.items || data.items.length === 0) {
+                        url = `https://www.googleapis.com/books/v1/volumes?q=${cleanIsbn}&maxResults=1`;
+                        res = await fetch(url);
+                        data = await res.json();
+                    }
                     
                     if (data.items && data.items.length > 0) {
                         const book = data.items[0].volumeInfo;
-                        const fullTitle = book.title + (book.authors ? ` by ${book.authors.join(', ')}` : '');
+                        let fullTitle = book.title || "Unknown Title";
+                        if (book.authors && book.authors.length) {
+                            fullTitle += ` by ${book.authors.join(', ')}`;
+                        }
                         document.getElementById('listing-title').value = fullTitle;
                         let originalDesc = book.description ? book.description.replace(/<[^>]*>?/gm, '') : '';
                         document.getElementById('listing-description').value = originalDesc;
-                        currentISBN = isbn;
-                        document.getElementById('listing-isbn').value = isbn;
+                        currentISBN = cleanIsbn;
+                        document.getElementById('listing-isbn').value = cleanIsbn;
                         document.getElementById('isbn-section').style.display = 'none';
                         document.getElementById('main-form-section').style.display = 'block';
                         if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
-                    } else { alert(ui[lang].notFound); }
-                } catch (err) { alert(ui[lang].notFound); }
-                scanBtn.innerHTML = `<i class="fas fa-camera"></i> <span id="ui-btn-scan">${ui[lang].btnScan}</span>`;
-                scanBtn.disabled = false; manualBtn.disabled = false;
+                    } else {
+                        alert(ui[lang].notFound);
+                    }
+                } catch (err) {
+                    console.error("ISBN fetch error:", err);
+                    alert("Network error. Please try again later.");
+                } finally {
+                    scanBtn.innerHTML = `<i class="fas fa-camera"></i> <span id="ui-btn-scan">${ui[lang].btnScan}</span>`;
+                    scanBtn.disabled = false; manualBtn.disabled = false;
+                }
             }
 
             document.getElementById('start-scan-btn').onclick = () => {
@@ -518,6 +543,7 @@
             document.getElementById('manual-isbn-btn').onclick = () => {
                 const val = document.getElementById('manual-isbn-input').value.trim();
                 if(val) fetchBookData(val);
+                else alert("Please enter an ISBN.");
             };
 
             document.getElementById('skip-scan-btn').onclick = () => {
