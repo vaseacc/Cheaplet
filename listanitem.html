@@ -101,6 +101,7 @@
         .suggestion-item:last-child { border-bottom: none; }
         .suggestion-item:hover { background: var(--surface); }
         .suggestion-count { font-size: 0.75rem; color: var(--text-muted); background: var(--surface); padding: 2px 8px; border-radius: 50px; border: 1px solid var(--mist); }
+        .create-tag-item { color: var(--deep); font-weight: 600; border-top: 1px dashed var(--mist); }
 
         .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .two-col > div { display: flex; flex-direction: column; }
@@ -128,6 +129,22 @@
         .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
         .btn-cancel { flex: 1; min-width: 120px; background: var(--surface); color: var(--text-muted); border: 1.5px solid rgba(179,205,224,0.5); border-radius: var(--radius-sm); padding: 12px 20px; font-family: var(--font-body); font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s, color 0.2s; }
         .btn-cancel:hover { background: var(--mist); color: var(--ink); }
+
+        .social-promo {
+            margin-top: 16px;
+            text-align: center;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            background: var(--off-white);
+            padding: 8px 12px;
+            border-radius: 40px;
+            display: inline-block;
+            width: 100%;
+        }
+        .social-promo i {
+            color: var(--gold);
+            margin-right: 6px;
+        }
 
         /* Custom Rejection Modal */
         .modal-overlay { position: fixed; inset: 0; background: rgba(12,20,70,0.8); backdrop-filter: blur(6px); z-index: 10000; display: none; justify-content: center; align-items: center; padding: 20px; animation: fadeIn 0.2s ease; }
@@ -205,7 +222,6 @@
             <div class="form-wrapper">
                 <form id="listing-form">
 
-                    <!-- Hidden ISBN field -->
                     <input type="hidden" id="listing-isbn" value="">
 
                     <div class="form-section">
@@ -318,6 +334,10 @@
                             <span id="post-btn-text">Submit Listing</span>
                         </button>
                         <button type="button" class="btn-cancel" id="cancelListingBtn" onclick="window.location.href='/index.html'">Cancel</button>
+                    </div>
+
+                    <div class="social-promo">
+                        <i class="fas fa-share-alt"></i> Also share your listing in the <strong>Campus Hub</strong> social feed!
                     </div>
 
                 </form>
@@ -529,13 +549,14 @@
             }
 
             tagInput.oninput = async (e) => {
-                const val = e.target.value.trim().toLowerCase();
+                const val = e.target.value.trim();
                 if (val.length < 1) { suggestionsBox.style.display = 'none'; return; }
-                const snap = await getDocs(query(collection(db, "global_tags"), where("tag_lowercase", ">=", val), where("tag_lowercase", "<=", val + "\uf8ff"), limit(5)));
+                const snap = await getDocs(query(collection(db, "global_tags"), where("tag_lowercase", ">=", val.toLowerCase()), where("tag_lowercase", "<=", val.toLowerCase() + "\uf8ff"), limit(5)));
                 suggestionsBox.innerHTML = '';
+                let hasMatch = false;
                 if (!snap.empty) {
-                    suggestionsBox.style.display = 'block';
                     snap.forEach(doc => {
+                        hasMatch = true;
                         const div = document.createElement('div');
                         div.className = 'suggestion-item';
                         div.innerHTML = `<span>${doc.data().tag}</span><span class="suggestion-count">${doc.data().count || 1} ${ui[lang].tagUses}</span>`;
@@ -543,6 +564,15 @@
                         suggestionsBox.appendChild(div);
                     });
                 }
+                // Always show "create new tag" option if the typed text is not empty and not already an exact match in existing tags
+                if (val && !tags.includes(val) && (!hasMatch || ![...suggestionsBox.children].some(child => child.innerText.trim().startsWith(val)))) {
+                    const createDiv = document.createElement('div');
+                    createDiv.className = 'suggestion-item create-tag-item';
+                    createDiv.innerHTML = `<span><i class="fas fa-plus-circle"></i> Create new tag: "<strong>${val}</strong>"</span>`;
+                    createDiv.onmousedown = (ev) => { ev.preventDefault(); addTag(val); };
+                    suggestionsBox.appendChild(createDiv);
+                }
+                if (suggestionsBox.children.length > 0) suggestionsBox.style.display = 'block';
             };
             
             tagInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput.value); } };
