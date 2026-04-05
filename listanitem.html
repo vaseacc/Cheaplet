@@ -480,7 +480,7 @@
 
             let html5QrCode;
             
-            // --- ENHANCED ISBN LOOKUP WITH CACHING & FALLBACK ---
+            // --- ENHANCED ISBN LOOKUP USING OPENLIBRARY (UNLIMITED) ---
             const isbnCache = {};
             try {
                 const saved = localStorage.getItem('scoralia_isbn_cache');
@@ -524,61 +524,62 @@
                 scanBtn.disabled = true; manualBtn.disabled = true;
 
                 let bookData = null;
-                let errorMsg = null;
 
-                // Try Google Books (with retry on 429)
-                for (let attempt = 1; attempt <= 2; attempt++) {
-                    try {
-                        const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}&maxResults=1`;
-                        const res = await fetch(url);
-                        if (res.status === 429) {
-                            if (attempt === 1) {
-                                await new Promise(r => setTimeout(r, 2000));
-                                continue;
-                            } else {
-                                throw new Error("Google Books rate limit exceeded");
-                            }
-                        }
-                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                // PRIMARY: OpenLibrary (no rate limit, free, unlimited)
+                try {
+                    const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`;
+                    const res = await fetch(url);
+                    if (res.ok) {
                         const data = await res.json();
-                        if (data.items && data.items.length > 0) {
-                            const book = data.items[0].volumeInfo;
+                        const key = `ISBN:${cleanIsbn}`;
+                        if (data[key]) {
+                            const book = data[key];
                             let fullTitle = book.title || "Unknown Title";
                             if (book.authors && book.authors.length) {
-                                fullTitle += ` by ${book.authors.join(', ')}`;
+                                fullTitle += ` by ${book.authors.map(a => a.name).join(', ')}`;
                             }
-                            let originalDesc = book.description ? book.description.replace(/<[^>]*>?/gm, '') : '';
-                            bookData = { title: fullTitle, description: originalDesc };
-                            break;
+                            let description = "";
+                            if (book.notes) description = book.notes;
+                            else if (book.description) description = typeof book.description === 'string' ? book.description : (book.description.value || "");
+                            // If still empty, try the excerpt
+                            if (!description && book.excerpts && book.excerpts.length) description = book.excerpts[0].text;
+                            bookData = { title: fullTitle, description: description };
                         }
-                    } catch (err) {
-                        console.warn(`Google Books attempt ${attempt} failed:`, err);
-                        if (attempt === 2) errorMsg = err.message;
                     }
+                } catch (err) {
+                    console.warn("OpenLibrary fetch failed:", err);
                 }
 
-                // Fallback to OpenLibrary if Google failed
+                // FALLBACK: Google Books (only if OpenLibrary failed)
                 if (!bookData) {
-                    try {
-                        const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`;
-                        const res = await fetch(url);
-                        if (res.ok) {
+                    for (let attempt = 1; attempt <= 2; attempt++) {
+                        try {
+                            const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}&maxResults=1`;
+                            const res = await fetch(url);
+                            if (res.status === 429) {
+                                if (attempt === 1) {
+                                    await new Promise(r => setTimeout(r, 2000));
+                                    continue;
+                                } else {
+                                    throw new Error("Rate limit exceeded");
+                                }
+                            }
+                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
                             const data = await res.json();
-                            const key = `ISBN:${cleanIsbn}`;
-                            if (data[key]) {
-                                const book = data[key];
+                            if (data.items && data.items.length > 0) {
+                                const book = data.items[0].volumeInfo;
                                 let fullTitle = book.title || "Unknown Title";
                                 if (book.authors && book.authors.length) {
-                                    fullTitle += ` by ${book.authors.map(a => a.name).join(', ')}`;
+                                    fullTitle += ` by ${book.authors.join(', ')}`;
                                 }
-                                let description = "";
-                                if (book.notes) description = book.notes;
-                                else if (book.description) description = typeof book.description === 'string' ? book.description : (book.description.value || "");
-                                bookData = { title: fullTitle, description: description };
+                                let originalDesc = book.description ? book.description.replace(/<[^>]*>?/gm, '') : '';
+                                bookData = { title: fullTitle, description: originalDesc };
+                                break;
                             }
+                        } catch (err) {
+                            console.warn(`Google Books attempt ${attempt} failed:`, err);
+                            if (attempt === 2 && !bookData) bookData = null;
                         }
-                    } catch (err) {
-                        console.warn("OpenLibrary fallback failed:", err);
                     }
                 }
 
@@ -592,7 +593,7 @@
                     document.getElementById('main-form-section').style.display = 'block';
                     if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
                 } else {
-                    alert(ui[lang].notFound + (errorMsg ? ` (${errorMsg})` : ""));
+                    alert(ui[lang].notFound);
                 }
 
                 scanBtn.innerHTML = `<i class="fas fa-camera"></i> <span id="ui-btn-scan">${ui[lang].btnScan}</span>`;
