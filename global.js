@@ -219,6 +219,47 @@ document.head.appendChild(globalStyle);
     }
 })();
 
+// --- 4. FORCED LANGUAGE SELECTION MODAL (BLOCKING) ---
+// This function shows a modal that blocks the UI until the user selects a language.
+// It is called immediately when the page loads, before any other content is shown.
+function showForcedLanguageModal() {
+    return new Promise((resolve) => {
+        // Check if language already selected
+        const savedLang = localStorage.getItem('preferred_language');
+        if (savedLang && translations[savedLang]) {
+            resolve(savedLang);
+            return;
+        }
+
+        // Create overlay and modal
+        const overlay = document.createElement('div');
+        overlay.className = 'lang-modal-overlay';
+        overlay.style.zIndex = '20000'; // Above everything
+        overlay.innerHTML = `
+            <div class="lang-modal">
+                <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">Welcome / Bienvenue</h2>
+                <p style="color:#6b84a3; margin-bottom:20px; font-size:0.9rem;">Please select your preferred language.<br>Veuillez sélectionner votre langue préférée.</p>
+                <button class="lang-btn" id="forced-lang-en">English</button>
+                <button class="lang-btn" id="forced-lang-fr">Français</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        const btnEn = overlay.querySelector('#forced-lang-en');
+        const btnFr = overlay.querySelector('#forced-lang-fr');
+
+        const selectLang = (lang) => {
+            localStorage.setItem('preferred_language', lang);
+            window.applyLanguage(lang);
+            overlay.remove();
+            resolve(lang);
+        };
+
+        btnEn.onclick = () => selectLang('en');
+        btnFr.onclick = () => selectLang('fr');
+    });
+}
+
 // --- SCHOOL DOMAIN CHECKER ---
 const schoolDomains = {
     "@etu.cegepjonquiere.ca": "Cégep de Jonquière",
@@ -290,11 +331,9 @@ onAuthStateChanged(auth, (user) => {
                 // --- BAN SYSTEM ENFORCEMENT ---
                 if (currentUserData.role === 'banned') { 
                     if (currentUserData.banExpiresAt && currentUserData.banExpiresAt.toDate() < new Date()) {
-                        // Ban is expired! Unban them automatically.
                         await updateDoc(doc(db, "users", user.uid), { role: 'user', banExpiresAt: null });
                         currentUserData.role = 'user';
                     } else {
-                        // Still banned.
                         triggerHardLockdown(currentUserData.banExpiresAt); 
                         return; 
                     }
@@ -320,7 +359,6 @@ onAuthStateChanged(auth, (user) => {
                 // Social tour (separate key, only on social/topic pages)
                 const socialTourKey = `scoralia_social_tour_seen_${user.uid}`;
                 if (!currentUserData.hasSeenSocialTour && !localStorage.getItem(socialTourKey)) {
-                    // Check if we are on social.html or topic.html
                     const path = window.location.pathname;
                     if (path.includes('/social.html') || path.includes('/topic.html')) {
                         showSocialTour();
@@ -367,7 +405,6 @@ function showWarningPopup(warningText, uid) {
 
     document.getElementById('btn-ack-warning').onclick = async () => {
         modal.remove();
-        // Clear the warning from the database so it doesn't loop
         await updateDoc(doc(db, "users", uid), { activeWarning: null });
     };
 }
@@ -668,11 +705,6 @@ function refreshUI() {
     if (currentUserData) { updateHeaderToLoggedIn(currentUserData); } 
     else {
         updateHeaderToLoggedOut();
-        // Language prompt: only show if never selected (permanent) – no session flag needed
-        const langSelected = localStorage.getItem('preferred_language');
-        if (globalSettings.enableLanguagePrompt && !langSelected && !document.getElementById('lang-modal')) {
-            showLanguagePopup();
-        }
     }
     window.applyLanguage(localStorage.getItem('preferred_language') || 'en');
     showTermsBanner();
@@ -776,29 +808,6 @@ function updateHeaderToLoggedOut() {
     container.innerHTML = `<button class="btn" onclick="window.location.href='/LoginInToCheaplet.html'">${t.btn_login}</button>`;
 }
 
-function showLanguagePopup() {
-    if (document.getElementById('lang-modal')) return;
-    const modal = document.createElement('div');
-    modal.id = 'lang-modal'; modal.className = 'lang-modal-overlay';
-    modal.innerHTML = `
-        <div class="lang-modal">
-            <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">Welcome / Bienvenue</h2>
-            <p style="color:#6b84a3; margin-bottom:20px; font-size:0.9rem;">Please select your preferred language.</p>
-            <button class="lang-btn" id="btn-en">English</button>
-            <button class="lang-btn" id="btn-fr">Français</button>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    document.getElementById('btn-en').onclick = () => {
-        localStorage.setItem('preferred_language', 'en');
-        location.reload();
-    };
-    document.getElementById('btn-fr').onclick = () => {
-        localStorage.setItem('preferred_language', 'fr');
-        location.reload();
-    };
-}
-
 function showTermsBanner() {
     if (localStorage.getItem('scoralia_terms_accepted') === 'true' || document.getElementById('terms-banner-global') || document.getElementById('lang-modal')) return;
     const lang = localStorage.getItem('preferred_language') || 'en';
@@ -809,6 +818,13 @@ function showTermsBanner() {
     document.body.appendChild(banner);
     document.getElementById('accept-terms-btn').onclick = () => { localStorage.setItem('scoralia_terms_accepted', 'true'); banner.remove(); };
 }
+
+// --- INITIAL LANGUAGE SELECTION (BLOCKING MODAL) ---
+// This runs immediately after the script loads, before any other DOM operations.
+// It shows a modal that forces the user to choose a language, then continues.
+(async function initLanguage() {
+    await showForcedLanguageModal();
+})();
 
 document.addEventListener('DOMContentLoaded', () => {
     const logo = document.querySelector('.logo');
