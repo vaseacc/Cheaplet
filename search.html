@@ -1,205 +1,240 @@
-import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, onSnapshot, updateDoc, setDoc, collection, query, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
-
-// --- 0. DEFERRED PERFORMANCE LOADING ---
-// Prevents icons and fonts from blocking the initial page draw
-if (!document.querySelector('link[href*="font-awesome"]')) {
-    const faLink = document.createElement('link');
-    faLink.rel = 'preload';
-    faLink.as = 'style';
-    faLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
-    faLink.onload = function() { this.rel = 'stylesheet'; };
-    document.head.appendChild(faLink);
-}
-
-// --- 0.1 ACCESSIBILITY: FIREBASE IFRAME TITLE FIX ---
-// Automatically adds a title to the hidden Firebase Auth iframe to pass Lighthouse audits
-const observer = new MutationObserver((mutations) => {
-    mutations.forEach(mutation => {
-        mutation.addedNodes.forEach(node => {
-            if (node.tagName === 'IFRAME' && node.src.includes('firebaseapp.com')) {
-                node.setAttribute('title', 'Authentication Service');
-                observer.disconnect();
-            }
-        });
-    });
-});
-observer.observe(document.documentElement, { childList: true, subtree: true });
-
-// --- 1. INITIALIZE CONFIG ---
-const response = await fetch('/.netlify/functions/config');
-const config = await response.json();
-const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-// Helper to defer non-critical tasks so they don't lag the UI
-const runWhenIdle = (cb) => {
-    if (window.requestIdleCallback) requestIdleCallback(cb);
-    else setTimeout(cb, 1);
-};
-
-// --- 2. TRANSLATION DICTIONARY ---
-const translations = {
-    "en": {
-        "nav_browse": "Browse", "nav_listings": "My Listings", "nav_messages": "Messages", "nav_profile": "My Profile", "nav_hub": "Campus Hub",
-        "btn_login": "Login / Register", "btn_list": "List an Item", "btn_signout": "Sign Out",
-        "verified_student": "Verified Student",
-        "ban_title": "ACCESS DENIED", "ban_text": "This account has been banned.",
-        "tour_title_1": "Welcome to Scoralia!",
-        "tour_next": "Next", "tour_start": "Finish & Explore", "tour_saving": "Saving...",
-        "warning_title": "Admin Warning", "warning_btn": "I Understand"
-    },
-    "fr": {
-        "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", "nav_hub": "Hub Campus",
-        "btn_login": "Connexion", "btn_list": "Vendre", "btn_signout": "Déconnexion",
-        "verified_student": "Étudiant vérifié",
-        "ban_title": "ACCÈS REFUSÉ", "ban_text": "Ce compte a été banni.",
-        "tour_title_1": "Bienvenue sur Scoralia !",
-        "tour_next": "Suivant", "tour_start": "Terminer & Explorer", "tour_saving": "Enregistrement...",
-        "warning_title": "Avertissement", "warning_btn": "J'ai compris"
-    }
-};
-
-window.applyLanguage = (lang) => {
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (translations[lang] && translations[lang][key]) el.textContent = translations[lang][key];
-    });
-    localStorage.setItem('preferred_language', lang);
-    document.documentElement.lang = lang;
-};
-
-// --- 3. GLOBAL CSS (Optimized Contrast & Performance) ---
-const globalStyle = document.createElement('style');
-globalStyle.innerHTML = `
-    :root {
-        --ink: #0C1446; --gold: #C8A96E; --deep: #2B5C92; --white: #FFFFFF;
-    }
-    .header-inner { display: flex !important; align-items: center !important; justify-content: space-between !important; height: 68px; }
-    nav ul { display: flex; list-style: none; gap: 28px; padding: 0; margin: 0; }
-    nav ul li a { color: rgba(255,255,255,0.9); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: 0.2s; }
-    nav ul li a:hover { color: var(--white); }
-    .header-right { display: flex !important; align-items: center !important; gap: 12px; }
-    .btn { background: linear-gradient(135deg, #C8A96E 0%, #ddb97a 100%) !important; color: #0C1446 !important; border: none !important; padding: 0 20px !important; height: 38px !important; border-radius: 20px !important; font-weight: 700 !important; cursor: pointer !important; font-size: 0.82rem !important; display: inline-flex !important; align-items: center !important; text-decoration: none !important; }
-    .profile-avatar { width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--gold); cursor: pointer; overflow: hidden; }
-    .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
-    .dropdown-menu { position: absolute; top: 55px; right: 0; width: 240px; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); display: none; flex-direction: column; overflow: hidden; z-index: 1000; border: 1px solid #eee; }
-    .dropdown-menu.show { display: flex; }
-    .dropdown-item { padding: 12px 15px; text-decoration: none; color: #333; font-weight: 500; font-size: 0.9rem; border-bottom: 1px solid #f5f5f5; }
-    .dropdown-item:hover { background-color: #f8fafc; }
-    .terms-banner { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--ink); color: #fff; padding: 15px 25px; display: flex; justify-content: center; align-items: center; gap: 20px; z-index: 99999; font-size: 0.85rem; border-top: 1px solid var(--gold); backdrop-filter: blur(10px); }
-    .btn-accept-terms { background: var(--gold); color: var(--ink); border: none; padding: 8px 20px; border-radius: 20px; font-weight: 800; cursor: pointer; }
-    @media (max-width: 767px) {
-        nav { display: none !important; }
-        .terms-banner { flex-direction: column; text-align: center; padding-bottom: max(20px, env(safe-area-inset-bottom)); }
-    }
-`;
-document.head.appendChild(globalStyle);
-
-// --- 4. AUTH & USER DATA ---
-onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        onSnapshot(doc(db, "users", user.uid), async (docSnap) => {
-            if (docSnap.exists()) {
-                currentUserData = docSnap.data();
-                if (currentUserData.role === 'banned') triggerHardLockdown(currentUserData.banExpiresAt);
-                refreshUI();
-            }
-        });
-    } else {
-        currentUserData = null;
-        refreshUI();
-    }
-});
-
-function refreshUI() {
-    if (currentUserData) updateHeaderToLoggedIn(currentUserData);
-    else updateHeaderToLoggedOut();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <title>Browse Books — Scoralia</title>
     
-    const langSelected = localStorage.getItem('preferred_language');
-    if (!langSelected) {
-        showLanguageBanner();
-    } else {
-        window.applyLanguage(langSelected);
-        showTermsBanner();
-    }
-}
+    <!-- GLOBAL BRAIN -->
+    <script type="module" src="global.js"></script>
+    
+    <!-- FONTS & ICONS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --ink:       #0C1446;
+            --deep:      #2B5C92;
+            --mist:      #B3CDE0;
+            --white:     #FFFFFF;
+            --off-white: #F4F7FC;
+            --surface:   #EBF2FA;
+            --text-body: #1a2a4a;
+            --text-muted:#64748b;
+            --gold:      #C8A96E;
+            --green:     #2E7D32;
+            --radius-md: 16px;
+            --shadow-sm: 0 4px 20px rgba(12,20,70,0.06);
+            --font-display: 'Playfair Display', Georgia, serif;
+            --font-body:    'DM Sans', sans-serif;
+        }
 
-function showLanguageBanner() {
-    if (document.getElementById('lang-banner-global')) return;
-    const banner = document.createElement('div');
-    banner.id = 'lang-banner-global'; 
-    banner.className = 'terms-banner';
-    banner.innerHTML = `
-        <div style="font-weight: bold; font-family: serif;">Welcome / Bienvenue</div>
-        <div style="opacity: 0.9;">Choose your language / Choisissez votre langue :</div>
-        <div style="display: flex; gap: 10px;">
-            <button class="btn-accept-terms" id="btn-en">English</button>
-            <button class="btn-accept-terms" id="btn-fr">Français</button>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: var(--font-body); background-color: var(--off-white); color: var(--text-body); line-height: 1.6; }
+
+        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+        /* ── HEADER ── */
+        header { 
+            position: sticky; top: 0; z-index: 200; 
+            background: rgba(12, 20, 70, 0.97); backdrop-filter: blur(12px); 
+            border-bottom: 1px solid rgba(179,205,224,0.15); 
+        }
+        .header-inner { max-width: 1200px; margin: 0 auto; padding: 0 20px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-family: var(--font-display); font-size: 1.6rem; font-weight: 900; color: var(--white); text-decoration: none; letter-spacing: -0.5px; }
+        .logo em { color: var(--gold); font-style: normal; }
+        
+        nav ul { display: flex; list-style: none; gap: 28px; }
+        nav ul li a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+        nav ul li a:hover { color: var(--white); }
+
+        /* ── SEARCH & FILTERS ── */
+        .filter-section { background: var(--white); padding: 30px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid rgba(179,205,224,0.3); margin: 30px 0; animation: fadeUp 0.5s ease both; }
+        .filter-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; }
+
+        .input-group { position: relative; display: flex; align-items: center; }
+        .input-group i { position: absolute; left: 15px; color: var(--text-muted); }
+        
+        #search-input, #sort-filter { 
+            width: 100%; padding: 12px 15px 12px 40px; border: 1.5px solid var(--mist); 
+            border-radius: 10px; font-family: inherit; font-size: 1rem; color: var(--text-body); 
+            background: var(--off-white); outline: none; transition: 0.2s; 
+        }
+        #sort-filter { padding-left: 15px; cursor: pointer; }
+        #search-input:focus, #sort-filter:focus { border-color: var(--deep); background: var(--white); box-shadow: 0 0 0 3px rgba(43,92,146,0.1); }
+
+        /* ── GRID HEADER ── */
+        .listings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .page-title { font-family: var(--font-display); font-size: 1.8rem; font-weight: 800; color: var(--ink); }
+        .item-count { background: var(--surface); color: var(--deep); padding: 5px 15px; border-radius: 50px; font-size: 0.85rem; font-weight: 700; }
+
+        /* ── LISTINGS GRID ── */
+        .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 25px; min-height: 400px; padding-bottom: 60px; }
+
+        .listing-card { 
+            background: var(--white); border-radius: var(--radius-md); overflow: hidden; 
+            box-shadow: var(--shadow-sm); text-decoration: none; color: inherit; 
+            transition: transform 0.3s, box-shadow 0.3s; display: flex; flex-direction: column; 
+            border: 1px solid rgba(179,205,224,0.3); animation: fadeUp 0.5s ease both;
+        }
+        .listing-card:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(12,20,70,0.1); border-color: var(--deep); }
+        .listing-image { height: 200px; background-color: var(--surface); background-size: cover; background-position: center; position: relative; }
+        
+        .listing-details { padding: 18px; flex: 1; display: flex; flex-direction: column; }
+        .listing-price { color: var(--green); font-weight: 800; font-size: 1.25rem; font-family: var(--font-display); margin-bottom: 5px; }
+        .listing-title { font-weight: 600; font-size: 1rem; color: var(--ink); margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; height: 2.8em; }
+        .listing-loc { font-size: 0.85rem; color: var(--text-muted); margin-top: auto; display: flex; align-items: center; gap: 5px; }
+        .listing-loc i { color: var(--deep); }
+
+        /* ── EMPTY STATE ── */
+        .empty-state { grid-column: 1/-1; text-align: center; padding: 80px 20px; color: var(--text-muted); }
+        .empty-state i { font-size: 3rem; color: var(--mist); margin-bottom: 15px; display: block; }
+
+        /* ── FOOTER ── */
+        footer { background: var(--ink); color: rgba(255,255,255,0.6); padding: 60px 0 30px; text-align: center; border-top: 1px solid rgba(179,205,224,0.1); }
+        .footer-links { display: flex; justify-content: center; gap: 30px; margin-bottom: 25px; }
+        .footer-links a { color: inherit; text-decoration: none; font-size: 0.9rem; }
+        .footer-links a:hover { color: var(--white); }
+
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 768px) {
+            .filter-grid { grid-template-columns: 1fr; }
+            .listings-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .listing-image { height: 160px; }
+            .listing-title { font-size: 0.9rem; }
+            nav { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-inner">
+            <a href="/index.html" class="logo">Scor<em>alia</em></a>
+            <nav>
+                <ul>
+                    <li><a href="/search.html">Browse</a></li>
+                    <li><a href="/social.html">Campus Hub</a></li>
+                    <li><a href="/messages.html">Messages</a></li>
+                </ul>
+            </nav>
+            <div class="header-right"></div> 
         </div>
-    `;
-    document.body.appendChild(banner);
+    </header>
 
-    const setLang = (l) => {
-        localStorage.setItem('preferred_language', l);
-        window.applyLanguage(l);
-        banner.remove();
-        showTermsBanner();
-    };
-    document.getElementById('btn-en').onclick = () => setLang('en');
-    document.getElementById('btn-fr').onclick = () => setLang('fr');
-}
-
-function showTermsBanner() {
-    if (localStorage.getItem('scoralia_terms_accepted') === 'true' || document.getElementById('terms-banner-global') || document.getElementById('lang-banner-global')) return;
-    const banner = document.createElement('div');
-    banner.id = 'terms-banner-global'; 
-    banner.className = 'terms-banner';
-    const lang = localStorage.getItem('preferred_language') || 'en';
-    const text = lang === 'fr' ? 'En utilisant Scoralia, vous acceptez nos conditions.' : 'By using Scoralia, you accept our terms.';
-    banner.innerHTML = `<div>${text}</div><button class="btn-accept-terms" id="accept-terms-btn">OK</button>`;
-    document.body.appendChild(banner);
-    document.getElementById('accept-terms-btn').onclick = () => { localStorage.setItem('scoralia_terms_accepted', 'true'); banner.remove(); };
-}
-
-function updateHeaderToLoggedIn(userData) {
-    const nav = document.querySelector('nav ul');
-    const lang = localStorage.getItem('preferred_language') || 'en';
-    const t = translations[lang];
-    if (nav) nav.innerHTML = `<li><a href="/search.html">${t.nav_browse}</a></li><li><a href="/social.html">${t.nav_hub}</a></li><li><a href="/messages.html">${t.nav_messages}</a></li>`;
-
-    const right = document.querySelector('.header-right');
-    if (right) {
-        const pfp = userData.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${userData.uid}&backgroundColor=EBF2FA`;
-        right.innerHTML = `
-            <button class="btn" onclick="window.location.href='/listanitem.html'">${t.btn_list}</button>
-            <div class="profile-avatar" id="pfp-trigger"><img src="${pfp}"></div>
-            <div class="dropdown-menu" id="user-menu">
-                <a href="/profile.html" class="dropdown-item">${t.nav_profile}</a>
-                <a href="/my-listings.html" class="dropdown-item">${t.nav_listings}</a>
-                <a href="#" class="dropdown-item" id="logout-link" style="color:red;">${t.btn_signout}</a>
+    <main class="container">
+        <section class="filter-section">
+            <div class="filter-grid">
+                <div class="input-group">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-input" placeholder="Search by title, author, or ISBN...">
+                </div>
+                <select id="sort-filter">
+                    <option value="newest">Newest First</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                </select>
             </div>
-        `;
-        document.getElementById('pfp-trigger').onclick = (e) => { e.stopPropagation(); document.getElementById('user-menu').classList.toggle('show'); };
-        document.getElementById('logout-link').onclick = () => signOut(auth).then(() => window.location.reload());
-    }
-}
+        </section>
 
-function updateHeaderToLoggedOut() {
-    const lang = localStorage.getItem('preferred_language') || 'en';
-    const t = translations[lang];
-    const right = document.querySelector('.header-right');
-    if (right) right.innerHTML = `<button class="btn" onclick="window.location.href='/LoginInToCheaplet.html'">${t.btn_login}</button>`;
-}
+        <div class="listings-header">
+            <h1 class="page-title">Browse Books</h1>
+            <span class="item-count" id="itemCount">0 items</span>
+        </div>
 
-document.addEventListener('click', () => { 
-    const menu = document.getElementById('user-menu');
-    if (menu) menu.classList.remove('show');
-});
+        <div class="listings-grid" id="listings-container">
+            <div class="empty-state"><i class="fas fa-circle-notch fa-spin"></i> Loading listings...</div>
+        </div>
+    </main>
 
-document.addEventListener('DOMContentLoaded', () => {
-    const logo = document.querySelector('.logo');
-    if (logo) logo.onclick = () => window.location.href = '/index.html';
-});
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="/terms.html">Terms</a>
+                <a href="/privacy.html">Privacy</a>
+                <a href="/safety.html">Safety</a>
+                <a href="/contact.html">Contact</a>
+            </div>
+            <p style="font-size: 0.85rem;">&copy; 2026 Scoralia. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+
+        async function main() {
+            const response = await fetch('/.netlify/functions/config');
+            const config = await response.json();
+            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
+            const db = getFirestore(app);
+
+            const listingsContainer = document.getElementById('listings-container');
+            const itemCountSpan = document.getElementById('itemCount');
+            const searchInput = document.getElementById('search-input');
+            const sortFilter = document.getElementById('sort-filter');
+
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('q')) searchInput.value = urlParams.get('q');
+
+            let unsubscribe;
+
+            function fetchListings() {
+                if (unsubscribe) unsubscribe();
+
+                let q = collection(db, 'listings');
+                const constraints = [];
+                
+                // Sort Logic
+                if (sortFilter.value === 'price-low') constraints.push(orderBy('price', 'asc'));
+                else if (sortFilter.value === 'price-high') constraints.push(orderBy('price', 'desc'));
+                else constraints.push(orderBy('timestamp', 'desc'));
+
+                unsubscribe = onSnapshot(query(q, ...constraints), snapshot => {
+                    listingsContainer.innerHTML = '';
+                    const term = searchInput.value.toLowerCase().trim();
+                    const lang = localStorage.getItem('preferred_language') || 'en';
+                    
+                    const filtered = snapshot.docs.filter(doc => {
+                        const d = doc.data();
+                        const match = (d.title || '').toLowerCase().includes(term) || (d.description || '').toLowerCase().includes(term);
+                        return match && d.status === 'active';
+                    });
+                    
+                    itemCountSpan.textContent = `${filtered.length} ${lang === 'fr' ? 'articles' : 'items'}`;
+
+                    if (filtered.length === 0) {
+                        listingsContainer.innerHTML = `<div class="empty-state"><i class="fas fa-search"></i> No items found. Try a different search term.</div>`;
+                        return;
+                    }
+
+                    filtered.forEach(doc => {
+                        const d = doc.data();
+                        const card = document.createElement('a');
+                        card.className = 'listing-card';
+                        card.href = `/listing.html?id=${doc.id}`;
+                        card.innerHTML = `
+                            <div class="listing-image" style="background-image: url('${d.imageUrls?.[0] || ''}')"></div>
+                            <div class="listing-details">
+                                <div class="listing-price">$${d.price.toFixed(2)}</div>
+                                <h3 class="listing-title">${d.title}</h3>
+                                <div class="listing-loc"><i class="fas fa-map-marker-alt"></i> ${d.location || 'Global Campus'}</div>
+                            </div>`;
+                        listingsContainer.appendChild(card);
+                    });
+                });
+            }
+
+            searchInput.addEventListener('input', fetchListings);
+            sortFilter.addEventListener('change', fetchListings);
+            fetchListings();
+        }
+        main();
+    </script>
+</body>
+</html>
