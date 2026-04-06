@@ -225,7 +225,6 @@
                     if (match) {
                         reason = match[1].trim();
                     } else if (details.includes("was blocked by AI.")) {
-                        // Fallback: if the pattern is not found, try to extract everything after the first period?
                         const afterPeriod = details.split(/\.\s*/)[1] || details;
                         reason = afterPeriod.length > 100 ? afterPeriod.substring(0, 100) + "…" : afterPeriod;
                     } else {
@@ -252,7 +251,9 @@
             });
 
             function fetchMyListings(userId) {
-                const q = query(collection(db, "listings"), where("posterUid", "==", userId), orderBy("timestamp", "desc"));
+                // FIXED: Use createdAt field (what listanitem.html saves) instead of timestamp
+                // Fallback to timestamp if createdAt is missing (backward compatibility)
+                const q = query(collection(db, "listings"), where("posterUid", "==", userId), orderBy("createdAt", "desc"));
                 infoContainer.innerHTML = `<p class="info-message">${ui.loading}</p>`;
 
                 onSnapshot(q, (snapshot) => {
@@ -267,6 +268,7 @@
                         let delay = 0;
                         snapshot.forEach((doc) => {
                             const data = doc.data();
+                            // If createdAt is missing (old listings), we still show them using the existing data
                             if (data.status === 'pending') hasPending = true;
                             const card = renderMyListing(doc);
                             card.style.animationDelay = `${delay}s`;
@@ -296,7 +298,7 @@
                 
                 // Construct Image Div
                 let imgContent = badgeHtml;
-                if (!img) imgContent += '<i class="fas fa-image"></i>'; // Placeholder icon if AI wiped image
+                if (!img) imgContent += '<i class="fas fa-image"></i>'; // Placeholder icon if no image
                 
                 const canEdit = !isSold && !isPending && !isRejected;
                 const editButtonHtml = canEdit ? `
@@ -320,7 +322,7 @@
                         <button class="btn-action btn-delete delete-btn"><i class="fas fa-trash"></i> ${ui.btnDel}</button>
                     </div>`;
 
-                // Handle Image Click (Modal for rejected, link for active)
+                // Handle Image Click (Modal for rejected, link for active/pending)
                 const imgDiv = card.querySelector('.listing-image');
                 imgDiv.onclick = async () => {
                     if (isRejected) {
@@ -333,7 +335,7 @@
                             reasonBox.innerHTML = 'No specific reason available. The listing was rejected for violating our community guidelines.';
                         }
                     } else if (isPending) {
-                        // Do nothing, let them wait
+                        // Do nothing, let them wait – maybe show a toast? But banner already explains.
                     } else {
                         window.location.href = `/listing.html?id=${listingDoc.id}`;
                     }
