@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,700;0,900;1,700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* All CSS unchanged from previous working version */
+        /* All CSS unchanged */
         :root {
             --ink:       #0C1446;
             --deep:      #2B5C92;
@@ -713,6 +713,7 @@
             };
 
             // --- SUBMIT HANDLER WITH BACKGROUND MODERATION ---
+            // FIXED: Use status 'pending' (allowed by Firestore rules) instead of 'pending_review'
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
                 const title = document.getElementById('listing-title').value.trim();
@@ -740,7 +741,7 @@
                         if (res.secure_url) imageUrls.push(res.secure_url);
                     }
 
-                    // 2. Create listing with status "pending_review"
+                    // 2. Create listing with status "pending" (allowed by Firestore rules)
                     postBtnText.textContent = "Creating listing...";
                     const listingRef = await addDoc(collection(db, 'listings'), {
                         title, description: desc, price, 
@@ -750,8 +751,7 @@
                         tags, imageUrls,
                         posterUid: currentUser.uid,
                         posterDisplayName: currentUser.displayName || "User",
-                        status: 'pending_review',
-                        timestamp: serverTimestamp(),
+                        status: 'pending',  // FIXED: Changed from 'pending_review' to 'pending'
                         createdAt: serverTimestamp()
                     });
 
