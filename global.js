@@ -791,6 +791,7 @@ function showTermsBanner() {
 async function showForcedLanguageModal() {
     const savedLang = localStorage.getItem('preferred_language');
     if (savedLang && translations[savedLang]) {
+        // Language already selected, no need to show modal
         window.applyLanguage(savedLang);
         return;
     }
@@ -814,15 +815,9 @@ async function showForcedLanguageModal() {
 
         const selectLang = async (lang) => {
             localStorage.setItem('preferred_language', lang);
-            window.applyLanguage(lang);
-            overlay.remove();
-            if (auth.currentUser) {
-                try {
-                    await updateDoc(doc(db, "users", auth.currentUser.uid), { language: lang });
-                    if (currentUserData) currentUserData.language = lang;
-                } catch (e) { console.warn("Could not save language to user document", e); }
-            }
-            resolve(lang);
+            // Reload the page to apply the language fully
+            window.location.reload();
+            // The promise will never resolve because page reloads, but that's fine.
         };
 
         btnEn.onclick = () => selectLang('en');
