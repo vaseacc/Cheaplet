@@ -11,7 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,700;0,900;1,700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* All CSS remains unchanged */
+        /* All CSS unchanged from previous working version */
         :root {
             --ink:       #0C1446;
             --deep:      #2B5C92;
@@ -471,7 +471,7 @@
 
             let html5QrCode;
             
-            // --- ISBN LOOKUP WITH CACHING & RELIABLE DESCRIPTION ---
+            // --- ISBN LOOKUP WITH LANGUAGE SUPPORT (French for Rosemont) ---
             const isbnCache = {};
             try {
                 const saved = localStorage.getItem('scoralia_isbn_cache');
@@ -514,8 +514,10 @@
                 scanBtn.disabled = true; manualBtn.disabled = true;
 
                 let bookData = null;
+                const userLang = localStorage.getItem('preferred_language') || 'en';
+                const isFrench = userLang === 'fr';
 
-                // PRIMARY: OpenLibrary work endpoint (best for description)
+                // Try OpenLibrary work endpoint (supports language parameter in URL? Not directly, but we can try)
                 try {
                     const workUrl = `https://openlibrary.org/isbn/${cleanIsbn}.json`;
                     const workRes = await fetch(workUrl);
@@ -538,39 +540,31 @@
                             bookData = { title: fullTitle, description: description };
                         }
                     }
-                } catch (err) {
-                    console.warn("OpenLibrary work fetch failed:", err);
-                }
+                } catch (err) { console.warn("OpenLibrary work fetch failed:", err); }
 
-                // FALLBACK 1: OpenLibrary books API
-                if (!bookData) {
+                // If French is requested and we still don't have description, try Google Books with lang=fr
+                if (isFrench && (!bookData || !bookData.description)) {
                     try {
-                        const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`;
+                        const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}&maxResults=1&lang=fr`;
                         const res = await fetch(url);
-                        if (res.ok) {
+                        if (res.ok && res.status !== 429) {
                             const data = await res.json();
-                            const key = `ISBN:${cleanIsbn}`;
-                            if (data[key]) {
-                                const book = data[key];
+                            if (data.items && data.items.length > 0) {
+                                const book = data.items[0].volumeInfo;
                                 let fullTitle = book.title || "Unknown Title";
                                 if (book.authors && book.authors.length) {
-                                    fullTitle += ` by ${book.authors.map(a => a.name).join(', ')}`;
+                                    fullTitle += ` par ${book.authors.join(', ')}`;
                                 }
-                                let description = "";
-                                if (book.notes) description = book.notes;
-                                else if (book.description) description = typeof book.description === 'string' ? book.description : (book.description.value || "");
-                                else if (book.subtitle) description = book.subtitle;
-                                if (description) {
-                                    bookData = { title: fullTitle, description: description };
+                                let originalDesc = book.description ? book.description.replace(/<[^>]*>?/gm, '') : "";
+                                if (originalDesc) {
+                                    bookData = { title: fullTitle, description: originalDesc };
                                 }
                             }
                         }
-                    } catch (err) {
-                        console.warn("OpenLibrary books API failed:", err);
-                    }
+                    } catch (err) { console.warn("Google Books French fetch failed:", err); }
                 }
 
-                // FALLBACK 2: Google Books (if OpenLibrary gave no description)
+                // Fallback to English Google Books if still no data
                 if (!bookData) {
                     for (let attempt = 1; attempt <= 2; attempt++) {
                         try {
