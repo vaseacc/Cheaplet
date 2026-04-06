@@ -119,8 +119,6 @@ window.applyLanguage = (lang) => {
         const key = el.getAttribute('data-i18n');
         if (translations[lang] && translations[lang][key]) el.textContent = translations[lang][key];
     });
-    // For footer links where textContent is explicitly set by data-i18n
-    // Ensure all footer links are properly translated if they have IDs
     const footerLinks = [
         { id: 'link-terms', key: 'terms' },
         { id: 'link-privacy', key: 'priv' },
@@ -133,8 +131,9 @@ window.applyLanguage = (lang) => {
             el.textContent = translations[lang][linkInfo.key];
         }
     });
-
     localStorage.setItem('preferred_language', lang);
+    // Also update the HTML lang attribute for accessibility
+    document.documentElement.lang = lang;
 };
 
 // --- 3. GLOBAL CSS ---
@@ -197,15 +196,13 @@ globalStyle.innerHTML = `
 `;
 document.head.appendChild(globalStyle);
 
-// --- 3.5 PWA: Add manifest and register service worker (for home screen app experience) ---
+// --- 3.5 PWA: Add manifest and register service worker ---
 (function setupPWA() {
-    // Link the manifest.json file
     const manifestLink = document.createElement('link');
     manifestLink.rel = 'manifest';
     manifestLink.href = '/manifest.json';
     document.head.appendChild(manifestLink);
 
-    // Register service worker if supported
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/sw.js')
@@ -218,47 +215,6 @@ document.head.appendChild(globalStyle);
         });
     }
 })();
-
-// --- 4. FORCED LANGUAGE SELECTION MODAL (BLOCKING) ---
-// This function shows a modal that blocks the UI until the user selects a language.
-// It is called immediately when the page loads, before any other content is shown.
-function showForcedLanguageModal() {
-    return new Promise((resolve) => {
-        // Check if language already selected
-        const savedLang = localStorage.getItem('preferred_language');
-        if (savedLang && translations[savedLang]) {
-            resolve(savedLang);
-            return;
-        }
-
-        // Create overlay and modal
-        const overlay = document.createElement('div');
-        overlay.className = 'lang-modal-overlay';
-        overlay.style.zIndex = '20000'; // Above everything
-        overlay.innerHTML = `
-            <div class="lang-modal">
-                <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">Welcome / Bienvenue</h2>
-                <p style="color:#6b84a3; margin-bottom:20px; font-size:0.9rem;">Please select your preferred language.<br>Veuillez sélectionner votre langue préférée.</p>
-                <button class="lang-btn" id="forced-lang-en">English</button>
-                <button class="lang-btn" id="forced-lang-fr">Français</button>
-            </div>
-        `;
-        document.body.appendChild(overlay);
-
-        const btnEn = overlay.querySelector('#forced-lang-en');
-        const btnFr = overlay.querySelector('#forced-lang-fr');
-
-        const selectLang = (lang) => {
-            localStorage.setItem('preferred_language', lang);
-            window.applyLanguage(lang);
-            overlay.remove();
-            resolve(lang);
-        };
-
-        btnEn.onclick = () => selectLang('en');
-        btnFr.onclick = () => selectLang('fr');
-    });
-}
 
 // --- SCHOOL DOMAIN CHECKER ---
 const schoolDomains = {
@@ -317,7 +273,7 @@ onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
     if (docSnap.exists()) { globalSettings = docSnap.data(); refreshUI(); }
 });
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
     if (user) {
         onSnapshot(doc(db, "users", user.uid), async (docSnap) => {
             if (docSnap.exists()) {
@@ -350,13 +306,26 @@ onAuthStateChanged(auth, (user) => {
                     currentUserData.schoolName = schoolInfo.schoolName;
                 }
 
-                if (currentUserData.language) localStorage.setItem('preferred_language', currentUserData.language);
+                // LANGUAGE SYNC: If user has a stored language in Firestore, use it; otherwise save current localStorage language
+                const storedLang = currentUserData.language;
+                const localLang = localStorage.getItem('preferred_language');
+                if (storedLang && translations[storedLang]) {
+                    // Firestore has a language, apply it and sync to localStorage
+                    if (localLang !== storedLang) {
+                        localStorage.setItem('preferred_language', storedLang);
+                        window.applyLanguage(storedLang);
+                    }
+                } else if (localLang && translations[localLang]) {
+                    // No language in Firestore, but user has selected one locally -> save to Firestore
+                    await updateDoc(doc(db, "users", user.uid), { language: localLang });
+                    currentUserData.language = localLang;
+                }
+
                 refreshUI();
                 const tourKey = `scoralia_tour_seen_${user.uid}`;
                 if (!currentUserData.hasSeenTour && !localStorage.getItem(tourKey)) {
                     showWelcomeTour();
                 }
-                // Social tour (separate key, only on social/topic pages)
                 const socialTourKey = `scoralia_social_tour_seen_${user.uid}`;
                 if (!currentUserData.hasSeenSocialTour && !localStorage.getItem(socialTourKey)) {
                     const path = window.location.pathname;
@@ -366,13 +335,16 @@ onAuthStateChanged(auth, (user) => {
                 }
             } else {
                 const schoolInfo = getSchoolInfo(user.email);
-                setDoc(doc(db, "users", user.uid), {
+                // New user: create document with language if selected
+                const lang = localStorage.getItem('preferred_language');
+                await setDoc(doc(db, "users", user.uid), {
                     uid: user.uid, 
                     displayName: user.displayName || "", 
                     email: user.email, 
                     role: 'user', 
                     isStudent: schoolInfo.isStudent,
                     schoolName: schoolInfo.schoolName,
+                    language: lang || null,
                     createdAt: new Date().toISOString()
                 }).catch(console.error);
             }
@@ -820,11 +792,52 @@ function showTermsBanner() {
 }
 
 // --- INITIAL LANGUAGE SELECTION (BLOCKING MODAL) ---
-// This runs immediately after the script loads, before any other DOM operations.
-// It shows a modal that forces the user to choose a language, then continues.
-(async function initLanguage() {
-    await showForcedLanguageModal();
-})();
+async function showForcedLanguageModal() {
+    const savedLang = localStorage.getItem('preferred_language');
+    if (savedLang && translations[savedLang]) {
+        // Language already selected, just apply it
+        window.applyLanguage(savedLang);
+        return;
+    }
+
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'lang-modal-overlay';
+        overlay.style.zIndex = '20000';
+        overlay.innerHTML = `
+            <div class="lang-modal">
+                <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">Welcome / Bienvenue</h2>
+                <p style="color:#6b84a3; margin-bottom:20px; font-size:0.9rem;">Please select your preferred language.<br>Veuillez sélectionner votre langue préférée.</p>
+                <button class="lang-btn" id="forced-lang-en">English</button>
+                <button class="lang-btn" id="forced-lang-fr">Français</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        const btnEn = overlay.querySelector('#forced-lang-en');
+        const btnFr = overlay.querySelector('#forced-lang-fr');
+
+        const selectLang = async (lang) => {
+            localStorage.setItem('preferred_language', lang);
+            window.applyLanguage(lang);
+            overlay.remove();
+            // If user is already logged in, save language to Firestore
+            if (auth.currentUser) {
+                try {
+                    await updateDoc(doc(db, "users", auth.currentUser.uid), { language: lang });
+                    if (currentUserData) currentUserData.language = lang;
+                } catch (e) { console.warn("Could not save language to user document", e); }
+            }
+            resolve(lang);
+        };
+
+        btnEn.onclick = () => selectLang('en');
+        btnFr.onclick = () => selectLang('fr');
+    });
+}
+
+// Run forced language modal immediately (blocks until choice is made)
+await showForcedLanguageModal();
 
 document.addEventListener('DOMContentLoaded', () => {
     const logo = document.querySelector('.logo');
