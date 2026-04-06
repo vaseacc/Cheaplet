@@ -1,8 +1,7 @@
 // sw.js - Service Worker for Scoralia PWA
+const CACHE_NAME = 'scoralia-v2';
 
-const CACHE_NAME = 'scoralia-v1';
-
-// Files to cache for offline access (adjust paths as needed)
+// Files to cache for offline access
 const urlsToCache = [
   '/',
   '/index.html',
@@ -14,7 +13,8 @@ const urlsToCache = [
   '/messages.html',
   '/profile.html',
   '/LoginInToCheaplet.html',
-  '/favicon.svg'
+  '/favicon.svg',
+  '/full.css'
 ];
 
 // Install event – cache core files
@@ -28,7 +28,7 @@ self.addEventListener('install', event => {
       })
       .catch(err => console.error('Cache addAll failed:', err))
   );
-  self.skipWaiting(); // activate immediately
+  self.skipWaiting();
 });
 
 // Activate event – clean up old caches
@@ -46,26 +46,36 @@ self.addEventListener('activate', event => {
       );
     })
   );
-  self.clients.claim(); // take control of all clients immediately
+  self.clients.claim();
 });
 
-// Fetch event – serve from cache, fallback to network
+// Fetch event – bypass Firebase and Firestore requests
 self.addEventListener('fetch', event => {
+  const url = event.request.url;
+
+  // 🔥 IMPORTANT: Never intercept Firebase / Firestore API calls
+  if (url.includes('googleapis.com') ||
+      url.includes('firestore.googleapis.com') ||
+      url.includes('firebaseapp.com') ||
+      url.includes('/listen') ||
+      url.includes('firebase')) {
+    // Just go to network, do not cache
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // For everything else: serve from cache, fallback to network
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // Cache hit – return response
         if (response) {
           return response;
         }
-        // Clone the request because it's a one-time use stream
         const fetchRequest = event.request.clone();
         return fetch(fetchRequest).then(networkResponse => {
-          // Check if we received a valid response
           if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
             return networkResponse;
           }
-          // Clone the response because it's a one-time use stream
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME)
             .then(cache => {
