@@ -132,7 +132,6 @@ window.applyLanguage = (lang) => {
         }
     });
     localStorage.setItem('preferred_language', lang);
-    // Also update the HTML lang attribute for accessibility
     document.documentElement.lang = lang;
 };
 
@@ -306,17 +305,15 @@ onAuthStateChanged(auth, async (user) => {
                     currentUserData.schoolName = schoolInfo.schoolName;
                 }
 
-                // LANGUAGE SYNC: If user has a stored language in Firestore, use it; otherwise save current localStorage language
+                // LANGUAGE SYNC
                 const storedLang = currentUserData.language;
                 const localLang = localStorage.getItem('preferred_language');
                 if (storedLang && translations[storedLang]) {
-                    // Firestore has a language, apply it and sync to localStorage
                     if (localLang !== storedLang) {
                         localStorage.setItem('preferred_language', storedLang);
                         window.applyLanguage(storedLang);
                     }
                 } else if (localLang && translations[localLang]) {
-                    // No language in Firestore, but user has selected one locally -> save to Firestore
                     await updateDoc(doc(db, "users", user.uid), { language: localLang });
                     currentUserData.language = localLang;
                 }
@@ -335,7 +332,6 @@ onAuthStateChanged(auth, async (user) => {
                 }
             } else {
                 const schoolInfo = getSchoolInfo(user.email);
-                // New user: create document with language if selected
                 const lang = localStorage.getItem('preferred_language');
                 await setDoc(doc(db, "users", user.uid), {
                     uid: user.uid, 
@@ -795,7 +791,6 @@ function showTermsBanner() {
 async function showForcedLanguageModal() {
     const savedLang = localStorage.getItem('preferred_language');
     if (savedLang && translations[savedLang]) {
-        // Language already selected, just apply it
         window.applyLanguage(savedLang);
         return;
     }
@@ -821,7 +816,6 @@ async function showForcedLanguageModal() {
             localStorage.setItem('preferred_language', lang);
             window.applyLanguage(lang);
             overlay.remove();
-            // If user is already logged in, save language to Firestore
             if (auth.currentUser) {
                 try {
                     await updateDoc(doc(db, "users", auth.currentUser.uid), { language: lang });
@@ -836,7 +830,7 @@ async function showForcedLanguageModal() {
     });
 }
 
-// Run forced language modal immediately (blocks until choice is made)
+// Run forced language modal immediately
 await showForcedLanguageModal();
 
 document.addEventListener('DOMContentLoaded', () => {
