@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Listing - cheaplet</title>
+    <title>Edit Listing - Scoralia</title>
     <script type="module" src="global.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -140,7 +140,7 @@
 <body>
 
     <div id="page-loader">
-        <div class="loader-logo">cheap<em>let</em></div>
+        <div class="loader-logo">Scor<em>alia</em></div>
         <div class="loader-dots">
             <span></span><span></span><span></span>
         </div>
@@ -148,7 +148,7 @@
 
     <header>
         <div class="header-inner">
-            <a href="/index.html" class="logo">cheap<em>let</em></a>
+            <a href="/index.html" class="logo">Scor<em>alia</em></a>
             <nav>
                 <ul>
                     <li><a href="/search.html">Browse</a></li>
@@ -318,7 +318,7 @@
                     lblPhotos: "Photos (Max 5, Max 5MB each)", btnAddPhoto: "Add Photo", btnPost: "Save Changes & Review", btnCancel: "Cancel",
                     priceErr: "Price cannot exceed $1200.", origPriceErr: "Original price cannot exceed $5000.",
                     imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type.",
-                    imgSizeErr: "Image too large (Max 5MB).", saving: "AI Safety Check…",
+                    imgSizeErr: "Image too large (Max 5MB).", uploading: "Saving listing…",
                     tagLimit: "Max 15 tags allowed.",
                     tagUses: "uses"
                 },
@@ -335,7 +335,7 @@
                     lblPhotos: "Photos (Max 5, Max 5MB chacune)", btnAddPhoto: "Ajouter une photo", btnPost: "Enregistrer et Réviser", btnCancel: "Annuler",
                     priceErr: "Le prix ne peut dépasser 1200$.", origPriceErr: "Le prix d'origine ne peut dépasser 5000$.",
                     imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté.",
-                    imgSizeErr: "Image trop lourde (Max 5MB).", saving: "Vérification IA…",
+                    imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Enregistrement…",
                     tagLimit: "Maximum 15 tags autorisés.",
                     tagUses: "utilisations"
                 }
@@ -384,9 +384,9 @@
             const previewContainer = document.getElementById('image-preview-container');
             const imageInput = document.getElementById('listing-image-input');
 
-            let existingImageUrls = [];
+            let existingImageUrls =[];
             let newImageFiles = [];
-            let tags = [];
+            let tags =[];
             let currentListingId = new URLSearchParams(window.location.search).get('id');
             let currentUser = null;
 
@@ -430,7 +430,7 @@
             // --- IMAGE LOGIC WITH VALIDATION ---
             function renderPreviews() {
                 previewContainer.innerHTML = '';
-                const all = [...existingImageUrls, ...newImageFiles];
+                const all =[...existingImageUrls, ...newImageFiles];
                 all.forEach((img, index) => {
                     const wrapper = document.createElement('div');
                     wrapper.className = 'image-preview-wrapper';
@@ -498,7 +498,7 @@
                         document.getElementById('cond-missing').checked = d.hasMissingPages === true;
                         
                         tags = d.tags || [];
-                        existingImageUrls = d.imageUrls || [];
+                        existingImageUrls = d.imageUrls ||[];
                         renderTags(); 
                         renderPreviews();
                         
@@ -524,7 +524,7 @@
                 }
             });
 
-            // --- SAVE ---
+            // --- SAVE HANDLER WITH INSTANT REDIRECT ---
             document.getElementById('updateListingBtn').onclick = async () => {
                 if(!document.getElementById('listing-title').checkValidity() || !document.getElementById('listing-price').checkValidity() || !document.getElementById('listing-description').checkValidity()) {
                     document.getElementById('listing-form').reportValidity();
@@ -546,10 +546,10 @@
                 const btn = document.getElementById('updateListingBtn');
                 const btnText = document.getElementById('post-btn-text');
                 btn.disabled = true; 
-                btnText.textContent = ui[lang].saving;
+                btnText.textContent = ui[lang].uploading;
 
                 try {
-                    const uploadedUrls = [];
+                    const uploadedUrls =[];
                     for (const file of newImageFiles) {
                         const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
                         const formData = new FormData(); 
@@ -580,32 +580,10 @@
                         hasMissingPages: document.getElementById('cond-missing').checked,
                         tags: tags,
                         imageUrls: finalImages,
-                        status: 'pending' // <--- Closes the loophole
+                        status: 'pending' // Status resets to pending for AI review
                     });
 
-                    // Trigger AI moderation securely
-                    const idToken = await currentUser.getIdToken();
-                    
-                    try {
-                        await fetch('/.netlify/functions/moderate-listing', {
-                            method: 'POST',
-                            headers: { 
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${idToken}` 
-                            },
-                            keepalive: true,
-                            body: JSON.stringify({ 
-                                listingId: currentListingId, 
-                                imageUrls: finalImages, 
-                                title: document.getElementById('listing-title').value.trim(), 
-                                description: document.getElementById('listing-description').value.trim() 
-                            })
-                        });
-                    } catch (err) {
-                        console.error("AI trigger error:", err);
-                    }
-
-                    // Send them back to My Listings to see the "In Review" banner
+                    // Instantly redirect. The moderation will be handled in the background by my-listings.html
                     window.location.href = `/my-listings.html`;
                 } catch (e) { 
                     alert(e.message); 
