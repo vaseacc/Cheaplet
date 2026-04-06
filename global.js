@@ -2,13 +2,11 @@ import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebase
 import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, onSnapshot, updateDoc, setDoc, collection, query, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
-// --- 0. DEFERRED AUTO-IMPORT ICONS & FAVICON (Performance Optimization) ---
+// --- 0. AUTO-IMPORT ICONS & FAVICON ---
 if (!document.querySelector('link[href*="font-awesome"]')) {
     const faLink = document.createElement('link');
-    faLink.rel = 'preload';
-    faLink.as = 'style';
+    faLink.rel = 'stylesheet';
     faLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
-    faLink.onload = function() { this.rel = 'stylesheet'; };
     document.head.appendChild(faLink);
 }
 if (!document.querySelector('link[rel="icon"]')) {
@@ -19,22 +17,6 @@ if (!document.querySelector('link[rel="icon"]')) {
     document.head.appendChild(favicon);
 }
 
-// --- 0.1 ACCESSIBILITY FIX FOR FIREBASE IFRAME ---
-// Firebase Auth injects an invisible iframe that fails Lighthouse accessibility checks.
-window.addEventListener('DOMContentLoaded', () => {
-    const observer = new MutationObserver((mutations) => {
-        mutations.forEach(mutation => {
-            mutation.addedNodes.forEach(node => {
-                if (node.tagName === 'IFRAME' && node.src.includes('firebaseapp.com')) {
-                    node.setAttribute('title', 'Firebase Authentication Frame');
-                    observer.disconnect(); // Stop observing once fixed
-                }
-            });
-        });
-    });
-    observer.observe(document.body, { childList: true, subtree: true });
-});
-
 // --- 1. INITIALIZE CONFIG ---
 const response = await fetch('/.netlify/functions/config');
 const config = await response.json();
@@ -42,11 +24,27 @@ const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getA
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// Helper for deferring non-critical tasks to free up the main thread
-const runWhenIdle = (cb) => {
-    if (window.requestIdleCallback) requestIdleCallback(cb);
-    else setTimeout(cb, 1);
+// --- HELPER: Convert Cloudinary image URLs to WebP for performance ---
+window.optimizeImageUrl = (url) => {
+    if (!url) return url;
+    if (url.includes('cloudinary.com') && url.includes('/upload/')) {
+        // Add f_auto,q_auto if not already present
+        if (!url.includes('f_auto') && !url.includes('q_auto')) {
+            return url.replace('/upload/', '/upload/f_auto,q_auto/');
+        }
+    }
+    return url;
 };
+
+// --- FIX: Add title to Firebase Auth iframe for accessibility ---
+function addTitleToFirebaseIframe() {
+    const iframe = document.querySelector('iframe[src*="firebaseapp.com"]');
+    if (iframe && !iframe.hasAttribute('title')) {
+        iframe.setAttribute('title', 'Firebase Authentication');
+    }
+}
+setInterval(addTitleToFirebaseIframe, 500);
+setTimeout(() => clearInterval(addTitleToFirebaseIframe), 10000);
 
 // --- 2. TRANSLATION DICTIONARY ---
 const translations = {
@@ -82,6 +80,7 @@ const translations = {
         "warning_btn": "I Understand",
         "contact": "Contact Us",
 
+        // Social Tour strings
         "social_tour_title_1": "Welcome to the Campus Hub!",
         "social_tour_desc_1": "This is where the campus community connects. Share updates, ask questions, and engage with fellow students.",
         "social_tour_title_2": "Post & Share",
@@ -124,6 +123,7 @@ const translations = {
         "warning_btn": "J'ai compris",
         "contact": "Nous contacter",
 
+        // Social Tour strings (French)
         "social_tour_title_1": "Bienvenue sur le Hub Campus !",
         "social_tour_desc_1": "C'est l'espace où la communauté étudiante se connecte. Partagez des nouvelles, posez des questions et interagissez avec d'autres étudiants.",
         "social_tour_title_2": "Publier et partager",
@@ -141,7 +141,7 @@ window.applyLanguage = (lang) => {
         const key = el.getAttribute('data-i18n');
         if (translations[lang] && translations[lang][key]) el.textContent = translations[lang][key];
     });
-    const footerLinks =[
+    const footerLinks = [
         { id: 'link-terms', key: 'terms' },
         { id: 'link-privacy', key: 'priv' },
         { id: 'link-safety', key: 'safe' },
@@ -157,13 +157,13 @@ window.applyLanguage = (lang) => {
     document.documentElement.lang = lang;
 };
 
-// --- 3. GLOBAL CSS (Optimized for Contrast Ratios) ---
+// --- 3. GLOBAL CSS (with contrast fix) ---
 const globalStyle = document.createElement('style');
 globalStyle.innerHTML = `
     .header-inner, .header-content { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 15px !important; flex-direction: row !important; }
     nav { flex-grow: 1; display: flex; justify-content: center; }
     nav ul { display: flex; list-style: none; gap: 28px; padding: 0; margin: 0; align-items: center; }
-    nav ul li a { color: rgba(255,255,255,0.85); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; white-space: nowrap; }
+    nav ul li a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; white-space: nowrap; }
     nav ul li a:hover { color: #FFFFFF; }
     .header-right { display: flex !important; align-items: center !important; gap: 12px !important; flex-shrink: 0 !important; flex-direction: row !important; }
     .btn { background: linear-gradient(135deg, #C8A96E 0%, #ddb97a 100%) !important; color: #0C1446 !important; border: none !important; padding: 0 18px !important; height: 38px !important; line-height: 38px !important; border-radius: 20px !important; font-weight: bold !important; cursor: pointer !important; transition: all 0.2s !important; font-size: 0.82rem !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; text-decoration: none !important; white-space: nowrap !important; }
@@ -176,7 +176,7 @@ globalStyle.innerHTML = `
     .dropdown-menu.show { display: flex; }
     .dropdown-header { padding: 15px; border-bottom: 1px solid #eee; background: #f9f9f9; font-weight: bold; color: #0C1446; font-size: 0.9rem; display: flex; flex-direction: column; gap: 4px; }
     .dropdown-header .display-name { font-weight: 700; }
-    .dropdown-header .username { font-size: 0.75rem; color: #555; font-family: monospace; }
+    .dropdown-header .username { font-size: 0.75rem; color: #666; font-family: monospace; }
     .dropdown-item { padding: 12px 15px; text-decoration: none; color: #333; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.9rem; transition: background 0.2s; }
     .dropdown-item:hover { background-color: #f4f7fc; color: #2B5C92; }
     .msg-btn-mobile { background: #C8A96E; color: #0C1446; width: 36px; height: 36px; border-radius: 50%; display: none; align-items: center; justify-content: center; text-decoration: none; margin-right: 12px; font-size: 1rem; position: relative; }
@@ -191,7 +191,7 @@ globalStyle.innerHTML = `
     .tour-dot.active { background: #C8A96E; width: 24px; border-radius: 10px; }
     .tour-input { width: 100%; padding: 10px 12px; border: 2px solid #eee; border-radius: 8px; margin-bottom: 12px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; text-align: center; font-weight: bold; color: #0C1446; }
     .tour-input:focus { border-color: #C8A96E; }
-    .tour-pfp-preview { width: 80px; height: 80px; border-radius: 50%; background: #eee; margin: 0 auto 15px; border: 3px solid #C8A96E; object-fit: cover; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #555; overflow: hidden; }
+    .tour-pfp-preview { width: 80px; height: 80px; border-radius: 50%; background: #eee; margin: 0 auto 15px; border: 3px solid #C8A96E; object-fit: cover; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #aaa; overflow: hidden; }
     .tour-pfp-preview img { width: 100%; height: 100%; object-fit: cover; }
     .terms-banner { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(12, 20, 70, 0.98); color: #fff; padding: 15px 25px; display: flex; justify-content: center; align-items: center; gap: 25px; z-index: 99999; font-size: 0.85rem; backdrop-filter: blur(10px); border-top: 1px solid rgba(200,169,110,0.3); }
     .btn-accept-terms { background: #C8A96E; color: #0C1446; border: none; padding: 8px 30px; border-radius: 20px; font-weight: 800; cursor: pointer; }
@@ -206,6 +206,9 @@ globalStyle.innerHTML = `
     .warning-btn { background: #ef4444; color: white; border: none; padding: 12px 30px; border-radius: 30px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; }
     .warning-btn:hover { background: #dc2626; transform: translateY(-2px); }
 
+    /* 🔥 FIX: Contrast for hero badge (accessibility) */
+    .hero-badge { color: #FFFFFF !important; }
+
     @media (max-width: 767px) {
         nav { display: none !important; }
         .msg-btn-mobile { display: flex; }
@@ -217,8 +220,8 @@ globalStyle.innerHTML = `
 `;
 document.head.appendChild(globalStyle);
 
-// --- 3.5 PWA: Add manifest and register service worker ---
-runWhenIdle(() => {
+// --- 3.5 PWA: Add manifest and register service worker (for home screen app experience) ---
+(function setupPWA() {
     const manifestLink = document.createElement('link');
     manifestLink.rel = 'manifest';
     manifestLink.href = '/manifest.json';
@@ -227,10 +230,15 @@ runWhenIdle(() => {
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('/sw.js')
-                .catch(error => console.error('SW failed:', error));
+                .then(registration => {
+                    console.log('Service Worker registered with scope:', registration.scope);
+                })
+                .catch(error => {
+                    console.error('Service Worker registration failed:', error);
+                });
         });
     }
-});
+})();
 
 // --- SCHOOL DOMAIN CHECKER ---
 const schoolDomains = {
@@ -295,10 +303,12 @@ onAuthStateChanged(auth, async (user) => {
             if (docSnap.exists()) {
                 currentUserData = docSnap.data();
                 
+                // --- ADMIN WARNING SYSTEM ---
                 if (currentUserData.activeWarning) {
                     showWarningPopup(currentUserData.activeWarning, user.uid);
                 }
 
+                // --- BAN SYSTEM ENFORCEMENT ---
                 if (currentUserData.role === 'banned') { 
                     if (currentUserData.banExpiresAt && currentUserData.banExpiresAt.toDate() < new Date()) {
                         await updateDoc(doc(db, "users", user.uid), { role: 'user', banExpiresAt: null });
@@ -309,6 +319,7 @@ onAuthStateChanged(auth, async (user) => {
                     }
                 }
                 
+                // RETROACTIVE STUDENT CHECK
                 if (currentUserData.isStudent === undefined && user.email) {
                     const schoolInfo = getSchoolInfo(user.email);
                     await updateDoc(doc(db, "users", user.uid), {
@@ -319,6 +330,7 @@ onAuthStateChanged(auth, async (user) => {
                     currentUserData.schoolName = schoolInfo.schoolName;
                 }
 
+                // LANGUAGE SYNC
                 const storedLang = currentUserData.language;
                 const localLang = localStorage.getItem('preferred_language');
                 if (storedLang && translations[storedLang]) {
@@ -332,20 +344,18 @@ onAuthStateChanged(auth, async (user) => {
                 }
 
                 refreshUI();
-
-                runWhenIdle(() => {
-                    const tourKey = `scoralia_tour_seen_${user.uid}`;
-                    if (!currentUserData.hasSeenTour && !localStorage.getItem(tourKey)) {
-                        showWelcomeTour();
+                const tourKey = `scoralia_tour_seen_${user.uid}`;
+                if (!currentUserData.hasSeenTour && !localStorage.getItem(tourKey)) {
+                    showWelcomeTour();
+                }
+                // Social tour (separate key, only on social/topic pages)
+                const socialTourKey = `scoralia_social_tour_seen_${user.uid}`;
+                if (!currentUserData.hasSeenSocialTour && !localStorage.getItem(socialTourKey)) {
+                    const path = window.location.pathname;
+                    if (path.includes('/social.html') || path.includes('/topic.html')) {
+                        showSocialTour();
                     }
-                    const socialTourKey = `scoralia_social_tour_seen_${user.uid}`;
-                    if (!currentUserData.hasSeenSocialTour && !localStorage.getItem(socialTourKey)) {
-                        const path = window.location.pathname;
-                        if (path.includes('/social.html') || path.includes('/topic.html')) {
-                            showSocialTour();
-                        }
-                    }
-                });
+                }
             } else {
                 const schoolInfo = getSchoolInfo(user.email);
                 const lang = localStorage.getItem('preferred_language');
@@ -367,10 +377,13 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
+// --- ADMIN WARNING POPUP ---
 function showWarningPopup(warningText, uid) {
     if (document.getElementById('admin-warning-modal')) return;
+
     const lang = localStorage.getItem('preferred_language') || 'en';
     const t = translations[lang];
+
     const modal = document.createElement('div');
     modal.id = 'admin-warning-modal';
     modal.className = 'warning-modal-overlay';
@@ -383,15 +396,18 @@ function showWarningPopup(warningText, uid) {
         </div>
     `;
     document.body.appendChild(modal);
+
     document.getElementById('btn-ack-warning').onclick = async () => {
         modal.remove();
         await updateDoc(doc(db, "users", uid), { activeWarning: null });
     };
 }
 
+// --- HARD LOCKDOWN FOR BANNED USERS ---
 function triggerHardLockdown(expireTimestamp) {
     const lang = localStorage.getItem('preferred_language') || 'en';
     const t = translations[lang];
+    
     let expiryText = "";
     if (expireTimestamp) {
         const date = expireTimestamp.toDate();
@@ -400,15 +416,18 @@ function triggerHardLockdown(expireTimestamp) {
     } else {
         expiryText = `<div style="margin-top:15px; font-size:1.2rem; color:#aaa; font-weight:bold; text-transform:uppercase;">${t.ban_perm}</div>`;
     }
+
     document.body.innerHTML = `<div style="height:100vh; background:#0C1446; color:#ff4d4d; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif; text-align:center; padding:20px;">
         <i class="fas fa-user-slash fa-4x" style="margin-bottom:20px;"></i>
         <h1 style="font-family:'Playfair Display', serif; font-size: 3rem; margin-bottom: 10px;">${t.ban_title}</h1>
         <p style="font-size: 1.1rem; color: #ccc;">${t.ban_text}</p>
         ${expiryText}
     </div>`;
+
     setTimeout(() => { signOut(auth).then(() => { window.location.href = '/loginintocheaplet.html'; }); }, 5000);
 }
 
+// --- WELCOME TOUR (profile setup) ---
 function showWelcomeTour() {
     const user = auth.currentUser;
     if (!user) return;
@@ -431,25 +450,25 @@ function showWelcomeTour() {
             <div id="tour-step-1">
                 <i class="fas fa-handshake fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
                 <h2 style="color:#0C1446; margin-bottom:15px; font-family:'Playfair Display', serif;">${t.tour_title_1}</h2>
-                <p style="color:#476483; margin-bottom:30px; line-height:1.6; font-size:0.95rem;">${t.tour_desc_1}</p>
+                <p style="color:#6b84a3; margin-bottom:30px; line-height:1.6; font-size:0.95rem;">${t.tour_desc_1}</p>
                 <button class="btn" id="tour-btn-1" style="width:100%;">${t.tour_next}</button>
             </div>
             <div id="tour-step-2" style="display:none;">
                 <i class="fas fa-shield-alt fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
                 <h2 style="color:#0C1446; margin-bottom:15px; font-family:'Playfair Display', serif;">${t.tour_title_2}</h2>
-                <p style="color:#476483; margin-bottom:30px; line-height:1.6; font-size:0.95rem;">${t.tour_desc_2}</p>
+                <p style="color:#6b84a3; margin-bottom:30px; line-height:1.6; font-size:0.95rem;">${t.tour_desc_2}</p>
                 <button class="btn" id="tour-btn-2" style="width:100%;">${t.tour_next}</button>
             </div>
             <div id="tour-step-3" style="display:none;">
                 <i class="fas fa-bookmark fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
                 <h2 style="color:#0C1446; margin-bottom:15px; font-family:'Playfair Display', serif;">${t.tour_title_3}</h2>
-                <p style="color:#476483; margin-bottom:30px; line-height:1.6; font-size:0.95rem;">${t.tour_desc_3}</p>
+                <p style="color:#6b84a3; margin-bottom:30px; line-height:1.6; font-size:0.95rem;">${t.tour_desc_3}</p>
                 <button class="btn" id="tour-btn-3" style="width:100%;">${t.tour_next}</button>
             </div>
             <div id="tour-step-4" style="display:none;">
                 <div class="tour-pfp-preview" id="tour-pfp-box"><img src="${defaultPfpUrl}"></div>
                 <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">${t.tour_title_4}</h2>
-                <p style="color:#476483; margin-bottom:15px; line-height:1.4; font-size:0.85rem;">${t.tour_desc_4}</p>
+                <p style="color:#6b84a3; margin-bottom:15px; line-height:1.4; font-size:0.85rem;">${t.tour_desc_4}</p>
                 
                 <input type="text" id="tour-fullname" class="tour-input" value="${existingFullName}" placeholder="${t.tour_full_name}">
                 <input type="text" id="tour-username" class="tour-input" value="${existingUsername}" placeholder="${t.tour_username}">
@@ -602,6 +621,7 @@ function showWelcomeTour() {
     };
 }
 
+// --- SOCIAL TOUR (explains Campus Hub features) ---
 window.showSocialTour = () => {
     const user = auth.currentUser;
     if (!user) return;
@@ -621,25 +641,25 @@ window.showSocialTour = () => {
             <div id="social-tour-step-1">
                 <i class="fas fa-users fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
                 <h2 style="color:#0C1446; margin-bottom:12px; font-family:'Playfair Display', serif;">${t.social_tour_title_1}</h2>
-                <p style="color:#476483; margin-bottom:25px; line-height:1.6; font-size:0.95rem;">${t.social_tour_desc_1}</p>
+                <p style="color:#6b84a3; margin-bottom:25px; line-height:1.6; font-size:0.95rem;">${t.social_tour_desc_1}</p>
                 <button class="btn" id="social-tour-btn-1" style="width:100%;">${t.tour_next}</button>
             </div>
             <div id="social-tour-step-2" style="display:none;">
                 <i class="fas fa-edit fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
                 <h2 style="color:#0C1446; margin-bottom:12px; font-family:'Playfair Display', serif;">${t.social_tour_title_2}</h2>
-                <p style="color:#476483; margin-bottom:25px; line-height:1.6; font-size:0.95rem;">${t.social_tour_desc_2}</p>
+                <p style="color:#6b84a3; margin-bottom:25px; line-height:1.6; font-size:0.95rem;">${t.social_tour_desc_2}</p>
                 <button class="btn" id="social-tour-btn-2" style="width:100%;">${t.tour_next}</button>
             </div>
             <div id="social-tour-step-3" style="display:none;">
                 <i class="fas fa-filter fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
                 <h2 style="color:#0C1446; margin-bottom:12px; font-family:'Playfair Display', serif;">${t.social_tour_title_3}</h2>
-                <p style="color:#476483; margin-bottom:25px; line-height:1.6; font-size:0.95rem;">${t.social_tour_desc_3}</p>
+                <p style="color:#6b84a3; margin-bottom:25px; line-height:1.6; font-size:0.95rem;">${t.social_tour_desc_3}</p>
                 <button class="btn" id="social-tour-btn-3" style="width:100%;">${t.tour_next}</button>
             </div>
             <div id="social-tour-step-4" style="display:none;">
                 <i class="fas fa-plus-circle fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
                 <h2 style="color:#0C1446; margin-bottom:12px; font-family:'Playfair Display', serif;">${t.social_tour_title_4}</h2>
-                <p style="color:#476483; margin-bottom:25px; line-height:1.6; font-size:0.95rem;">${t.social_tour_desc_4}</p>
+                <p style="color:#6b84a3; margin-bottom:25px; line-height:1.6; font-size:0.95rem;">${t.social_tour_desc_4}</p>
                 <button class="btn" id="social-tour-btn-4" style="width:100%;">${t.social_tour_gotit}</button>
             </div>
             <div style="display:flex; justify-content:center; gap:8px; margin-top:25px;" id="social-tour-dots">
@@ -677,16 +697,11 @@ window.showSocialTour = () => {
 
 function refreshUI() {
     if (currentUserData) { updateHeaderToLoggedIn(currentUserData); } 
-    else { updateHeaderToLoggedOut(); }
-    
-    runWhenIdle(() => {
-        const langSelected = localStorage.getItem('preferred_language');
-        if (!langSelected && !document.getElementById('lang-banner-global')) {
-            showLanguageBanner();
-        }
-        window.applyLanguage(langSelected || 'en');
-        showTermsBanner();
-    });
+    else {
+        updateHeaderToLoggedOut();
+    }
+    window.applyLanguage(localStorage.getItem('preferred_language') || 'en');
+    showTermsBanner();
 }
 
 function listenToUnreadMessages(uid) {
@@ -784,35 +799,11 @@ function updateHeaderToLoggedOut() {
 
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
     if (!container) return;
-    container.innerHTML = `<button class="btn" onclick="window.location.href='/LoginInToCheaplet.html'">${t.btn_login}</button>`;
-}
-
-function showLanguageBanner() {
-    if (document.getElementById('lang-banner-global')) return;
-    const banner = document.createElement('div');
-    banner.id = 'lang-banner-global'; 
-    banner.className = 'terms-banner';
-    banner.style.zIndex = '100000';
-    banner.innerHTML = `
-        <div>Choose your language / Choisissez votre langue :</div>
-        <div style="display: flex; gap: 15px;">
-            <button class="btn-accept-terms" id="btn-en">English</button>
-            <button class="btn-accept-terms" id="btn-fr">Français</button>
-        </div>
-    `;
-    document.body.appendChild(banner);
-    document.getElementById('btn-en').onclick = () => {
-        localStorage.setItem('preferred_language', 'en');
-        location.reload();
-    };
-    document.getElementById('btn-fr').onclick = () => {
-        localStorage.setItem('preferred_language', 'fr');
-        location.reload();
-    };
+    container.innerHTML = `<button class="btn" onclick="window.location.href='/loginintocheaplet.html'">${t.btn_login}</button>`;
 }
 
 function showTermsBanner() {
-    if (localStorage.getItem('scoralia_terms_accepted') === 'true' || document.getElementById('terms-banner-global') || document.getElementById('lang-banner-global')) return;
+    if (localStorage.getItem('scoralia_terms_accepted') === 'true' || document.getElementById('terms-banner-global') || document.getElementById('lang-modal')) return;
     const lang = localStorage.getItem('preferred_language') || 'en';
     const banner = document.createElement('div');
     banner.id = 'terms-banner-global'; banner.className = 'terms-banner';
@@ -822,8 +813,53 @@ function showTermsBanner() {
     document.getElementById('accept-terms-btn').onclick = () => { localStorage.setItem('scoralia_terms_accepted', 'true'); banner.remove(); };
 }
 
+// --- INITIAL LANGUAGE SELECTION (BLOCKING MODAL) ---
+async function showForcedLanguageModal() {
+    const savedLang = localStorage.getItem('preferred_language');
+    if (savedLang && translations[savedLang]) {
+        window.applyLanguage(savedLang);
+        return;
+    }
+
+    return new Promise((resolve) => {
+        const overlay = document.createElement('div');
+        overlay.className = 'lang-modal-overlay';
+        overlay.style.zIndex = '20000';
+        overlay.innerHTML = `
+            <div class="lang-modal">
+                <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">Welcome / Bienvenue</h2>
+                <p style="color:#6b84a3; margin-bottom:20px; font-size:0.9rem;">Please select your preferred language.<br>Veuillez sélectionner votre langue préférée.</p>
+                <button class="lang-btn" id="forced-lang-en">English</button>
+                <button class="lang-btn" id="forced-lang-fr">Français</button>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        const btnEn = overlay.querySelector('#forced-lang-en');
+        const btnFr = overlay.querySelector('#forced-lang-fr');
+
+        const selectLang = async (lang) => {
+            localStorage.setItem('preferred_language', lang);
+            window.applyLanguage(lang);
+            overlay.remove();
+            if (auth.currentUser) {
+                try {
+                    await updateDoc(doc(db, "users", auth.currentUser.uid), { language: lang });
+                    if (currentUserData) currentUserData.language = lang;
+                } catch (e) { console.warn("Could not save language to user document", e); }
+            }
+            resolve(lang);
+        };
+
+        btnEn.onclick = () => selectLang('en');
+        btnFr.onclick = () => selectLang('fr');
+    });
+}
+
+// Run forced language modal immediately
+await showForcedLanguageModal();
+
 document.addEventListener('DOMContentLoaded', () => {
     const logo = document.querySelector('.logo');
     if (logo) logo.onclick = () => window.location.href = '/index.html';
 });
---- END OF FILE Paste April 06, 2026 - 5:39PM ---
