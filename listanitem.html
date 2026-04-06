@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,700;0,900;1,700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* All CSS remains unchanged */
         :root {
             --ink:       #0C1446;
             --deep:      #2B5C92;
@@ -146,7 +147,6 @@
             margin-right: 6px;
         }
 
-        /* Custom Rejection Modal */
         .modal-overlay { position: fixed; inset: 0; background: rgba(12,20,70,0.8); backdrop-filter: blur(6px); z-index: 10000; display: none; justify-content: center; align-items: center; padding: 20px; animation: fadeIn 0.2s ease; }
         .modal-card { background: var(--white); padding: 40px 30px; border-radius: var(--radius-md); max-width: 420px; width: 100%; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .modal-icon { font-size: 3.5rem; margin-bottom: 20px; color: var(--red); }
@@ -221,18 +221,14 @@
         <div id="main-form-section" style="display: none;">
             <div class="form-wrapper">
                 <form id="listing-form">
-
                     <input type="hidden" id="listing-isbn" value="">
 
                     <div class="form-section">
                         <div class="section-label"><i class="fas fa-pen"></i> <span id="ui-sec-basic">Basic Info</span></div>
-
                         <label class="field-label" id="ui-label-title">Title</label>
                         <input type="text" id="listing-title" maxlength="80" required>
-
                         <label class="field-label" id="ui-label-desc">Description</label>
                         <textarea id="listing-description" maxlength="1500" required></textarea>
-
                         <div class="price-row">
                             <div>
                                 <label class="field-label" id="ui-label-price">Sale Price ($)</label>
@@ -259,7 +255,6 @@
 
                     <div class="form-section">
                         <div class="section-label"><i class="fas fa-book"></i> <span id="ui-sec-cond">Condition & Details</span></div>
-
                         <div class="two-col">
                             <div>
                                 <label class="field-label" id="ui-label-condition">Condition</label>
@@ -280,7 +275,6 @@
                                 </select>
                             </div>
                         </div>
-
                         <label class="field-label" id="ui-label-details">Additional Details</label>
                         <div class="checkbox-group">
                             <label class="checkbox-item"><input type="checkbox" id="cond-writing"> <span id="ui-check-writing">Writing inside</span></label>
@@ -291,7 +285,6 @@
 
                     <div class="form-section">
                         <div class="section-label"><i class="fas fa-location-dot"></i> <span id="ui-sec-loc">Location</span></div>
-
                         <div class="two-col">
                             <div>
                                 <label class="field-label" id="ui-label-location">Campus Location</label>
@@ -339,7 +332,6 @@
                     <div class="social-promo">
                         <i class="fas fa-share-alt"></i> Also share your listing in the <strong>Campus Hub</strong> social feed!
                     </div>
-
                 </form>
             </div>
         </div>
@@ -460,7 +452,6 @@
             const pageLoader = document.getElementById('page-loader');
             const loaderTimeout = setTimeout(() => { pageLoader.style.display = 'none'; }, 4000);
 
-            // Rejection Modal Elements
             const rejectedModal = document.getElementById('rejected-modal');
             const btnCloseRejModal = document.getElementById('btn-close-rej-modal');
             const reasonBox = document.getElementById('modal-rej-reason');
@@ -480,7 +471,7 @@
 
             let html5QrCode;
             
-            // --- ENHANCED ISBN LOOKUP USING OPENLIBRARY (UNLIMITED) ---
+            // --- ISBN LOOKUP WITH CACHING & RELIABLE DESCRIPTION ---
             const isbnCache = {};
             try {
                 const saved = localStorage.getItem('scoralia_isbn_cache');
@@ -506,7 +497,6 @@
                     return;
                 }
 
-                // Check cache
                 if (isbnCache[cleanIsbn]) {
                     const cached = isbnCache[cleanIsbn];
                     document.getElementById('listing-title').value = cached.title;
@@ -525,32 +515,62 @@
 
                 let bookData = null;
 
-                // PRIMARY: OpenLibrary (no rate limit, free, unlimited)
+                // PRIMARY: OpenLibrary work endpoint (best for description)
                 try {
-                    const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`;
-                    const res = await fetch(url);
-                    if (res.ok) {
-                        const data = await res.json();
-                        const key = `ISBN:${cleanIsbn}`;
-                        if (data[key]) {
-                            const book = data[key];
-                            let fullTitle = book.title || "Unknown Title";
-                            if (book.authors && book.authors.length) {
-                                fullTitle += ` by ${book.authors.map(a => a.name).join(', ')}`;
-                            }
-                            let description = "";
-                            if (book.notes) description = book.notes;
-                            else if (book.description) description = typeof book.description === 'string' ? book.description : (book.description.value || "");
-                            // If still empty, try the excerpt
-                            if (!description && book.excerpts && book.excerpts.length) description = book.excerpts[0].text;
+                    const workUrl = `https://openlibrary.org/isbn/${cleanIsbn}.json`;
+                    const workRes = await fetch(workUrl);
+                    if (workRes.ok) {
+                        const workData = await workRes.json();
+                        let fullTitle = workData.title || "Unknown Title";
+                        if (workData.authors && workData.authors.length) {
+                            const authorNames = workData.authors.map(a => a.name).join(', ');
+                            fullTitle += ` by ${authorNames}`;
+                        }
+                        let description = "";
+                        if (workData.description) {
+                            description = typeof workData.description === 'string' ? workData.description : (workData.description.value || "");
+                        }
+                        if (!description && workData.excerpts && workData.excerpts.length) {
+                            description = workData.excerpts[0].text;
+                        }
+                        if (!description && workData.subtitle) description = workData.subtitle;
+                        if (description) {
                             bookData = { title: fullTitle, description: description };
                         }
                     }
                 } catch (err) {
-                    console.warn("OpenLibrary fetch failed:", err);
+                    console.warn("OpenLibrary work fetch failed:", err);
                 }
 
-                // FALLBACK: Google Books (only if OpenLibrary failed)
+                // FALLBACK 1: OpenLibrary books API
+                if (!bookData) {
+                    try {
+                        const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`;
+                        const res = await fetch(url);
+                        if (res.ok) {
+                            const data = await res.json();
+                            const key = `ISBN:${cleanIsbn}`;
+                            if (data[key]) {
+                                const book = data[key];
+                                let fullTitle = book.title || "Unknown Title";
+                                if (book.authors && book.authors.length) {
+                                    fullTitle += ` by ${book.authors.map(a => a.name).join(', ')}`;
+                                }
+                                let description = "";
+                                if (book.notes) description = book.notes;
+                                else if (book.description) description = typeof book.description === 'string' ? book.description : (book.description.value || "");
+                                else if (book.subtitle) description = book.subtitle;
+                                if (description) {
+                                    bookData = { title: fullTitle, description: description };
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.warn("OpenLibrary books API failed:", err);
+                    }
+                }
+
+                // FALLBACK 2: Google Books (if OpenLibrary gave no description)
                 if (!bookData) {
                     for (let attempt = 1; attempt <= 2; attempt++) {
                         try {
@@ -572,18 +592,19 @@
                                 if (book.authors && book.authors.length) {
                                     fullTitle += ` by ${book.authors.join(', ')}`;
                                 }
-                                let originalDesc = book.description ? book.description.replace(/<[^>]*>?/gm, '') : '';
-                                bookData = { title: fullTitle, description: originalDesc };
-                                break;
+                                let originalDesc = book.description ? book.description.replace(/<[^>]*>?/gm, '') : "";
+                                if (originalDesc) {
+                                    bookData = { title: fullTitle, description: originalDesc };
+                                    break;
+                                }
                             }
                         } catch (err) {
                             console.warn(`Google Books attempt ${attempt} failed:`, err);
-                            if (attempt === 2 && !bookData) bookData = null;
                         }
                     }
                 }
 
-                if (bookData) {
+                if (bookData && bookData.title && bookData.description) {
                     isbnCache[cleanIsbn] = bookData;
                     saveCache();
                     document.getElementById('listing-title').value = bookData.title;
@@ -620,6 +641,7 @@
                 document.getElementById('main-form-section').style.display = 'block';
             };
 
+            // Tags logic (unchanged)
             const tagInput = document.getElementById('tag-input');
             const selectedTagsContainer = document.getElementById('selected-tags');
             const suggestionsBox = document.getElementById('suggestions-box');
@@ -721,18 +743,11 @@
                     }
 
                     postBtnText.innerHTML = `<i class="fas fa-shield-alt fa-spin"></i> Checking Safety...`;
-
-                    // CALL MODERATION
                     const aiRes = await fetch('/.netlify/functions/moderate-listing', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            imageUrls: imageUrls, 
-                            title: title, 
-                            description: desc 
-                        })
+                        body: JSON.stringify({ imageUrls, title, description: desc })
                     });
-                    
                     const aiData = await aiRes.json();
 
                     if (aiData.verdict === "UNSAFE") {
@@ -743,7 +758,6 @@
                         return; 
                     }
 
-                    // IF SAFE, SAVE TO FIRESTORE
                     postBtnText.textContent = "Publishing...";
                     await addDoc(collection(db, 'listings'), {
                         title, description: desc, price, 
