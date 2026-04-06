@@ -11,7 +11,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,700;0,900;1,700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* All CSS unchanged from previous working version */
         :root {
             --ink:       #0C1446;
             --deep:      #2B5C92;
@@ -102,7 +101,6 @@
         .suggestion-item:last-child { border-bottom: none; }
         .suggestion-item:hover { background: var(--surface); }
         .suggestion-count { font-size: 0.75rem; color: var(--text-muted); background: var(--surface); padding: 2px 8px; border-radius: 50px; border: 1px solid var(--mist); }
-        .create-tag-item { color: var(--deep); font-weight: 600; border-top: 1px dashed var(--mist); }
 
         .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .two-col > div { display: flex; flex-direction: column; }
@@ -449,7 +447,7 @@
             let currentUser = null;
             let internalSchoolName = "Global Campus";
             let selectedFiles = [];
-            let tags = [];
+            let tags =[];
             let currentISBN = null;  
             const pageLoader = document.getElementById('page-loader');
             const loaderTimeout = setTimeout(() => { pageLoader.style.display = 'none'; }, 4000);
@@ -712,8 +710,7 @@
                 e.target.value = '';
             };
 
-            // --- SUBMIT HANDLER WITH BACKGROUND MODERATION ---
-            // FIXED: Use status 'pending' (allowed by Firestore rules)
+            // --- SUBMIT HANDLER WITH IN-PAGE MODERATION WAITING ---
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
                 const title = document.getElementById('listing-title').value.trim();
@@ -730,7 +727,7 @@
 
                 try {
                     // 1. Upload images to Cloudinary
-                    const imageUrls = [];
+                    const imageUrls =[];
                     for (const file of selectedFiles) {
                         const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
                         const formData = new FormData();
@@ -752,44 +749,47 @@
                         posterUid: currentUser.uid,
                         posterDisplayName: currentUser.displayName || "User",
                         status: 'pending',
-                        createdAt: serverTimestamp()
+                        timestamp: serverTimestamp() // MUST be timestamp so index.html can query it
                     });
 
-                    // 3. Redirect to My Listings immediately (user doesn't wait)
-                    window.location.href = `/my-listings.html?pending=true&id=${listingRef.id}`;
+                    // 3. Wait for Moderation BEFORE redirecting (Prevents browser from killing the script)
+                    postBtnText.textContent = "AI Safety Check... (Please wait)";
+                    
+                    try {
+                        const aiRes = await fetch('/.netlify/functions/moderate-listing', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ imageUrls, title, description: desc })
+                        });
+                        
+                        if (!aiRes.ok) throw new Error("Moderation server error");
+                        
+                        const aiData = await aiRes.json();
 
-                    // 4. Run moderation in the background (fire-and-forget)
-                    (async () => {
-                        try {
-                            const aiRes = await fetch('/.netlify/functions/moderate-listing', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ imageUrls, title, description: desc })
-                            });
-                            const aiData = await aiRes.json();
-
-                            if (aiData.verdict === "UNSAFE") {
-                                await updateDoc(doc(db, "listings", listingRef.id), {
-                                    status: 'rejected',
-                                    rejectionReason: aiData.reason || "Violates community guidelines."
-                                });
-                                console.log(`Listing ${listingRef.id} rejected:`, aiData.reason);
-                            } else {
-                                await updateDoc(doc(db, "listings", listingRef.id), {
-                                    status: 'active',
-                                    approvedAt: serverTimestamp()
-                                });
-                                console.log(`Listing ${listingRef.id} approved`);
-                            }
-                        } catch (err) {
-                            console.error("Background moderation failed:", err);
-                            // If moderation fails, mark as rejected to be safe
+                        if (aiData.verdict === "UNSAFE") {
                             await updateDoc(doc(db, "listings", listingRef.id), {
                                 status: 'rejected',
-                                rejectionReason: "Moderation service temporarily unavailable."
+                                rejectionReason: aiData.reason || "Violates community guidelines."
                             });
+                            // Show rejection modal, allow user to try again
+                            reasonBox.textContent = aiData.reason || "Violates community guidelines.";
+                            rejectedModal.style.display = 'flex';
+                            submitBtn.disabled = false;
+                            postBtnText.textContent = ui[lang].btnPost;
+                            return; // Stop here, do not redirect
+                        } else {
+                            await updateDoc(doc(db, "listings", listingRef.id), {
+                                status: 'active',
+                                approvedAt: serverTimestamp()
+                            });
+                            // 4. Redirect to My Listings after successful moderation
+                            window.location.href = `/my-listings.html`;
                         }
-                    })();
+                    } catch (err) {
+                        console.error("Moderation failed or timed out:", err);
+                        // If moderation times out, leave it as pending and redirect to let user know it's in review
+                        window.location.href = `/my-listings.html?pending=true&id=${listingRef.id}`;
+                    }
 
                 } catch (err) {
                     alert("Error: " + err.message);
