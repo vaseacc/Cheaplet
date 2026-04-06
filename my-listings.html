@@ -251,9 +251,8 @@
             });
 
             function fetchMyListings(userId) {
-                // FIXED: Use createdAt field (what listanitem.html saves) instead of timestamp
-                // Fallback to timestamp if createdAt is missing (backward compatibility)
-                const q = query(collection(db, "listings"), where("posterUid", "==", userId), orderBy("createdAt", "desc"));
+                // Use standard timestamp to ensure compatibility with index.html and older listings
+                const q = query(collection(db, "listings"), where("posterUid", "==", userId), orderBy("timestamp", "desc"));
                 infoContainer.innerHTML = `<p class="info-message">${ui.loading}</p>`;
 
                 onSnapshot(q, (snapshot) => {
@@ -328,14 +327,21 @@
                     if (isRejected) {
                         reasonBox.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading reason...';
                         rejectedModal.style.display = 'flex';
-                        const reason = await fetchRejectionReason(listingDoc.id);
-                        if (reason) {
-                            reasonBox.innerHTML = reason;
+                        
+                        // We check the listing document itself first (since new moderation saves it here)
+                        if (data.rejectionReason) {
+                            reasonBox.innerHTML = data.rejectionReason;
                         } else {
-                            reasonBox.innerHTML = 'No specific reason available. The listing was rejected for violating our community guidelines.';
+                            // Fallback to old behavior (fetching from reports collection)
+                            const reason = await fetchRejectionReason(listingDoc.id);
+                            if (reason) {
+                                reasonBox.innerHTML = reason;
+                            } else {
+                                reasonBox.innerHTML = 'No specific reason available. The listing was rejected for violating our community guidelines.';
+                            }
                         }
                     } else if (isPending) {
-                        // Do nothing, let them wait – maybe show a toast? But banner already explains.
+                        // Do nothing, let them wait
                     } else {
                         window.location.href = `/listing.html?id=${listingDoc.id}`;
                     }
