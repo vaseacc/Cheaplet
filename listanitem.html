@@ -101,6 +101,7 @@
         .suggestion-item:last-child { border-bottom: none; }
         .suggestion-item:hover { background: var(--surface); }
         .suggestion-count { font-size: 0.75rem; color: var(--text-muted); background: var(--surface); padding: 2px 8px; border-radius: 50px; border: 1px solid var(--mist); }
+        .create-tag-item { color: var(--deep); font-weight: 600; border-top: 1px dashed var(--mist); }
 
         .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .two-col > div { display: flex; flex-direction: column; }
@@ -144,15 +145,6 @@
             color: var(--gold);
             margin-right: 6px;
         }
-
-        .modal-overlay { position: fixed; inset: 0; background: rgba(12,20,70,0.8); backdrop-filter: blur(6px); z-index: 10000; display: none; justify-content: center; align-items: center; padding: 20px; animation: fadeIn 0.2s ease; }
-        .modal-card { background: var(--white); padding: 40px 30px; border-radius: var(--radius-md); max-width: 420px; width: 100%; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-        .modal-icon { font-size: 3.5rem; margin-bottom: 20px; color: var(--red); }
-        .modal-card h2 { font-family: var(--font-display); font-size: 1.8rem; color: var(--ink); margin-bottom: 12px; }
-        .modal-card p { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 20px; line-height: 1.5; }
-        .reason-box { background: #fee2e2; border: 1px solid #fecaca; color: #b91c1c; padding: 15px; border-radius: 10px; font-size: 0.9rem; font-weight: 600; margin-bottom: 25px; text-align: left; }
-        .btn-understand { background: var(--ink); color: white; border: none; padding: 14px 30px; border-radius: 30px; font-weight: 800; font-size: 1rem; cursor: pointer; width: 100%; transition: 0.2s; }
-        .btn-understand:hover { background: var(--deep); transform: translateY(-2px); }
 
         @media (max-width: 767px) {
             nav { display: none; }
@@ -335,21 +327,10 @@
         </div>
     </div>
 
-    <!-- REJECTION MODAL -->
-    <div class="modal-overlay" id="rejected-modal">
-        <div class="modal-card">
-            <i class="fas fa-shield-alt modal-icon"></i>
-            <h2 id="modal-rej-title">Listing Rejected</h2>
-            <p id="modal-rej-desc">Our AI safety system blocked this listing for violating our community guidelines.</p>
-            <div class="reason-box" id="modal-rej-reason"></div>
-            <button class="btn-understand" id="btn-close-rej-modal">I Understand</button>
-        </div>
-    </div>
-
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, setDoc, increment, limit, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -376,10 +357,9 @@
                     lblPhotos: "Photos (Max 5, Max 5MB each)", btnAddPhoto: "Add Photo", btnPost: "Submit for Review", btnCancel: "Cancel",
                     priceErr: "Price cannot exceed $1200.", origPriceErr: "Original price cannot exceed $5000.",
                     imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type.",
-                    imgSizeErr: "Image too large (Max 5MB).", uploading: "Uploading Images…",
+                    imgSizeErr: "Image too large (Max 5MB).", uploading: "Saving listing…",
                     tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.",
-                    tagUses: "uses", uploadFail: "Image upload failed. Please try again.",
-                    reviewMessage: "Your listing is being reviewed. You will be notified once approved."
+                    tagUses: "uses"
                 },
                 fr: {
                     mainTitle: "Publier un article", mainSub: "Remplissez les détails ci-dessous et votre livre sera automatiquement examiné.",
@@ -397,10 +377,9 @@
                     lblPhotos: "Photos (Max 5, Max 5MB chacune)", btnAddPhoto: "Ajouter une photo", btnPost: "Soumettre pour examen", btnCancel: "Annuler",
                     priceErr: "Le prix ne peut dépasser 1200$.", origPriceErr: "Le prix d'origine ne peut dépasser 5000$.",
                     imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté.",
-                    imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Téléchargement…",
+                    imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Enregistrement…",
                     tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.",
-                    tagUses: "utilisations", uploadFail: "Échec du téléchargement. Veuillez réessayer.",
-                    reviewMessage: "Votre annonce est en cours d'examen. Vous serez notifié une fois approuvée."
+                    tagUses: "utilisations"
                 }
             };
 
@@ -451,11 +430,6 @@
             let currentISBN = null;  
             const pageLoader = document.getElementById('page-loader');
             const loaderTimeout = setTimeout(() => { pageLoader.style.display = 'none'; }, 4000);
-
-            const rejectedModal = document.getElementById('rejected-modal');
-            const btnCloseRejModal = document.getElementById('btn-close-rej-modal');
-            const reasonBox = document.getElementById('modal-rej-reason');
-            btnCloseRejModal.onclick = () => { rejectedModal.style.display = 'none'; };
 
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
@@ -710,7 +684,7 @@
                 e.target.value = '';
             };
 
-            // --- SUBMIT HANDLER WITH IN-PAGE MODERATION WAITING ---
+            // --- SUBMIT HANDLER WITH BACKGROUND MODERATION WAITING ---
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
                 const title = document.getElementById('listing-title').value.trim();
@@ -738,8 +712,7 @@
                         if (res.secure_url) imageUrls.push(res.secure_url);
                     }
 
-                    // 2. Create listing with status "pending" (allowed by Firestore rules)
-                    postBtnText.textContent = "Creating listing...";
+                    // 2. Create listing with status "pending"
                     const listingRef = await addDoc(collection(db, 'listings'), {
                         title, description: desc, price, 
                         condition: document.getElementById('listing-condition').value,
@@ -749,47 +722,11 @@
                         posterUid: currentUser.uid,
                         posterDisplayName: currentUser.displayName || "User",
                         status: 'pending',
-                        timestamp: serverTimestamp() // MUST be timestamp so index.html can query it
+                        timestamp: serverTimestamp() 
                     });
 
-                    // 3. Wait for Moderation BEFORE redirecting (Prevents browser from killing the script)
-                    postBtnText.textContent = "AI Safety Check... (Please wait)";
-                    
-                    try {
-                        const aiRes = await fetch('/.netlify/functions/moderate-listing', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ imageUrls, title, description: desc })
-                        });
-                        
-                        if (!aiRes.ok) throw new Error("Moderation server error");
-                        
-                        const aiData = await aiRes.json();
-
-                        if (aiData.verdict === "UNSAFE") {
-                            await updateDoc(doc(db, "listings", listingRef.id), {
-                                status: 'rejected',
-                                rejectionReason: aiData.reason || "Violates community guidelines."
-                            });
-                            // Show rejection modal, allow user to try again
-                            reasonBox.textContent = aiData.reason || "Violates community guidelines.";
-                            rejectedModal.style.display = 'flex';
-                            submitBtn.disabled = false;
-                            postBtnText.textContent = ui[lang].btnPost;
-                            return; // Stop here, do not redirect
-                        } else {
-                            await updateDoc(doc(db, "listings", listingRef.id), {
-                                status: 'active',
-                                approvedAt: serverTimestamp()
-                            });
-                            // 4. Redirect to My Listings after successful moderation
-                            window.location.href = `/my-listings.html`;
-                        }
-                    } catch (err) {
-                        console.error("Moderation failed or timed out:", err);
-                        // If moderation times out, leave it as pending and redirect to let user know it's in review
-                        window.location.href = `/my-listings.html?pending=true&id=${listingRef.id}`;
-                    }
+                    // 3. Instantly redirect. The moderation will be handled in the background by my-listings.html
+                    window.location.href = `/my-listings.html`;
 
                 } catch (err) {
                     alert("Error: " + err.message);
