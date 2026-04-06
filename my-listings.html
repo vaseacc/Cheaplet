@@ -159,7 +159,7 @@
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, query, where, onSnapshot, orderBy, doc, deleteDoc, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, query, where, onSnapshot, orderBy, doc, deleteDoc, updateDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -206,20 +206,17 @@
 
             btnCloseModal.onclick = () => { rejectedModal.style.display = 'none'; };
 
-            // Helper to fetch rejection reason from reports
+            // Helper to fetch rejection reason from old reports (fallback)
             async function fetchRejectionReason(listingId) {
                 try {
                     const q = query(collection(db, "reports"), where("listingId", "==", listingId), where("type", "==", "auto"));
                     const snap = await getDocs(q);
                     if (snap.empty) {
-                        console.warn(`No report found for listing ${listingId}`);
                         return null;
                     }
                     const report = snap.docs[0].data();
                     const details = report.details || "";
-                    console.log("Report details:", details); // Debug
                     
-                    // Extract reason after "Reason: "
                     let reason = "";
                     const match = details.match(/Reason:\s*(.+?)(?:\n|$)/i);
                     if (match) {
@@ -250,8 +247,45 @@
                 }
             });
 
+            // Keep track of listings currently being checked to prevent duplicate API calls
+            const pendingChecks = new Set();
+
+            async function runModerationCheck(listingId, data) {
+                try {
+                    const aiRes = await fetch('/.netlify/functions/moderate-listing', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            imageUrls: data.imageUrls ||[], 
+                            title: data.title, 
+                            description: data.description 
+                        })
+                    });
+                    
+                    if (!aiRes.ok) throw new Error("Moderation server error");
+                    
+                    const aiData = await aiRes.json();
+
+                    if (aiData.verdict === "UNSAFE") {
+                        await updateDoc(doc(db, "listings", listingId), {
+                            status: 'rejected',
+                            rejectionReason: aiData.reason || "Violates community guidelines."
+                        });
+                    } else {
+                        await updateDoc(doc(db, "listings", listingId), {
+                            status: 'active',
+                            approvedAt: serverTimestamp()
+                        });
+                    }
+                } catch (err) {
+                    console.error("Background moderation check failed:", err);
+                    // It will remain pending, and we'll try again next time the page loads
+                } finally {
+                    pendingChecks.delete(listingId);
+                }
+            }
+
             function fetchMyListings(userId) {
-                // Use standard timestamp to ensure compatibility with index.html and older listings
                 const q = query(collection(db, "listings"), where("posterUid", "==", userId), orderBy("timestamp", "desc"));
                 infoContainer.innerHTML = `<p class="info-message">${ui.loading}</p>`;
 
@@ -267,8 +301,16 @@
                         let delay = 0;
                         snapshot.forEach((doc) => {
                             const data = doc.data();
-                            // If createdAt is missing (old listings), we still show them using the existing data
-                            if (data.status === 'pending') hasPending = true;
+                            
+                            if (data.status === 'pending') {
+                                hasPending = true;
+                                // Fire background moderation if not already checking
+                                if (!pendingChecks.has(doc.id)) {
+                                    pendingChecks.add(doc.id);
+                                    runModerationCheck(doc.id, data);
+                                }
+                            }
+
                             const card = renderMyListing(doc);
                             card.style.animationDelay = `${delay}s`;
                             delay += 0.05;
@@ -328,11 +370,11 @@
                         reasonBox.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading reason...';
                         rejectedModal.style.display = 'flex';
                         
-                        // We check the listing document itself first (since new moderation saves it here)
+                        // We check the listing document itself first
                         if (data.rejectionReason) {
                             reasonBox.innerHTML = data.rejectionReason;
                         } else {
-                            // Fallback to old behavior (fetching from reports collection)
+                            // Fallback to old behavior
                             const reason = await fetchRejectionReason(listingDoc.id);
                             if (reason) {
                                 reasonBox.innerHTML = reason;
