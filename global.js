@@ -398,7 +398,7 @@ function triggerHardLockdown(expireTimestamp) {
         ${expiryText}
     </div>`;
 
-    setTimeout(() => { signOut(auth).then(() => { window.location.href = '/LoginInToCheaplet.html'; }); }, 5000);
+    setTimeout(() => { signOut(auth).then(() => { window.location.href = '/loginintocheaplet.html'; }); }, 5000);
 }
 
 // --- WELCOME TOUR (profile setup) ---
@@ -773,7 +773,7 @@ function updateHeaderToLoggedOut() {
 
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
     if (!container) return;
-    container.innerHTML = `<button class="btn" onclick="window.location.href='/LoginInToCheaplet.html'">${t.btn_login}</button>`;
+    container.innerHTML = `<button class="btn" onclick="window.location.href='/loginintocheaplet.html'">${t.btn_login}</button>`;
 }
 
 function showTermsBanner() {
