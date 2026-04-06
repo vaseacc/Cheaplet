@@ -192,7 +192,7 @@
     <div class="page-hero">
         <div class="page-hero-inner">
             <h1 id="ui-main-title">List an Item</h1>
-            <p id="ui-main-subtitle">Fill in the details below and your book will be reviewed by our AI safety system.</p>
+            <p id="ui-main-subtitle">Fill in the details below and your book will be automatically reviewed.</p>
         </div>
     </div>
 
@@ -324,7 +324,7 @@
                     <div class="form-buttons">
                         <button type="submit" class="btn-submit" id="postListingBtn">
                             <i class="fas fa-paper-plane"></i>
-                            <span id="post-btn-text">Submit Listing</span>
+                            <span id="post-btn-text">Submit for Review</span>
                         </button>
                         <button type="button" class="btn-cancel" id="cancelListingBtn" onclick="window.location.href='/index.html'">Cancel</button>
                     </div>
@@ -351,7 +351,7 @@
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, setDoc, increment, limit } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, setDoc, increment, limit, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -363,7 +363,7 @@
             const lang = localStorage.getItem('preferred_language') || 'en';
             const ui = {
                 en: {
-                    mainTitle: "List an Item", mainSub: "Your book will be automatically reviewed by our AI.",
+                    mainTitle: "List an Item", mainSub: "Fill in the details below and your book will be automatically reviewed.",
                     isbnTitle: "Quick Book Scan", isbnDesc: "Scan your book's barcode to fill in info automatically.",
                     btnScan: "Scan Barcode", btnSkip: "Skip & Fill Manually", isbnPlace: "Enter ISBN manually...",
                     fetching: "Fetching info...", notFound: "Book not found. Please fill manually.",
@@ -375,15 +375,16 @@
                     lblCode: "Digital Access Code", optNa: "Not applicable", optAvail: "Available / Unused", optUsed: "Already used",
                     lblLoc: "Campus Location", lblMeet: "Meeting Point (Max 60 chars)", meetPlace: "e.g., Near Library",
                     lblDet: "Additional Details", chkWrite: "Writing inside", chkWater: "Water damage", chkMiss: "Missing pages",
-                    lblPhotos: "Photos (Max 5, Max 5MB each)", btnAddPhoto: "Add Photo", btnPost: "Submit Listing", btnCancel: "Cancel",
+                    lblPhotos: "Photos (Max 5, Max 5MB each)", btnAddPhoto: "Add Photo", btnPost: "Submit for Review", btnCancel: "Cancel",
                     priceErr: "Price cannot exceed $1200.", origPriceErr: "Original price cannot exceed $5000.",
                     imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type.",
                     imgSizeErr: "Image too large (Max 5MB).", uploading: "Uploading Images…",
                     tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.",
-                    tagUses: "uses", uploadFail: "Image upload failed. Please try again."
+                    tagUses: "uses", uploadFail: "Image upload failed. Please try again.",
+                    reviewMessage: "Your listing is being reviewed. You will be notified once approved."
                 },
                 fr: {
-                    mainTitle: "Publier un article", mainSub: "Votre livre sera analysé par notre système de sécurité IA.",
+                    mainTitle: "Publier un article", mainSub: "Remplissez les détails ci-dessous et votre livre sera automatiquement examiné.",
                     isbnTitle: "Scan rapide du livre", isbnDesc: "Scannez le code-barres pour remplir les infos automatiquement.",
                     btnScan: "Scanner le code-barres", btnSkip: "Ignorer et remplir manuellement", isbnPlace: "Entrer l'ISBN manuellement...",
                     fetching: "Recherche en cours...", notFound: "Livre introuvable. Veuillez remplir manuellement.",
@@ -395,12 +396,13 @@
                     lblCode: "Code d'accès numérique", optNa: "Non applicable", optAvail: "Disponible / Inutilisé", optUsed: "Déjà utilisé",
                     lblLoc: "Emplacement du campus", lblMeet: "Point de rencontre (Max 60 car.)", meetPlace: "ex: Près de la bibliothèque",
                     lblDet: "Détails supplémentaires", chkWrite: "Écritures à l'intérieur", chkWater: "Dommages causés par l'eau", chkMiss: "Pages manquantes",
-                    lblPhotos: "Photos (Max 5, Max 5MB chacune)", btnAddPhoto: "Ajouter une photo", btnPost: "Soumettre l'annonce", btnCancel: "Annuler",
+                    lblPhotos: "Photos (Max 5, Max 5MB chacune)", btnAddPhoto: "Ajouter une photo", btnPost: "Soumettre pour examen", btnCancel: "Annuler",
                     priceErr: "Le prix ne peut dépasser 1200$.", origPriceErr: "Le prix d'origine ne peut dépasser 5000$.",
                     imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté.",
                     imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Téléchargement…",
                     tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.",
-                    tagUses: "utilisations", uploadFail: "Échec du téléchargement. Veuillez réessayer."
+                    tagUses: "utilisations", uploadFail: "Échec du téléchargement. Veuillez réessayer.",
+                    reviewMessage: "Votre annonce est en cours d'examen. Vous serez notifié une fois approuvée."
                 }
             };
 
@@ -471,7 +473,7 @@
 
             let html5QrCode;
             
-            // --- ISBN LOOKUP WITH LANGUAGE SUPPORT (French for Rosemont) ---
+            // --- ISBN LOOKUP WITH LANGUAGE SUPPORT ---
             const isbnCache = {};
             try {
                 const saved = localStorage.getItem('scoralia_isbn_cache');
@@ -517,7 +519,7 @@
                 const userLang = localStorage.getItem('preferred_language') || 'en';
                 const isFrench = userLang === 'fr';
 
-                // Try OpenLibrary work endpoint (supports language parameter in URL? Not directly, but we can try)
+                // Try OpenLibrary work endpoint
                 try {
                     const workUrl = `https://openlibrary.org/isbn/${cleanIsbn}.json`;
                     const workRes = await fetch(workUrl);
@@ -635,7 +637,7 @@
                 document.getElementById('main-form-section').style.display = 'block';
             };
 
-            // Tags logic (unchanged)
+            // Tags logic
             const tagInput = document.getElementById('tag-input');
             const selectedTagsContainer = document.getElementById('selected-tags');
             const suggestionsBox = document.getElementById('suggestions-box');
@@ -710,6 +712,7 @@
                 e.target.value = '';
             };
 
+            // --- SUBMIT HANDLER WITH BACKGROUND MODERATION ---
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
                 const title = document.getElementById('listing-title').value.trim();
@@ -725,6 +728,7 @@
                 postBtnText.textContent = ui[lang].uploading;
 
                 try {
+                    // 1. Upload images to Cloudinary
                     const imageUrls = [];
                     for (const file of selectedFiles) {
                         const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
@@ -736,24 +740,9 @@
                         if (res.secure_url) imageUrls.push(res.secure_url);
                     }
 
-                    postBtnText.innerHTML = `<i class="fas fa-shield-alt fa-spin"></i> Checking Safety...`;
-                    const aiRes = await fetch('/.netlify/functions/moderate-listing', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ imageUrls, title, description: desc })
-                    });
-                    const aiData = await aiRes.json();
-
-                    if (aiData.verdict === "UNSAFE") {
-                        reasonBox.textContent = aiData.reason || "Violates community guidelines.";
-                        rejectedModal.style.display = 'flex';
-                        submitBtn.disabled = false;
-                        postBtnText.textContent = ui[lang].btnPost;
-                        return; 
-                    }
-
-                    postBtnText.textContent = "Publishing...";
-                    await addDoc(collection(db, 'listings'), {
+                    // 2. Create listing with status "pending_review"
+                    postBtnText.textContent = "Creating listing...";
+                    const listingRef = await addDoc(collection(db, 'listings'), {
                         title, description: desc, price, 
                         condition: document.getElementById('listing-condition').value,
                         digitalCode: document.getElementById('listing-digital-code').value,
@@ -761,11 +750,46 @@
                         tags, imageUrls,
                         posterUid: currentUser.uid,
                         posterDisplayName: currentUser.displayName || "User",
-                        status: 'active',
-                        timestamp: serverTimestamp()
+                        status: 'pending_review',
+                        timestamp: serverTimestamp(),
+                        createdAt: serverTimestamp()
                     });
 
-                    window.location.href = `/my-listings.html`;
+                    // 3. Redirect to My Listings immediately (user doesn't wait)
+                    window.location.href = `/my-listings.html?pending=true&id=${listingRef.id}`;
+
+                    // 4. Run moderation in the background (fire-and-forget)
+                    (async () => {
+                        try {
+                            const aiRes = await fetch('/.netlify/functions/moderate-listing', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ imageUrls, title, description: desc })
+                            });
+                            const aiData = await aiRes.json();
+
+                            if (aiData.verdict === "UNSAFE") {
+                                await updateDoc(doc(db, "listings", listingRef.id), {
+                                    status: 'rejected',
+                                    rejectionReason: aiData.reason || "Violates community guidelines."
+                                });
+                                console.log(`Listing ${listingRef.id} rejected:`, aiData.reason);
+                            } else {
+                                await updateDoc(doc(db, "listings", listingRef.id), {
+                                    status: 'active',
+                                    approvedAt: serverTimestamp()
+                                });
+                                console.log(`Listing ${listingRef.id} approved`);
+                            }
+                        } catch (err) {
+                            console.error("Background moderation failed:", err);
+                            // If moderation fails, mark as rejected to be safe
+                            await updateDoc(doc(db, "listings", listingRef.id), {
+                                status: 'rejected',
+                                rejectionReason: "Moderation service temporarily unavailable."
+                            });
+                        }
+                    })();
 
                 } catch (err) {
                     alert("Error: " + err.message);
