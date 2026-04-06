@@ -4,58 +4,107 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <title>Search Results - Cheaplet</title>
+    <title>Search Results - Scoralia</title>
     <!-- GLOBAL BRAIN -->
     <script type="module" src="global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f8f9fa; color: #333; line-height: 1.6; }
-        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 15px; }
-
-        header { 
-            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); 
-            color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
-            position: sticky; top: 0; z-index: 100; 
+        :root {
+            --ink:       #0C1446;
+            --deep:      #2B5C92;
+            --mist:      #B3CDE0;
+            --white:     #FFFFFF;
+            --off-white: #F4F7FC;
+            --surface:   #EBF2FA;
+            --text-body: #1a2a4a;
+            --text-muted:#6b84a3;
+            --gold:      #C8A96E;
+            --radius-md: 16px;
+            --shadow-sm: 0 4px 20px rgba(12,20,70,0.06);
+            --font-display: 'Playfair Display', Georgia, serif;
+            --font-body:    'DM Sans', sans-serif;
         }
-        .header-content { display: flex; justify-content: space-between; align-items: center; }
-        .logo { font-size: 24px; font-weight: bold; cursor: pointer; color: white; text-decoration: none; }
-        .logo span { color: #FFD700; }
-        
-        nav ul { display: flex; list-style: none; gap: 20px; }
-        nav ul li a { color: white; text-decoration: none; font-weight: 500; opacity: 0.9; }
 
-        .header-right { display: flex; align-items: center; gap: 15px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background-color: var(--off-white); color: var(--text-body); font-family: var(--font-body); line-height: 1.6; overflow-x: hidden; }
+        .container { width: 100%; max-width: 1280px; margin: 0 auto; padding: 0 28px; }
+
+        header { position: sticky; top: 0; z-index: 200; background: rgba(12, 20, 70, 0.97); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(179,205,224,0.15); }
+        .header-content { max-width: 1280px; margin: 0 auto; padding: 0 28px; height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+        .logo { font-family: var(--font-display); font-size: 1.6rem; font-weight: 900; color: var(--white); text-decoration: none; letter-spacing: -0.5px; }
+        .logo span { color: var(--gold); }
+        
+        nav ul { display: flex; list-style: none; gap: 28px; }
+        nav ul li a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+        nav ul li a:hover { color: var(--white); }
+        .header-right { display: flex; align-items: center; gap: 10px; }
 
         /* Filters */
-        .filters { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin: 30px 0; }
-        .filter-options { display: flex; flex-direction: column; gap: 15px; }
-        .filter-group { display: flex; align-items: center; gap: 10px; flex: 1; }
-        select, #search-input { padding: 12px; border: 2px solid #ddd; border-radius: 8px; width: 100%; outline: none; }
+        .filters { background: var(--white); padding: 25px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid rgba(179,205,224,0.3); margin: 30px 0; animation: fadeUp 0.4s ease both; }
+        .filter-options { display: flex; gap: 15px; flex-wrap: wrap; }
+        .filter-group { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 250px; }
+        
+        select, #search-input { padding: 12px 16px; border: 1.5px solid var(--mist); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 0.95rem; color: var(--text-body); background: var(--off-white); outline: none; transition: 0.2s; width: 100%; }
+        select:focus, #search-input:focus { border-color: var(--deep); background: var(--white); box-shadow: 0 0 0 3px rgba(43,92,146,0.1); }
+        
+        #search-input { flex: 2; }
+        select { flex: 1; cursor: pointer; }
+
+        /* Grid Header */
+        .listings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; animation: fadeUp 0.4s 0.1s ease both; }
+        .section-title { font-family: var(--font-display); font-size: 1.8rem; color: var(--ink); font-weight: 800; letter-spacing: -0.3px; }
+        .item-count { background: var(--surface); color: var(--deep); padding: 6px 16px; border-radius: 50px; font-size: 0.85rem; font-weight: 700; border: 1px solid var(--mist); }
 
         /* Grid */
-        .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 25px; margin-bottom: 50px; }
+        .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 25px; margin-bottom: 60px; }
+
+        .listing-card { background: var(--white); border-radius: var(--radius-md); overflow: hidden; box-shadow: var(--shadow-sm); text-decoration: none; color: inherit; transition: transform 0.3s, box-shadow 0.3s; display: flex; flex-direction: column; border: 1px solid rgba(179,205,224,0.3); animation: fadeUp 0.5s 0.2s ease both; }
+        .listing-card:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(12,20,70,0.1); border-color: var(--deep); }
+        .listing-image { height: 200px; background-color: var(--surface); background-size: cover; background-position: center; position: relative; }
+        .listing-badge { position: absolute; top: 12px; left: 12px; background: var(--gold); color: var(--ink); font-size: 0.7rem; font-weight: 800; padding: 4px 12px; border-radius: 50px; letter-spacing: 0.5px; }
+        
+        .listing-details { padding: 18px; flex: 1; display: flex; flex-direction: column; }
+        .listing-price-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .listing-price { color: var(--ink); font-weight: 900; font-size: 1.3rem; font-family: var(--font-display); }
+        .original-price { color: var(--text-muted); font-size: 0.85rem; text-decoration: line-through; }
+        
+        .listing-title { font-size: 1rem; font-weight: 600; color: var(--text-body); margin-bottom: 12px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; flex: 1; }
+        .listing-location { font-size: 0.85rem; color: var(--text-muted); margin-top: auto; font-weight: 500; }
+        .listing-location i { margin-right: 5px; color: var(--deep); }
+
+        /* How It Works */
+        .how-it-works { padding: 60px 0; background: linear-gradient(135deg, var(--ink) 0%, var(--deep) 100%); margin-top: 40px; }
+        .how-it-works .section-title { color: var(--white); text-align: center; margin-bottom: 40px; }
+        .steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; text-align: center; padding: 0 20px; }
+        .step-icon { font-size: 2.5rem; color: var(--gold); margin-bottom: 20px; }
+        .step-title { font-family: var(--font-display); font-weight: 700; color: var(--white); font-size: 1.2rem; margin-bottom: 10px; }
+        .step-desc { color: rgba(255,255,255,0.7); font-size: 0.9rem; }
+
+        footer { background: var(--ink); border-top: 1px solid rgba(179,205,224,0.12); padding: 40px 28px 20px; text-align: center; }
+        .footer-link { color: rgba(255,255,255,0.6); text-decoration: none; margin: 0 15px; font-size: 0.85rem; }
+
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
         @media (max-width: 767px) {
-            .listings-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; padding: 0; }
-            .listing-image { height: 160px !important; }
-            .listing-details { padding: 8px !important; }
-            .listing-title { font-size: 0.85rem !important; height: 2.6em; overflow: hidden; }
+            nav { display: none; }
+            .header-content { padding: 0 20px; }
+            .container { padding: 0 15px; }
+            .filters { padding: 15px; margin: 20px 0; }
+            .filter-options { flex-direction: column; gap: 10px; }
+            .filter-group { min-width: 100%; }
+            .listings-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .listing-image { height: 150px; }
+            .listing-details { padding: 12px; }
+            .listing-title { font-size: 0.85rem; }
+            .listing-price { font-size: 1.1rem; }
         }
-
-        .listing-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.06); text-decoration: none; color: inherit; transition: transform 0.3s; }
-        .listing-card:hover { transform: translateY(-5px); }
-        .listing-image { height: 200px; background-color: #f0f0f0; background-size: cover; background-position: center; }
-        .listing-details { padding: 15px; }
-        .listing-price { color: #4CAF50; font-weight: 800; font-size: 1.2rem; }
-
-        .section-title { font-size: 1.8rem; color: #2E7D32; margin-bottom: 25px; text-align: center; font-weight: 600; }
     </style>
 </head>
 <body>
     <header>
-        <div class="container header-content">
-            <a href="/index.html" class="logo">Cheap<span>let</span></a>
+        <div class="header-content">
+            <a href="/index.html" class="logo">Scor<span>alia</span></a>
             <nav><ul></ul></nav> 
             <div class="header-right"></div> 
         </div>
@@ -64,6 +113,10 @@
     <main class="container">
         <section class="filters">
             <div class="filter-options">
+                <div class="filter-group" style="flex: 2;">
+                    <i class="fas fa-search" style="color:var(--text-muted); margin-left: 10px; position:absolute;"></i>
+                    <input type="text" data-i18n-placeholder="search_placeholder" placeholder="Search for items..." id="search-input" style="padding-left: 35px;">
+                </div>
                 <div class="filter-group">
                     <select id="sort-filter">
                         <option value="newest">Newest First</option>
@@ -71,47 +124,49 @@
                         <option value="price-high">Price: High to Low</option>
                     </select>
                 </div>
-                <div class="filter-group" style="flex: 2;">
-                    <input type="text" data-i18n-placeholder="search_placeholder" placeholder="Search for items..." id="search-input">
-                </div>
             </div>
         </section>
 
-        <div class="listings-header" style="margin-bottom: 20px; display: flex; justify-content: space-between;">
-            <h2 style="color: #2E7D32;">Search Results</h2>
-            <span id="itemCount">Loading...</span>
+        <div class="listings-header">
+            <h2 class="section-title">Search Results</h2>
+            <span class="item-count" id="itemCount">Loading...</span>
         </div>
-        <div class="listings-grid" id="listings-container"></div>
+        <div class="listings-grid" id="listings-container">
+            <div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted);"><i class="fas fa-circle-notch fa-spin fa-2x"></i></div>
+        </div>
     </main>
 
-    <section class="how-it-works" style="padding: 60px 0; background: #fff; border-top: 1px solid #eee;">
+    <section class="how-it-works">
         <div class="container">
             <h2 class="section-title" data-i18n="how_title">How It Works</h2>
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap:30px; text-align:center;">
+            <div class="steps-grid">
                 <div>
-                    <i class="fas fa-user-plus" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i>
-                    <h3 data-i18n="step_1_title" style="font-weight: 700;">Create an Account</h3>
+                    <i class="fas fa-user-plus step-icon"></i>
+                    <h3 class="step-title" data-i18n="step_1_title">Create an Account</h3>
+                    <p class="step-desc">Sign up free with your student email. No fees, no subscriptions.</p>
                 </div>
                 <div>
-                    <i class="fas fa-camera-retro" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i>
-                    <h3 data-i18n="step_2_title" style="font-weight: 700;">Post Your Item</h3>
+                    <i class="fas fa-camera step-icon"></i>
+                    <h3 class="step-title" data-i18n="step_2_title">Post Your Book</h3>
+                    <p class="step-desc">Snap a photo, set your price, add the course code — done in 60 seconds.</p>
                 </div>
                 <div>
-                    <i class="fas fa-comments-dollar" style="font-size: 3rem; color: #4CAF50; margin-bottom: 15px;"></i>
-                    <h3 data-i18n="step_3_title" style="font-weight: 700;">Connect & Sell</h3>
+                    <i class="fas fa-comments step-icon"></i>
+                    <h3 class="step-title" data-i18n="step_3_title">Connect & Sell</h3>
+                    <p class="step-desc">Chat with buyers on campus and arrange a quick, safe handoff.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <footer style="background: #2E7D32; color: white; padding: 40px 0; text-align: center;">
+    <footer>
         <div class="container">
             <div style="margin-bottom: 20px;">
-                <span data-i18n="footer_about" style="margin: 0 15px;">About</span>
-                <span data-i18n="footer_support" style="margin: 0 15px;">Support</span>
-                <span data-i18n="footer_legal" style="margin: 0 15px;">Legal</span>
+                <span data-i18n="footer_about" class="footer-link">About</span>
+                <span data-i18n="footer_support" class="footer-link">Support</span>
+                <span data-i18n="footer_legal" class="footer-link">Legal</span>
             </div>
-            <div>© 2025 Cheaplet. All rights reserved.</div>
+            <div style="color:rgba(255,255,255,0.4); font-size:0.8rem;">© 2026 Scoralia. All rights reserved.</div>
         </div>
     </footer>
 
@@ -130,13 +185,20 @@
             const searchInput = document.getElementById('search-input');
             const sortFilter = document.getElementById('sort-filter');
 
+            // Pick up search query from URL if passed from index.html
+            const urlParams = new URLSearchParams(window.location.search);
+            const initialQuery = urlParams.get('q');
+            if (initialQuery) {
+                searchInput.value = initialQuery;
+            }
+
             let unsubscribe;
 
             function fetchListings() {
                 if (unsubscribe) unsubscribe();
 
                 let q = collection(db, 'listings');
-                const constraints = [];
+                const constraints =[];
                 
                 if (sortFilter.value === 'price-low') constraints.push(orderBy('price', 'asc'));
                 else if (sortFilter.value === 'price-high') constraints.push(orderBy('price', 'desc'));
@@ -144,42 +206,68 @@
 
                 unsubscribe = onSnapshot(query(q, ...constraints), snapshot => {
                     listingsContainer.innerHTML = '';
-                    const term = searchInput.value.toLowerCase();
+                    const term = searchInput.value.toLowerCase().trim();
                     
                     const filtered = snapshot.docs.filter(doc => {
                         const data = doc.data();
-                        return (data.title || '').toLowerCase().includes(term) && data.status === 'active';
+                        const titleMatch = (data.title || '').toLowerCase().includes(term);
+                        const descMatch = (data.description || '').toLowerCase().includes(term);
+                        const isbnMatch = (data.isbn || '').toLowerCase().includes(term);
+                        return (titleMatch || descMatch || isbnMatch) && data.status === 'active';
                     });
                     
                     const savedLang = localStorage.getItem('preferred_language') || 'en';
                     const countText = savedLang === 'fr' ? 'articles trouvés' : 'items found';
                     itemCountSpan.textContent = `${filtered.length} ${countText}`;
 
-                    filtered.forEach(doc => {
+                    if (filtered.length === 0) {
+                        listingsContainer.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:60px 20px; color:var(--text-muted); font-size:1.1rem;"><i class="fas fa-search" style="font-size:3rem; color:var(--mist); margin-bottom:15px; display:block;"></i>${savedLang === 'fr' ? 'Aucun résultat trouvé.' : 'No results found.'}</div>`;
+                        return;
+                    }
+
+                    const frag = document.createDocumentFragment();
+                    filtered.forEach((doc, index) => {
                         const d = doc.data();
                         const card = document.createElement('a');
                         card.className = 'listing-card';
                         card.href = `/listing.html?id=${doc.id}`;
+                        card.style.animationDelay = `${index * 0.05}s`;
+
+                        const origHTML = (d.originalPrice && d.originalPrice > d.price) ? `<span class="original-price">$${d.originalPrice.toFixed(2)}</span>` : '';
+                        const badgeHTML = d.originalPrice && d.originalPrice > d.price ? `<div class="listing-badge">DEAL</div>` : '';
+
                         card.innerHTML = `
-                            <div class="listing-image" style="background-image: url('${d.imageUrls?.[0] || ''}')"></div>
+                            <div class="listing-image" style="background-image: url('${d.imageUrls?.[0] || ''}')">${badgeHTML}</div>
                             <div class="listing-details">
-                                <div class="listing-price">$${d.price.toFixed(2)}</div>
-                                <h3 style="font-size: 1rem; margin: 5px 0;">${d.title}</h3>
-                                <div style="font-size: 0.8rem; color: #777;">${d.location}</div>
+                                <div class="listing-price-row">
+                                    <span class="listing-price">$${d.price.toFixed(2)}</span>
+                                    ${origHTML}
+                                </div>
+                                <h3 class="listing-title">${d.title}</h3>
+                                <div class="listing-location"><i class="fas fa-location-dot"></i> ${d.location || 'Global Campus'}</div>
                             </div>`;
-                        listingsContainer.appendChild(card);
+                        frag.appendChild(card);
                     });
+                    listingsContainer.appendChild(frag);
                 });
             }
 
-            // Keyboard logic to remove focus and hide mobile keyboard
             searchInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
-                    searchInput.blur(); // Hides the mobile keyboard
+                    searchInput.blur(); 
                 }
             });
 
-            searchInput.addEventListener('input', fetchListings);
+            searchInput.addEventListener('input', () => {
+                // Update URL dynamically so users can share search results
+                if (searchInput.value.trim()) {
+                    window.history.replaceState({}, '', `?q=${encodeURIComponent(searchInput.value.trim())}`);
+                } else {
+                    window.history.replaceState({}, '', window.location.pathname);
+                }
+                fetchListings();
+            });
+            
             sortFilter.addEventListener('change', fetchListings);
             fetchListings();
         }
