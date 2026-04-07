@@ -905,13 +905,66 @@
                                 title: "Social Post", 
                                 description: text 
                             })
-                        }).then(r => r.json()).then(aiData => {
+                        }).then(r => {
+                            if (!r.ok) throw new Error("Server error");
+                            return r.json();
+                        }).then(aiData => {
                             if (aiData.verdict === "UNSAFE") {
                                 updateDoc(postRef, { status: 'rejected', rejectionReason: aiData.reason || "Inappropriate content" });
                             } else {
                                 updateDoc(postRef, { status: 'active' });
                             }
-                        }).catch(e => console.error("Moderation fetch failed:", e));
+                        }).catch(e => {
+                            console.error("Moderation fetch failed:", e);
+                            updateDoc(postRef, { status: 'rejected', rejectionReason: "Moderation system offline. Please try again later." });
+                        });
+                    }
+
+                    // Reset Composer
+====
+                    // ALL posts start as pending to prevent abuse if the server crashes
+                    const postData = {
+                        schoolName: postingToSchool,
+                        text: text,
+                        authorUid: currentUser.uid,
+                        authorName: currentUser.displayName || "User",
+                        authorPhoto: photoToSave,
+                        authorIsStudent: isStudent,
+                        likes: 0, likedBy: [], commentCount: 0,
+                        status: 'pending',
+                        timestamp: serverTimestamp()
+                    };
+
+                    if (uploadedImgUrl) postData.imageUrl = uploadedImgUrl;
+                    if (postAttachedListing) postData.attachedListing = postAttachedListing;
+
+                    const postRef = await addDoc(collection(db, collectionName), postData);
+
+                    // Await the moderation check so we catch 502 errors properly
+                    try {
+                        const aiRes = await fetch('/.netlify/functions/moderate-listing', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ 
+                                imageUrls: uploadedImgUrl ? [uploadedImgUrl] : [], 
+                                title: "Social Post", 
+                                description: text 
+                            })
+                        });
+
+                        if (!aiRes.ok) throw new Error(`Server returned ${aiRes.status}`);
+
+                        const aiData = await aiRes.json();
+
+                        if (aiData.verdict === "UNSAFE") {
+                            await updateDoc(postRef, { status: 'rejected', rejectionReason: aiData.reason || "Inappropriate content" });
+                        } else {
+                            await updateDoc(postRef, { status: 'active' });
+                        }
+                    } catch (e) {
+                        console.error("Moderation fetch failed:", e);
+                        // If it's a 502 error, mark it rejected so it doesn't get stuck forever
+                        await updateDoc(postRef, { status: 'rejected', rejectionReason: "Moderation system offline. Please try again later." });
                     }
 
                     // Reset Composer
