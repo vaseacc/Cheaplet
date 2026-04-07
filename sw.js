@@ -12,7 +12,7 @@ const urlsToCache = [
   '/listanitem.html',
   '/messages.html',
   '/profile.html',
-  '/LoginInToCheaplet.html',
+  '/login.html',
   '/favicon.svg',
   '/full.css'
 ];
