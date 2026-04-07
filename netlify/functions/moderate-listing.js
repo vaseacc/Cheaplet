@@ -23,6 +23,14 @@ exports.handler = async (event, context) => {
         "Access-Control-Allow-Headers": "Content-Type",
         "Access-Control-Allow-Methods": "POST, OPTIONS"
     };
+====
+exports.handler = async (event, context) => {
+    // Native fetch is supported in Node 18+. No need for node-fetch which causes 502s on Netlify.
+    const corsHeaders = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "POST, OPTIONS"
+    };
 
     if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: corsHeaders, body: "" };
 
@@ -134,5 +142,122 @@ exports.handler = async (event, context) => {
     } catch (error) {
         console.error("Global Catch Error:", error);
         return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "SAFE", reason: "Fallback approval due to error." }) };
+    }
+};
+====
+        // 2. GEMINI 2.0 FLASH Text & Image Moderation
+        const GEMINI_KEY = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+        
+        if (!GEMINI_KEY) {
+            console.error("Internal Error: GEMINI_API_KEY is missing.");
+            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Configuration error." }) };
+        }
+
+        // 3. Download images (if any)
+        const imagesToScan = imageUrls ? imageUrls.slice(0, 3) : []; 
+        const imagePromises = imagesToScan.map(async (imgUrl) => {
+            try {
+                const imgRes = await fetch(imgUrl);
+                if (!imgRes.ok) return null;
+                const buffer = await imgRes.arrayBuffer();
+                return { base64: Buffer.from(buffer).toString('base64') };
+            } catch (err) {
+                console.error("Fetch error for image:", err.message);
+                return null; 
+            }
+        });
+
+        const imageDataArray = (await Promise.all(imagePromises)).filter(img => img !== null);
+
+        // 4. THE PROMPT - Made explicitly smart for short text and strictly rejecting NSFW
+        const prompt = `You are an elite, strict safety moderator for a college student social network and marketplace.
+        Analyze the uploaded image(s) alongside this post text:
+        Title: "${title}"
+        Description: "${description}"
+
+        CRITICAL RULES - ZERO TOLERANCE FOR NSFW:
+        - REJECT IMMEDIATELY if the image contains ANY nudity, partial nudity, pornography, sexual acts, lingerie, underwear, or highly suggestive posing.
+        - REJECT IMMEDIATELY if the text/Title/Description contains explicit words like "nude", "nudes", "porn", "sex", "escort", "hookup", or slurs.
+        - REJECT IMMEDIATELY if the image shows illegal drugs, weapons, or graphic violence.
+
+        RULES FOR APPROVAL:
+        - Normal conversations, greetings ("hi", "test"), questions, or completely BLANK/EMPTY text are perfectly SAFE. Do not reject just because the text is short.
+        - If the image is a book cover featuring a real person (e.g., Elon Musk, a model on a magazine cover), it is SAFE.
+        - Standard student items (calculators, laptops, notes, school supplies) are SAFE.
+
+        You must evaluate based on these rules and output the result.`;
+
+        // 5. Build Content Payload
+        const contentParts = [{ text: prompt }];
+        if (imageDataArray.length > 0) {
+            contentParts.push({ inlineData: { mimeType: "image/jpeg", data: imageDataArray[0].base64 } });
+        }
+
+        // 6. Call Gemini API
+        const aiRes = await fetch(
+            `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key=${GEMINI_KEY}`,
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: contentParts }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                verdict: { type: "STRING", enum: ["SAFE", "UNSAFE"] },
+                                reason: { type: "STRING" }
+                            },
+                            required: ["verdict", "reason"]
+                        }
+                    }
+                })
+            }
+        );
+
+        if (!aiRes.ok) {
+            console.error(`Gemini API Error: ${aiRes.status}`);
+            throw new Error(`Gemini API Error: ${aiRes.status}`);
+        }
+
+        const aiData = await aiRes.json();
+        
+        let isSafe = true;
+        let rejectReason = "Inappropriate content.";
+
+        if (aiData.candidates && aiData.candidates[0]?.finishReason === "SAFETY") {
+            isSafe = false;
+            rejectReason = "Explicit content blocked by safety filters.";
+        } else if (aiData.candidates && aiData.candidates[0]?.content?.parts?.[0]?.text) {
+            try {
+                const result = JSON.parse(aiData.candidates[0].content.parts[0].text);
+                console.log("AI result:", result);
+                if (result.verdict === "UNSAFE") {
+                    isSafe = false;
+                    rejectReason = result.reason;
+                }
+            } catch (e) {
+                console.error("Parsing error:", e);
+                isSafe = false;
+                rejectReason = "Failed to parse safety verification.";
+            }
+        } else {
+            isSafe = false;
+            rejectReason = "Unrecognized response from safety system.";
+        }
+
+        if (isSafe) {
+            console.log("Post APPROVED.");
+            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "SAFE" }) };
+        } else {
+            console.log("Post REJECTED:", rejectReason);
+            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: rejectReason }) };
+        }
+
+    } catch (error) {
+        console.error("Global Catch Error:", error);
+        // If the server crashes, REJECT the post to be safe.
+        return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "System error during moderation." }) };
     }
 };
