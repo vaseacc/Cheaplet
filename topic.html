@@ -32,7 +32,7 @@
 
         header { position: sticky; top: 0; z-index: 200; background: var(--ink); border-bottom: 1px solid rgba(255,255,255,0.1); width: 100%; }
         .header-inner { max-width: 1100px; margin: 0 auto; padding: 0 20px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
-        .logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: -0.5px; flex-shrink: 0; }
+        .logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: -0.5px; }
         .logo em { color: var(--gold); font-style: normal; }
 
         /* Desktop Navigation Links */
@@ -1007,35 +1007,40 @@
                             if (btnCreateWay) btnCreateWay.onclick = handleCreateTopic;
                             if (mSheetCreateWay) mSheetCreateWay.onclick = handleCreateTopic;
 
-                            // --- SETUP PIN BUTTON ---
+                            // --- SETUP PIN BUTTON (HIDE FOR TOPIC CREATOR) ---
                             if (pinBtn) {
-                                pinBtn.style.display = 'flex';
-                                updatePinIcon = (isPinned) => {
-                                    const icon = pinBtn.querySelector('i');
-                                    if (icon) {
-                                        if (isPinned) {
-                                            icon.className = 'fas fa-bookmark';
-                                            pinBtn.style.color = 'var(--gold)';
-                                            pinBtn.style.borderColor = 'var(--gold)';
-                                        } else {
-                                            icon.className = 'far fa-bookmark';
-                                            pinBtn.style.color = 'var(--text-muted)';
-                                            pinBtn.style.borderColor = 'var(--mist)';
+                                // If current user is the topic creator, hide the pin button entirely
+                                if (currentUser.uid === currentTopicData.createdBy) {
+                                    pinBtn.style.display = 'none';
+                                } else {
+                                    pinBtn.style.display = 'flex';
+                                    updatePinIcon = (isPinned) => {
+                                        const icon = pinBtn.querySelector('i');
+                                        if (icon) {
+                                            if (isPinned) {
+                                                icon.className = 'fas fa-bookmark';
+                                                pinBtn.style.color = 'var(--gold)';
+                                                pinBtn.style.borderColor = 'var(--gold)';
+                                            } else {
+                                                icon.className = 'far fa-bookmark';
+                                                pinBtn.style.color = 'var(--text-muted)';
+                                                pinBtn.style.borderColor = 'var(--mist)';
+                                            }
                                         }
-                                    }
-                                };
+                                    };
 
-                                updatePinIcon((data.pinnedTopics || []).includes(topicId));
+                                    updatePinIcon((data.pinnedTopics || []).includes(topicId));
 
-                                pinBtn.onclick = async () => {
-                                    const isPinned = (currentUser.pinnedTopics || []).includes(topicId);
-                                    const userRef = doc(db, "users", currentUser.uid);
-                                    if (isPinned) {
-                                        await updateDoc(userRef, { pinnedTopics: arrayRemove(topicId) });
-                                    } else {
-                                        await updateDoc(userRef, { pinnedTopics: arrayUnion(topicId) });
-                                    }
-                                };
+                                    pinBtn.onclick = async () => {
+                                        const isPinned = (currentUser.pinnedTopics || []).includes(topicId);
+                                        const userRef = doc(db, "users", currentUser.uid);
+                                        if (isPinned) {
+                                            await updateDoc(userRef, { pinnedTopics: arrayRemove(topicId) });
+                                        } else {
+                                            await updateDoc(userRef, { pinnedTopics: arrayUnion(topicId) });
+                                        }
+                                    };
+                                }
                             }
                             
                             // Show settings gear if creator
@@ -1243,8 +1248,11 @@
                     </div>
                 ` : `<img src="${pfp}" class="post-avatar" alt="Avatar">`;
 
-                // Text badge next to name
+                // Text badges: verified student + topic owner
                 const verifiedBadge = d.authorIsStudent ? '<i class="fas fa-check-circle verified-check-icon"></i>' : '';
+                const ownerBadge = (currentTopicData && d.authorUid === currentTopicData.createdBy) 
+                    ? '<i class="fas fa-crown" style="color: var(--gold); margin-left: 4px;"></i>' 
+                    : '';
 
                 // 3-DOT MENU LOGIC
                 const canEdit = currentUser && currentUser.uid === d.authorUid;
@@ -1276,7 +1284,7 @@
                         <a href="/user.html?id=${d.authorUid}" class="post-author-link">
                             ${avatarHtml}
                             <div class="post-meta">
-                                <span class="post-author" style="display:flex; align-items:center; flex-wrap:wrap;">${d.authorName} ${verifiedBadge}</span>
+                                <span class="post-author" style="display:flex; align-items:center; flex-wrap:wrap;">${d.authorName} ${verifiedBadge} ${ownerBadge}</span>
                                 <span class="post-time">${timeStr}${editedLabel}</span>
                             </div>
                         </a>
@@ -1491,6 +1499,9 @@
                         ` : `<a href="/user.html?id=${c.authorUid}"><img src="${pfp}" class="comment-avatar"></a>`;
                         
                         const commentVerifiedBadge = c.authorIsStudent ? '<i class="fas fa-check-circle verified-check-icon" style="font-size: 0.7rem;"></i>' : '';
+                        const commentOwnerBadge = (currentTopicData && c.authorUid === currentTopicData.createdBy) 
+                            ? '<i class="fas fa-crown" style="color: var(--gold); font-size: 0.7rem; margin-left: 2px;"></i>' 
+                            : '';
 
                         // Delete logic: Author, Admin, or Topic Owner
                         const isCommentAuthor = currentUser && currentUser.uid === c.authorUid;
@@ -1507,7 +1518,7 @@
                             ${commentAvatarHtml}
                             <div class="comment-content">
                                 <div style="display:flex; justify-content:space-between; align-items:start;">
-                                    <a href="/user.html?id=${c.authorUid}" class="comment-author-link"><div class="comment-author">${c.authorName} ${commentVerifiedBadge}</div></a>
+                                    <a href="/user.html?id=${c.authorUid}" class="comment-author-link"><div class="comment-author">${c.authorName} ${commentVerifiedBadge} ${commentOwnerBadge}</div></a>
                                     ${deleteBtnHtml}
                                 </div>
                                 <div class="comment-text">${c.text}</div>
