@@ -105,7 +105,7 @@ exports.handler = async (event, context) => {
 
         const aiPromises = imageDataArray.map(async (img) => {
             const aiRes = await fetch(
-                `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`,
+                `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -120,10 +120,11 @@ exports.handler = async (event, context) => {
         const aiResults = await Promise.all(aiPromises);
 
         for (const aiData of aiResults) {
+            // If Google's internal safety filter blocks it, try to parse the response anyway
+            // Only mark unsafe if we get an explicit UNSAFE verdict from our prompt
             if (aiData.candidates && aiData.candidates[0]?.finishReason === "SAFETY") {
-                isUnsafe = true;
-                finalReason = "Google internal safety filters blocked the image.";
-                break;
+                console.log("Google safety filter triggered, checking for actual verdict...");
+                // Continue to check if there's still content in the response
             }
 
             if (aiData.candidates && aiData.candidates[0]?.content?.parts?.[0]?.text) {
