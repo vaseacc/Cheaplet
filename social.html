@@ -138,7 +138,7 @@
         .preview-listing-info { flex-grow: 1; overflow: hidden; }
         .preview-listing-title { font-size: 0.85rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
         .preview-listing-price { font-size: 0.8rem; color: var(--deep); font-weight: 700; }
-        .remove-preview-btn { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; background: var(--red); color: white; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; z-index: 10; }
+        .remove-preview-btn { position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; background: var(--red); color: white; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; }
 
         .composer-actions { display: flex; justify-content: space-between; align-items: center; padding: 5px 10px; }
         .composer-tools { display: flex; gap: 10px; }
@@ -325,10 +325,7 @@
         .modal-card select:focus, .modal-card textarea:focus { border-color: var(--deep); box-shadow: 0 0 0 3px rgba(43,92,146,0.1); }
         .modal-card textarea { height: 100px; resize: none; }
         .modal-buttons { justify-content: flex-end; }
-        .btn-danger { background: var(--red); color: var(--white); padding: 10px 24px; border-radius: 30px; font-weight: 700; border: none; cursor: pointer; transition: 0.2s; }
-        .btn-danger:hover { background: #b91c1c; }
-        .btn-ghost { background: var(--surface); color: var(--text-main); padding: 10px 24px; border-radius: 30px; font-weight: 700; border: none; cursor: pointer; transition: 0.2s; }
-        .btn-ghost:hover { background: #e2e8f0; }
+        .btn-danger { background: var(--red); color: var(--white); padding: 10px 24px; border-radius: 30px; font-weight: 700; border: none; cursor: pointer; }
 
         .listing-selector-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 400px; margin-bottom: 10px; padding-right: 5px; }
         .listing-selector-item { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 12px; cursor: pointer; transition: 0.2s; }
@@ -337,6 +334,10 @@
         .ls-info { flex-grow: 1; }
         .ls-title { font-weight: 700; font-size: 0.9rem; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
         .ls-price { color: var(--deep); font-weight: 700; font-size: 0.85rem; }
+
+        /* Additional modal for create topic restriction */
+        .restricted-modal .modal-card { text-align: center; }
+        .restricted-modal .modal-icon { font-size: 3rem; color: var(--gold); margin-bottom: 20px; }
 
         @media (max-width: 850px) {
             .hub-layout { display: flex; flex-direction: column; padding: 0; gap: 0; margin: 0; width: 100%; }
@@ -599,8 +600,7 @@
                     restricted_title: "Verified Student Required",
                     restricted_desc: "To post in a specific school's feed, you need a verified student account with a school email address.",
                     restricted_btn: "Create School Account",
-                    filter_my_school: "My School",
-                    safetyCheck: "Checking...", imgRejected: "Image rejected: "
+                    filter_my_school: "My School"
                 },
                 fr: { 
                     topics_public: "Canaux Publics", topics_campus: "Campus Global", topics_custom: "Sujets Personnalisés", topics_new: "Nouveau Sujet",
@@ -616,43 +616,37 @@
                     restricted_title: "Compte étudiant requis",
                     restricted_desc: "Pour publier dans le fil d'une école spécifique, vous avez besoin d'un compte étudiant vérifié avec une adresse e-mail scolaire.",
                     restricted_btn: "Créer un compte scolaire",
-                    filter_my_school: "Mon école",
-                    safetyCheck: "Vérification...", imgRejected: "Image rejetée : "
+                    filter_my_school: "Mon école"
                 }
             };
             const ui = allStrings[lang] || allStrings['en'];
 
-            // Safe translation setter
-            const setElemText = (id, text) => {
-                const el = document.getElementById(id);
-                if (el) el.textContent = text;
-            };
-            const setElemPlaceholder = (id, text) => {
-                const el = document.getElementById(id);
-                if (el) el.placeholder = text;
-            };
-
-            document.querySelectorAll('[data-i18n]').forEach(el => { 
-                const k = el.getAttribute('data-i18n');
-                if (ui[k]) el.textContent = ui[k]; 
-            });
-            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { 
-                const k = el.getAttribute('data-i18n-placeholder');
-                if (ui[k]) el.placeholder = ui[k]; 
-            });
+            document.querySelectorAll('[data-i18n]').forEach(el => { if (ui[el.getAttribute('data-i18n')]) el.textContent = ui[el.getAttribute('data-i18n')]; });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { if (ui[el.getAttribute('data-i18n-placeholder')]) el.placeholder = ui[el.getAttribute('data-i18n-placeholder')]; });
             
-            setElemText('report-modal-title', ui.rep_title);
-            setElemText('report-modal-desc', ui.rep_desc);
-            setElemPlaceholder('report-details', ui.rep_place);
-            setElemText('btn-cancel-report', ui.rep_cancel);
-            setElemText('btn-submit-report', ui.rep_submit);
+            const repTitle = document.getElementById('report-modal-title');
+            if (repTitle) repTitle.textContent = ui.rep_title;
+            const repDesc = document.getElementById('report-modal-desc');
+            if (repDesc) repDesc.textContent = ui.rep_desc;
+            const repDetails = document.getElementById('report-details');
+            if (repDetails) repDetails.placeholder = ui.rep_place;
+            const btnCancelRep = document.getElementById('btn-cancel-report');
+            if (btnCancelRep) btnCancelRep.textContent = ui.rep_cancel;
+            const btnSubmitRep = document.getElementById('btn-submit-report');
+            if (btnSubmitRep) btnSubmitRep.textContent = ui.rep_submit;
 
-            setElemText('ui-modal-attach-title', ui.attach_title);
-            setElemText('ui-modal-attach-desc', ui.attach_desc);
-            setElemText('verify-banner-text', ui.verify_banner_text);
+            const attTitle = document.getElementById('ui-modal-attach-title');
+            if (attTitle) attTitle.textContent = ui.attach_title;
+            const attDesc = document.getElementById('ui-modal-attach-desc');
+            if (attDesc) attDesc.textContent = ui.attach_desc;
+            const verifBannerText = document.getElementById('verify-banner-text');
+            if (verifBannerText) verifBannerText.textContent = ui.verify_banner_text;
 
-            setElemText('restricted-title', ui.restricted_title);
-            setElemText('restricted-desc', ui.restricted_desc);
+            // Restricted modal translations
+            const restrictedTitle = document.getElementById('restricted-title');
+            if (restrictedTitle) restrictedTitle.textContent = ui.restricted_title;
+            const restrictedDesc = document.getElementById('restricted-desc');
+            if (restrictedDesc) restrictedDesc.textContent = ui.restricted_desc;
             const restrictedModal = document.getElementById('restricted-modal');
             const closeRestrictedBtn = document.getElementById('close-restricted-btn');
             if (closeRestrictedBtn) closeRestrictedBtn.onclick = () => { if (restrictedModal) restrictedModal.style.display = 'none'; };
@@ -707,7 +701,7 @@
             let unsubscribePosts = null;
             let commentUnsubscribes = {}; 
             let listings = []; 
-            let allTopicsData = [];
+            let allTopicsData =[];
 
             // --- COMPOSER STATE ---
             let postImageFile = null;
@@ -721,7 +715,6 @@
             
             const postInput = document.getElementById('post-input');
             const btnSendPost = document.getElementById('btn-send-post');
-            const postBtnText = document.getElementById('btn-send-post'); // Usually the button itself or a span inside
             const previewArea = document.getElementById('composer-preview-area');
             const btnAttachImg = document.getElementById('btn-attach-img');
             const btnAttachListing = document.getElementById('btn-attach-listing');
@@ -839,6 +832,7 @@
             const closeListingModalBtn = document.getElementById('close-listing-modal');
             if (closeListingModalBtn && attachListingModal) closeListingModalBtn.onclick = () => { attachListingModal.style.display = 'none'; };
 
+            // Upload helper
             async function uploadImageToCloudinary(file) {
                 const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
                 const formData = new FormData();
@@ -852,7 +846,6 @@
                 return res.secure_url;
             }
 
-            // --- FIXED POST CREATION WITH IMAGE MODERATION (Background) ---
             if (btnSendPost && postInput) btnSendPost.onclick = async () => {
                 if (!currentUser) return;
                 const text = postInput.value.trim();
@@ -876,8 +869,6 @@
                     const collectionName = currentSchoolFilter === 'my' ? "social_posts_rosemont" : "social_posts_global";
                     const postingToSchool = currentSchoolFilter === 'my' ? targetSchool : "Global Campus";
                     
-                    const requiresReview = uploadedImgUrl !== null;
-                    
                     const postData = {
                         schoolName: postingToSchool,
                         text: text,
@@ -885,8 +876,8 @@
                         authorName: currentUser.displayName || "User",
                         authorPhoto: photoToSave,
                         authorIsStudent: isStudent,
-                        likes: 0, likedBy: [], commentCount: 0,
-                        status: requiresReview ? 'pending' : 'active',
+                        likes: 0, likedBy:[], commentCount: 0,
+                        status: 'pending', // Starts as pending to prevent 502 crash errors
                         timestamp: serverTimestamp()
                     };
 
@@ -895,57 +886,12 @@
 
                     const postRef = await addDoc(collection(db, collectionName), postData);
 
-                    // Fire and forget background AI check
-                    if (requiresReview) {
-                        fetch('/.netlify/functions/moderate-listing', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ 
-                                imageUrls: [uploadedImgUrl], 
-                                title: "Social Post", 
-                                description: text 
-                            })
-                        }).then(r => {
-                            if (!r.ok) throw new Error("Server error");
-                            return r.json();
-                        }).then(aiData => {
-                            if (aiData.verdict === "UNSAFE") {
-                                updateDoc(postRef, { status: 'rejected', rejectionReason: aiData.reason || "Inappropriate content" });
-                            } else {
-                                updateDoc(postRef, { status: 'active' });
-                            }
-                        }).catch(e => {
-                            console.error("Moderation fetch failed:", e);
-                            updateDoc(postRef, { status: 'rejected', rejectionReason: "Moderation system offline. Please try again later." });
-                        });
-                    }
-
-                    // Reset Composer
-                    // ALL posts start as pending to prevent abuse if the server crashes
-                    const postData = {
-                        schoolName: postingToSchool,
-                        text: text,
-                        authorUid: currentUser.uid,
-                        authorName: currentUser.displayName || "User",
-                        authorPhoto: photoToSave,
-                        authorIsStudent: isStudent,
-                        likes: 0, likedBy: [], commentCount: 0,
-                        status: 'pending',
-                        timestamp: serverTimestamp()
-                    };
-
-                    if (uploadedImgUrl) postData.imageUrl = uploadedImgUrl;
-                    if (postAttachedListing) postData.attachedListing = postAttachedListing;
-
-                    const postRef = await addDoc(collection(db, collectionName), postData);
-
-                    // Await the moderation check so we catch 502 errors properly
                     try {
                         const aiRes = await fetch('/.netlify/functions/moderate-listing', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ 
-                                imageUrls: uploadedImgUrl ? [uploadedImgUrl] : [], 
+                                imageUrls: uploadedImgUrl ? [uploadedImgUrl] :[], 
                                 title: "Social Post", 
                                 description: text 
                             })
@@ -962,7 +908,6 @@
                         }
                     } catch (e) {
                         console.error("Moderation fetch failed:", e);
-                        // If it's a 502 error, mark it rejected so it doesn't get stuck forever
                         await updateDoc(postRef, { status: 'rejected', rejectionReason: "Moderation system offline. Please try again later." });
                     }
 
@@ -976,14 +921,14 @@
                     
                 } catch (e) { 
                     console.error(e);
-                    alert(ui.upload_fail); 
+                    alert("Upload failed. Please try again."); 
                 } finally {
                     btnSendPost.innerHTML = origIcon;
                     updateComposerSendButton();
                 }
             };
 
-            // --- COMMENT IMAGE LOGIC WITH BACKGROUND MODERATION ---
+            // --- COMMENT IMAGE LOGIC ---
             const globalCommentImgInput = document.getElementById('global-comment-img-upload');
             
             window.triggerCommentImg = (postId, coll) => {
@@ -1052,15 +997,13 @@
 
                     let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
 
-                    const requiresReview = uploadedImgUrl !== null;
-
                     const commentData = {
                         text: text,
                         authorUid: currentUser.uid,
                         authorName: currentUser.displayName || "User",
                         authorPhoto: photoToSave,
                         authorIsStudent: isStudent,
-                        status: requiresReview ? 'pending' : 'active',
+                        status: 'pending',
                         timestamp: serverTimestamp()
                     };
 
@@ -1069,22 +1012,29 @@
                     const commentRef = await addDoc(collection(db, coll, postId, "comments"), commentData);
                     await updateDoc(doc(db, coll, postId), { commentCount: increment(1) });
 
-                    if (requiresReview) {
-                        fetch('/.netlify/functions/moderate-listing', {
+                    try {
+                        const aiRes = await fetch('/.netlify/functions/moderate-listing', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ 
-                                imageUrls: [uploadedImgUrl], 
+                                imageUrls: uploadedImgUrl ? [uploadedImgUrl] :[], 
                                 title: "Social Comment", 
                                 description: text 
                             })
-                        }).then(r => r.json()).then(aiData => {
-                            if (aiData.verdict === "UNSAFE") {
-                                updateDoc(commentRef, { status: 'rejected', rejectionReason: aiData.reason || "Inappropriate content" });
-                            } else {
-                                updateDoc(commentRef, { status: 'active' });
-                            }
-                        }).catch(e => console.error("Moderation fetch failed:", e));
+                        });
+
+                        if (!aiRes.ok) throw new Error(`Server returned ${aiRes.status}`);
+
+                        const aiData = await aiRes.json();
+
+                        if (aiData.verdict === "UNSAFE") {
+                            await updateDoc(commentRef, { status: 'rejected', rejectionReason: aiData.reason || "Inappropriate content" });
+                        } else {
+                            await updateDoc(commentRef, { status: 'active' });
+                        }
+                    } catch (e) {
+                        console.error("Moderation fetch failed:", e);
+                        await updateDoc(commentRef, { status: 'rejected', rejectionReason: "Moderation system offline. Please try again later." });
                     }
 
                     // Clear UI
@@ -1092,7 +1042,7 @@
                     window.removeCommentImg(postId);
                 } catch(e) { 
                     console.error(e); 
-                    alert(ui.upload_fail); 
+                    alert("Upload failed."); 
                 } finally { 
                     btnEl.innerHTML = origIcon;
                     btnEl.disabled = true; 
@@ -1130,6 +1080,7 @@
                                 if (isStudent || data.role === 'admin') {
                                     window.location.href = '/createtopic.html';
                                 } else {
+                                    const restrictedModal = document.getElementById('restricted-modal');
                                     if (restrictedModal) restrictedModal.style.display = 'flex';
                                 }
                             };
@@ -1142,11 +1093,13 @@
 
                             // Show/hide verification banner and checkmark
                             if (isStudent) {
+                                const verifyBanner = document.getElementById('verify-banner');
                                 if (verifyBanner) verifyBanner.style.display = 'none';
                                 const sidebarCheck = document.getElementById('verified-check-sidebar');
                                 if (sidebarCheck) sidebarCheck.style.display = 'inline-block';
                             } else {
                                 const bannerDismissed = localStorage.getItem('verify_banner_dismissed') === 'true';
+                                const verifyBanner = document.getElementById('verify-banner');
                                 if (verifyBanner) verifyBanner.style.display = !bannerDismissed ? 'flex' : 'none';
                                 const sidebarCheck = document.getElementById('verified-check-sidebar');
                                 if (sidebarCheck) sidebarCheck.style.display = 'none';
@@ -1181,6 +1134,14 @@
 
                             showHubLayout();
                             
+                            // 🟢 SOCIAL TOUR TRIGGER
+                            const socialTourKey = `scoralia_social_tour_seen_${user.uid}`;
+                            if (!currentUserData.hasSeenSocialTour && !localStorage.getItem(socialTourKey)) {
+                                if (typeof window.showSocialTour === 'function') {
+                                    window.showSocialTour();
+                                }
+                            }
+                            
                             loadTopics(); 
                             preloadBooksAndLoadFeed();
                         } else {
@@ -1194,7 +1155,9 @@
             });
 
             // Dismiss banner with X button
+            const closeBannerBtn = document.getElementById('close-banner-btn');
             if (closeBannerBtn) closeBannerBtn.onclick = () => {
+                const verifyBanner = document.getElementById('verify-banner');
                 if (verifyBanner) verifyBanner.style.display = 'none';
                 localStorage.setItem('verify_banner_dismissed', 'true');
             };
@@ -1252,12 +1215,12 @@
                     const mGeneral = document.createElement('a');
                     mGeneral.className = 'm-way-pill active';
                     mGeneral.href = '/social.html';
-                    mGeneral.innerHTML = `<i class="fas fa-globe-americas"></i> ${ui.topics_campus}`;
+                    mGeneral.innerHTML = `<i class="fas fa-globe-americas"></i> ${ui ? (lang==='fr'?'Campus Global':'Global Campus') : 'Global Campus'}`;
                     mobileWaysList.appendChild(mGeneral);
                 }
 
-                const myT = [], pinT = [], discT = [];
-                const pinnedArr = (currentUser && currentUser.pinnedTopics) || [];
+                const myT = [], pinT = [], discT =[];
+                const pinnedArr = (currentUser && currentUser.pinnedTopics) ||[];
 
                 allTopicsData.forEach(d => {
                     const isPrivate = d.visibility === 'private';
@@ -1387,7 +1350,7 @@
                     }
                 }
 
-                if (feedContainer) feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub}</span></div>`;
+                if (feedContainer) feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub || 'Loading campus hub...'}</span></div>`;
 
                 const collectionName = currentSchoolFilter === 'my' ? "social_posts_rosemont" : "social_posts_global";
                 let q = query(collection(db, collectionName), orderBy("timestamp", "desc"), limit(100));
@@ -1398,7 +1361,7 @@
                         feedContainer.innerHTML = '';
                         
                         if (snapshot.empty) {
-                            feedContainer.innerHTML = `<div class="loader-msg">${ui.noPosts}</div>`;
+                            feedContainer.innerHTML = `<div class="loader-msg">${ui.noPosts || 'No posts yet.'}</div>`;
                             return;
                         }
 
@@ -1483,20 +1446,22 @@
                 }
 
                 let pfp = d.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${d.authorUid}&backgroundColor=EBF2FA`;
-                let timeStr = d.timestamp ? formatTime(d.timestamp.toDate()) : ui.justNow;
+                let timeStr = d.timestamp ? formatTime(d.timestamp.toDate()) : (ui.justNow || "Just now");
                 const isLiked = currentUser && d.likedBy && d.likedBy.includes(currentUser.uid);
                 
+                // Show school badge if not Global Campus
                 const schoolTagHtml = (d.schoolName && d.schoolName !== 'Global Campus') 
                     ? `<span style="font-size: 0.7rem; color: var(--deep); background: var(--surface); padding: 2px 8px; border-radius: 12px; margin-left: 8px; font-weight: 700; white-space: nowrap;"><i class="fas fa-university"></i> ${d.schoolName}</span>` 
                     : '';
 
-                // Avatar with verification badge
-                const avatarHtml = d.authorIsStudent ? `
-                    <div class="avatar-with-badge">
-                        <img src="${pfp}" alt="Avatar">
-                        <div class="avatar-badge"><i class="fas fa-check-circle"></i></div>
+                // Verification badge snapped to Avatar
+                const verifiedAvatarBadge = d.authorIsStudent ? '<div class="avatar-badge"><i class="fas fa-check-circle"></i></div>' : '';
+                const avatarHtml = `
+                    <div class="post-avatar-wrap">
+                        <img src="${pfp}" class="post-avatar" alt="Avatar">
+                        ${verifiedAvatarBadge}
                     </div>
-                ` : `<img src="${pfp}" class="post-avatar" alt="Avatar">`;
+                `;
 
                 const pendingBadgeHtml = d.status === 'pending' ? `<span style="font-size:0.7rem; color:#d97706; background:#fef3c7; padding:2px 6px; border-radius:10px; margin-left:6px; border: 1px solid #fde68a;">⏳ In Review</span>` : '';
 
@@ -1507,14 +1472,14 @@
                 const safeText = d.text ? d.text.replace(/'/g, "&#39;").replace(/"/g, "&quot;").replace(/\n/g, "\\n") : '';
                 const editBtnHtml = canEdit ? `<button class="post-dropdown-item" onclick="window.openEditPost('${id}', '${safeText}', '${coll}')"><i class="fas fa-edit"></i> Edit Post</button>` : '';
                 const deleteBtnHtml = canDelete ? `<button class="post-dropdown-item danger" onclick="window.deletePost('${id}', '${coll}')"><i class="fas fa-trash-alt"></i> Delete Post</button>` : '';
-                const editedLabel = d.edited ? `<span class="edited-badge" data-i18n="edited_label">${ui.edited_label}</span>` : '';
+                const editedLabel = d.edited ? `<span class="edited-badge" data-i18n="edited_label">${ui.edited_label || ' • Edited'}</span>` : '';
 
-                let attachedImgHtml = d.imageUrl ? `<img src="${window.optimizeImageUrl(d.imageUrl)}" class="post-image-attachment" onclick="window.open('${d.imageUrl}', '_blank')">` : '';
+                let attachedImgHtml = d.imageUrl ? `<img src="${window.optimizeImageUrl ? window.optimizeImageUrl(d.imageUrl) : d.imageUrl}" class="post-image-attachment" onclick="window.open('${d.imageUrl}', '_blank')">` : '';
                 let attachedListHtml = '';
                 if (d.attachedListing) {
                     attachedListHtml = `
                         <a href="/listing.html?id=${d.attachedListing.id}" class="post-listing-attachment">
-                            <div class="pla-img" style="background-image:url('${window.optimizeImageUrl(d.attachedListing.img)}')"></div>
+                            <div class="pla-img" style="background-image:url('${window.optimizeImageUrl ? window.optimizeImageUrl(d.attachedListing.img) : d.attachedListing.img}')"></div>
                             <div class="pla-info">
                                 <div class="pla-title">${d.attachedListing.title}</div>
                                 <div class="pla-price">$${d.attachedListing.price}</div>
@@ -1565,7 +1530,7 @@
                         <div class="comment-composer-area">
                             <div class="comment-preview-area" id="comment-preview-area-${id}"></div>
                             <div class="comment-input-wrapper">
-                                <textarea class="comment-input" id="comment-input-${id}" data-coll="${coll}" placeholder="${ui.comment_placeholder}" oninput="window.checkCommentInput('${id}')"></textarea>
+                                <textarea class="comment-input" id="comment-input-${id}" data-coll="${coll}" placeholder="${ui.comment_placeholder || 'Write a comment...'}" oninput="window.checkCommentInput('${id}')"></textarea>
                                 <div class="comment-tools">
                                     <button class="tool-btn" onclick="window.triggerCommentImg('${id}', '${coll}')"><i class="fas fa-camera"></i></button>
                                     <button class="btn-comment-send" onclick="window.postComment('${id}', '${coll}')" id="btn-send-comment-${id}" disabled><i class="fas fa-paper-plane"></i></button>
@@ -1649,7 +1614,7 @@
                         details: `Post ID: ${reportTargetPostId}\nCollection: ${reportTargetColl}\n\n${details}`,
                         timestamp: serverTimestamp()
                     });
-                    alert(ui.rep_success);
+                    alert(ui.rep_success || "Report submitted.");
                     const reportModal = document.getElementById('report-modal');
                     if (reportModal) reportModal.style.display = 'none';
                 } catch(e) { alert("Error submitting report."); }
@@ -1722,7 +1687,7 @@
                 if (!list) return;
                 
                 commentUnsubscribes[postId] = onSnapshot(query(collection(db, coll, postId, "comments"), orderBy("timestamp", "asc")), (snap) => {
-                    list.innerHTML = snap.empty ? `<div style="text-align:center; font-size:0.85rem; color:#888;">${ui.no_comments}</div>` : '';
+                    list.innerHTML = snap.empty ? `<div style="text-align:center; font-size:0.85rem; color:#888;">${ui.no_comments || 'No comments yet.'}</div>` : '';
                     snap.forEach(docSnap => {
                         const c = docSnap.data();
                         const commentId = docSnap.id;
@@ -1738,7 +1703,7 @@
                             return;
                         }
 
-                        let timeStr = ui.justNow;
+                        let timeStr = ui.justNow || "Just now";
                         if (c.timestamp) {
                             const diffMins = Math.round((new Date() - c.timestamp.toDate()) / 60000);
                             if (diffMins < 60) timeStr = lang === 'fr' ? `Il y a ${diffMins}m` : `${diffMins}m`;
@@ -1746,16 +1711,17 @@
                             else timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/1440)}j` : `${Math.round(diffMins/1440)}d`;
                         }
                         const pfp = c.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${c.authorUid}&backgroundColor=EBF2FA`;
-                        const imgHtml = c.imageUrl ? `<img src="${window.optimizeImageUrl(c.imageUrl)}" class="comment-image-attachment" onclick="window.open('${c.imageUrl}', '_blank')">` : '';
+                        const imgHtml = c.imageUrl ? `<img src="${window.optimizeImageUrl ? window.optimizeImageUrl(c.imageUrl) : c.imageUrl}" class="comment-image-attachment" onclick="window.open('${c.imageUrl}', '_blank')">` : '';
                         
-                        const commentAvatarHtml = c.authorIsStudent ? `
+                        const commentVerifiedAvatar = c.authorIsStudent ? '<div class="comment-avatar-badge"><i class="fas fa-check-circle"></i></div>' : '';
+                        const commentAvatarHtml = `
                             <a href="/user.html?id=${c.authorUid}">
                                 <div class="comment-avatar-wrapper">
                                     <img src="${pfp}" alt="Avatar">
-                                    <div class="comment-avatar-badge"><i class="fas fa-check-circle"></i></div>
+                                    ${commentVerifiedAvatar}
                                 </div>
                             </a>
-                        ` : `<a href="/user.html?id=${c.authorUid}"><img src="${pfp}" class="comment-avatar"></a>`;
+                        `;
                         
                         const pendingBadgeHtml = c.status === 'pending' ? `<span style="font-size:0.65rem; color:#d97706; background:#fef3c7; padding:2px 6px; border-radius:10px; margin-left:6px;">⏳ In Review</span>` : '';
 
@@ -1806,6 +1772,7 @@
                 }
             });
 
+            // Make sure createMarketBreak is attached to window or inside scope
             function createMarketBreak() {
                 const breakSection = document.createElement('div');
                 breakSection.className = 'market-break';
@@ -1813,7 +1780,7 @@
                 listings.forEach(b => {
                     bookHtml += `
                         <a href="/listing.html?id=${b.id}" class="mini-book-card">
-                            <div class="mini-img" style="background-image:url('${window.optimizeImageUrl(b.imageUrls[0])}')"></div>
+                            <div class="mini-img" style="background-image:url('${window.optimizeImageUrl ? window.optimizeImageUrl(b.imageUrls[0]) : b.imageUrls[0]}')"></div>
                             <div class="mini-info">
                                 <div class="mini-price">$${b.price.toFixed(2)}</div>
                                 <div class="mini-title">${b.title}</div>
@@ -1824,8 +1791,8 @@
 
                 breakSection.innerHTML = `
                     <div class="break-header">
-                        <span class="break-title"><i class="fas fa-book-open"></i> ${ui.suggest}</span>
-                        <a href="/search.html" class="break-link">${ui.browse}</a>
+                        <span class="break-title"><i class="fas fa-book-open"></i> ${ui.suggest || 'Campus Marketplace'}</span>
+                        <a href="/search.html" class="break-link">${ui.browse || 'Browse All →'}</a>
                     </div>
                     <div class="break-scroll">${bookHtml}</div>
                 `;
