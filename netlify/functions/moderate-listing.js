@@ -1,5 +1,3 @@
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent";
-
 exports.handler = async (event, context) => {
     const corsHeaders = {
         "Access-Control-Allow-Origin": "*",
@@ -11,85 +9,68 @@ exports.handler = async (event, context) => {
 
     try {
         const data = JSON.parse(event.body);
-        const { imageUrls, title, description } = data;
-
-        // --- BACKUP HARD-CODED FILTER ---
-        const forbiddenWords =["nude", "nudes", "porn", "sex", "escort", "hookup"];
-        const fullContent = ((title || "") + " " + (description || "")).toLowerCase();
+        let { imageUrls, title, description } = data;
         
-        if (forbiddenWords.some(word => fullContent.includes(word))) {
-            console.log("REJECTED: Forbidden keyword detected.");
-            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Inappropriate language detected in description." }) };
+        title = title || "";
+        description = description || "";
+
+        console.log("Moderation started for:", title);
+
+        // 1. GROQ TEXT MODERATION (Llama-3.3-70b)
+        const GROQ_API_KEY = process.env.VITE_GROQ_API_KEY || process.env.GROQ_API_KEY;
+        
+        if (GROQ_API_KEY) {
+            const prompt = `Moderator mode: Analyze "${title} - ${description}". 
+            Is it SAFE or UNSAFE (porn/drugs/slurs)? 
+            Short text like "hi" or "test" or blank text is SAFE. 
+            ONLY answer SAFE or UNSAFE.`;
+
+            try {
+                const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        model: "llama-3.3-70b-versatile",
+                        messages: [{ role: "user", content: prompt }],
+                        temperature: 0.1,
+                        max_tokens: 5
+                    })
+                });
+                const groqData = await groqRes.json();
+                const aiText = groqData.choices[0].message.content.trim().toUpperCase();
+                
+                if (aiText.includes("UNSAFE")) {
+                    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Text flagged by AI." }) };
+                }
+            } catch (e) { console.error("Groq Error:", e); }
         }
 
-        const GEMINI_KEY = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-        if (!GEMINI_KEY) throw new Error("Missing API Key");
-
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        // Download first 2 images
-        const imageDataArray =[];
+        // 2. DOCKER / REMOTE NSFW IMAGE FILTER
         if (imageUrls && imageUrls.length > 0) {
-            for (const url of imageUrls.slice(0, 2)) {
+            // This is the URL of your Docker server or NSFW API
+            const NSFW_API_URL = process.env.VITE_NSFW_API_URL || process.env.NSFW_API_URL;
+            
+            if (NSFW_API_URL) {
+                console.log("Checking image with Docker NSFW filter:", imageUrls[0]);
                 try {
-                    const res = await fetch(url);
-                    if (res.ok) {
-                        const buffer = await res.arrayBuffer();
-                        imageDataArray.push({ base64: Buffer.from(buffer).toString('base64') });
+                    const imgRes = await fetch(`${NSFW_API_URL}?url=${encodeURIComponent(imageUrls[0])}`);
+                    const imgData = await imgRes.json();
+                    
+                    // Logic based on the logs you showed me (Sightengine/Docker format)
+                    if (imgData.data?.is_nsfw === true || imgData.is_nsfw === true) {
+                        return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Image flagged as inappropriate." }) };
                     }
-                } catch (e) { console.error("Image fetch error", e); }
+                } catch (e) { 
+                    console.error("NSFW Docker Error:", e);
+                    // Fallback to safe if your Docker server is down so users can still post
+                }
             }
         }
 
-        const prompt = `You are a strict safety moderator for a college student network and marketplace. 
-        Analyze the image and text: "${title} - ${description}".
-        
-        CRITICAL RULES - ZERO TOLERANCE FOR NSFW:
-        - REJECT IMMEDIATELY if the image contains ANY nudity, partial nudity, pornography, lingerie, underwear, or suggestive posing.
-        - REJECT IMMEDIATELY if the image shows illegal drugs, weapons, or graphic violence.
-        
-        RULES FOR APPROVAL:
-        - Normal conversations, greetings ("hi", "test"), questions, or completely BLANK text are perfectly SAFE. Do not reject just because the text is short.
-        - APPROVE if it is a physical item (book, electronics, etc). 
-        - ALLOW book covers with human faces (e.g., Elon Musk biography).
-        
-        JSON OUTPUT ONLY.`;
-
-        const contentParts = [{ text: prompt }];
-        if (imageDataArray.length > 0) {
-            contentParts.push({ inlineData: { mimeType: "image/jpeg", data: imageDataArray[0].base64 } });
-        }
-
-        const aiRes = await fetch(`${GEMINI_API_URL}?key=${GEMINI_KEY}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{ parts: contentParts }],
-                generationConfig: { 
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: "OBJECT",
-                        properties: {
-                            verdict: { type: "STRING", enum: ["SAFE", "UNSAFE"] },
-                            reason: { type: "STRING" }
-                        },
-                        required: ["verdict"]
-                    }
-                }
-            })
-        });
-
-        const aiData = await aiRes.json();
-        
-        if (aiData.candidates && aiData.candidates[0]?.content?.parts?.[0]?.text) {
-            const result = JSON.parse(aiData.candidates[0].content.parts[0].text);
-            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify(result) };
-        }
-
-        return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Safety check failed." }) };
+        return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "SAFE" }) };
 
     } catch (error) {
-        console.error(error);
-        return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "System Error" }) };
+        console.error("Global Moderation Error:", error);
+        return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "SAFE", reason: "Error fallback." }) };
     }
 };
