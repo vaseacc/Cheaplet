@@ -52,7 +52,7 @@ setTimeout(() => clearInterval(addTitleToFirebaseIframe), 10000);
 // --- 2. TRANSLATION DICTIONARY ---
 const translations = {
     "en": {
-        "nav_browse": "Browse", "nav_listings": "My Listings", "nav_messages": "Messages", "nav_profile": "My Profile", "nav_activity": "My Activity", "nav_hub": "Campus Hub",
+        "nav_browse": "Browse", "nav_listings": "My Listings", "nav_messages": "Messages", "nav_profile": "My Profile", "nav_hub": "Campus Hub",
         "btn_login": "Login / Register", "btn_list": "List an Item", "btn_signout": "Sign Out",
         "verified_student": "Verified Student",
         "ban_title": "ACCESS DENIED",
@@ -95,7 +95,7 @@ const translations = {
         "social_tour_gotit": "Got it!"
     },
     "fr": {
-        "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", "nav_activity": "Mon Activité", "nav_hub": "Hub Campus",
+        "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", "nav_hub": "Hub Campus",
         "btn_login": "Connexion", "btn_list": "Vendre", "btn_signout": "Déconnexion",
         "verified_student": "Étudiant vérifié",
         "ban_title": "ACCÈS REFUSÉ",
@@ -767,7 +767,6 @@ function updateHeaderToLoggedIn(userData) {
                 <a href="/my-listings.html" class="dropdown-item mobile-link"><i class="fas fa-book"></i> ${t.nav_listings}</a>
                 <a href="/social.html" class="dropdown-item mobile-link"><i class="fas fa-users"></i> ${t.nav_hub}</a>
                 <a href="/profile.html" class="dropdown-item"><i class="fas fa-user-circle"></i> ${t.nav_profile}</a>
-                <a href="/activity.html" class="dropdown-item"><i class="fas fa-history"></i> ${t.nav_activity}</a>
                 <a href="#" class="dropdown-item" id="globalLogout" style="color:#ff4d4d; border-top:1px solid #eee;"><i class="fas fa-sign-out-alt"></i> ${t.btn_signout}</a>
             </div>
         </div>
@@ -803,7 +802,7 @@ function updateHeaderToLoggedOut() {
 
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
     if (!container) return;
-    container.innerHTML = `<button class="btn" onclick="window.location.href='/login.html'">${t.btn_login}</button>`;
+    container.innerHTML = `<button class="btn" onclick="window.location.href='/LoginInToCheaplet.html'">${t.btn_login}</button>`;
 }
 
 function showTermsBanner() {
@@ -811,7 +810,7 @@ function showTermsBanner() {
     const lang = localStorage.getItem('preferred_language') || 'en';
     const banner = document.createElement('div');
     banner.id = 'terms-banner-global'; banner.className = 'terms-banner';
-    const text = lang === 'fr' ? 'En utilisant ce site, vous acceptez nos conditions.' : 'By using ce site, you accept our terms.';
+    const text = lang === 'fr' ? 'En utilisant ce site, vous acceptez nos conditions.' : 'By using this site, you accept our terms.';
     banner.innerHTML = `<div>${text}</div><button class="btn-accept-terms" id="accept-terms-btn">ok</button>`;
     document.body.appendChild(banner);
     document.getElementById('accept-terms-btn').onclick = () => { localStorage.setItem('scoralia_terms_accepted', 'true'); banner.remove(); };
