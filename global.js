@@ -106,7 +106,29 @@ const translations = {
         "social_tour_desc_3": "Use the filter bar to switch between <strong>Global Campus</strong> (everyone) and <strong>My School</strong> (verified students only). To access your school feed, you need a verified email from your institution.",
         "social_tour_title_4": "Create Your Own Topic",
         "social_tour_desc_4": "Click the <strong>Create Topic</strong> button in the sidebar. Start a discussion about study groups, events, or anything relevant to your campus.",
-        "social_tour_gotit": "Got it!"
+        "social_tour_gotit": "Got it!",
+
+        // Activity Page strings
+        "page_activity_title": "My Activity — Scoralia",
+        "auth_required_title": "Sign In Required",
+        "auth_required_desc": "Please sign in to view your activity feed.",
+        "btn_signin": "Sign In",
+        "stat_posts": "Posts",
+        "stat_comments": "Comments",
+        "stat_likes": "Likes Given",
+        "filter_all": "All",
+        "filter_posts": "Posts",
+        "filter_comments": "Comments",
+        "filter_likes": "Likes",
+        "filter_topics": "Topics",
+        "loading_activity": "Loading your activity...",
+        "no_activity_yet": "No Activity Yet",
+        "no_activity_desc": "Start posting, commenting, or liking to see your activity here!",
+        "error_loading": "Error Loading Activity",
+        "label_post": "New Post",
+        "label_comment": "Comment",
+        "label_like": "Liked",
+        "label_topic": "Topic Created"
     },
     "fr": {
         "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", "nav_hub": "Hub Campus", "nav_activity": "Mon Activité",
@@ -149,7 +171,29 @@ const translations = {
         "social_tour_desc_3": "Utilisez le filtre pour basculer entre <strong>Campus Global</strong> (tout le monde) et <strong>Mon école</strong> (étudiants vérifiés seulement). Pour accéder au fil de votre école, vous devez avoir un email scolaire vérifié.",
         "social_tour_title_4": "Créez votre propre sujet",
         "social_tour_desc_4": "Cliquez sur le bouton <strong>Créer un sujet</strong> dans la barre latérale. Lancez une discussion sur les groupes d'étude, les événements ou tout ce qui est pertinent pour votre campus.",
-        "social_tour_gotit": "Compris !"
+        "social_tour_gotit": "Compris !",
+
+        // Activity Page strings (French)
+        "page_activity_title": "Mon Activité — Scoralia",
+        "auth_required_title": "Connexion requise",
+        "auth_required_desc": "Veuillez vous connecter pour voir votre flux d'activité.",
+        "btn_signin": "Se connecter",
+        "stat_posts": "Publications",
+        "stat_comments": "Commentaires",
+        "stat_likes": "J'aime donnés",
+        "filter_all": "Tout",
+        "filter_posts": "Publications",
+        "filter_comments": "Commentaires",
+        "filter_likes": "J'aime",
+        "filter_topics": "Sujets",
+        "loading_activity": "Chargement de votre activité...",
+        "no_activity_yet": "Aucune activité",
+        "no_activity_desc": "Commencez à publier, commenter ou aimer pour voir votre activité ici !",
+        "error_loading": "Erreur de chargement",
+        "label_post": "Nouvelle publication",
+        "label_comment": "Commentaire",
+        "label_like": "A aimé",
+        "label_topic": "Sujet créé"
     }
 };
 
@@ -752,6 +796,7 @@ function updateHeaderToLoggedIn(userData) {
             <li><a href="/search.html">${t.nav_browse}</a></li>
             <li><a href="/my-listings.html">${t.nav_listings}</a></li>
             <li><a href="/social.html">${t.nav_hub}</a></li>
+            <li><a href="/activity.html">${t.nav_activity}</a></li>
             <li><a href="/messages.html" class="badge-container">${t.nav_messages}<span class="unread-badge" id="desktop-unread-badge"></span></a></li>
         `;
     }
