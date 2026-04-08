@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Activity Feed — Scoralia</title>
+scoralia-architecture-directive-13379
+    <script type="module" src="global.js"></script>
+
+ main
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -59,6 +63,23 @@
 
         .activity-header { display: flex; align-items: flex-start; gap: 15px; margin-bottom: 15px; }
         .user-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); background: #eee; }
+ scoralia-architecture-directive-13379
+        
+        .activity-meta { flex: 1; }
+        .user-name { font-weight: 700; color: var(--ink); font-size: 1rem; display: block; }
+        .activity-action { color: var(--text-muted); font-size: 0.9rem; margin-top: 2px; }
+        .activity-time { font-size: 0.75rem; color: #94a3b8; margin-top: 4px; }
+        
+        .source-badge { font-size: 0.7rem; background: var(--surface); color: var(--deep); padding: 2px 8px; border-radius: 12px; font-weight: 700; margin-left: 8px; border: 1px solid #cbd5e1; }
+
+        .activity-content { font-size: 1rem; line-height: 1.6; color: #334155; white-space: pre-wrap; margin-bottom: 15px; background: #f8fafc; padding: 15px; border-radius: 12px; }
+        .activity-img { width: 100%; max-height: 300px; object-fit: cover; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 10px; display: block; }
+
+        .activity-footer { display: flex; gap: 20px; padding-top: 15px; border-top: 1px solid #f1f5f9; margin-top: 10px; }
+        .action-btn { background: none; border: none; color: var(--text-muted); font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; font-weight: 500; }
+        .action-btn:hover { color: var(--deep); }
+        .action-btn.liked { color: var(--red); }
+
         
         .activity-meta { flex: 1; }
         .user-name { font-weight: 700; color: var(--ink); font-size: 1rem; display: block; }
@@ -92,14 +113,29 @@
         
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1999; display: none; backdrop-filter: blur(2px); }
         .overlay.active { display: block; }
+ main
 
-        /* Custom Dialog Modals */
+        /* Loaders & Empty States */
+        .loader-msg { text-align: center; padding: 50px; color: var(--text-muted); }
+        .loader-msg i { font-size: 2rem; color: var(--gold); margin-bottom: 15px; display: block; }
+        .empty-state { text-align: center; padding: 60px 20px; background: var(--white); border-radius: var(--radius); border: var(--border); box-shadow: var(--shadow); }
+        .empty-state i { font-size: 3rem; color: #cbd5e1; margin-bottom: 15px; display: block; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .page-header h1 { font-size: 1.8rem; }
+            .activity-card { padding: 16px; }
+        }
+        
+        /* Custom Dialog Modals - Required for scoraliaAlert/Confirm */
         .modal-overlay { position: fixed; inset: 0; background: rgba(12,20,70,0.8); backdrop-filter: blur(6px); z-index: 10020; display: none; justify-content: center; align-items: center; padding: 20px; }
         .modal-card { background: var(--white); padding: 35px 30px; border-radius: var(--radius); width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
         .modal-buttons { display: flex; gap: 10px; margin-top: 25px; }
         .modal-buttons button { flex: 1; padding: 12px; border-radius: 30px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; }
         .btn-confirm { background: var(--ink); color: white; }
         .btn-cancel { background: var(--off-white); color: var(--ink); border: 1px solid var(--border) !important; }
+ scoralia-architecture-directive-13379
+
 
         /* Responsive */
         @media (max-width: 768px) {
@@ -108,6 +144,7 @@
             .page-header h1 { font-size: 1.8rem; }
             .activity-card { padding: 16px; }
         }
+ main
     </style>
 </head>
 <body>
@@ -116,6 +153,13 @@
     <header>
         <div class="header-inner">
             <a href="/index.html" class="logo">Scor<em>alia</em></a>
+ scoralia-architecture-directive-13379
+            <nav><ul></ul></nav>
+            <div class="header-right"></div>
+        </div>
+    </header>
+
+
             
             <!-- Desktop Navigation -->
             <nav class="desktop-nav" id="desktopNav">
@@ -141,6 +185,7 @@
         </div>
     </div>
 
+ main
     <!-- Page Header -->
     <div class="page-header">
         <h1>Community Activity</h1>
@@ -165,6 +210,25 @@
     </div>
 
     <script type="module">
+ scoralia-architecture-directive-13379
+        // GLOBAL STATE is handled by global.js now
+        
+        // 1. PAGE INITIALIZATION - Wait for global.js to load header and Firebase
+        document.addEventListener('DOMContentLoaded', () => {
+            // Wait for global.js to initialize Firebase
+            const checkFirebase = setInterval(() => {
+                if (window.db && window.firebaseUser) {
+                    clearInterval(checkFirebase);
+                    loadGlobalActivityFeed();
+                }
+            }, 100);
+            
+            // Timeout fallback
+            setTimeout(() => {
+                clearInterval(checkFirebase);
+                if (!window.db) {
+                    document.getElementById('activityFeed').innerHTML = '<div class="empty-state"><p style="color: var(--red);">Failed to initialize. Please refresh.</p></div>';
+
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getFirestore, collection, query, orderBy, limit, getDocs, where, Timestamp, runTransaction, doc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
@@ -348,7 +412,164 @@
                         </div>
                     `;
                     return;
+ main
                 }
+            }, 5000);
+        });
+
+        // 6. ACTIVITY FEED LOGIC
+        async function loadGlobalActivityFeed() {
+            const feedContainer = document.getElementById('activityFeed');
+            
+            try {
+                const collectionsToQuery = [
+                    { name: 'social_posts_global', label: 'Global' },
+                    { name: 'social_posts_rosemont', label: 'Rosemont' },
+                    { name: 'social_posts', label: 'Topic' }
+                ];
+
+ scoralia-architecture-directive-13379
+                let allActivities = [];
+
+                // Fetch from all collections in parallel
+                const promises = collectionsToQuery.map(async (collInfo) => {
+                    // Query for recent ACTIVE posts only
+                    const q = query(collection(window.db, collInfo.name), orderBy('createdAt', 'desc'), limit(30));
+                    const snapshot = await getDocs(q);
+                    
+                    snapshot.forEach(docSnap => {
+                        const data = docSnap.data();
+                        // Only show active posts
+                        if (data.status === 'active') {
+                            allActivities.push({
+                                id: docSnap.id,
+                                ...data,
+                                collection: collInfo.name,
+                                sourceLabel: collInfo.label
+                            });
+                        }
+                    });
+                });
+
+                await Promise.all(promises);
+
+                // Sort combined list by date (newest first)
+                allActivities.sort((a, b) => {
+                    const timeA = a.createdAt?.seconds || a.timestamp?.seconds || 0;
+                    const timeB = b.createdAt?.seconds || b.timestamp?.seconds || 0;
+                    return timeB - timeA;
+                });
+
+                // Render
+                if (allActivities.length === 0) {
+                    feedContainer.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <h3>No Activity Yet</h3>
+                            <p style="color: var(--text-muted); margin-top: 0.5rem;">Be the first to post in the community!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                feedContainer.innerHTML = '';
+                for (const item of allActivities) {
+                    const card = createActivityCard(item);
+                    feedContainer.appendChild(card);
+                }
+
+            } catch (error) {
+                console.error("Error loading activity:", error);
+                feedContainer.innerHTML = `
+                    <div class="empty-state">
+                        <p style="color: var(--red);">Failed to load activity feed.</p>
+                        <button onclick="window.location.reload()" style="margin-top:1rem; padding:0.5rem 1rem; background:var(--ink); color:white; border:none; border-radius:8px; cursor:pointer;">Retry</button>
+                    </div>
+                `;
+            }
+        }
+
+        function createActivityCard(item) {
+            const div = document.createElement('div');
+            div.className = 'activity-card';
+
+            // Time Formatting
+            let timeString = 'Just now';
+            const ts = item.createdAt || item.timestamp;
+            if (ts && ts.seconds) {
+                const date = new Date(ts.seconds * 1000);
+                const diff = Date.now() - date.getTime();
+                if (diff < 60000) timeString = 'Just now';
+                else if (diff < 3600000) timeString = `${Math.floor(diff/60000)}m ago`;
+                else if (diff < 86400000) timeString = `${Math.floor(diff/3600000)}h ago`;
+                else timeString = date.toLocaleDateString();
+            }
+
+            // Image Handling
+            let imageHtml = '';
+            if (item.imageUrl) {
+                const optimizedUrl = window.optimizeImageUrl ? window.optimizeImageUrl(item.imageUrl) : item.imageUrl;
+                imageHtml = `<img src="${optimizedUrl}" alt="Post Image" class="activity-img" loading="lazy">`;
+            }
+
+            const userName = item.userName || item.authorName || 'Scoralia User';
+            const userPhoto = item.userPhotoURL || item.authorPhotoURL || 'https://via.placeholder.com/48';
+            const text = item.text || '';
+            const likes = item.likes || 0;
+            const comments = item.commentsCount || 0;
+
+            div.innerHTML = `
+                <div class="activity-header">
+                    <img src="${userPhoto}" alt="${userName}" class="user-avatar" onerror="this.src='https://via.placeholder.com/48'">
+                    <div class="activity-meta">
+                        <span class="user-name">${userName} <span class="source-badge">${item.sourceLabel}</span></span>
+                        <div class="activity-action">posted an update</div>
+                        <div class="activity-time">${timeString}</div>
+                    </div>
+                </div>
+                
+                <div class="activity-content">
+                    ${text}
+                    ${imageHtml}
+                </div>
+
+                <div class="activity-footer">
+                    <button class="action-btn" id="like-btn-${item.id}">
+                        <i class="${item.likedByCurrentUser ? 'fas' : 'far'} fa-heart"></i> <span>${likes}</span>
+                    </button>
+                    <button class="action-btn">
+                        <i class="far fa-comment"></i> <span>${comments}</span> Comments
+                    </button>
+                    <button class="action-btn">
+                        <i class="far fa-share-square"></i> Share
+                    </button>
+                </div>
+            `;
+
+            // Attach Like Event
+            const likeBtn = div.querySelector(`#like-btn-${item.id}`);
+            likeBtn.addEventListener('click', () => handleLike(item.id, item.collection, likeBtn));
+
+            return div;
+        }
+
+        async function handleLike(postId, collectionName, btnElement) {
+            if (!window.firebaseUser) {
+                await window.scoraliaAlert("Please log in to like posts.");
+                return;
+            }
+            
+            try {
+                const postRef = doc(window.db, collectionName, postId);
+                
+                await runTransaction(window.db, async (transaction) => {
+                    const sfDoc = await transaction.get(postRef);
+                    if (!sfDoc.exists()) throw "Document does not exist!";
+                    
+                    const newLikes = (sfDoc.data().likes || 0) + 1;
+                    transaction.update(postRef, { likes: newLikes });
+                });
+
 
                 feedContainer.innerHTML = '';
                 for (const item of allActivities) {
@@ -445,6 +666,7 @@
                     transaction.update(postRef, { likes: newLikes });
                 });
 
+ main
                 // Optimistic UI Update
                 const icon = btnElement.querySelector('i');
                 const span = btnElement.querySelector('span');
@@ -458,9 +680,12 @@
                 await window.scoraliaAlert("Could not like post. Try again.");
             }
         }
+ scoralia-architecture-directive-13379
+
 
         // Start the engine
         main();
+ main
     </script>
 </body>
 </html>
