@@ -2,11 +2,14 @@ import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebase
 import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, onSnapshot, updateDoc, setDoc, collection, query, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
-// --- 0. AUTO-IMPORT ICONS & FAVICON ---
+// --- 0. AUTO-IMPORT ICONS & FAVICON (Performance: Only if not present) ---
 if (!document.querySelector('link[href*="font-awesome"]')) {
     const faLink = document.createElement('link');
     faLink.rel = 'stylesheet';
     faLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
+    faLink.integrity = 'sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==';
+    faLink.crossOrigin = 'anonymous';
+    faLink.referrerPolicy = 'no-referrer';
     document.head.appendChild(faLink);
 }
 if (!document.querySelector('link[rel="icon"]')) {
@@ -424,7 +427,7 @@ function triggerHardLockdown(expireTimestamp) {
         ${expiryText}
     </div>`;
 
-    setTimeout(() => { signOut(auth).then(() => { window.location.href = '/loginintocheaplet.html'; }); }, 5000);
+    setTimeout(() => { signOut(auth).then(() => { window.location.href = '/login.html'; }); }, 5000);
 }
 
 // --- WELCOME TOUR (profile setup) ---
@@ -799,7 +802,7 @@ function updateHeaderToLoggedOut() {
 
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
     if (!container) return;
-    container.innerHTML = `<button class="btn" onclick="window.location.href='/loginintocheaplet.html'">${t.btn_login}</button>`;
+    container.innerHTML = `<button class="btn" onclick="window.location.href='/login.html'">${t.btn_login}</button>`;
 }
 
 function showTermsBanner() {
