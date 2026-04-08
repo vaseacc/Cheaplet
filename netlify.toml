@@ -1,9 +1,7 @@
-# netlify.toml - Scoralia Configuration
-# https://docs.netlify.com/configure-builds/file-based-configuration/
-
 [build]
   publish = "/"
-  environment = { SECRETS_SCAN_OMIT_KEYS = "VITE_CLOUDINARY_UPLOAD_PRESET" }
+  # We add the Cloud Name to the list of keys for Netlify to ignore during the scan
+  environment = { SECRETS_SCAN_OMIT_KEYS = "VITE_CLOUDINARY_UPLOAD_PRESET,VITE_CLOUDINARY_CLOUD_NAME" }
 
 [functions]
   directory = "netlify/functions/"
@@ -18,8 +16,6 @@
   status = 302
   force = true
 
-# Security headers are now in _headers file
-
 # Performance optimizations
 [[headers]]
   for = "/*"
@@ -29,7 +25,7 @@
     X-XSS-Protection = "1; mode=block"
     Referrer-Policy = "strict-origin-when-cross-origin"
     
-# Cache static assets
+# Cache static assets (Note: This is fine because we handle cache-busting via global.js now)
 [[headers]]
   for = "/*.js"
   [headers.values]
@@ -37,20 +33,5 @@
 
 [[headers]]
   for = "/*.css"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/*.svg"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/*.png"
-  [headers.values]
-    Cache-Control = "public, max-age=31536000, immutable"
-
-[[headers]]
-  for = "/*.woff2"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
