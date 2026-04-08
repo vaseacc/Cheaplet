@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Activity Feed — Scoralia</title>
+    <script type="module" src="global.js"></script>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -81,33 +82,19 @@
         .empty-state { text-align: center; padding: 60px 20px; background: var(--white); border-radius: var(--radius); border: var(--border); box-shadow: var(--shadow); }
         .empty-state i { font-size: 3rem; color: #cbd5e1; margin-bottom: 15px; display: block; }
 
-        /* --- Mobile Drawer --- */
-        .mobile-drawer { position: fixed; top: 0; right: -100%; width: 80%; max-width: 300px; height: 100vh; background: var(--white); z-index: 2000; transition: right 0.3s ease; box-shadow: -2px 0 10px rgba(0,0,0,0.2); padding: 2rem 1.5rem; display: flex; flex-direction: column; }
-        .mobile-drawer.open { right: 0; }
-        .drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid #eee; padding-bottom: 1rem; }
-        .close-drawer { background: none; border: none; font-size: 1.5rem; color: var(--ink); cursor: pointer; }
-        .mobile-nav-links { display: flex; flex-direction: column; gap: 1.5rem; }
-        .mobile-nav-link { text-decoration: none; color: var(--ink); font-weight: 600; font-size: 1.1rem; display: flex; align-items: center; gap: 1rem; padding: 0.5rem 0; }
-        .mobile-nav-link.active { color: var(--gold); }
+        /* Responsive */
+        @media (max-width: 768px) {
+            .page-header h1 { font-size: 1.8rem; }
+            .activity-card { padding: 16px; }
+        }
         
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1999; display: none; backdrop-filter: blur(2px); }
-        .overlay.active { display: block; }
-
-        /* Custom Dialog Modals */
+        /* Custom Dialog Modals - Required for scoraliaAlert/Confirm */
         .modal-overlay { position: fixed; inset: 0; background: rgba(12,20,70,0.8); backdrop-filter: blur(6px); z-index: 10020; display: none; justify-content: center; align-items: center; padding: 20px; }
         .modal-card { background: var(--white); padding: 35px 30px; border-radius: var(--radius); width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
         .modal-buttons { display: flex; gap: 10px; margin-top: 25px; }
         .modal-buttons button { flex: 1; padding: 12px; border-radius: 30px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; }
         .btn-confirm { background: var(--ink); color: white; }
         .btn-cancel { background: var(--off-white); color: var(--ink); border: 1px solid var(--border) !important; }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .desktop-nav { display: none; }
-            .mobile-menu-btn { display: block; }
-            .page-header h1 { font-size: 1.8rem; }
-            .activity-card { padding: 16px; }
-        }
     </style>
 </head>
 <body>
@@ -116,30 +103,10 @@
     <header>
         <div class="header-inner">
             <a href="/index.html" class="logo">Scor<em>alia</em></a>
-            
-            <!-- Desktop Navigation -->
-            <nav class="desktop-nav" id="desktopNav">
-                <!-- Injected via JS -->
-            </nav>
-
-            <!-- Mobile Menu Button -->
-            <button class="mobile-menu-btn" id="mobileMenuBtn">
-                <i class="fas fa-bars"></i>
-            </button>
+            <nav><ul></ul></nav>
+            <div class="header-right"></div>
         </div>
     </header>
-
-    <!-- Mobile Drawer -->
-    <div class="overlay" id="overlay"></div>
-    <div class="mobile-drawer" id="mobileDrawer">
-        <div class="drawer-header">
-            <h2 style="color: var(--ink); font-family: 'Playfair Display';">Menu</h2>
-            <button class="close-drawer" id="closeDrawer"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="mobile-nav-links" id="mobileNavLinks">
-            <!-- Injected via JS -->
-        </div>
-    </div>
 
     <!-- Page Header -->
     <div class="page-header">
@@ -165,136 +132,26 @@
     </div>
 
     <script type="module">
-        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getFirestore, collection, query, orderBy, limit, getDocs, where, Timestamp, runTransaction, doc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-
-        // GLOBAL STATE
-        let db;
-        let auth;
-        let currentUser = null;
-
-        // 1. THE BOOTSTRAP PATTERN
-        async function main() {
-            try {
-                const response = await fetch('/.netlify/functions/config');
-                if (!response.ok) throw new Error('Config load failed');
-                const config = await response.json();
-                
-                const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
-                db = getFirestore(app);
-                auth = getAuth(app);
-
-                onAuthStateChanged(auth, (user) => {
-                    currentUser = user;
-                    if (!user) {
-                        window.location.href = '/login.html';
-                    } else {
-                        initPage();
-                    }
-                });
-            } catch (error) {
-                console.error("Bootstrap Error:", error);
-                alert("System Initialization Failed.");
-            }
-        }
-
-        // 2. PAGE INITIALIZATION
-        function initPage() {
-            renderNavigation();
-            setupMobileMenu();
-            loadGlobalActivityFeed();
-        }
-
-        // 3. NAVIGATION RENDERING
-        function renderNavigation() {
-            const navItems = [
-                { label: 'Browse', icon: 'fa-search', href: '/browse.html' },
-                { label: 'My Listings', icon: 'fa-box-open', href: '/my-listings.html' },
-                { label: 'Campus Hub', icon: 'fa-university', href: '/campus-hub.html' },
-                { label: 'Messages', icon: 'fa-envelope', href: '/messages.html' },
-                { label: 'Activity', icon: 'fa-bell', href: '/activity.html', active: true }
-            ];
-
-            // Desktop
-            const desktopNav = document.getElementById('desktopNav');
-            desktopNav.innerHTML = navItems.map(item => `
-                <a href="${item.href}" class="nav-link ${item.active ? 'active' : ''}">
-                    <i class="fas ${item.icon}"></i> ${item.label}
-                </a>
-            `).join('');
-
-            // Mobile
-            const mobileNav = document.getElementById('mobileNavLinks');
-            mobileNav.innerHTML = navItems.map(item => `
-                <a href="${item.href}" class="mobile-nav-link ${item.active ? 'active' : ''}">
-                    <i class="fas ${item.icon}"></i> ${item.label}
-                </a>
-            `).join('');
-            
-            // Add Logout to mobile
-            const logoutLink = document.createElement('a');
-            logoutLink.href = "#";
-            logoutLink.className = "mobile-nav-link";
-            logoutLink.innerHTML = `<i class="fas fa-sign-out-alt"></i> Logout`;
-            logoutLink.onclick = async (e) => {
-                e.preventDefault();
-                if(await window.scoraliaConfirm("Are you sure you want to logout?")) {
-                    await auth.signOut();
-                    window.location.href = "/";
+        // GLOBAL STATE is handled by global.js now
+        
+        // 1. PAGE INITIALIZATION - Wait for global.js to load header and Firebase
+        document.addEventListener('DOMContentLoaded', () => {
+            // Wait for global.js to initialize Firebase
+            const checkFirebase = setInterval(() => {
+                if (window.db && window.firebaseUser) {
+                    clearInterval(checkFirebase);
+                    loadGlobalActivityFeed();
                 }
-            };
-            mobileNav.appendChild(logoutLink);
-        }
-
-        // 4. MOBILE MENU LOGIC
-        function setupMobileMenu() {
-            const btn = document.getElementById('mobileMenuBtn');
-            const drawer = document.getElementById('mobileDrawer');
-            const overlay = document.getElementById('overlay');
-            const close = document.getElementById('closeDrawer');
-
-            const toggle = () => {
-                drawer.classList.toggle('open');
-                overlay.classList.toggle('active');
-            };
-
-            btn.addEventListener('click', toggle);
-            close.addEventListener('click', toggle);
-            overlay.addEventListener('click', toggle);
-        }
-
-        // 5. CUSTOM DIALOG SYSTEM
-        window.scoraliaConfirm = (msg) => {
-            return new Promise(res => {
-                const modal = document.getElementById('custom-dialog-modal');
-                document.getElementById('dialog-message').textContent = msg;
-                modal.style.display = 'flex';
-                document.getElementById('dialog-confirm').onclick = () => { modal.style.display = 'none'; res(true); };
-                document.getElementById('dialog-cancel').onclick = () => { modal.style.display = 'none'; res(false); };
-            });
-        };
-
-        window.scoraliaAlert = (msg) => {
-            return new Promise(res => {
-                const modal = document.getElementById('custom-dialog-modal');
-                document.getElementById('dialog-title').textContent = "Notification";
-                document.getElementById('dialog-message').textContent = msg;
-                // Hide cancel button for alerts
-                document.getElementById('dialog-cancel').style.display = 'none';
-                document.getElementById('dialog-confirm').textContent = "OK";
-                
-                modal.style.display = 'flex';
-                document.getElementById('dialog-confirm').onclick = () => { 
-                    modal.style.display = 'none'; 
-                    // Reset for next time
-                    document.getElementById('dialog-cancel').style.display = 'block';
-                    document.getElementById('dialog-confirm').textContent = "Confirm";
-                    document.getElementById('dialog-title').textContent = "Confirm";
-                    res(true); 
-                };
-            });
-        };
+            }, 100);
+            
+            // Timeout fallback
+            setTimeout(() => {
+                clearInterval(checkFirebase);
+                if (!window.db) {
+                    document.getElementById('activityFeed').innerHTML = '<div class="empty-state"><p style="color: var(--red);">Failed to initialize. Please refresh.</p></div>';
+                }
+            }, 5000);
+        });
 
         // 6. ACTIVITY FEED LOGIC
         async function loadGlobalActivityFeed() {
@@ -312,7 +169,7 @@
                 // Fetch from all collections in parallel
                 const promises = collectionsToQuery.map(async (collInfo) => {
                     // Query for recent ACTIVE posts only
-                    const q = query(collection(db, collInfo.name), orderBy('createdAt', 'desc'), limit(30));
+                    const q = query(collection(window.db, collInfo.name), orderBy('createdAt', 'desc'), limit(30));
                     const snapshot = await getDocs(q);
                     
                     snapshot.forEach(docSnap => {
@@ -432,12 +289,15 @@
         }
 
         async function handleLike(postId, collectionName, btnElement) {
-            if (!currentUser) return;
+            if (!window.firebaseUser) {
+                await window.scoraliaAlert("Please log in to like posts.");
+                return;
+            }
             
             try {
-                const postRef = doc(db, collectionName, postId);
+                const postRef = doc(window.db, collectionName, postId);
                 
-                await runTransaction(db, async (transaction) => {
+                await runTransaction(window.db, async (transaction) => {
                     const sfDoc = await transaction.get(postRef);
                     if (!sfDoc.exists()) throw "Document does not exist!";
                     
@@ -458,9 +318,6 @@
                 await window.scoraliaAlert("Could not like post. Try again.");
             }
         }
-
-        // Start the engine
-        main();
     </script>
 </body>
 </html>
