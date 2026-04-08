@@ -39,15 +39,29 @@ window.optimizeImageUrl = (url) => {
     return url;
 };
 
-// --- FIX: Add title to Firebase Auth iframe for accessibility ---
-function addTitleToFirebaseIframe() {
-    const iframe = document.querySelector('iframe[src*="firebaseapp.com"]');
-    if (iframe && !iframe.hasAttribute('title')) {
-        iframe.setAttribute('title', 'Firebase Authentication');
+// --- FIX: Add title to Firebase Auth iframe for accessibility (non-intrusive method) ---
+// Use MutationObserver instead of setInterval to avoid triggering ad-blocker false positives
+function setupFirebaseIframeTitleObserver() {
+    const observer = new MutationObserver(() => {
+        const iframe = document.querySelector('iframe[src*="firebaseapp.com"]');
+        if (iframe && !iframe.hasAttribute('title')) {
+            iframe.setAttribute('title', 'Firebase Authentication');
+            observer.disconnect(); // Stop observing once we've set the title
+        }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    // Also check immediately in case iframe already exists
+    const existingIframe = document.querySelector('iframe[src*="firebaseapp.com"]');
+    if (existingIframe && !existingIframe.hasAttribute('title')) {
+        existingIframe.setAttribute('title', 'Firebase Authentication');
     }
 }
-setInterval(addTitleToFirebaseIframe, 500);
-setTimeout(() => clearInterval(addTitleToFirebaseIframe), 10000);
+// Initialize observer when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupFirebaseIframeTitleObserver);
+} else {
+    setupFirebaseIframeTitleObserver();
+}
 
 // --- 2. TRANSLATION DICTIONARY ---
 const translations = {
