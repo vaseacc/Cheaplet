@@ -179,6 +179,7 @@
     </div>
 
     <script type="module">
+scoralia-architecture-brief-93da3
         // Wait for global.js to initialize Firebase first
         window.addEventListener('scoralia-ready', async () => {
             const auth = window.scoraliaAuth;
@@ -195,6 +196,22 @@
 
             // Initialize auth state listener
             window.scoraliaOnAuthStateChanged(async (user) => {
+
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getFirestore, collection, query, where, onSnapshot, orderBy, limit, getDocs, doc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+
+        const auth = getAuth();
+        const db = getFirestore();
+        let currentUser = null;
+        let currentFilter = 'all';
+        let allActivities = [];
+
+        // Wait for global.js to initialize
+        setTimeout(init, 500);
+
+        function init() {
+            onAuthStateChanged(auth, async (user) => {
+main
                 if (user) {
                     currentUser = user;
                     document.getElementById('auth-required').style.display = 'none';
@@ -216,6 +233,7 @@
                     renderFeed();
                 });
             });
+scoralia-architecture-brief-93da3
 
             async function loadUserData(uid) {
                 try {
@@ -242,6 +260,57 @@
                     const postsGlobalQ = db.query(db.collection(db, "social_posts_global"), db.where("authorUid", "==", uid), db.orderBy("timestamp", "desc"), db.limit(50));
                     const postsGlobalSnap = await db.getDocs(postsGlobalQ);
                     postsGlobalSnap.forEach(docSnap => {
+
+        }
+
+        async function loadUserData(uid) {
+            try {
+                const userSnap = await getDoc(doc(db, "users", uid));
+                if (userSnap.exists()) {
+                    const data = userSnap.data();
+                    document.getElementById('user-name').textContent = data.displayName || 'User';
+                    let avatarUrl = data.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${uid}&backgroundColor=EBF2FA`;
+                    if (avatarUrl.includes("googleusercontent.com") || avatarUrl.includes("live.com")) {
+                        avatarUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${uid}&backgroundColor=EBF2FA`;
+                    }
+                    document.getElementById('user-avatar').src = avatarUrl;
+                }
+            } catch (e) {
+                console.error("Error loading user data:", e);
+            }
+        }
+
+        async function loadActivities(uid) {
+            try {
+                const activities = [];
+                
+                // Load posts from global feed
+                const postsGlobalQ = query(collection(db, "social_posts_global"), where("authorUid", "==", uid), orderBy("timestamp", "desc"), limit(50));
+                const postsGlobalSnap = await getDocs(postsGlobalQ);
+                postsGlobalSnap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    activities.push({
+                        type: 'post',
+                        timestamp: data.timestamp,
+                        authorUid: uid,
+                        authorName: data.authorName,
+                        authorPhoto: data.authorPhoto,
+                        content: data.text,
+                        imageUrl: data.imageUrl,
+                        attachedListing: data.attachedListing,
+                        postId: docSnap.id,
+                        collection: 'social_posts_global',
+                        schoolName: data.schoolName
+                    });
+                });
+
+                // Load posts from school feed if student
+                const userSnap = await getDoc(doc(db, "users", uid));
+                if (userSnap.exists() && userSnap.data().isStudent) {
+                    const postsSchoolQ = query(collection(db, "social_posts_rosemont"), where("authorUid", "==", uid), orderBy("timestamp", "desc"), limit(50));
+                    const postsSchoolSnap = await getDocs(postsSchoolQ);
+                    postsSchoolSnap.forEach(docSnap => {
+main
                         const data = docSnap.data();
                         activities.push({
                             type: 'post',
@@ -253,6 +322,7 @@
                             imageUrl: data.imageUrl,
                             attachedListing: data.attachedListing,
                             postId: docSnap.id,
+scoralia-architecture-brief-93da3
                             collection: 'social_posts_global',
                             schoolName: data.schoolName
                         });
@@ -519,6 +589,275 @@
                     .replace(/'/g, '&#39;');
             }
         });
+
+                            collection: 'social_posts_rosemont',
+                            schoolName: data.schoolName
+                        });
+                    });
+                }
+
+                // Load topics created by user
+                const topicsQ = query(collection(db, "social_channels"), where("createdBy", "==", uid), orderBy("timestamp", "desc"), limit(50));
+                const topicsSnap = await getDocs(topicsQ);
+                topicsSnap.forEach(docSnap => {
+                    const data = docSnap.data();
+                    activities.push({
+                        type: 'topic',
+                        timestamp: data.timestamp,
+                        topicName: data.name,
+                        topicId: docSnap.id,
+                        description: data.description
+                    });
+                });
+
+                // Load comments (need to iterate through posts - this is a limitation, we'll sample recent posts)
+                const recentPostsQ = query(collection(db, "social_posts_global"), orderBy("timestamp", "desc"), limit(100));
+                const recentPostsSnap = await getDocs(recentPostsQ);
+                for (const postDoc of recentPostsSnap.docs) {
+                    const commentsQ = query(collection(db, "social_posts_global", postDoc.id, "comments"), where("authorUid", "==", uid), orderBy("timestamp", "desc"), limit(10));
+                    const commentsSnap = await getDocs(commentsQ);
+                    commentsSnap.forEach(commentDoc => {
+                        const cData = commentDoc.data();
+                        activities.push({
+                            type: 'comment',
+                            timestamp: cData.timestamp,
+                            authorUid: uid,
+                            authorName: cData.authorName,
+                            authorPhoto: cData.authorPhoto,
+                            content: cData.text,
+                            imageUrl: cData.imageUrl,
+                            commentId: commentDoc.id,
+                            postId: postDoc.id,
+                            postText: postDoc.data().text,
+                            collection: 'social_posts_global'
+                        });
+                    });
+                }
+
+                // Load likes (sample recent posts)
+                const likedPostsQ = query(collection(db, "social_posts_global"), orderBy("timestamp", "desc"), limit(100));
+                const likedPostsSnap = await getDocs(likedPostsQ);
+                likedPostsSnap.forEach(postDoc => {
+                    const pData = postDoc.data();
+                    if (pData.likedBy && pData.likedBy.includes(uid)) {
+                        activities.push({
+                            type: 'like',
+                            timestamp: pData.timestamp,
+                            authorUid: pData.authorUid,
+                            authorName: pData.authorName,
+                            authorPhoto: pData.authorPhoto,
+                            postText: pData.text,
+                            postId: postDoc.id,
+                            collection: 'social_posts_global'
+                        });
+                    }
+                });
+
+                // Sort all activities by timestamp
+                activities.sort((a, b) => {
+                    const timeA = a.timestamp ? (a.timestamp.toDate ? a.timestamp.toDate().getTime() : new Date(a.timestamp).getTime()) : 0;
+                    const timeB = b.timestamp ? (b.timestamp.toDate ? b.timestamp.toDate().getTime() : new Date(b.timestamp).getTime()) : 0;
+                    return timeB - timeA;
+                });
+
+                allActivities = activities;
+                updateStats(activities);
+                renderFeed();
+            } catch (e) {
+                console.error("Error loading activities:", e);
+                document.getElementById('activity-feed').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <h3 data-i18n="error_loading">Error Loading Activity</h3>
+                        <p>Please try again later.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function updateStats(activities) {
+            const posts = activities.filter(a => a.type === 'post').length;
+            const comments = activities.filter(a => a.type === 'comment').length;
+            const likes = activities.filter(a => a.type === 'like').length;
+            
+            document.getElementById('stat-posts').textContent = posts;
+            document.getElementById('stat-comments').textContent = comments;
+            document.getElementById('stat-likes').textContent = likes;
+        }
+
+        function renderFeed() {
+            const feedContainer = document.getElementById('activity-feed');
+            const filtered = currentFilter === 'all' 
+                ? allActivities 
+                : allActivities.filter(a => a.type === currentFilter);
+
+            if (filtered.length === 0) {
+                feedContainer.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-history"></i>
+                        <h3 data-i18n="no_activity_yet">No Activity Yet</h3>
+                        <p data-i18n="no_activity_desc">Start posting, commenting, or liking to see your activity here!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            feedContainer.innerHTML = '';
+            filtered.forEach(activity => {
+                const card = createActivityCard(activity);
+                if (card) feedContainer.appendChild(card);
+            });
+        }
+
+        function createActivityCard(activity) {
+            const card = document.createElement('div');
+            card.className = 'activity-card';
+
+            let avatarUrl = activity.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${activity.authorUid}&backgroundColor=EBF2FA`;
+            if (avatarUrl && (avatarUrl.includes("googleusercontent.com") || avatarUrl.includes("live.com"))) {
+                avatarUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${activity.authorUid}&backgroundColor=EBF2FA`;
+            }
+
+            const timeStr = formatTime(activity.timestamp);
+            const typeLabel = getTypeLabel(activity.type);
+            const typeIcon = getTypeIcon(activity.type);
+
+            let contentHtml = '';
+            
+            switch (activity.type) {
+                case 'post':
+                    contentHtml = `
+                        <div class="activity-type-badge post"><i class="fas fa-pen"></i> ${typeLabel}</div>
+                        <div class="activity-content">${escapeHtml(activity.content || '')}</div>
+                        ${activity.imageUrl ? `<img src="${window.optimizeImageUrl ? window.optimizeImageUrl(activity.imageUrl) : activity.imageUrl}" class="activity-image-preview" onclick="window.open('${activity.imageUrl}', '_blank')">` : ''}
+                        ${activity.attachedListing ? `
+                            <div class="activity-original-post">
+                                <p><i class="fas fa-link"></i> Attached Listing</p>
+                                <a href="/listing.html?id=${activity.attachedListing.id}">${escapeHtml(activity.attachedListing.title)} - $${activity.attachedListing.price}</a>
+                            </div>
+                        ` : ''}
+                        <div class="activity-footer">
+                            <a href="/social.html" class="activity-action"><i class="fas fa-external-link-alt"></i> View Post</a>
+                        </div>
+                    `;
+                    break;
+
+                case 'comment':
+                    contentHtml = `
+                        <div class="activity-type-badge comment"><i class="fas fa-comment"></i> ${typeLabel}</div>
+                        <div class="activity-content">${escapeHtml(activity.content || '')}</div>
+                        ${activity.imageUrl ? `<img src="${window.optimizeImageUrl ? window.optimizeImageUrl(activity.imageUrl) : activity.imageUrl}" class="activity-image-preview">` : ''}
+                        <div class="activity-original-post">
+                            <p><i class="fas fa-quote-left"></i> On post:</p>
+                            <p class="activity-original-text">"${escapeHtml(activity.postText || '').substring(0, 150)}${activity.postText && activity.postText.length > 150 ? '...' : ''}"</p>
+                        </div>
+                        <div class="activity-footer">
+                            <a href="/social.html" class="activity-action"><i class="fas fa-external-link-alt"></i> View Context</a>
+                        </div>
+                    `;
+                    break;
+
+                case 'like':
+                    contentHtml = `
+                        <div class="activity-type-badge like"><i class="fas fa-heart"></i> ${typeLabel}</div>
+                        <div class="activity-content">
+                            You liked <strong>${escapeHtml(activity.authorName || 'a post')}</strong>'s post
+                        </div>
+                        <div class="activity-original-post">
+                            <p class="activity-original-text">"${escapeHtml(activity.postText || '').substring(0, 150)}${activity.postText && activity.postText.length > 150 ? '...' : ''}"</p>
+                        </div>
+                        <div class="activity-footer">
+                            <a href="/social.html" class="activity-action"><i class="fas fa-external-link-alt"></i> View Post</a>
+                        </div>
+                    `;
+                    break;
+
+                case 'topic':
+                    contentHtml = `
+                        <div class="activity-type-badge topic"><i class="fas fa-folder"></i> ${typeLabel}</div>
+                        <div class="activity-content">
+                            Created topic: <a href="/topic.html?id=${activity.topicId}">${escapeHtml(activity.topicName || 'Untitled')}</a>
+                        </div>
+                        ${activity.description ? `<p style="color: var(--text-muted); font-size: 0.9rem;">${escapeHtml(activity.description)}</p>` : ''}
+                        <div class="activity-footer">
+                            <a href="/topic.html?id=${activity.topicId}" class="activity-action"><i class="fas fa-external-link-alt"></i> View Topic</a>
+                        </div>
+                    `;
+                    break;
+            }
+
+            card.innerHTML = `
+                <div class="activity-card-header">
+                    <img src="${avatarUrl}" class="activity-card-avatar" alt="Avatar">
+                    <div class="activity-card-meta">
+                        <div class="activity-card-author">${escapeHtml(activity.authorName || 'Unknown')}</div>
+                        <div class="activity-card-time">${timeStr}</div>
+                    </div>
+                </div>
+                ${contentHtml}
+            `;
+
+            return card;
+        }
+
+        function getTypeLabel(type) {
+            const labels = {
+                'post': document.querySelector('[data-i18n="label_post"]')?.textContent || 'New Post',
+                'comment': document.querySelector('[data-i18n="label_comment"]')?.textContent || 'Comment',
+                'like': document.querySelector('[data-i18n="label_like"]')?.textContent || 'Liked',
+                'topic': document.querySelector('[data-i18n="label_topic"]')?.textContent || 'Topic Created'
+            };
+            return labels[type] || type;
+        }
+
+        function getTypeIcon(type) {
+            const icons = {
+                'post': 'fa-pen',
+                'comment': 'fa-comment',
+                'like': 'fa-heart',
+                'topic': 'fa-folder'
+            };
+            return icons[type] || 'fa-star';
+        }
+
+        function formatTime(timestamp) {
+            if (!timestamp) return '';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            const diff = Math.round((new Date() - date) / 60000);
+            const lang = localStorage.getItem('preferred_language') || 'en';
+            
+            if (diff < 60) return lang === 'fr' ? `Il y a ${diff} min` : `${diff}m ago`;
+            if (diff < 1440) return lang === 'fr' ? `${Math.round(diff/60)} h` : `${Math.round(diff/60)}h ago`;
+            if (diff < 10080) return lang === 'fr' ? `${Math.round(diff/1440)} j` : `${Math.round(diff/1440)}d ago`;
+            
+            return lang === 'fr' 
+                ? date.toLocaleDateString('fr-CA', { month: 'short', day: 'numeric' })
+                : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.toString()
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // Expose optimizeImageUrl if not already available
+        if (!window.optimizeImageUrl) {
+            window.optimizeImageUrl = (url) => {
+                if (!url) return url;
+                if (url.includes('cloudinary.com') && url.includes('/upload/')) {
+                    if (!url.includes('f_auto') && !url.includes('q_auto')) {
+                        return url.replace('/upload/', '/upload/f_auto,q_auto/');
+                    }
+                }
+                return url;
+            };
+        }
+main
     </script>
 </body>
 </html>
