@@ -8,7 +8,62 @@
   node_bundler = "esbuild"
   [functions."*"]
     timeout = 60
+# netlify.toml - Scoralia Configuration
+# https://docs.netlify.com/configure-builds/file-based-configuration/
 
+[build]
+  publish = "/"
+  environment = { SECRETS_SCAN_OMIT_KEYS = "VITE_CLOUDINARY_UPLOAD_PRESET" }
+
+[functions]
+  directory = "netlify/functions/"
+  node_bundler = "esbuild"
+  [functions."*"]
+    timeout = 60
+
+# Redirects
+[[redirects]]
+  from = "/favicon.ico"
+  to = "/favicon.svg"
+  status = 302
+  force = true
+
+# Security headers are now in _headers file
+
+# Performance optimizations
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    
+# Cache static assets
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.svg"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.png"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.woff2"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
 # Redirects
 [[redirects]]
   from = "/favicon.ico"
