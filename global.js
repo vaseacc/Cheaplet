@@ -27,6 +27,12 @@ const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getA
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// --- EXPOSE FIREBASE TO WINDOW FOR OTHER PAGES ---
+window.scoraliaAuth = auth;
+window.scoraliaDb = db;
+window.scoraliaApp = app;
+window.scoraliaOnAuthStateChanged = (callback) => onAuthStateChanged(auth, callback);
+
 // --- HELPER: Convert Cloudinary image URLs to WebP for performance ---
 window.optimizeImageUrl = (url) => {
     if (!url) return url;
@@ -921,6 +927,9 @@ async function showForcedLanguageModal() {
 
 // Run forced language modal immediately
 await showForcedLanguageModal();
+
+// Signal that global.js is ready
+window.dispatchEvent(new CustomEvent('scoralia-ready'));
 
 document.addEventListener('DOMContentLoaded', () => {
     const logo = document.querySelector('.logo');
