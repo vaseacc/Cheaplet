@@ -1,1 +1,336 @@
+<html lang="en"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Create Topic — Scoralia</title>
+    <script type="module" src="global.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&amp;family=DM+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <style>
+        :root {
+            --ink:       #0C1446;
+            --deep:      #2B5C92;
+            --off-white: #F8FAFC;
+            --white:     #FFFFFF;
+            --gold:      #C8A96E;
+            --text-main: #0f172a;
+            --text-muted:#64748b;
+            --radius:    16px;
+            --shadow:    0 4px 20px rgba(12,20,70,0.05);
+            --border:    1px solid #e2e8f0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--off-white); color: var(--text-main); }
+
+        header { position: sticky; top: 0; z-index: 200; background: var(--ink); border-bottom: 1px solid rgba(255,255,255,0.1); width: 100%; }
+        .header-inner { max-width: 1100px; margin: 0 auto; padding: 0 20px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: -0.5px; }
+        .logo em { color: var(--gold); font-style: normal; }
+
+        .main-wrapper { max-width: 600px; margin: 40px auto; padding: 0 20px; animation: fadeUp 0.4s ease; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        .back-link { display: inline-flex; align-items: center; gap: 8px; color: var(--text-muted); text-decoration: none; font-weight: 600; margin-bottom: 20px; transition: color 0.2s; }
+        .back-link:hover { color: var(--deep); }
+
+        .config-card { background: var(--white); border-radius: var(--radius); padding: 35px; box-shadow: var(--shadow); border: var(--border); }
+        .config-card h1 { font-family: 'Playfair Display', serif; font-size: 2rem; color: var(--ink); margin-bottom: 5px; }
+        .config-card p.subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 30px; }
+
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        .form-input { width: 100%; padding: 12px 16px; border: 1.5px solid #cbd5e1; border-radius: 10px; font-family: inherit; font-size: 1rem; color: var(--text-main); outline: none; transition: 0.2s; background: var(--off-white); }
+        .form-input:focus { border-color: var(--deep); background: var(--white); box-shadow: 0 0 0 3px rgba(43,92,146,0.1); }
+        textarea.form-input { resize: vertical; min-height: 80px; }
+
+        .privacy-options { display: flex; gap: 15px; margin-top: 10px; }
+        .privacy-option { flex: 1; position: relative; }
+        .privacy-option input { display: none; }
+        .privacy-card { border: 2px solid #cbd5e1; border-radius: 12px; padding: 15px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; gap: 5px; background: var(--white); }
+        .privacy-card i { font-size: 1.5rem; color: var(--text-muted); margin-bottom: 5px; }
+        .privacy-card strong { font-weight: 700; color: var(--ink); }
+        .privacy-card span { font-size: 0.8rem; color: var(--text-muted); line-height: 1.3; }
+        
+        .privacy-option input:checked + .privacy-card { border-color: var(--deep); background: #f0f7ff; }
+        .privacy-option input:checked + .privacy-card i { color: var(--deep); }
+
+        .limits-info { font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-top: 15px; margin-bottom: 25px; padding: 10px; background: var(--off-white); border-radius: 8px; }
+        .limits-info strong { color: var(--ink); }
+
+        .btn-submit { width: 100%; background: var(--gold); color: var(--ink); border: none; padding: 14px; border-radius: 30px; font-weight: 800; font-size: 1rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(200, 169, 110, 0.2); display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(200, 169, 110, 0.4); }
+        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .error-msg { color: #e53e3e; font-size: 0.9rem; font-weight: 600; text-align: center; margin-bottom: 15px; display: none; }
+
+        @media (max-width: 600px) {
+            .config-card { padding: 25px 20px; border-radius: 0; border: none; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; box-shadow: none; }
+            .privacy-options { flex-direction: column; }
+        }
+    </style>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg"><style>
+    .header-inner, .header-content { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 15px !important; flex-direction: row !important; }
+    nav { flex-grow: 1; display: flex; justify-content: center; }
+    nav ul { display: flex; list-style: none; gap: 28px; padding: 0; margin: 0; align-items: center; }
+    nav ul li a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; white-space: nowrap; }
+    nav ul li a:hover { color: #FFFFFF; }
+    .header-right { display: flex !important; align-items: center !important; gap: 12px !important; flex-shrink: 0 !important; flex-direction: row !important; }
+    .btn { background: linear-gradient(135deg, #C8A96E 0%, #ddb97a 100%) !important; color: #0C1446 !important; border: none !important; padding: 0 18px !important; height: 38px !important; line-height: 38px !important; border-radius: 20px !important; font-weight: bold !important; cursor: pointer !important; transition: all 0.2s !important; font-size: 0.82rem !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; text-decoration: none !important; white-space: nowrap !important; }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(200,169,110,0.3) !important; }
+    .btn:disabled { opacity: 0.7; cursor: not-allowed !important; transform: none !important; }
+    .profile-menu-container { position: relative; display: flex; align-items: center; z-index: 1001; }
+    .profile-avatar { width: 38px; height: 38px; border-radius: 50%; background-color: #1a2a4a; border: 2px solid #C8A96E; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; overflow: hidden; flex-shrink: 0; }
+    .profile-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .dropdown-menu { position: absolute; top: 48px; right: 0; width: 260px; background: white; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); display: none; flex-direction: column; overflow: hidden; color: #333; z-index: 1000; border: 1px solid #eee; }
+    .dropdown-menu.show { display: flex; }
+    .dropdown-header { padding: 15px; border-bottom: 1px solid #eee; background: #f9f9f9; font-weight: bold; color: #0C1446; font-size: 0.9rem; display: flex; flex-direction: column; gap: 4px; }
+    .dropdown-header .display-name { font-weight: 700; }
+    .dropdown-header .username { font-size: 0.75rem; color: #666; font-family: monospace; }
+    .dropdown-item { padding: 12px 15px; text-decoration: none; color: #333; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.9rem; transition: background 0.2s; }
+    .dropdown-item:hover { background-color: #f4f7fc; color: #2B5C92; }
+    .msg-btn-mobile { background: #C8A96E; color: #0C1446; width: 36px; height: 36px; border-radius: 50%; display: none; align-items: center; justify-content: center; text-decoration: none; margin-right: 12px; font-size: 1rem; position: relative; }
+    .badge-container { position: relative; display: inline-block; }
+    .unread-badge { position: absolute; top: -6px; right: -12px; background-color: #C0392B; color: white; font-size: 0.65rem; font-weight: bold; padding: 2px 5px; border-radius: 10px; display: none; align-items: center; justify-content: center; z-index: 10; min-width: 18px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+    .msg-btn-mobile .unread-badge { top: -2px; right: -4px; border: 2px solid #C8A96E; }
+    .lang-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(12,20,70,0.85); z-index: 10000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+    .lang-modal { background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+    .lang-btn { display: block; width: 100%; padding: 16px; margin: 12px 0; border: 2px solid #EBF2FA; border-radius: 12px; background: white; font-weight: bold; cursor: pointer; font-size: 1.1rem; transition: all 0.2s; color: #0C1446; }
+    .lang-btn:hover { border-color: #C8A96E; background: #fdfaf4; }
+    .tour-dot { width: 8px; height: 8px; border-radius: 50%; background: #e0e0e0; transition: 0.3s; }
+    .tour-dot.active { background: #C8A96E; width: 24px; border-radius: 10px; }
+    .tour-input { width: 100%; padding: 10px 12px; border: 2px solid #eee; border-radius: 8px; margin-bottom: 12px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; text-align: center; font-weight: bold; color: #0C1446; }
+    .tour-input:focus { border-color: #C8A96E; }
+    .tour-pfp-preview { width: 80px; height: 80px; border-radius: 50%; background: #eee; margin: 0 auto 15px; border: 3px solid #C8A96E; object-fit: cover; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #aaa; overflow: hidden; }
+    .tour-pfp-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .terms-banner { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(12, 20, 70, 0.98); color: #fff; padding: 15px 25px; display: flex; justify-content: center; align-items: center; gap: 25px; z-index: 99999; font-size: 0.85rem; backdrop-filter: blur(10px); border-top: 1px solid rgba(200,169,110,0.3); }
+    .btn-accept-terms { background: #C8A96E; color: #0C1446; border: none; padding: 8px 30px; border-radius: 20px; font-weight: 800; cursor: pointer; }
+    .desktop-only { display: inline-flex; }
+    .mobile-link { display: none; }
+    
+    /* Global Warning Modal Styling */
+    .warning-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10050; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+    .warning-modal { background: #fff5f5; border: 2px solid #ef4444; border-radius: 16px; padding: 30px; text-align: center; max-width: 450px; width: 90%; box-shadow: 0 20px 60px rgba(239, 68, 68, 0.2); }
+    .warning-modal h2 { color: #b91c1c; font-family: 'Playfair Display', serif; font-size: 1.8rem; margin-bottom: 15px; }
+    .warning-modal p { color: #7f1d1d; font-size: 1.05rem; margin-bottom: 25px; line-height: 1.5; }
+    .warning-btn { background: #ef4444; color: white; border: none; padding: 12px 30px; border-radius: 30px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; }
+    .warning-btn:hover { background: #dc2626; transform: translateY(-2px); }
+
+    /* 🔥 FIX: Contrast for hero badge (accessibility) */
+    .hero-badge { color: #FFFFFF !important; }
+
+    @media (max-width: 767px) {
+        nav { display: none !important; }
+        .msg-btn-mobile { display: flex; }
+        .desktop-only { display: none !important; }
+        .mobile-link { display: flex; }
+        .terms-banner { flex-direction: column; text-align: center; padding-bottom: max(20px, env(safe-area-inset-bottom)); gap: 12px; }
+        .lang-modal { padding: 30px 20px; }
+    }
+</style><link rel="manifest" href="/manifest.json"></head>
+<body>
+
+    <header>
+        <div class="header-inner">
+            <a class="logo" href="/">Scor<em>alia</em></a>
+            <div class="header-right">
+        <button class="btn desktop-only" id="globalListBtn" style="margin-right: 15px;">List an Item</button>
+        <a href="/messages.html" class="msg-btn-mobile"><i class="fas fa-envelope"></i><span class="unread-badge" id="mobile-unread-badge" style="display: none;"></span></a>
+        <div class="profile-menu-container">
+            <div class="profile-avatar"><img src="https://res.cloudinary.com/deih8iebq/image/upload/v1774277335/xuqzdqgxeafvtx8ja03i.png" alt="Profile"></div>
+            <div class="dropdown-menu" id="globalDropdown">
+                <div class="dropdown-header">
+                    <div class="display-name">1</div>
+                    <div class="username">@jsp_</div>
+                </div>
+                <a href="/listanitem.html" class="dropdown-item mobile-link" style="color:#2B5C92; font-weight:bold;"><i class="fas fa-plus-circle"></i> List an Item</a>
+                <a href="/search.html" class="dropdown-item mobile-link"><i class="fas fa-search"></i> Browse</a>
+                <a href="/my-listings.html" class="dropdown-item mobile-link"><i class="fas fa-book"></i> My Listings</a>
+                <a href="/social.html" class="dropdown-item mobile-link"><i class="fas fa-users"></i> Campus Hub</a>
+                <a href="/profile.html" class="dropdown-item"><i class="fas fa-user-circle"></i> My Profile</a>
+                <a href="#" class="dropdown-item" id="globalLogout" style="color:#ff4d4d; border-top:1px solid #eee;"><i class="fas fa-sign-out-alt"></i> Sign Out</a>
+            </div>
+        </div>
+    </div>
+        </div>
+    </header>
+
+    <main class="main-wrapper">
+        <a class="back-link" href="/social"><i class="fas fa-arrow-left"></i> <span id="ui-back">Back to Campus Hub</span></a>
+
+        <div class="config-card">
+            <h1 id="ui-title">Create Topic</h1>
+            <p class="subtitle" id="ui-sub">Start a new conversation space for your campus.</p>
+
+            <div class="error-msg" id="error-msg"></div>
+
+            <div class="form-group">
+                <label class="form-label" id="ui-name-lbl">Topic Name</label>
+                <input type="text" id="topic-name" class="form-input" placeholder="e.g. Study Groups, Tech, Events..." maxlength="30">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" id="ui-desc-lbl">Description (Optional)</label>
+                <textarea id="topic-desc" class="form-input" placeholder="What is this topic about?" maxlength="100"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" id="ui-vis-lbl">Visibility</label>
+                <div class="privacy-options">
+                    <label class="privacy-option">
+                        <input type="radio" name="visibility" value="public" checked="">
+                        <div class="privacy-card">
+                            <i class="fas fa-globe-americas"></i>
+                            <strong id="ui-pub">Public</strong>
+                            <span id="ui-pub-desc">Visible in the sidebar to everyone at your school.</span>
+                        </div>
+                    </label>
+                    <label class="privacy-option">
+                        <input type="radio" name="visibility" value="private">
+                        <div class="privacy-card">
+                            <i class="fas fa-lock"></i>
+                            <strong id="ui-priv">Private</strong>
+                            <span id="ui-priv-desc">Hidden from the sidebar. Accessible only via direct link.</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="limits-info">
+                <span id="ui-limits">You can create up to <strong>10 Public</strong> and <strong>10 Private</strong> topics.</span><br>
+                <span id="usage-stats">(4/10 Public used • 1/10 Private used)</span>
+            </div>
+
+            <button class="btn-submit" id="btn-create"><i class="fas fa-magic"></i> <span id="ui-btn">Create Topic</span></button>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, query, where, getDocs, getDoc, doc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+
+        async function main() {
+            const response = await fetch('/.netlify/functions/config');
+            const config = await response.json();
+            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+
+            const lang = localStorage.getItem('preferred_language') || 'en';
+            const ui = {
+                en: { back: "Back to Campus Hub", title: "Create Topic", sub: "Start a new conversation space for your campus.", name: "Topic Name", desc: "Description (Optional)", vis: "Visibility", pub: "Public", pubDesc: "Visible in the sidebar to everyone at your school.", priv: "Private", privDesc: "Hidden from the sidebar. Accessible only via direct link.", limits: "You can create up to <strong>10 Public</strong> and <strong>10 Private</strong> topics.", btn: "Create Topic", errShort: "Name must be at least 2 characters.", errLimit: "You have reached the limit for this type of topic.", creating: "Creating..." },
+                fr: { back: "Retour au Hub", title: "Créer un sujet", sub: "Lancez un nouvel espace de discussion pour votre campus.", name: "Nom du sujet", desc: "Description (Optionnel)", vis: "Visibilité", pub: "Public", pubDesc: "Visible dans le menu par tout le monde à votre école.", priv: "Privé", privDesc: "Masqué du menu. Accessible uniquement par lien direct.", limits: "Vous pouvez créer jusqu'à <strong>10 sujets Publics</strong> et <strong>10 Privés</strong>.", btn: "Créer le sujet", errShort: "Le nom doit contenir au moins 2 caractères.", errLimit: "Vous avez atteint la limite pour ce type de sujet.", creating: "Création..." }
+            }[lang];
+
+            document.getElementById('ui-back').textContent = ui.back;
+            document.getElementById('ui-title').textContent = ui.title;
+            document.getElementById('ui-sub').textContent = ui.sub;
+            document.getElementById('ui-name-lbl').textContent = ui.name;
+            document.getElementById('ui-desc-lbl').textContent = ui.desc;
+            document.getElementById('ui-vis-lbl').textContent = ui.vis;
+            document.getElementById('ui-pub').textContent = ui.pub;
+            document.getElementById('ui-pub-desc').textContent = ui.pubDesc;
+            document.getElementById('ui-priv').textContent = ui.priv;
+            document.getElementById('ui-priv-desc').textContent = ui.privDesc;
+            document.getElementById('ui-limits').innerHTML = ui.limits;
+            document.getElementById('ui-btn').textContent = ui.btn;
+
+            let currentUser = null;
+            let internalSchoolName = "Global Campus";
+            let publicCount = 0;
+            let privateCount = 0;
+
+            const errorMsg = document.getElementById('error-msg');
+            const btnCreate = document.getElementById('btn-create');
+            const usageStats = document.getElementById('usage-stats');
+
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUser = user;
+                    const uSnap = await getDoc(doc(db, "users", user.uid));
+                    if (uSnap.exists()) {
+                        internalSchoolName = uSnap.data().schoolName || "Global Campus";
+                    }
+                    checkUsage();
+                } else {
+                    window.location.href = `/login.html?redirect=${encodeURIComponent('/createtopic.html')}`;
+                }
+            });
+
+            async function checkUsage() {
+                try {
+                    const q = query(collection(db, "social_channels"), where("createdBy", "==", currentUser.uid));
+                    const snap = await getDocs(q);
+                    
+                    publicCount = 0;
+                    privateCount = 0;
+                    
+                    snap.forEach(d => {
+                        if (d.data().visibility === 'private') privateCount++;
+                        else publicCount++;
+                    });
+
+                    const usedPubStr = lang === 'fr' ? `${publicCount}/10 Publics utilisés` : `${publicCount}/10 Public used`;
+                    const usedPrivStr = lang === 'fr' ? `${privateCount}/10 Privés utilisés` : `${privateCount}/10 Private used`;
+                    usageStats.textContent = `(${usedPubStr} • ${usedPrivStr})`;
+                } catch(e) {
+                    usageStats.textContent = "";
+                }
+            }
+
+            btnCreate.onclick = async () => {
+                errorMsg.style.display = 'none';
+                if (!currentUser) return;
+                
+                const name = document.getElementById('topic-name').value.trim();
+                const desc = document.getElementById('topic-desc').value.trim();
+                const visibility = document.querySelector('input[name="visibility"]:checked').value;
+
+                if (name.length < 2) {
+                    errorMsg.textContent = ui.errShort;
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+
+                if (visibility === 'public' && publicCount >= 10) {
+                    errorMsg.textContent = ui.errLimit;
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+
+                if (visibility === 'private' && privateCount >= 10) {
+                    errorMsg.textContent = ui.errLimit;
+                    errorMsg.style.display = 'block';
+                    return;
+                }
+
+                btnCreate.disabled = true;
+                document.getElementById('ui-btn').innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${ui.creating}`;
+
+                try {
+                    const newRef = await addDoc(collection(db, "social_channels"), {
+                        name: name.substring(0, 30),
+                        description: desc.substring(0, 100),
+                        visibility: visibility, // 'public' or 'private'
+                        schoolName: internalSchoolName,
+                        createdBy: currentUser.uid,
+                        createdAt: serverTimestamp(),
+                        postCount: 0 
+                    });
+                    window.location.href = `/topic.html?id=${newRef.id}`;
+                } catch (e) {
+                    errorMsg.textContent = "Error: " + e.message;
+                    errorMsg.style.display = 'block';
+                    btnCreate.disabled = false;
+                    document.getElementById('ui-btn').textContent = ui.btn;
+                }
+            };
+        }
+        main();
+    </script>
+
+
+</body></html>
