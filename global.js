@@ -27,6 +27,12 @@ const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getA
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// --- EXPOSE FIREBASE TO WINDOW FOR OTHER PAGES ---
+window.scoraliaAuth = auth;
+window.scoraliaDb = db;
+window.scoraliaApp = app;
+window.scoraliaOnAuthStateChanged = (callback) => onAuthStateChanged(auth, callback);
+
 // --- HELPER: Convert Cloudinary image URLs to WebP for performance ---
 window.optimizeImageUrl = (url) => {
     if (!url) return url;
@@ -39,20 +45,34 @@ window.optimizeImageUrl = (url) => {
     return url;
 };
 
-// --- FIX: Add title to Firebase Auth iframe for accessibility ---
-function addTitleToFirebaseIframe() {
-    const iframe = document.querySelector('iframe[src*="firebaseapp.com"]');
-    if (iframe && !iframe.hasAttribute('title')) {
-        iframe.setAttribute('title', 'Firebase Authentication');
+// --- FIX: Add title to Firebase Auth iframe for accessibility (non-intrusive method) ---
+// Use MutationObserver instead of setInterval to avoid triggering ad-blocker false positives
+function setupFirebaseIframeTitleObserver() {
+    const observer = new MutationObserver(() => {
+        const iframe = document.querySelector('iframe[src*="firebaseapp.com"]');
+        if (iframe && !iframe.hasAttribute('title')) {
+            iframe.setAttribute('title', 'Firebase Authentication');
+            observer.disconnect(); // Stop observing once we've set the title
+        }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    // Also check immediately in case iframe already exists
+    const existingIframe = document.querySelector('iframe[src*="firebaseapp.com"]');
+    if (existingIframe && !existingIframe.hasAttribute('title')) {
+        existingIframe.setAttribute('title', 'Firebase Authentication');
     }
 }
-setInterval(addTitleToFirebaseIframe, 500);
-setTimeout(() => clearInterval(addTitleToFirebaseIframe), 10000);
+// Initialize observer when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupFirebaseIframeTitleObserver);
+} else {
+    setupFirebaseIframeTitleObserver();
+}
 
 // --- 2. TRANSLATION DICTIONARY ---
 const translations = {
     "en": {
-        "nav_browse": "Browse", "nav_listings": "My Listings", "nav_messages": "Messages", "nav_profile": "My Profile", "nav_hub": "Campus Hub",
+        "nav_browse": "Browse", "nav_listings": "My Listings", "nav_messages": "Messages", "nav_profile": "My Profile", "nav_hub": "Campus Hub", "nav_activity": "My Activity",
         "btn_login": "Login / Register", "btn_list": "List an Item", "btn_signout": "Sign Out",
         "verified_student": "Verified Student",
         "ban_title": "ACCESS DENIED",
@@ -92,10 +112,32 @@ const translations = {
         "social_tour_desc_3": "Use the filter bar to switch between <strong>Global Campus</strong> (everyone) and <strong>My School</strong> (verified students only). To access your school feed, you need a verified email from your institution.",
         "social_tour_title_4": "Create Your Own Topic",
         "social_tour_desc_4": "Click the <strong>Create Topic</strong> button in the sidebar. Start a discussion about study groups, events, or anything relevant to your campus.",
-        "social_tour_gotit": "Got it!"
+        "social_tour_gotit": "Got it!",
+
+        // Activity Page strings
+        "page_activity_title": "My Activity — Scoralia",
+        "auth_required_title": "Sign In Required",
+        "auth_required_desc": "Please sign in to view your activity feed.",
+        "btn_signin": "Sign In",
+        "stat_posts": "Posts",
+        "stat_comments": "Comments",
+        "stat_likes": "Likes Given",
+        "filter_all": "All",
+        "filter_posts": "Posts",
+        "filter_comments": "Comments",
+        "filter_likes": "Likes",
+        "filter_topics": "Topics",
+        "loading_activity": "Loading your activity...",
+        "no_activity_yet": "No Activity Yet",
+        "no_activity_desc": "Start posting, commenting, or liking to see your activity here!",
+        "error_loading": "Error Loading Activity",
+        "label_post": "New Post",
+        "label_comment": "Comment",
+        "label_like": "Liked",
+        "label_topic": "Topic Created"
     },
     "fr": {
-        "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", "nav_hub": "Hub Campus",
+        "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", "nav_hub": "Hub Campus", "nav_activity": "Mon Activité",
         "btn_login": "Connexion", "btn_list": "Vendre", "btn_signout": "Déconnexion",
         "verified_student": "Étudiant vérifié",
         "ban_title": "ACCÈS REFUSÉ",
@@ -135,7 +177,29 @@ const translations = {
         "social_tour_desc_3": "Utilisez le filtre pour basculer entre <strong>Campus Global</strong> (tout le monde) et <strong>Mon école</strong> (étudiants vérifiés seulement). Pour accéder au fil de votre école, vous devez avoir un email scolaire vérifié.",
         "social_tour_title_4": "Créez votre propre sujet",
         "social_tour_desc_4": "Cliquez sur le bouton <strong>Créer un sujet</strong> dans la barre latérale. Lancez une discussion sur les groupes d'étude, les événements ou tout ce qui est pertinent pour votre campus.",
-        "social_tour_gotit": "Compris !"
+        "social_tour_gotit": "Compris !",
+
+        // Activity Page strings (French)
+        "page_activity_title": "Mon Activité — Scoralia",
+        "auth_required_title": "Connexion requise",
+        "auth_required_desc": "Veuillez vous connecter pour voir votre flux d'activité.",
+        "btn_signin": "Se connecter",
+        "stat_posts": "Publications",
+        "stat_comments": "Commentaires",
+        "stat_likes": "J'aime donnés",
+        "filter_all": "Tout",
+        "filter_posts": "Publications",
+        "filter_comments": "Commentaires",
+        "filter_likes": "J'aime",
+        "filter_topics": "Sujets",
+        "loading_activity": "Chargement de votre activité...",
+        "no_activity_yet": "Aucune activité",
+        "no_activity_desc": "Commencez à publier, commenter ou aimer pour voir votre activité ici !",
+        "error_loading": "Erreur de chargement",
+        "label_post": "Nouvelle publication",
+        "label_comment": "Commentaire",
+        "label_like": "A aimé",
+        "label_topic": "Sujet créé"
     }
 };
 
@@ -223,25 +287,19 @@ globalStyle.innerHTML = `
 `;
 document.head.appendChild(globalStyle);
 
-// --- 3.5 PWA: Add manifest and register service worker (for home screen app experience) ---
-(function setupPWA() {
-    const manifestLink = document.createElement('link');
-    manifestLink.rel = 'manifest';
-    manifestLink.href = '/manifest.json';
-    document.head.appendChild(manifestLink);
-
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js')
-                .then(registration => {
-                    console.log('Service Worker registered with scope:', registration.scope);
-                })
-                .catch(error => {
-                    console.error('Service Worker registration failed:', error);
-                });
-        });
-    }
-})();
+// --- 3.5 KILL PWA CACHING (Fixes the "ghost page" reload issue) ---
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+            registration.unregister();
+        }
+    });
+}
+if ('caches' in window) {
+    caches.keys().then((keyList) => {
+        Promise.all(keyList.map((key) => caches.delete(key)));
+    });
+}
 
 // --- SCHOOL DOMAIN CHECKER ---
 const schoolDomains = {
@@ -738,6 +796,7 @@ function updateHeaderToLoggedIn(userData) {
             <li><a href="/search.html">${t.nav_browse}</a></li>
             <li><a href="/my-listings.html">${t.nav_listings}</a></li>
             <li><a href="/social.html">${t.nav_hub}</a></li>
+            <li><a href="/activity.html">${t.nav_activity}</a></li>
             <li><a href="/messages.html" class="badge-container">${t.nav_messages}<span class="unread-badge" id="desktop-unread-badge"></span></a></li>
         `;
     }
@@ -767,6 +826,7 @@ function updateHeaderToLoggedIn(userData) {
                 <a href="/my-listings.html" class="dropdown-item mobile-link"><i class="fas fa-book"></i> ${t.nav_listings}</a>
                 <a href="/social.html" class="dropdown-item mobile-link"><i class="fas fa-users"></i> ${t.nav_hub}</a>
                 <a href="/profile.html" class="dropdown-item"><i class="fas fa-user-circle"></i> ${t.nav_profile}</a>
+                <a href="/activity.html" class="dropdown-item"><i class="fas fa-history"></i> ${t.nav_activity}</a>
                 <a href="#" class="dropdown-item" id="globalLogout" style="color:#ff4d4d; border-top:1px solid #eee;"><i class="fas fa-sign-out-alt"></i> ${t.btn_signout}</a>
             </div>
         </div>
@@ -802,7 +862,7 @@ function updateHeaderToLoggedOut() {
 
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
     if (!container) return;
-    container.innerHTML = `<button class="btn" onclick="window.location.href='/login.html'">${t.btn_login}</button>`;
+    container.innerHTML = `<button class="btn" onclick="window.location.href='/LoginInToCheaplet.html'">${t.btn_login}</button>`;
 }
 
 function showTermsBanner() {
@@ -861,6 +921,9 @@ async function showForcedLanguageModal() {
 
 // Run forced language modal immediately
 await showForcedLanguageModal();
+
+// Signal that global.js is ready
+window.dispatchEvent(new CustomEvent('scoralia-ready'));
 
 document.addEventListener('DOMContentLoaded', () => {
     const logo = document.querySelector('.logo');
