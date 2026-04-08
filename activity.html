@@ -132,6 +132,12 @@
     </div>
 
     <script type="module">
+        // Import Firebase functions that global.js exposes globally
+        import { getFirestore, collection, query, orderBy, limit, getDocs, doc, runTransaction } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+        
+        // Wait for global.js to initialize Firebase and expose db
+        // global.js should set window.db after initialization
+        
         // GLOBAL STATE is handled by global.js now
         
         // 1. PAGE INITIALIZATION - Wait for global.js to load header and Firebase
@@ -235,8 +241,8 @@
                 const date = new Date(ts.seconds * 1000);
                 const diff = Date.now() - date.getTime();
                 if (diff < 60000) timeString = 'Just now';
-                else if (diff < 3600000) timeString = `${Math.floor(diff/60000)}m ago`;
-                else if (diff < 86400000) timeString = `${Math.floor(diff/3600000)}h ago`;
+                else if (diff < 3600000) timeString = Math.floor(diff/60000) + 'm ago';
+                else if (diff < 86400000) timeString = Math.floor(diff/3600000) + 'h ago';
                 else timeString = date.toLocaleDateString();
             }
 
@@ -244,7 +250,7 @@
             let imageHtml = '';
             if (item.imageUrl) {
                 const optimizedUrl = window.optimizeImageUrl ? window.optimizeImageUrl(item.imageUrl) : item.imageUrl;
-                imageHtml = `<img src="${optimizedUrl}" alt="Post Image" class="activity-img" loading="lazy">`;
+                imageHtml = '<img src="' + optimizedUrl + '" alt="Post Image" class="activity-img" loading="lazy">';
             }
 
             const userName = item.userName || item.authorName || 'Scoralia User';
@@ -253,36 +259,37 @@
             const likes = item.likes || 0;
             const comments = item.commentsCount || 0;
 
-            div.innerHTML = `
-                <div class="activity-header">
-                    <img src="${userPhoto}" alt="${userName}" class="user-avatar" onerror="this.src='https://via.placeholder.com/48'">
-                    <div class="activity-meta">
-                        <span class="user-name">${userName} <span class="source-badge">${item.sourceLabel}</span></span>
-                        <div class="activity-action">posted an update</div>
-                        <div class="activity-time">${timeString}</div>
-                    </div>
-                </div>
+            const likedClass = item.likedByCurrentUser ? 'fas' : 'far';
+            
+            div.innerHTML = 
+                '<div class="activity-header">' +
+                    '<img src="' + userPhoto + '" alt="' + userName + '" class="user-avatar" onerror="this.src=\'https://via.placeholder.com/48\'">' +
+                    '<div class="activity-meta">' +
+                        '<span class="user-name">' + userName + ' <span class="source-badge">' + item.sourceLabel + '</span></span>' +
+                        '<div class="activity-action">posted an update</div>' +
+                        '<div class="activity-time">' + timeString + '</div>' +
+                    '</div>' +
+                '</div>' +
                 
-                <div class="activity-content">
-                    ${text}
-                    ${imageHtml}
-                </div>
+                '<div class="activity-content">' +
+                    text +
+                    imageHtml +
+                '</div>' +
 
-                <div class="activity-footer">
-                    <button class="action-btn" id="like-btn-${item.id}">
-                        <i class="${item.likedByCurrentUser ? 'fas' : 'far'} fa-heart"></i> <span>${likes}</span>
-                    </button>
-                    <button class="action-btn">
-                        <i class="far fa-comment"></i> <span>${comments}</span> Comments
-                    </button>
-                    <button class="action-btn">
-                        <i class="far fa-share-square"></i> Share
-                    </button>
-                </div>
-            `;
+                '<div class="activity-footer">' +
+                    '<button class="action-btn" id="like-btn-' + item.id + '">' +
+                        '<i class="' + likedClass + ' fa-heart"></i> <span>' + likes + '</span>' +
+                    '</button>' +
+                    '<button class="action-btn">' +
+                        '<i class="far fa-comment"></i> <span>' + comments + '</span> Comments' +
+                    '</button>' +
+                    '<button class="action-btn">' +
+                        '<i class="far fa-share-square"></i> Share' +
+                    '</button>' +
+                '</div>';
 
             // Attach Like Event
-            const likeBtn = div.querySelector(`#like-btn-${item.id}`);
+            const likeBtn = div.querySelector('#like-btn-' + item.id);
             likeBtn.addEventListener('click', () => handleLike(item.id, item.collection, likeBtn));
 
             return div;
