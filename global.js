@@ -52,7 +52,7 @@ setTimeout(() => clearInterval(addTitleToFirebaseIframe), 10000);
 // --- 2. TRANSLATION DICTIONARY ---
 const translations = {
     "en": {
-        "nav_browse": "Browse", "nav_listings": "My Listings", "nav_messages": "Messages", "nav_profile": "My Profile", "nav_hub": "Campus Hub",
+        "nav_browse": "Browse", "nav_listings": "My Listings", "nav_messages": "Messages", "nav_profile": "My Profile", "nav_hub": "Campus Hub", "nav_activity": "Activity",
         "btn_login": "Login / Register", "btn_list": "List an Item", "btn_signout": "Sign Out",
         "verified_student": "Verified Student",
         "ban_title": "ACCESS DENIED",
@@ -95,7 +95,7 @@ const translations = {
         "social_tour_gotit": "Got it!"
     },
     "fr": {
-        "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", "nav_hub": "Hub Campus",
+        "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", "nav_hub": "Hub Campus", "nav_activity": "Activité",
         "btn_login": "Connexion", "btn_list": "Vendre", "btn_signout": "Déconnexion",
         "verified_student": "Étudiant vérifié",
         "ban_title": "ACCÈS REFUSÉ",
@@ -732,6 +732,7 @@ function updateHeaderToLoggedIn(userData) {
             <li><a href="/search.html">${t.nav_browse}</a></li>
             <li><a href="/my-listings.html">${t.nav_listings}</a></li>
             <li><a href="/social.html">${t.nav_hub}</a></li>
+            <li><a href="/activity.html">${t.nav_activity}</a></li>
             <li><a href="/messages.html" class="badge-container">${t.nav_messages}<span class="unread-badge" id="desktop-unread-badge"></span></a></li>
         `;
     }
@@ -760,6 +761,7 @@ function updateHeaderToLoggedIn(userData) {
                 <a href="/search.html" class="dropdown-item mobile-link"><i class="fas fa-search"></i> ${t.nav_browse}</a>
                 <a href="/my-listings.html" class="dropdown-item mobile-link"><i class="fas fa-book"></i> ${t.nav_listings}</a>
                 <a href="/social.html" class="dropdown-item mobile-link"><i class="fas fa-users"></i> ${t.nav_hub}</a>
+                <a href="/activity.html" class="dropdown-item mobile-link"><i class="fas fa-bell"></i> ${t.nav_activity}</a>
                 <a href="/profile.html" class="dropdown-item"><i class="fas fa-user-circle"></i> ${t.nav_profile}</a>
                 <a href="#" class="dropdown-item" id="globalLogout" style="color:#ff4d4d; border-top:1px solid #eee;"><i class="fas fa-sign-out-alt"></i> ${t.btn_signout}</a>
             </div>
