@@ -4,127 +4,133 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Chat - Scoralia</title>
-    
-    <!-- Preconnect to external origins -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-    <link rel="preconnect" href="https://www.gstatic.com">
-    <link rel="preconnect" href="https://firestore.googleapis.com">
-    
-    <!-- DNS Prefetch -->
-    <link rel="dns-prefetch" href="https://firebaseapp.com">
-    <link rel="dns-prefetch" href="https://googleapis.com">
-    
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json">
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="/icons/icon-192.png">
-    
-    <!-- Modulepreload for critical JS -->
-    <link rel="modulepreload" href="/global.js">
-    
-    <!-- Font Awesome with integrity -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
-    
     <script type="module" src="global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f8f9fa; color: #333; height: 100vh; height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
+        :root {
+            --ink:       #0C1446;
+            --deep:      #2B5C92;
+            --mist:      #B3CDE0;
+            --white:     #FFFFFF;
+            --off-white: #F8FAFC;
+            --gold:      #C8A96E;
+            --red:       #e53e3e;
+            --green:     #2E7D32;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'DM Sans', sans-serif; }
+        body { background-color: var(--off-white); color: var(--ink); height: 100vh; height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
         .container { width: 100%; max-width: 1300px; margin: 0 auto; padding: 0 15px; height: 100%; }
-        header { background: linear-gradient(135deg, #0C1446 0%, #2B5C92 100%); color: white; padding: 15px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.1); z-index: 100; flex-shrink: 0; }
-        .header-content { display: flex; justify-content: space-between; align-items: center; }
-        .logo { font-size: 24px; font-weight: bold; color: white; text-decoration: none; }
-        .logo span { color: #FFD700; }
-        nav ul { display: flex; list-style: none; gap: 20px; }
+        
+        header { background: rgba(12, 20, 70, 0.97); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(179,205,224,0.15); z-index: 100; flex-shrink: 0; }
+        .header-content { display: flex; justify-content: space-between; align-items: center; max-width: 1280px; margin: 0 auto; padding: 0 28px; height: 68px; }
+        .logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: var(--white); text-decoration: none; letter-spacing: -0.5px; }
+        .logo span { color: var(--gold); }
+        nav ul { display: flex; list-style: none; gap: 28px; }
         .header-right { display: flex; align-items: center; gap: 15px; }
 
-        .chat-main-wrapper { display: flex; flex-grow: 1; width: 100%; max-width: 1300px; margin: 0 auto; background: white; border-left: 1px solid #eee; border-right: 1px solid #eee; overflow: hidden; }
-        .chat-sidebar { width: 320px; border-right: 1px solid #eee; display: flex; flex-direction: column; background: #fdfdfd; flex-shrink: 0; transition: 0.3s ease; }
-        .sidebar-header { padding: 20px; font-weight: 800; font-size: 1.2rem; border-bottom: 1px solid #eee; color: #2B5C92; flex-shrink: 0; }
+        .chat-main-wrapper { display: flex; flex-grow: 1; width: 100%; max-width: 1300px; margin: 0 auto; background: var(--white); border-left: 1px solid var(--mist); border-right: 1px solid var(--mist); overflow: hidden; }
+        .chat-sidebar { width: 320px; border-right: 1px solid var(--mist); display: flex; flex-direction: column; background: #fdfdfd; flex-shrink: 0; transition: 0.3s ease; }
+        .sidebar-header { padding: 20px; font-weight: 800; font-size: 1.2rem; border-bottom: 1px solid var(--mist); color: var(--ink); flex-shrink: 0; }
         #sidebar-list { flex-grow: 1; overflow-y: auto; }
         
-        .side-conv-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f9f9f9; text-decoration: none; color: inherit; position: relative; }
-        .side-conv-item:hover { background: #EBF2FA; }
-        .side-conv-item.active { background: #F4F7FC; border-left: 4px solid #2B5C92; }
-        .side-avatar { width: 45px; height: 45px; border-radius: 50%; background: #2B5C92; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px; flex-shrink: 0; overflow: hidden; }
+        .side-conv-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid var(--off-white); text-decoration: none; color: inherit; position: relative; transition: background 0.2s; }
+        .side-conv-item:hover { background: var(--surface); }
+        .side-conv-item.active { background: var(--surface); border-left: 4px solid var(--deep); }
+        .side-avatar { width: 45px; height: 45px; border-radius: 50%; background: var(--deep); color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px; flex-shrink: 0; overflow: hidden; }
         .side-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .side-info { overflow: hidden; flex-grow: 1; }
-        .side-name { font-weight: 600; font-size: 0.95rem; }
-        .side-msg { font-size: 0.8rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .unread-dot { width: 10px; height: 10px; background-color: #f44336; border-radius: 50%; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); display: none; }
+        .side-name { font-weight: 700; font-size: 0.95rem; color: var(--ink); }
+        .side-msg { font-size: 0.85rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .unread-dot { width: 10px; height: 10px; background-color: var(--red); border-radius: 50%; position: absolute; right: 15px; top: 50%; transform: translateY(-50%); display: none; }
         .side-conv-item.is-new .unread-dot { display: block; }
-        .side-conv-item.is-new .side-name { font-weight: 800; color: #000; }
+        .side-conv-item.is-new .side-name { font-weight: 900; color: var(--ink); }
 
-        .chat-window { flex-grow: 1; display: flex; flex-direction: column; background: white; position: relative; overflow: hidden; }
-        .chat-header { padding: 15px 20px; border-bottom: 1px solid #eee; background: #fff; display: flex; align-items: center; gap: 15px; z-index: 10; flex-shrink: 0; }
+        .chat-window { flex-grow: 1; display: flex; flex-direction: column; background: var(--white); position: relative; overflow: hidden; }
+        .chat-header { padding: 15px 20px; border-bottom: 1px solid var(--mist); background: var(--white); display: flex; align-items: center; gap: 15px; z-index: 10; flex-shrink: 0; }
         
-        #chat-header-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: #eee; display: none; border: 1px solid #ddd; cursor: pointer; transition: transform 0.2s; }
+        #chat-header-avatar { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; background: var(--surface); display: none; border: 1px solid var(--mist); cursor: pointer; transition: transform 0.2s; }
         #chat-header-avatar:hover { transform: scale(1.05); }
-        #chat-header-name { font-weight: 700; color: #050505; font-size: 1.1rem; cursor: pointer; transition: color 0.2s; }
-        #chat-header-name:hover { color: #2B5C92; text-decoration: underline; }
-        #chat-header-meta { font-size: 0.75rem; color: #888; margin-top: 2px; display: flex; align-items: center; gap: 5px; }
+        #chat-header-name { font-weight: 700; color: var(--ink); font-size: 1.1rem; cursor: pointer; transition: color 0.2s; }
+        #chat-header-name:hover { color: var(--deep); text-decoration: underline; }
+        #chat-header-meta { font-size: 0.75rem; color: #64748b; margin-top: 2px; display: flex; align-items: center; gap: 5px; }
 
-        #report-chat-btn { background: none; border: none; color: #ff5252; cursor: pointer; font-size: 1.2rem; display: none; transition: transform 0.2s; }
-        #report-chat-btn:hover { transform: scale(1.1); }
+        #report-chat-btn { background: var(--off-white); border: 1px solid var(--mist); color: var(--red); cursor: pointer; font-size: 1rem; padding: 8px 12px; border-radius: 8px; display: none; transition: 0.2s; }
+        #report-chat-btn:hover { background: #fee2e2; border-color: #fecaca; }
 
-        .listing-preview-banner { display: flex; align-items: center; padding: 10px 20px; background: #fff; border-bottom: 1px solid #ddd; gap: 12px; flex-shrink: 0; text-decoration: none; color: inherit; transition: background 0.2s; }
-        .lp-img { width: 48px; height: 48px; border-radius: 6px; object-fit: cover; background: #eee; }
+        .listing-preview-banner { display: flex; align-items: center; padding: 10px 20px; background: var(--surface); border-bottom: 1px solid var(--mist); gap: 12px; flex-shrink: 0; text-decoration: none; color: inherit; transition: background 0.2s; }
+        .listing-preview-banner:hover { background: var(--mist); }
+        .lp-img { width: 48px; height: 48px; border-radius: 8px; object-fit: cover; background: var(--off-white); border: 1px solid var(--mist); }
         .lp-info { flex-grow: 1; overflow: hidden; display: flex; flex-direction: column; }
-        .lp-title { font-weight: 600; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #050505; }
-        .lp-price { color: #65676B; font-size: 0.85rem; }
-        .lp-status { font-size: 0.75rem; color: #d32f2f; font-weight: bold; text-transform: uppercase; }
+        .lp-title { font-weight: 700; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink); }
+        .lp-price { color: var(--deep); font-weight: 800; font-size: 0.9rem; }
+        .lp-status { font-size: 0.75rem; color: var(--red); font-weight: bold; text-transform: uppercase; background: #fee2e2; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
 
-        #mobile-menu-btn { display: none; background: none; border: none; font-size: 1.2rem; color: #2B5C92; cursor: pointer; }
+        #mobile-menu-btn { display: none; background: none; border: none; font-size: 1.2rem; color: var(--ink); cursor: pointer; }
 
-        #messages-list { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; background-color: #fcfcfc; }
+        #messages-list { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; background-color: #f8fafc; }
         .message-row { display: flex; width: 100%; margin-bottom: 15px; align-items: flex-end; }
         .message-row.sent { justify-content: flex-end; }
         .message-row.received { justify-content: flex-start; gap: 8px; }
-        .chat-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; background: #ddd; flex-shrink: 0; margin-bottom: 20px; }
-        .message-bubble { max-width: 75%; padding: 10px 15px; border-radius: 18px; word-wrap: break-word; position: relative; }
-        .message-bubble.sent { background-color: #2B5C92; color: white; border-bottom-right-radius: 4px; }
-        .message-bubble.received { background-color: #f1f0f0; color: #333; border-bottom-left-radius: 4px; }
-        .message-img { max-width: 100%; border-radius: 12px; display: block; margin-bottom: 5px; cursor: pointer; }
+        .chat-avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: var(--mist); flex-shrink: 0; margin-bottom: 20px; }
+        .message-bubble { max-width: 75%; padding: 12px 16px; border-radius: 18px; word-wrap: break-word; position: relative; font-size: 0.95rem; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .message-bubble.sent { background-color: var(--deep); color: white; border-bottom-right-radius: 4px; }
+        .message-bubble.received { background-color: var(--white); color: var(--ink); border: 1px solid var(--mist); border-bottom-left-radius: 4px; }
+        .message-img { max-width: 100%; border-radius: 12px; display: block; margin-bottom: 5px; cursor: pointer; border: 1px solid rgba(0,0,0,0.1); }
         .message-timestamp { display: block; font-size: 0.7rem; color: rgba(255,255,255,0.7); margin-top: 4px; text-align: right; }
-        .message-bubble.received .message-timestamp { color: #888; }
-        .date-separator { text-align: center; margin: 20px 0; font-size: 0.8rem; font-weight: bold; color: #888; }
-        .date-separator span { background: #f0f0f0; padding: 4px 12px; border-radius: 12px; }
+        .message-bubble.received .message-timestamp { color: #94a3b8; }
+        .date-separator { text-align: center; margin: 20px 0; font-size: 0.8rem; font-weight: bold; color: #94a3b8; }
+        .date-separator span { background: var(--surface); padding: 4px 12px; border-radius: 12px; border: 1px solid var(--mist); }
 
-        .message-form { display: flex; align-items: center; padding: 15px; padding-bottom: max(15px, env(safe-area-inset-bottom)); border-top: 1px solid #eee; background: white; gap: 10px; flex-shrink: 0; width: 100%; }
-        #img-upload-btn { background: none; border: none; color: #555; cursor: pointer; font-size: 1.1rem; flex-shrink: 0; }
-        #message-input { flex-grow: 1; border: 1px solid #ddd; border-radius: 25px; padding: 10px 20px; outline: none; }
-        #send-btn { border-radius: 50%; width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; background: #FFD700; color: #333; border: none; cursor: pointer; font-size: 1.1rem; flex-shrink: 0; }
+        .message-form { display: flex; align-items: center; padding: 15px; padding-bottom: max(15px, env(safe-area-inset-bottom)); border-top: 1px solid var(--mist); background: var(--white); gap: 10px; flex-shrink: 0; width: 100%; }
+        #img-upload-btn { background: var(--surface); border: 1px solid var(--mist); color: var(--deep); cursor: pointer; font-size: 1.1rem; flex-shrink: 0; width: 44px; height: 44px; border-radius: 50%; transition: 0.2s; }
+        #img-upload-btn:hover { background: var(--mist); color: var(--ink); }
+        #message-input { flex-grow: 1; border: 1.5px solid var(--mist); border-radius: 25px; padding: 12px 20px; outline: none; font-family: inherit; font-size: 0.95rem; background: var(--off-white); transition: 0.2s; }
+        #message-input:focus { border-color: var(--deep); background: var(--white); }
+        #send-btn { border-radius: 50%; width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center; background: var(--gold); color: var(--ink); border: none; cursor: pointer; font-size: 1.1rem; flex-shrink: 0; transition: 0.2s; box-shadow: 0 4px 10px rgba(200, 169, 110, 0.3); }
+        #send-btn:hover { transform: scale(1.05); }
 
         .sold-banner { background: #fff3e0; color: #e65100; text-align: center; padding: 12px; font-weight: bold; border-top: 1px solid #ffe0b2; display: none; flex-shrink: 0; }
-        .rating-container { display: flex; flex-direction: column; align-items: center; padding: 15px; padding-bottom: max(15px, env(safe-area-inset-bottom)); background: white; border-top: 1px solid #eee; display: none; flex-shrink: 0; }
-        .stars { display: flex; gap: 10px; font-size: 1.8rem; color: #ddd; cursor: pointer; margin: 10px 0; }
+        .rating-container { display: flex; flex-direction: column; align-items: center; padding: 15px; padding-bottom: max(15px, env(safe-area-inset-bottom)); background: var(--white); border-top: 1px solid var(--mist); display: none; flex-shrink: 0; }
+        .stars { display: flex; gap: 10px; font-size: 1.8rem; color: #cbd5e1; cursor: pointer; margin: 10px 0; }
         .stars .fas.active { color: #FFD700; }
-        .btn-rate { background: #2B5C92; color: white; border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+        .btn-rate { background: var(--deep); color: white; border: none; padding: 10px 24px; border-radius: 30px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-rate:hover { background: var(--ink); }
 
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: none; justify-content: center; align-items: center; }
-        .modal-card { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-        .modal-card select, .modal-card textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(12,20,70,0.8); z-index: 10000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        .modal-card { background: var(--white); padding: 30px; border-radius: 16px; width: 90%; max-width: 450px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+        .modal-card h2 { font-family: var(--font-display); color: var(--ink); margin-bottom: 10px; }
+        .modal-card select, .modal-card textarea { width: 100%; padding: 12px; margin-bottom: 15px; border: 1.5px solid var(--mist); border-radius: 8px; font-size: 1rem; outline: none; font-family: inherit; }
         .modal-card textarea { height: 100px; resize: none; }
         .modal-buttons { display: flex; gap: 10px; }
-        .modal-buttons button { flex: 1; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; border: none; }
-        .btn-submit-red { background: #d32f2f; color: white; }
-        .btn-cancel-gray { background: #eee; color: #333; }
+        .modal-buttons button { flex: 1; padding: 12px; border-radius: 30px; font-weight: bold; cursor: pointer; border: none; transition: 0.2s; }
+        .btn-submit-red { background: var(--red); color: white; }
+        .btn-submit-red:hover { background: #b91c1c; }
+        .btn-cancel-gray { background: var(--surface); color: var(--ink); border: 1px solid var(--mist) !important; }
+        .btn-cancel-gray:hover { background: var(--mist); }
 
-        .info-message { text-align: center; padding: 100px 0; font-size: 1.2rem; color: #999; }
+        .info-message { text-align: center; padding: 100px 0; font-size: 1.1rem; color: var(--text-muted); font-weight: 500; }
+        
         @media (max-width: 767px) {
             #mobile-menu-btn { display: block; }
-            .chat-sidebar { position: fixed; left: -100%; top: 60px; height: calc(100vh - 60px); height: calc(100dvh - 60px); z-index: 1000; width: 85%; box-shadow: 10px 0 20px rgba(0,0,0,0.1); }
+            .chat-sidebar { position: fixed; left: -100%; top: 68px; height: calc(100vh - 68px); height: calc(100dvh - 68px); z-index: 1000; width: 85%; box-shadow: 10px 0 20px rgba(0,0,0,0.1); }
             .chat-sidebar.open { left: 0; }
             nav { display: none; }
+            .chat-main-wrapper { border: none; }
         }
     </style>
 </head>
 <body>
     <header>
-        <div class="container header-content">
-            <a href="/index.html" class="logo">Scor<span>alia</span></a>
-            <nav><ul></ul></nav>
+        <div class="header-inner">
+            <a href="/index.html" class="logo">Scor<em>alia</em></a>
+            <nav>
+                <ul>
+                    <li><a href="/search.html" data-i18n="nav_browse">Browse</a></li>
+                    <li><a href="/my-listings.html" data-i18n="nav_listings">My Listings</a></li>
+                    <li><a href="/social.html" data-i18n="nav_hub">Campus Hub</a></li>
+                </ul>
+            </nav>
             <div class="header-right"></div> 
         </div>
     </header>
@@ -136,7 +142,7 @@
         </aside>
 
         <main class="chat-window">
-            <div id="info-container"><p class="info-message" data-i18n="loading_chat">Loading chat...</p></div>
+            <div id="info-container"><p class="info-message" data-i18n="loading_chat"><i class="fas fa-circle-notch fa-spin"></i> Loading chat...</p></div>
 
             <div id="chat-active-ui" style="display: none; flex-direction: column; height: 100%;">
                 <div class="chat-header">
@@ -148,7 +154,7 @@
                             <div id="chat-header-meta"></div>
                         </div>
                     </div>
-                    <button id="report-chat-btn" title="Report User"><i class="fas fa-flag"></i></button>
+                    <button id="report-chat-btn" title="Report User"><i class="fas fa-flag"></i> Report</button>
                 </div>
 
                 <a href="#" id="listing-preview-banner" class="listing-preview-banner" style="display: none;">
@@ -157,7 +163,7 @@
                         <span class="lp-title" id="lp-title">...</span>
                         <div><span class="lp-price" id="lp-price"></span><span class="lp-status" id="lp-status"></span></div>
                     </div>
-                    <i class="fas fa-chevron-right" style="color: #bec3c9; font-size: 0.8rem;"></i>
+                    <i class="fas fa-chevron-right" style="color: var(--mist); font-size: 0.8rem;"></i>
                 </a>
 
                 <div id="messages-list"></div>
@@ -165,7 +171,7 @@
                 <div class="sold-banner" id="sold-banner"><i class="fas fa-lock"></i> <span id="sold-text">Listing Sold - Chat Disabled</span></div>
 
                 <div class="rating-container" id="rating-container">
-                    <div id="rate-title" style="font-weight:bold; color:#555;">Rate your experience</div>
+                    <div id="rate-title" style="font-weight:700; color:var(--ink);">Rate your experience</div>
                     <div class="stars" id="star-rating">
                         <i class="fas fa-star" data-val="1"></i><i class="fas fa-star" data-val="2"></i>
                         <i class="fas fa-star" data-val="3"></i><i class="fas fa-star" data-val="4"></i>
@@ -176,9 +182,9 @@
 
                 <form id="message-form" class="message-form">
                     <input type="file" id="hidden-file-input" accept="image/*" style="display: none;">
-                    <button type="button" id="img-upload-btn"><i class="fas fa-camera"></i></button>
-                    <input type="text" id="message-input" data-i18n-placeholder="search_placeholder" placeholder="Type a message..." autocomplete="off">
-                    <button type="submit" id="send-btn">&#10148;</button>
+                    <button type="button" id="img-upload-btn" title="Send Photo"><i class="fas fa-camera"></i></button>
+                    <input type="text" id="message-input" data-i18n-placeholder="comment_placeholder" placeholder="Type a message..." autocomplete="off">
+                    <button type="submit" id="send-btn"><i class="fas fa-paper-plane"></i></button>
                 </form>
             </div>
         </main>
@@ -187,8 +193,8 @@
     <!-- REPORT MODAL -->
     <div class="modal-overlay" id="report-modal">
         <div class="modal-card">
-            <h2 id="modal-title">Report User</h2>
-            <p style="margin-bottom: 15px; font-size: 0.9rem; color: #666;" id="modal-desc">Why are you reporting this chat/user?</p>
+            <h2 id="modal-title" style="font-family: 'Playfair Display', serif;">Report User</h2>
+            <p style="margin-bottom: 15px; font-size: 0.95rem; color: var(--text-muted);" id="modal-desc">Why are you reporting this chat/user?</p>
             <select id="report-reason">
                 <option value="Inappropriate Behavior">Inappropriate Behavior</option>
                 <option value="Scam or Fraud">Scam or Fraud</option>
@@ -196,14 +202,16 @@
                 <option value="Other">Other</option>
             </select>
             <textarea id="report-details" placeholder="Provide more details..."></textarea>
-            <div class="modal-buttons"><button class="btn-submit-red" id="submit-report-btn">Submit</button><button class="btn-cancel-gray" id="close-report-btn">Cancel</button></div>
+            <div class="modal-buttons">
+                <button class="btn-cancel-gray" id="close-report-btn">Cancel</button>
+                <button class="btn-submit-red" id="submit-report-btn">Submit Report</button>
+            </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        // 🔥 ADDED: arrayRemove to imports
         import { getFirestore, doc, getDoc, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, updateDoc, where, increment, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
@@ -212,9 +220,6 @@
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
-
-            const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${config.cloudinary.cloudName}/image/upload`;
-            const UPLOAD_PRESET = config.cloudinary.uploadPreset;
 
             const sidebar = document.getElementById('chat-sidebar');
             const sidebarList = document.getElementById('sidebar-list');
@@ -280,9 +285,8 @@
 
                         const otherId = d.participants.find(p => p !== currentUser.uid);
                         const otherName = d.participantInfo ? d.participantInfo[otherId] : 'User';
-                        const itemTitle = d.listingTitle ? `<span style="font-size:0.75rem; color:#2B5C92;">(${d.listingTitle})</span>` : '';
+                        const itemTitle = d.listingTitle ? `<span style="font-size:0.75rem; color:var(--deep); background:var(--surface); padding:2px 6px; border-radius:4px; margin-left:4px;">${d.listingTitle}</span>` : '';
                         
-                        // 🔥 FIX: Read Unread Status from unreadBy Array for the sidebar
                         let isUnread = false;
                         if (d.unreadBy) {
                             isUnread = d.unreadBy.includes(currentUser.uid);
@@ -301,7 +305,7 @@
 
                         const avatarDiv = item.querySelector(`#side-avatar-${docSnap.id}`);
                         if (userCache[otherId]) {
-                            if(userCache[otherId].photoURL) avatarDiv.innerHTML = `<img src="${userCache[otherId].photoURL}">`;
+                            if(userCache[otherId].photoURL) avatarDiv.innerHTML = `<img src="${window.optimizeImageUrl ? window.optimizeImageUrl(userCache[otherId].photoURL) : userCache[otherId].photoURL}">`;
                         } else {
                             getDoc(doc(db, 'users', otherId)).then(uSnap => {
                                 if(uSnap.exists()) {
@@ -310,7 +314,7 @@
                                     if (!finalUrl || finalUrl.includes("googleusercontent.com") || finalUrl.includes("live.com")) {
                                         finalUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${otherId}&backgroundColor=EBF2FA`;
                                     }
-                                    avatarDiv.innerHTML = `<img src="${finalUrl}">`;
+                                    avatarDiv.innerHTML = `<img src="${window.optimizeImageUrl ? window.optimizeImageUrl(finalUrl) : finalUrl}">`;
                                 }
                             });
                         }
@@ -350,7 +354,7 @@
                     if (!currentOtherPhotoUrl || currentOtherPhotoUrl.includes("googleusercontent.com") || currentOtherPhotoUrl.includes("live.com")) {
                         currentOtherPhotoUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${otherId}&backgroundColor=EBF2FA`;
                     }
-                    chatHeaderAvatar.src = currentOtherPhotoUrl;
+                    chatHeaderAvatar.src = window.optimizeImageUrl ? window.optimizeImageUrl(currentOtherPhotoUrl) : currentOtherPhotoUrl;
                     chatHeaderAvatar.style.display = 'block';
 
                     chatHeaderAvatar.onclick = () => window.location.href = `/user.html?id=${otherId}`;
@@ -359,21 +363,21 @@
                     let metaHtml = "";
                     if (uData.ratingCount && uData.ratingCount > 0) {
                         const avg = (uData.ratingSum / uData.ratingCount).toFixed(1);
-                        metaHtml += `<span style="color:#FFD700; font-weight:bold;"><i class="fas fa-star"></i> ${avg}</span>`;
+                        metaHtml += `<span style="color:var(--gold); font-weight:bold;"><i class="fas fa-star"></i> ${avg}</span>`;
                     } else {
                         metaHtml += `<span>${strings[lang].noRatings}</span>`;
                     }
-                    if (uData.isStudent) metaHtml += ` <span style="margin: 0 6px; color:#ccc;">&bull;</span> <span style="color:#2B5C92; font-weight:bold;"><i class="fas fa-graduation-cap"></i> ${strings[lang].verifiedStudent}</span>`;
+                    if (uData.isStudent) metaHtml += ` <span style="margin: 0 6px; color:var(--mist);">&bull;</span> <span style="color:var(--green); font-weight:bold;"><i class="fas fa-graduation-cap"></i> ${strings[lang].verifiedStudent}</span>`;
                     chatHeaderMeta.innerHTML = metaHtml;
                 }
 
-                // Listen to listing status
                 if (d.listingId) {
                     onSnapshot(doc(db, 'listings', d.listingId), (lSnap) => {
                         if (lSnap.exists()) {
                             const ld = lSnap.data();
                             lpBanner.style.display = 'flex'; lpBanner.href = `/listing.html?id=${d.listingId}`;
-                            lpImage.src = ld.imageUrls?.[0] || ''; lpTitle.textContent = ld.title;
+                            lpImage.src = ld.imageUrls?.[0] ? (window.optimizeImageUrl ? window.optimizeImageUrl(ld.imageUrls[0]) : ld.imageUrls[0]) : ''; 
+                            lpTitle.textContent = ld.title;
                             
                             if (ld.status === 'sold') { 
                                 lpPrice.style.display = 'none'; lpStatus.textContent = strings[lang].sold; lpStatus.style.display = 'inline-block';
@@ -390,7 +394,6 @@
                     });
                 }
 
-                // 🔥 NEW: Mark the chat as Read when the user opens it
                 try {
                     await updateDoc(chatRef, { unreadBy: arrayRemove(currentUser.uid) });
                 } catch(e) { console.error(e); }
@@ -420,7 +423,6 @@
                     messageInput.blur(); 
                     await addDoc(collection(db, 'chats', chatId, 'messages'), { text, senderId: currentUser.uid, timestamp: serverTimestamp() });
                     
-                    // 🔥 NEW: Mark as unread for the OTHER person when you send a message
                     await updateDoc(chatRef, { 
                         lastMessage: text, 
                         lastUpdate: serverTimestamp(), 
@@ -443,15 +445,10 @@
                         formData.append('signature', signRes.signature);
                         formData.append('upload_preset', signRes.uploadPreset);
 
-                        const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { 
-                            method: 'POST', 
-                            body: formData 
-                        }).then(r => r.json());
+                        const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { method: 'POST', body: formData }).then(r => r.json());
 
                         if (res.secure_url) {
                             await addDoc(collection(db, 'chats', chatId, 'messages'), { imageUrl: res.secure_url, senderId: currentUser.uid, timestamp: serverTimestamp() });
-                            
-                            // 🔥 NEW: Mark as unread for the OTHER person when you send an image
                             await updateDoc(chatRef, { 
                                 lastMessage: `📷 ${strings[lang].imageSent}`, 
                                 lastUpdate: serverTimestamp(), 
@@ -483,7 +480,7 @@
                     try {
                         await updateDoc(doc(db, 'users', otherId), { ratingSum: increment(selectedRating), ratingCount: increment(1) });
                         await updateDoc(chatRef, { ratedBy: arrayUnion(currentUser.uid) });
-                        ratingContainer.innerHTML = `<div style="color:#2B5C92; font-weight:bold;">${strings[lang].rateSuccess}</div>`;
+                        ratingContainer.innerHTML = `<div style="color:var(--green); font-weight:bold;">${strings[lang].rateSuccess}</div>`;
                         setTimeout(() => { ratingContainer.style.display = 'none'; }, 3000);
                     } catch(err) { console.error(err); btnSubmitRating.disabled = false; }
                 };
@@ -496,12 +493,12 @@
                 let avatarHtml = '';
                 if (!isSent) {
                     const avatarSrc = otherPhotoUrl || `https://api.dicebear.com/7.x/identicon/svg?seed=fallback&backgroundColor=EBF2FA`;
-                    avatarHtml = `<img src="${avatarSrc}" class="chat-avatar">`;
+                    avatarHtml = `<img src="${window.optimizeImageUrl ? window.optimizeImageUrl(avatarSrc) : avatarSrc}" class="chat-avatar">`;
                 }
                 const bubble = document.createElement('div');
                 bubble.className = `message-bubble ${isSent ? 'sent' : 'received'}`;
-                let content = data.imageUrl ? `<img src="${data.imageUrl}" class="message-img" onclick="window.open('${data.imageUrl}', '_blank')">` : '';
-                content += data.text ? `<p>${data.text}</p>` : '';
+                let content = data.imageUrl ? `<img src="${window.optimizeImageUrl ? window.optimizeImageUrl(data.imageUrl) : data.imageUrl}" class="message-img" onclick="window.open('${data.imageUrl}', '_blank')">` : '';
+                content += data.text ? `<div>${data.text}</div>` : '';
                 const time = data.timestamp ? data.timestamp.toDate().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
                 bubble.innerHTML = `${content}<span class="message-timestamp">${time}</span>`;
                 if(!isSent) row.innerHTML += avatarHtml;
@@ -522,6 +519,13 @@
             
             window.addEventListener('resize', () => { if(messagesList) messagesList.scrollTop = messagesList.scrollHeight; });
         }
+
+        // --- HARD REFRESH HELPER FOR CACHING ---
+        // This ensures users always get the latest version of chat.html instead of a cached blank one
+        if (window.performance && window.performance.navigation.type === window.performance.navigation.TYPE_BACK_FORWARD) {
+            window.location.reload();
+        }
+
         main();
     </script>
 </body>
