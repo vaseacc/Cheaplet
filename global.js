@@ -287,25 +287,19 @@ globalStyle.innerHTML = `
 `;
 document.head.appendChild(globalStyle);
 
-// --- 3.5 PWA: Add manifest and register service worker (for home screen app experience) ---
-(function setupPWA() {
-    const manifestLink = document.createElement('link');
-    manifestLink.rel = 'manifest';
-    manifestLink.href = '/manifest.json';
-    document.head.appendChild(manifestLink);
-
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js')
-                .then(registration => {
-                    console.log('Service Worker registered with scope:', registration.scope);
-                })
-                .catch(error => {
-                    console.error('Service Worker registration failed:', error);
-                });
-        });
-    }
-})();
+// --- 3.5 KILL PWA CACHING (Fixes the "ghost page" reload issue) ---
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) {
+            registration.unregister();
+        }
+    });
+}
+if ('caches' in window) {
+    caches.keys().then((keyList) => {
+        Promise.all(keyList.map((key) => caches.delete(key)));
+    });
+}
 
 // --- SCHOOL DOMAIN CHECKER ---
 const schoolDomains = {
