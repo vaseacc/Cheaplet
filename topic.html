@@ -48,6 +48,14 @@
         .btn-locked { background: var(--gold); color: var(--ink); border: none; padding: 12px 30px; border-radius: 30px; font-weight: 800; font-size: 1rem; cursor: pointer; text-decoration: none; display: inline-block; transition: 0.2s; }
         .btn-locked:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(200, 169, 110, 0.4); }
 
+        /* Join request specific styles */
+        .request-card { text-align: center; }
+        .request-icon { font-size: 3rem; color: var(--deep); margin-bottom: 20px; }
+        .request-status { margin-top: 15px; font-weight: 600; color: var(--deep); }
+        .btn-request { background: var(--gold); color: var(--ink); border: none; padding: 12px 30px; border-radius: 30px; font-weight: 800; font-size: 1rem; cursor: pointer; transition: 0.2s; width: 100%; }
+        .btn-request:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(200, 169, 110, 0.4); }
+        .btn-request:disabled { opacity: 0.6; cursor: not-allowed; }
+
         /* ── MAIN LAYOUT ── */
         .hub-layout { display: none; max-width: 1100px; margin: 30px auto; grid-template-columns: 260px minmax(0, 1fr); gap: 40px; padding: 0 20px; align-items: start; width: 100%; }
 
@@ -279,11 +287,17 @@
 
     <!-- LOCKED SCREEN -->
     <div class="locked-screen" id="locked-screen">
-        <div class="locked-card">
-            <i class="fas fa-lock locked-icon"></i>
-            <h2 class="locked-title" id="ui-locked-title">Restricted Access</h2>
-            <p class="locked-desc" id="ui-locked-desc">This topic is private. You must be invited to view it.</p>
-            <a href="/social.html" class="btn-locked" id="ui-locked-btn">Back to Campus Hub</a>
+        <div class="locked-card request-card">
+            <i class="fas fa-lock locked-icon" id="lock-icon" style="color: var(--deep);"></i>
+            <h2 class="locked-title" id="ui-locked-title">Private Topic</h2>
+            <p class="locked-desc" id="ui-locked-desc">This topic is private. You can request to join.</p>
+            
+            <div id="request-controls">
+                <button class="btn-request" id="btn-request-join"><i class="fas fa-paper-plane"></i> Request to Join</button>
+                <p id="request-status" class="request-status" style="display: none;"></p>
+            </div>
+            
+            <a href="/social.html" class="btn-locked" style="margin-top: 20px; background: transparent; border: 1px solid var(--gold);" id="ui-locked-btn">Back to Campus Hub</a>
         </div>
     </div>
 
@@ -489,7 +503,15 @@
                     attach_title: "Attach a Listing", attach_desc: "Select one of your active listings to share.", attach_empty: "You have no active listings.", upload_fail: "Image upload failed.",
                     search_social_place: "Search posts, topics, people...", edit_post_title: "Edit Post", save_changes: "Save Changes", edited_label: " • Edited",
                     my_topics: "My Topics", saved_topics: "Saved Topics", discover_topics: "Discover", topics_directory: "Topics Directory",
-                    safetyCheck: "Checking...", imgRejected: "Image rejected: "
+                    safetyCheck: "Checking...", imgRejected: "Image rejected: ",
+                    private_topic_title: "Private Topic",
+                    private_topic_desc: "This topic is private. You can request to join.",
+                    request_join: "Request to Join",
+                    request_sent: "Request sent!",
+                    request_pending: "Request pending...",
+                    request_approved: "Approved! Refresh the page.",
+                    request_rejected: "Request Again",
+                    back_to_hub: "Back to Campus Hub"
                 },
                 fr: { 
                     topics_public: "Canaux Publics", topics_campus: "Campus Public", topics_custom: "Sujets Personnalisés", topics_new: "Nouveau Sujet",
@@ -501,7 +523,15 @@
                     attach_title: "Joindre une annonce", attach_desc: "Sélectionnez l'une de vos annonces actives.", attach_empty: "Vous n'avez aucune annonce active.", upload_fail: "Échec du téléchargement.",
                     search_social_place: "Rechercher messages, sujets, personnes...", edit_post_title: "Modifier le message", save_changes: "Enregistrer", edited_label: " • Modifié",
                     my_topics: "Mes Sujets", saved_topics: "Sujets Enregistrés", discover_topics: "Découvrir", topics_directory: "Annuaire des Sujets",
-                    safetyCheck: "Vérification...", imgRejected: "Image rejetée : "
+                    safetyCheck: "Vérification...", imgRejected: "Image rejetée : ",
+                    private_topic_title: "Sujet Privé",
+                    private_topic_desc: "Ce sujet est privé. Vous pouvez demander à le rejoindre.",
+                    request_join: "Demander à rejoindre",
+                    request_sent: "Demande envoyée !",
+                    request_pending: "Demande en attente...",
+                    request_approved: "Approuvé ! Actualisez la page.",
+                    request_rejected: "Redemander",
+                    back_to_hub: "Retour au Hub Campus"
                 }
             };
             const ui = allStrings[lang] || allStrings['en'];
@@ -525,10 +555,13 @@
                 if (ui[k]) el.placeholder = ui[k]; 
             });
             
-            setElemText('ui-locked-title', ui.lock_title);
-            setElemText('ui-locked-desc', ui.lock_desc);
+            setElemText('ui-locked-title', ui.private_topic_title);
+            setElemText('ui-locked-desc', ui.private_topic_desc);
             const elLockedBtn = document.getElementById('ui-locked-btn');
-            if (elLockedBtn) { elLockedBtn.textContent = ui.lock_btn; elLockedBtn.href = `/social.html`; }
+            if (elLockedBtn) { elLockedBtn.textContent = ui.back_to_hub; elLockedBtn.href = `/social.html`; }
+            
+            const btnRequestJoin = document.getElementById('btn-request-join');
+            if (btnRequestJoin) btnRequestJoin.innerHTML = `<i class="fas fa-paper-plane"></i> ${ui.request_join}`;
 
             setElemText('report-modal-title', ui.rep_title);
             setElemText('report-modal-desc', ui.rep_desc);
@@ -592,6 +625,7 @@
             let currentTopicName = "Topic";
             let currentTopicData = null;
             let updatePinIcon = null;
+            let existingRequestStatus = null; // 'pending', 'approved', 'rejected', or null
 
             // Fetch Topic Name & Verify Existence
             try {
@@ -603,6 +637,34 @@
                 setElemPlaceholder('post-input', `${ui.post_in}${currentTopicName}...`);
             } catch(e) {
                 window.location.href = '/social.html'; return;
+            }
+
+            // Check for existing join request from this user for this topic
+            async function checkExistingRequest(uid) {
+                if (!uid) return;
+                const convQuery = query(
+                    collection(db, "conversations"),
+                    where("participants", "array-contains", uid)
+                );
+                const convSnap = await getDocs(convQuery);
+                for (const convDoc of convSnap.docs) {
+                    const convData = convDoc.data();
+                    if (convData.participants.includes(currentTopicData.createdBy)) {
+                        const msgQuery = query(
+                            collection(db, "conversations", convDoc.id, "messages"),
+                            where("type", "==", "join_request"),
+                            where("topicId", "==", topicId),
+                            where("senderUid", "==", uid)
+                        );
+                        const msgSnap = await getDocs(msgQuery);
+                        if (!msgSnap.empty) {
+                            const msgDoc = msgSnap.docs[0];
+                            existingRequestStatus = msgDoc.data().status;
+                            return;
+                        }
+                    }
+                }
+                existingRequestStatus = null;
             }
 
             // --- COMPOSER STATE ---
@@ -941,7 +1003,7 @@
             // --- AUTH & SECURITY LOGIC ---
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    onSnapshot(doc(db, "users", user.uid), (uSnap) => {
+                    onSnapshot(doc(db, "users", user.uid), async (uSnap) => {
                         if (uSnap.exists()) {
                             const data = uSnap.data();
                             
@@ -950,6 +1012,9 @@
                             internalSchoolName = data.schoolName || "Global Campus";
                             const isStudent = data.isStudent === true;
                             
+                            // Check existing request status
+                            await checkExistingRequest(currentUser.uid);
+                            
                             // ACCESS CONTROL FOR PRIVATE TOPICS
                             if (currentTopicData && currentTopicData.visibility === 'private') {
                                 const isCreator = currentTopicData.createdBy === currentUser.uid;
@@ -957,7 +1022,7 @@
                                 const isAdmin = currentUser.role === 'admin';
                                 
                                 if (!isCreator && !isMember && !isAdmin) {
-                                    showLockedScreen();
+                                    showLockedScreenWithRequest();
                                     return;
                                 }
                             }
@@ -1038,13 +1103,108 @@
                 }
             });
 
-            function showLockedScreen() {
+            function showLockedScreenWithRequest() {
                 const hl = document.getElementById('hub-layout');
                 const mtw = document.getElementById('mobile-topics-wrapper');
                 const ls = document.getElementById('locked-screen');
                 if (hl) hl.style.display = 'none';
                 if (mtw) mtw.style.display = 'none';
                 if (ls) ls.style.display = 'flex';
+
+                const requestBtn = document.getElementById('btn-request-join');
+                const statusEl = document.getElementById('request-status');
+                const lockIcon = document.getElementById('lock-icon');
+                
+                // Update UI based on existing request status
+                if (existingRequestStatus === 'pending') {
+                    requestBtn.style.display = 'none';
+                    statusEl.style.display = 'block';
+                    statusEl.innerHTML = `<i class="fas fa-clock"></i> ${ui.request_pending}`;
+                    lockIcon.className = 'fas fa-hourglass-half';
+                } else if (existingRequestStatus === 'approved') {
+                    requestBtn.style.display = 'none';
+                    statusEl.style.display = 'block';
+                    statusEl.innerHTML = `<i class="fas fa-check-circle" style="color: #2E7D32;"></i> ${ui.request_approved}`;
+                    lockIcon.className = 'fas fa-check-circle';
+                } else if (existingRequestStatus === 'rejected') {
+                    requestBtn.style.display = 'block';
+                    requestBtn.innerHTML = `<i class="fas fa-redo-alt"></i> ${ui.request_rejected}`;
+                    statusEl.style.display = 'none';
+                    lockIcon.className = 'fas fa-lock';
+                } else {
+                    requestBtn.style.display = 'block';
+                    requestBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${ui.request_join}`;
+                    statusEl.style.display = 'none';
+                    lockIcon.className = 'fas fa-lock';
+                }
+
+                requestBtn.onclick = async () => {
+                    if (!currentUser) return;
+                    requestBtn.disabled = true;
+                    requestBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+                    
+                    try {
+                        const ownerUid = currentTopicData.createdBy;
+                        
+                        // Find or create conversation between currentUser and topic owner
+                        const convQuery = query(
+                            collection(db, "conversations"),
+                            where("participants", "array-contains", currentUser.uid)
+                        );
+                        const convSnap = await getDocs(convQuery);
+                        let conversationId = null;
+                        
+                        for (const docSnap of convSnap.docs) {
+                            const data = docSnap.data();
+                            if (data.participants.length === 2 && 
+                                data.participants.includes(ownerUid)) {
+                                conversationId = docSnap.id;
+                                break;
+                            }
+                        }
+                        
+                        if (!conversationId) {
+                            const convRef = await addDoc(collection(db, "conversations"), {
+                                participants: [currentUser.uid, ownerUid],
+                                lastMessage: `${currentUser.displayName} requested to join ${currentTopicName}`,
+                                lastMessageTimestamp: serverTimestamp(),
+                                createdAt: serverTimestamp()
+                            });
+                            conversationId = convRef.id;
+                        }
+                        
+                        // Send join request message
+                        await addDoc(collection(db, "conversations", conversationId, "messages"), {
+                            type: 'join_request',
+                            topicId: topicId,
+                            topicName: currentTopicName,
+                            senderUid: currentUser.uid,
+                            senderName: currentUser.displayName,
+                            senderPhoto: currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`,
+                            recipientUid: ownerUid,
+                            status: 'pending',
+                            text: `${currentUser.displayName} requested to join #${currentTopicName}`,
+                            timestamp: serverTimestamp()
+                        });
+                        
+                        await updateDoc(doc(db, "conversations", conversationId), {
+                            lastMessage: `${currentUser.displayName} requested to join ${currentTopicName}`,
+                            lastMessageTimestamp: serverTimestamp()
+                        });
+                        
+                        existingRequestStatus = 'pending';
+                        requestBtn.style.display = 'none';
+                        statusEl.style.display = 'block';
+                        statusEl.innerHTML = `<i class="fas fa-clock"></i> ${ui.request_sent}`;
+                        lockIcon.className = 'fas fa-hourglass-half';
+                        
+                    } catch (e) {
+                        console.error(e);
+                        alert("Failed to send request. Please try again.");
+                        requestBtn.disabled = false;
+                        requestBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${ui.request_join}`;
+                    }
+                };
             }
 
             function showHubLayout() {
