@@ -4,37 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>List an Item - Scoralia</title>
-    
-    <!-- Preconnect to external origins -->
+    <script type="module" src="global.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-    <link rel="preconnect" href="https://www.gstatic.com">
-    <link rel="preconnect" href="https://firestore.googleapis.com">
-    
-    <!-- DNS Prefetch -->
-    <link rel="dns-prefetch" href="https://firebaseapp.com">
-    <link rel="dns-prefetch" href="https://googleapis.com">
-    
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json">
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="/icons/icon-192.png">
-    
-    <!-- Modulepreload for critical JS -->
-    <link rel="modulepreload" href="/global.js">
-    
-    <!-- Preload critical fonts -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,700;0,900;1,700&family=Source+Sans+3:wght@300;400;500;600&display=swap">
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,700;0,900;1,700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome with integrity -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
-    
-    <!-- HTML5 QR Code Scanner -->
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    
-    <script type="module" src="global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
             --ink:       #0C1446;
@@ -46,7 +21,7 @@
             --text-body: #1a2a4a;
             --text-muted:#6b84a3;
             --gold:      #C8A96E;
-            --deep:      #2B5C92;
+            --green:     #2E7D5E;
             --red:       #C0392B;
             --radius-sm: 8px;
             --radius-md: 16px;
@@ -126,7 +101,6 @@
         .suggestion-item:last-child { border-bottom: none; }
         .suggestion-item:hover { background: var(--surface); }
         .suggestion-count { font-size: 0.75rem; color: var(--text-muted); background: var(--surface); padding: 2px 8px; border-radius: 50px; border: 1px solid var(--mist); }
-        .create-tag-item { color: var(--deep); font-weight: 600; border-top: 1px dashed var(--mist); }
 
         .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .two-col > div { display: flex; flex-direction: column; }
@@ -155,21 +129,8 @@
         .btn-cancel { flex: 1; min-width: 120px; background: var(--surface); color: var(--text-muted); border: 1.5px solid rgba(179,205,224,0.5); border-radius: var(--radius-sm); padding: 12px 20px; font-family: var(--font-body); font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s, color 0.2s; }
         .btn-cancel:hover { background: var(--mist); color: var(--ink); }
 
-        .social-promo {
-            margin-top: 16px;
-            text-align: center;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            background: var(--off-white);
-            padding: 8px 12px;
-            border-radius: 40px;
-            display: inline-block;
-            width: 100%;
-        }
-        .social-promo i {
-            color: var(--gold);
-            margin-right: 6px;
-        }
+        .social-promo { margin-top: 16px; text-align: center; font-size: 0.8rem; color: var(--text-muted); background: var(--off-white); padding: 8px 12px; border-radius: 40px; display: inline-block; width: 100%; }
+        .social-promo i { color: var(--gold); margin-right: 6px; }
 
         @media (max-width: 767px) {
             nav { display: none; }
@@ -197,6 +158,7 @@
                 <ul>
                     <li><a href="/search.html">Browse</a></li>
                     <li><a href="/my-listings.html">My Listings</a></li>
+                    <li><a href="/social.html">Campus Hub</a></li>
                     <li><a href="/messages.html">Messages</a></li>
                 </ul>
             </nav>
@@ -236,6 +198,7 @@
         <div id="main-form-section" style="display: none;">
             <div class="form-wrapper">
                 <form id="listing-form">
+                    <!-- HIDDEN FIELD FOR ISBN -->
                     <input type="hidden" id="listing-isbn" value="">
 
                     <div class="form-section">
@@ -355,7 +318,7 @@
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, limit } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, setDoc, increment, limit, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -382,9 +345,10 @@
                     lblPhotos: "Photos (Max 5, Max 5MB each)", btnAddPhoto: "Add Photo", btnPost: "Submit for Review", btnCancel: "Cancel",
                     priceErr: "Price cannot exceed $1200.", origPriceErr: "Original price cannot exceed $5000.",
                     imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type.",
-                    imgSizeErr: "Image too large (Max 5MB).", uploading: "Saving listing…",
+                    imgSizeErr: "Image too large (Max 5MB).", uploading: "Uploading Images…",
                     tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.",
-                    tagUses: "uses"
+                    tagUses: "uses", uploadFail: "Image upload failed. Please try again.",
+                    reviewMessage: "Your listing is being reviewed. You will be notified once approved."
                 },
                 fr: {
                     mainTitle: "Publier un article", mainSub: "Remplissez les détails ci-dessous et votre livre sera automatiquement examiné.",
@@ -402,9 +366,10 @@
                     lblPhotos: "Photos (Max 5, Max 5MB chacune)", btnAddPhoto: "Ajouter une photo", btnPost: "Soumettre pour examen", btnCancel: "Annuler",
                     priceErr: "Le prix ne peut dépasser 1200$.", origPriceErr: "Le prix d'origine ne peut dépasser 5000$.",
                     imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté.",
-                    imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Enregistrement…",
+                    imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Téléchargement…",
                     tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.",
-                    tagUses: "utilisations"
+                    tagUses: "utilisations", uploadFail: "Échec du téléchargement. Veuillez réessayer.",
+                    reviewMessage: "Votre annonce est en cours d'examen. Vous serez notifié une fois approuvée."
                 }
             };
 
@@ -451,8 +416,7 @@
             let currentUser = null;
             let internalSchoolName = "Global Campus";
             let selectedFiles = [];
-            let tags =[];
-            let currentISBN = null;  
+            let tags = [];
             const pageLoader = document.getElementById('page-loader');
             const loaderTimeout = setTimeout(() => { pageLoader.style.display = 'none'; }, 4000);
 
@@ -470,7 +434,6 @@
 
             let html5QrCode;
             
-            // --- ISBN LOOKUP WITH LANGUAGE SUPPORT ---
             const isbnCache = {};
             try {
                 const saved = localStorage.getItem('scoralia_isbn_cache');
@@ -500,7 +463,7 @@
                     const cached = isbnCache[cleanIsbn];
                     document.getElementById('listing-title').value = cached.title;
                     document.getElementById('listing-description').value = cached.description;
-                    document.getElementById('listing-isbn').value = cleanIsbn;
+                    document.getElementById('listing-isbn').value = cleanIsbn; // SAVES THE ISBN
                     document.getElementById('isbn-section').style.display = 'none';
                     document.getElementById('main-form-section').style.display = 'block';
                     if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
@@ -539,70 +502,14 @@
                             bookData = { title: fullTitle, description: description };
                         }
                     }
-                } catch (err) { console.warn("OpenLibrary work fetch failed:", err); }
-
-                // If French is requested and we still don't have description, try Google Books with lang=fr
-                if (isFrench && (!bookData || !bookData.description)) {
-                    try {
-                        const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}&maxResults=1&lang=fr`;
-                        const res = await fetch(url);
-                        if (res.ok && res.status !== 429) {
-                            const data = await res.json();
-                            if (data.items && data.items.length > 0) {
-                                const book = data.items[0].volumeInfo;
-                                let fullTitle = book.title || "Unknown Title";
-                                if (book.authors && book.authors.length) {
-                                    fullTitle += ` par ${book.authors.join(', ')}`;
-                                }
-                                let originalDesc = book.description ? book.description.replace(/<[^>]*>?/gm, '') : "";
-                                if (originalDesc) {
-                                    bookData = { title: fullTitle, description: originalDesc };
-                                }
-                            }
-                        }
-                    } catch (err) { console.warn("Google Books French fetch failed:", err); }
-                }
-
-                // Fallback to English Google Books if still no data
-                if (!bookData) {
-                    for (let attempt = 1; attempt <= 2; attempt++) {
-                        try {
-                            const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}&maxResults=1`;
-                            const res = await fetch(url);
-                            if (res.status === 429) {
-                                if (attempt === 1) {
-                                    await new Promise(r => setTimeout(r, 2000));
-                                    continue;
-                                } else {
-                                    throw new Error("Rate limit exceeded");
-                                }
-                            }
-                            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                            const data = await res.json();
-                            if (data.items && data.items.length > 0) {
-                                const book = data.items[0].volumeInfo;
-                                let fullTitle = book.title || "Unknown Title";
-                                if (book.authors && book.authors.length) {
-                                    fullTitle += ` by ${book.authors.join(', ')}`;
-                                }
-                                let originalDesc = book.description ? book.description.replace(/<[^>]*>?/gm, '') : "";
-                                if (originalDesc) {
-                                    bookData = { title: fullTitle, description: originalDesc };
-                                    break;
-                                }
-                            }
-                        } catch (err) {
-                            console.warn(`Google Books attempt ${attempt} failed:`, err);
-                        }
-                    }
-                }
+                } catch (err) { console.warn("OpenLibrary fetch failed:", err); }
 
                 if (bookData && bookData.title && bookData.description) {
                     isbnCache[cleanIsbn] = bookData;
                     saveCache();
                     document.getElementById('listing-title').value = bookData.title;
                     document.getElementById('listing-description').value = bookData.description;
-                    document.getElementById('listing-isbn').value = cleanIsbn;
+                    document.getElementById('listing-isbn').value = cleanIsbn; // SAVES THE ISBN
                     document.getElementById('isbn-section').style.display = 'none';
                     document.getElementById('main-form-section').style.display = 'block';
                     if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
@@ -658,9 +565,9 @@
             }
 
             tagInput.oninput = async (e) => {
-                const val = e.target.value.trim();
+                const val = e.target.value.trim().toLowerCase();
                 if (val.length < 1) { suggestionsBox.style.display = 'none'; return; }
-                const snap = await getDocs(query(collection(db, "global_tags"), where("tag_lowercase", ">=", val.toLowerCase()), where("tag_lowercase", "<=", val.toLowerCase() + "\uf8ff"), limit(5)));
+                const snap = await getDocs(query(collection(db, "global_tags"), where("tag_lowercase", ">=", val), where("tag_lowercase", "<=", val + "\uf8ff"), limit(5)));
                 suggestionsBox.innerHTML = '';
                 let hasMatch = false;
                 if (!snap.empty) {
@@ -709,7 +616,7 @@
                 e.target.value = '';
             };
 
-            // --- SUBMIT HANDLER WITH BACKGROUND MODERATION WAITING ---
+            // --- SUBMIT HANDLER ---
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
                 const title = document.getElementById('listing-title').value.trim();
@@ -722,11 +629,11 @@
                 const submitBtn = document.getElementById('postListingBtn');
                 const postBtnText = document.getElementById('post-btn-text');
                 submitBtn.disabled = true;
-                postBtnText.textContent = ui[lang].uploading;
+                postBtnText.textContent = "AI Safety Check... (Please wait)";
 
                 try {
                     // 1. Upload images to Cloudinary
-                    const imageUrls =[];
+                    const imageUrls = [];
                     for (const file of selectedFiles) {
                         const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
                         const formData = new FormData();
@@ -737,38 +644,58 @@
                         if (res.secure_url) imageUrls.push(res.secure_url);
                     }
 
-                    // 2. Create listing with status "pending"
+                    // 2. Fetch ISBN safely
+                    const rawIsbn = document.getElementById('listing-isbn').value.trim();
+                    const cleanIsbn = rawIsbn ? rawIsbn.replace(/[^0-9]/g, '') : null;
+
+                    // 3. Create listing with status "pending"
                     const listingRef = await addDoc(collection(db, 'listings'), {
                         title, description: desc, price, 
                         condition: document.getElementById('listing-condition').value,
                         digitalCode: document.getElementById('listing-digital-code').value,
                         location: document.getElementById('listing-location').value,
                         tags, imageUrls,
-                        posterUid: currentUser.uid,
-                        posterDisplayName: currentUser.displayName || "User",
-                        status: 'pending',
-                        timestamp: serverTimestamp() 
-                    });
-                    
-                    // Clean the ISBN (remove dashes and spaces)
-                    const rawIsbn = document.getElementById('listing-isbn').value;
-                    const cleanIsbn = rawIsbn ? rawIsbn.replace(/[^0-9X]/gi, '') : "";
-
-                    const listingRef = await addDoc(collection(db, 'listings'), {
-                        title, description: desc, price, 
-                        condition: document.getElementById('listing-condition').value,
-                        digitalCode: document.getElementById('listing-digital-code').value,
-                        location: document.getElementById('listing-location').value,
-                        isbn: cleanIsbn, // <--- EXPLICITLY SAVE CLEAN ISBN
-                        tags, imageUrls,
+                        isbn: cleanIsbn, // <--- THE ISBN FIX IS APPLIED HERE
                         posterUid: currentUser.uid,
                         posterDisplayName: currentUser.displayName || "User",
                         status: 'pending',
                         timestamp: serverTimestamp() 
                     });
 
-                    // 3. Instantly redirect. The moderation will be handled in the background by my-listings.html
-                    window.location.href = `/my-listings.html`;
+                    // 4. Wait for Moderation BEFORE redirecting
+                    try {
+                        const aiRes = await fetch('/.netlify/functions/moderate-listing', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ imageUrls, title, description: desc })
+                        });
+                        
+                        if (!aiRes.ok) throw new Error("Moderation server error");
+                        
+                        const aiData = await aiRes.json();
+
+                        if (aiData.verdict === "UNSAFE") {
+                            await updateDoc(doc(db, "listings", listingRef.id), {
+                                status: 'rejected',
+                                rejectionReason: aiData.reason || "Violates community guidelines."
+                            });
+                            // If user is stuck here because of a block, show alert
+                            alert("Your listing was rejected by safety checks: " + (aiData.reason || "Inappropriate content."));
+                            submitBtn.disabled = false;
+                            postBtnText.textContent = ui[lang].btnPost;
+                            return; 
+                        } else {
+                            await updateDoc(doc(db, "listings", listingRef.id), {
+                                status: 'active',
+                                approvedAt: serverTimestamp()
+                            });
+                            // Redirect to My Listings
+                            window.location.href = `/my-listings.html`;
+                        }
+                    } catch (err) {
+                        console.error("Moderation failed or timed out:", err);
+                        window.location.href = `/my-listings.html?pending=true&id=${listingRef.id}`;
+                    }
 
                 } catch (err) {
                     alert("Error: " + err.message);
