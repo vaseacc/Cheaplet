@@ -3,161 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Activity Feed — Scoralia</title>
-    
-    <!-- Fonts -->
+    <title>My Activity — Scoralia</title>
+    <script type="module" src="global.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-    <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root {
-            --ink:       #0C1446;      /* Navy */
-            --deep:      #2B5C92;      /* Deep Blue */
-            --gold:      #C8A96E;      /* Gold */
+            --ink:       #0C1446;
+            --deep:      #2B5C92;
             --off-white: #F8FAFC;
             --white:     #FFFFFF;
+            --gold:      #C8A96E;
             --text-main: #0f172a;
-            --text-muted:#64748b;
+            --text-muted:#476483;
             --radius:    16px;
             --shadow:    0 4px 20px rgba(12,20,70,0.05);
             --border:    1px solid #e2e8f0;
             --red:       #e53e3e;
             --green:     #2E7D32;
-            --surface:   #f1f5f9;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'DM Sans', sans-serif; background: var(--off-white); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
 
-        /* --- Header --- */
         header { position: sticky; top: 0; z-index: 200; background: var(--ink); border-bottom: 1px solid rgba(255,255,255,0.1); width: 100%; flex-shrink: 0; }
-        .header-inner { max-width: 1200px; margin: 0 auto; padding: 0 20px; height: 70px; display: flex; align-items: center; justify-content: space-between; }
+        .header-inner { max-width: 1100px; margin: 0 auto; padding: 0 20px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
         .logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: -0.5px; }
         .logo em { color: var(--gold); font-style: normal; }
 
-        /* Desktop Nav */
-        .desktop-nav { display: flex; gap: 25px; }
-        .nav-link { color: rgba(255,255,255,0.8); text-decoration: none; font-weight: 500; font-size: 0.95rem; transition: 0.2s; display: flex; align-items: center; gap: 8px; }
-        .nav-link:hover, .nav-link.active { color: var(--gold); }
-        
-        /* Mobile Menu Button */
-        .mobile-menu-btn { display: none; background: none; border: none; color: #fff; font-size: 1.4rem; cursor: pointer; }
+        .page-header { background: linear-gradient(135deg, var(--ink) 0%, var(--deep) 60%, #4a7db5 100%); padding: 50px 20px; text-align: center; color: var(--white); position: relative; }
+        .page-header h1 { font-family: 'Playfair Display', serif; font-size: 2.4rem; font-weight: 900; margin-bottom: 10px; }
+        .page-header p { color: rgba(255,255,255,0.8); font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
 
-        /* --- Page Header --- */
-        .page-header { background: linear-gradient(135deg, var(--ink) 0%, var(--deep) 60%, #4a7db5 100%); padding: 40px 20px; text-align: center; color: var(--white); position: relative; }
-        .page-header h1 { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 900; margin-bottom: 10px; }
-        .page-header p { color: rgba(255,255,255,0.8); font-size: 1rem; }
+        .main-wrapper { max-width: 800px; margin: 30px auto; padding: 0 20px; width: 100%; flex-grow: 1; display: flex; flex-direction: column; gap: 20px; }
 
-        /* --- Main Layout --- */
-        .main-wrapper { max-width: 700px; margin: 30px auto; padding: 0 20px; width: 100%; flex-grow: 1; display: flex; flex-direction: column; gap: 20px; }
-
-        /* --- Activity Cards --- */
-        .activity-card { background: var(--white); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); border: var(--border); animation: fadeUp 0.4s ease both; width: 100%; position: relative; }
+        /* ── ACTIVITY CARDS ── */
+        .activity-card { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border: var(--border); display: flex; gap: 15px; animation: fadeUp 0.4s ease both; transition: transform 0.2s; }
+        .activity-card:hover { transform: translateY(-2px); border-color: var(--gold); }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-        .activity-header { display: flex; align-items: flex-start; gap: 15px; margin-bottom: 15px; }
-        .user-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); background: #eee; }
+        .activity-icon-wrap { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.1rem; }
+        .icon-post { background: rgba(43,92,146,0.1); color: var(--deep); }
+        .icon-comment { background: rgba(200,169,110,0.1); color: var(--gold); }
+        .icon-like { background: rgba(229,62,62,0.1); color: var(--red); }
+        .icon-topic { background: rgba(46,125,50,0.1); color: var(--green); }
+
+        .activity-content { flex-grow: 1; min-width: 0; }
+        .activity-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+        .activity-type { font-weight: 800; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+        .activity-time { font-size: 0.75rem; color: #94a3b8; }
         
-        .activity-meta { flex: 1; }
-        .user-name { font-weight: 700; color: var(--ink); font-size: 1rem; display: block; }
-        .activity-action { color: var(--text-muted); font-size: 0.9rem; margin-top: 2px; }
-        .activity-time { font-size: 0.75rem; color: #94a3b8; margin-top: 4px; }
-        
-        .source-badge { font-size: 0.7rem; background: var(--surface); color: var(--deep); padding: 2px 8px; border-radius: 12px; font-weight: 700; margin-left: 8px; border: 1px solid #cbd5e1; }
+        .activity-text { font-size: 1rem; line-height: 1.5; color: var(--text-main); margin-bottom: 12px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .activity-link { font-size: 0.85rem; color: var(--deep); text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
+        .activity-link:hover { text-decoration: underline; }
 
-        .activity-content { font-size: 1rem; line-height: 1.6; color: #334155; white-space: pre-wrap; margin-bottom: 15px; background: #f8fafc; padding: 15px; border-radius: 12px; }
-        .activity-img { width: 100%; max-height: 300px; object-fit: cover; border-radius: 12px; border: 1px solid #e2e8f0; margin-top: 10px; display: block; }
+        .btn-delete { background: none; border: none; color: var(--red); cursor: pointer; padding: 5px; opacity: 0.6; transition: 0.2s; font-size: 0.9rem; }
+        .btn-delete:hover { opacity: 1; transform: scale(1.1); }
 
-        .activity-footer { display: flex; gap: 20px; padding-top: 15px; border-top: 1px solid #f1f5f9; margin-top: 10px; }
-        .action-btn { background: none; border: none; color: var(--text-muted); font-size: 0.9rem; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; font-weight: 500; }
-        .action-btn:hover { color: var(--deep); }
-        .action-btn.liked { color: var(--red); }
-
-        /* Loaders & Empty States */
-        .loader-msg { text-align: center; padding: 50px; color: var(--text-muted); }
+        .loader-msg { text-align: center; padding: 50px; color: var(--text-muted); font-weight: 600; }
         .loader-msg i { font-size: 2rem; color: var(--gold); margin-bottom: 15px; display: block; }
-        .empty-state { text-align: center; padding: 60px 20px; background: var(--white); border-radius: var(--radius); border: var(--border); box-shadow: var(--shadow); }
-        .empty-state i { font-size: 3rem; color: #cbd5e1; margin-bottom: 15px; display: block; }
-
-        /* --- Mobile Drawer --- */
-        .mobile-drawer { position: fixed; top: 0; right: -100%; width: 80%; max-width: 300px; height: 100vh; background: var(--white); z-index: 2000; transition: right 0.3s ease; box-shadow: -2px 0 10px rgba(0,0,0,0.2); padding: 2rem 1.5rem; display: flex; flex-direction: column; }
-        .mobile-drawer.open { right: 0; }
-        .drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid #eee; padding-bottom: 1rem; }
-        .close-drawer { background: none; border: none; font-size: 1.5rem; color: var(--ink); cursor: pointer; }
-        .mobile-nav-links { display: flex; flex-direction: column; gap: 1.5rem; }
-        .mobile-nav-link { text-decoration: none; color: var(--ink); font-weight: 600; font-size: 1.1rem; display: flex; align-items: center; gap: 1rem; padding: 0.5rem 0; }
-        .mobile-nav-link.active { color: var(--gold); }
         
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1999; display: none; backdrop-filter: blur(2px); }
-        .overlay.active { display: block; }
+        .empty-state { text-align: center; padding: 60px 20px; background: var(--white); border-radius: var(--radius); border: var(--border); box-shadow: var(--shadow); }
+        .empty-state i { font-size: 3rem; color: var(--mist); margin-bottom: 15px; display: block; }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            .desktop-nav { display: none; }
-            .mobile-menu-btn { display: block; }
-            .page-header h1 { font-size: 1.8rem; }
-            .activity-card { padding: 16px; }
-        }
-
-        /* Custom Dialog Modals - Required for scoraliaAlert/Confirm */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(12,20,70,0.8); backdrop-filter: blur(6px); z-index: 10020; display: none; justify-content: center; align-items: center; padding: 20px; }
+        /* Custom Dialog Modals */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(12,20,70,0.8); backdrop-filter: blur(4px); z-index: 10020; display: none; justify-content: center; align-items: center; padding: 20px; }
         .modal-card { background: var(--white); padding: 35px 30px; border-radius: var(--radius); width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
         .modal-buttons { display: flex; gap: 10px; margin-top: 25px; }
         .modal-buttons button { flex: 1; padding: 12px; border-radius: 30px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; }
-        .btn-confirm { background: var(--ink); color: white; }
-        .btn-cancel { background: var(--off-white); color: var(--ink); border: 1px solid var(--border) !important; }
+        .btn-confirm { background: var(--red); color: white; }
+        .btn-cancel { background: var(--surface); color: var(--ink); border: 1px solid var(--border) !important; }
+
+        @media (max-width: 768px) {
+            .page-header h1 { font-size: 1.8rem; }
+            nav { display: none; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- Header -->
     <header>
         <div class="header-inner">
             <a href="/index.html" class="logo">Scor<em>alia</em></a>
-            
-            <!-- Desktop Navigation -->
-            <nav class="desktop-nav" id="desktopNav">
-                <!-- Injected via JS -->
-            </nav>
-
-            <!-- Mobile Menu Button -->
-            <button class="mobile-menu-btn" id="mobileMenuBtn">
-                <i class="fas fa-bars"></i>
-            </button>
+            <div class="header-right"></div>
         </div>
     </header>
 
-    <!-- Mobile Drawer -->
-    <div class="overlay" id="overlay"></div>
-    <div class="mobile-drawer" id="mobileDrawer">
-        <div class="drawer-header">
-            <h2 style="color: var(--ink); font-family: 'Playfair Display';">Menu</h2>
-            <button class="close-drawer" id="closeDrawer"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="mobile-nav-links" id="mobileNavLinks">
-            <!-- Injected via JS -->
-        </div>
-    </div>
-
-    <!-- Page Header -->
     <div class="page-header">
-        <h1>Community Activity</h1>
-        <p>See what's happening across campus right now.</p>
+        <h1 data-i18n="nav_activity">My Activity</h1>
+        <p data-i18n="activity_sub">Manage your contributions to the Scoralia community.</p>
     </div>
 
-    <!-- Main Feed -->
-    <main class="main-wrapper" id="activityFeed">
-        <div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br>Loading activity...</div>
+    <main class="main-wrapper" id="activity-feed">
+        <div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span data-i18n="loading_activity">Loading your timeline...</span></div>
     </main>
 
-    <!-- Custom Dialog Modal -->
+    <!-- CUSTOM DIALOG MODAL -->
     <div class="modal-overlay" id="custom-dialog-modal">
         <div class="modal-card">
-            <h2 id="dialog-title" style="color: var(--ink); margin-bottom: 10px;">Confirm</h2>
-            <p id="dialog-message" style="color: var(--text-muted);">Are you sure?</p>
+            <h2 id="dialog-title" style="font-family: 'Playfair Display', serif; color: var(--ink); margin-bottom: 10px;">Confirm Action</h2>
+            <p id="dialog-message" style="color: var(--text-muted); line-height: 1.5;">Are you sure you want to proceed?</p>
             <div class="modal-buttons">
                 <button class="btn-cancel" id="dialog-cancel">Cancel</button>
                 <button class="btn-confirm" id="dialog-confirm">Confirm</button>
@@ -166,406 +114,142 @@
     </div>
 
     <script type="module">
-        // Import Firebase functions directly from CDN
-        import { getFirestore, collection, query, orderBy, limit, getDocs, doc, runTransaction, updateDoc, increment, where } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
-        
-        // ============================================
-        // BOOTSTRAP PATTERN: Fetch config first
-        // ============================================
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs, deleteDoc, doc, orderBy, limit } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+
         async function main() {
-            try {
-                // Step 1: Fetch config from Netlify function
-                const configResponse = await fetch('/.netlify/functions/config');
-                if (!configResponse.ok) {
-                    throw new Error('Failed to fetch configuration');
+            // 1. BOOTSTRAP: Get config before anything else
+            const response = await fetch('/.netlify/functions/config');
+            const config = await response.json();
+            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+
+            const lang = localStorage.getItem('preferred_language') || 'en';
+            const uiStrings = {
+                en: { 
+                    post: "Post", comment: "Comment", like: "Like", topic: "New Topic", view: "View Original", del_confirm: "Permanently delete this activity?",
+                    empty: "No activity found.", del_success: "Deleted successfully."
+                },
+                fr: { 
+                    post: "Publication", comment: "Commentaire", like: "J'aime", topic: "Nouveau Sujet", view: "Voir l'original", del_confirm: "Supprimer définitivement cette activité ?",
+                    empty: "Aucune activité trouvée.", del_success: "Supprimé avec succès."
                 }
-                const config = await configResponse.json();
-                
-                // Step 2: Initialize Firebase with config
-                const { initializeApp, getApps, getApp } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js');
-                const { getAuth, onAuthStateChanged } = await import('https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js');
-                
-                const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
-                const db = getFirestore(app);
-                const auth = getAuth(app);
-                
-                // Expose globally for compatibility
-                window.db = db;
-                window.auth = auth;
-                
-                // Step 3: Wait for auth state
-                const currentUser = await new Promise((resolve) => {
-                    const unsubscribe = onAuthStateChanged(auth, (user) => {
-                        unsubscribe();
-                        resolve(user);
-                    });
+            };
+            const ui = uiStrings[lang];
+
+            const feedContainer = document.getElementById('activity-feed');
+
+            // --- Custom Dialog System ---
+            window.scoraliaConfirm = (msg) => {
+                return new Promise(res => {
+                    const modal = document.getElementById('custom-dialog-modal');
+                    document.getElementById('dialog-message').textContent = msg;
+                    modal.style.display = 'flex';
+                    document.getElementById('dialog-confirm').onclick = () => { modal.style.display = 'none'; res(true); };
+                    document.getElementById('dialog-cancel').onclick = () => { modal.style.display = 'none'; res(false); };
                 });
-                
-                window.firebaseUser = currentUser;
-                
-                // Step 4: Initialize custom dialog system
-                initCustomDialogs();
-                
-                // Step 5: Setup mobile navigation
-                setupMobileNav();
-                
-                // Step 6: Load activity feed
-                await loadGlobalActivityFeed(db, currentUser);
-                
-            } catch (error) {
-                console.error('Bootstrap error:', error);
-                const feedContainer = document.getElementById('activityFeed');
-                feedContainer.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <p style="color: var(--red);">Failed to initialize. Please refresh the page.</p>
-                    </div>
-                `;
+            };
+
+            onAuthStateChanged(auth, user => {
+                if (user) loadActivity(user.uid);
+                else window.location.href = '/login.html';
+            });
+
+            async function loadActivity(uid) {
+                try {
+                    let timeline = [];
+
+                    // Collection definitions
+                    const postColls = ["social_posts_global", "social_posts_rosemont", "social_posts"];
+                    
+                    const fetchPosts = postColls.map(async (collName) => {
+                        const q = query(collection(db, collName), where("authorUid", "==", uid), limit(20));
+                        const snap = await getDocs(q);
+                        snap.forEach(d => timeline.push({ type: 'post', id: d.id, collection: collName, ...d.data() }));
+                    });
+
+                    const fetchLikes = postColls.map(async (collName) => {
+                        const q = query(collection(db, collName), where("likedBy", "array-contains", uid), limit(20));
+                        const snap = await getDocs(q);
+                        snap.forEach(d => timeline.push({ type: 'like', id: d.id, collection: collName, ...d.data() }));
+                    });
+
+                    const fetchTopics = (async () => {
+                        const q = query(collection(db, "social_channels"), where("createdBy", "==", uid), limit(10));
+                        const snap = await getDocs(q);
+                        snap.forEach(d => timeline.push({ type: 'topic', id: d.id, collection: 'social_channels', ...d.data() }));
+                    })();
+
+                    // We use Promise.all to fetch everything at the same time (faster)
+                    await Promise.all([...fetchPosts, ...fetchLikes, fetchTopics]);
+
+                    // Sort by newest first
+                    timeline.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+                    renderTimeline(timeline);
+                } catch (err) {
+                    console.error("Timeline error:", err);
+                    feedContainer.innerHTML = `<p style="text-align:center; color:var(--red);">Error loading activity feed.</p>`;
+                }
             }
-        }
-        
-        // Run bootstrap
-        main();
-        
-        // ============================================
-        // CUSTOM DIALOG SYSTEM
-        // ============================================
-        function initCustomDialogs() {
-            const modal = document.getElementById('custom-dialog-modal');
-            const titleEl = document.getElementById('dialog-title');
-            const messageEl = document.getElementById('dialog-message');
-            const confirmBtn = document.getElementById('dialog-confirm');
-            const cancelBtn = document.getElementById('dialog-cancel');
-            
-            let resolvePromise = null;
-            
-            window.scoraliaAlert = async (message, title = 'Notice') => {
-                return new Promise((resolve) => {
-                    titleEl.textContent = title;
-                    messageEl.textContent = message;
-                    confirmBtn.textContent = 'OK';
-                    cancelBtn.style.display = 'none';
-                    
-                    modal.style.display = 'flex';
-                    
-                    const handleClick = () => {
-                        cleanup();
-                        resolve(true);
-                    };
-                    
-                    const cleanup = () => {
-                        modal.style.display = 'none';
-                        confirmBtn.removeEventListener('click', handleClick);
-                    };
-                    
-                    confirmBtn.addEventListener('click', handleClick);
-                });
-            };
-            
-            window.scoraliaConfirm = async (message, title = 'Confirm') => {
-                return new Promise((resolve) => {
-                    titleEl.textContent = title;
-                    messageEl.textContent = message;
-                    confirmBtn.textContent = 'Confirm';
-                    cancelBtn.style.display = 'block';
-                    
-                    modal.style.display = 'flex';
-                    
-                    const handleConfirm = () => {
-                        cleanup();
-                        resolve(true);
-                    };
-                    
-                    const handleCancel = () => {
-                        cleanup();
-                        resolve(false);
-                    };
-                    
-                    const cleanup = () => {
-                        modal.style.display = 'none';
-                        confirmBtn.removeEventListener('click', handleConfirm);
-                        cancelBtn.removeEventListener('click', handleCancel);
-                    };
-                    
-                    confirmBtn.addEventListener('click', handleConfirm);
-                    cancelBtn.addEventListener('click', handleCancel);
-                });
-            };
-        }
-        
-        // ============================================
-        // MOBILE NAVIGATION
-        // ============================================
-        function setupMobileNav() {
-            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-            const mobileDrawer = document.getElementById('mobileDrawer');
-            const overlay = document.getElementById('overlay');
-            const closeDrawer = document.getElementById('closeDrawer');
-            const mobileNavLinks = document.getElementById('mobileNavLinks');
-            const desktopNav = document.getElementById('desktopNav');
-            
-            const navItems = [
-                { href: '/search.html', label: 'Browse', icon: 'fa-search' },
-                { href: '/my-listings.html', label: 'My Listings', icon: 'fa-book' },
-                { href: '/social.html', label: 'Campus Hub', icon: 'fa-users' },
-                { href: '/activity.html', label: 'Activity', icon: 'fa-bell', active: true },
-                { href: '/messages.html', label: 'Messages', icon: 'fa-envelope' },
-                { href: '/profile.html', label: 'My Profile', icon: 'fa-user-circle' }
-            ];
-            
-            // Build desktop nav
-            desktopNav.innerHTML = navItems.map(item => `
-                <a href="${item.href}" class="nav-link${item.active ? ' active' : ''}">
-                    <i class="fas ${item.icon}"></i> ${item.label}
-                </a>
-            `).join('');
-            
-            // Build mobile nav
-            mobileNavLinks.innerHTML = navItems.map(item => `
-                <a href="${item.href}" class="mobile-nav-link${item.active ? ' active' : ''}">
-                    <i class="fas ${item.icon}"></i> ${item.label}
-                </a>
-            `).join('');
-            
-            // Toggle drawer
-            const openDrawer = () => {
-                mobileDrawer.classList.add('open');
-                overlay.classList.add('active');
-            };
-            
-            const hideDrawer = () => {
-                mobileDrawer.classList.remove('open');
-                overlay.classList.remove('active');
-            };
-            
-            mobileMenuBtn.addEventListener('click', openDrawer);
-            closeDrawer.addEventListener('click', hideDrawer);
-            overlay.addEventListener('click', hideDrawer);
-        }
-        
-        // ============================================
-        // ACTIVITY FEED LOGIC
-        // ============================================
-        async function loadGlobalActivityFeed(db, currentUser) {
-            const feedContainer = document.getElementById('activityFeed');
-            
-            try {
-                const collectionsToQuery = [
-                    { name: 'social_posts_global', label: 'Global' },
-                    { name: 'social_posts_rosemont', label: 'Rosemont' },
-                    { name: 'social_posts', label: 'Topic' }
-                ];
-                
-                let allActivities = [];
-                
-                // Query all three collections
-                for (const collInfo of collectionsToQuery) {
-                    const q = query(
-                        collection(db, collInfo.name),
-                        orderBy('createdAt', 'desc'),
-                        limit(20)
-                    );
-                    
-                    const snapshot = await getDocs(q);
-                    
-                    snapshot.forEach(docSnap => {
-                        const data = docSnap.data();
-                        // Only include active posts (optimistic moderation: pending posts shown too for UX)
-                        if (data.status === 'active' || data.status === 'pending') {
-                            allActivities.push({
-                                id: docSnap.id,
-                                collection: collInfo.label,
-                                collectionName: collInfo.name,
-                                ...data
-                            });
-                        }
-                    });
+
+            function renderTimeline(items) {
+                feedContainer.innerHTML = '';
+                if (items.length === 0) {
+                    feedContainer.innerHTML = `<div class="empty-state"><i class="far fa-folder-open"></i><p>${ui.empty}</p></div>`;
+                    return;
                 }
-                
-                // Sort by createdAt descending
-                allActivities.sort((a, b) => {
-                    const timeA = a.createdAt?.seconds || 0;
-                    const timeB = b.createdAt?.seconds || 0;
-                    return timeB - timeA;
-                });
-                
-                // Limit to 30 total
-                allActivities = allActivities.slice(0, 30);
-                
-                if (allActivities.length === 0) {
-                    feedContainer.innerHTML = `
-                        <div class="empty-state">
-                            <i class="fas fa-inbox"></i>
-                            <h3>No Activity Yet</h3>
-                            <p style="color: var(--text-muted); margin-top: 10px;">Be the first to post something!</p>
-                            <a href="/social.html" class="btn" style="display: inline-flex; margin-top: 15px; background: var(--gold); color: var(--ink);">Go to Campus Hub</a>
+
+                items.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'activity-card';
+
+                    const date = item.timestamp ? new Date(item.timestamp.toDate()).toLocaleDateString(lang, { month: 'short', day: 'numeric' }) : 'Recently';
+                    
+                    let iconClass = "icon-post";
+                    let iconInner = "fa-pen";
+                    let label = ui.post;
+                    let link = item.wayId === 'general' ? '/social.html' : `/topic.html?id=${item.wayId || item.id}`;
+
+                    if (item.type === 'like') { iconClass = "icon-like"; iconInner = "fa-heart"; label = ui.like; }
+                    if (item.type === 'topic') { iconClass = "icon-topic"; iconInner = "fa-hashtag"; label = ui.topic; link = `/topic.html?id=${item.id}`; }
+
+                    card.innerHTML = `
+                        <div class="activity-icon-wrap ${iconClass}">
+                            <i class="fas ${iconInner}"></i>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-top">
+                                <span class="activity-type">${label}</span>
+                                <span class="activity-time">${date}</span>
+                            </div>
+                            <div class="activity-text">${item.text || item.name || item.description || ''}</div>
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <a href="${link}" class="activity-link">${ui.view} <i class="fas fa-arrow-right"></i></a>
+                                ${item.type !== 'like' ? `<button class="btn-delete" onclick="window.deleteItem('${item.id}', '${item.collection}')"><i class="fas fa-trash-alt"></i></button>` : ''}
+                            </div>
                         </div>
                     `;
-                    return;
-                }
-                
-                // Render activities
-                feedContainer.innerHTML = '';
-                
-                for (const activity of allActivities) {
-                    const card = await renderActivityCard(activity, db, currentUser);
                     feedContainer.appendChild(card);
-                }
-                
-            } catch (error) {
-                console.error('Error loading activity feed:', error);
-                feedContainer.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <p style="color: var(--red);">Failed to load activity. Please try again.</p>
-                    </div>
-                `;
+                });
             }
-        }
-        
-        async function renderActivityCard(activity, db, currentUser) {
-            const div = document.createElement('div');
-            div.className = 'activity-card';
-            
-            // Get user data
-            let userName = 'Unknown User';
-            let userAvatar = 'https://api.dicebear.com/7.x/identicon/svg?seed=unknown';
-            
-            if (activity.userId) {
-                try {
-                    const userDocRef = doc(db, 'users', activity.userId);
-                    const userDocSnap = await getDocs(query(collection(db, 'users'), where('__name__', '==', activity.userId)));
-                    if (!userDocSnap.empty) {
-                        const userData = userDocSnap.docs[0].data();
-                        userName = userData.displayName || userData.username || 'User';
-                        if (userData.photoURL && !userData.photoURL.includes('googleusercontent.com') && !userData.photoURL.includes('live.com')) {
-                            userAvatar = window.optimizeImageUrl(userData.photoURL);
-                        } else {
-                            userAvatar = `https://api.dicebear.com/7.x/identicon/svg?seed=${activity.userId}`;
-                        }
-                    }
-                } catch (e) {
-                    console.warn('Could not fetch user data:', e);
-                }
-            }
-            
-            // Format timestamp
-            let timeAgo = 'Just now';
-            if (activity.createdAt?.seconds) {
-                const diff = Date.now() - (activity.createdAt.seconds * 1000);
-                const minutes = Math.floor(diff / 60000);
-                const hours = Math.floor(diff / 3600000);
-                const days = Math.floor(diff / 86400000);
-                
-                if (minutes < 1) timeAgo = 'Just now';
-                else if (minutes < 60) timeAgo = `${minutes}m ago`;
-                else if (hours < 24) timeAgo = `${hours}h ago`;
-                else timeAgo = `${days}d ago`;
-            }
-            
-            // Optimize image if present
-            let optimizedImage = null;
-            if (activity.imageUrl) {
-                optimizedImage = window.optimizeImageUrl(activity.imageUrl);
-            }
-            
-            // Check if current user liked this post
-            const isLiked = currentUser && activity.likedBy && activity.likedBy.includes(currentUser.uid);
-            const likeCount = activity.likeCount || 0;
-            
-            div.innerHTML = `
-                <div class="activity-header">
-                    <img src="${userAvatar}" alt="${userName}" class="user-avatar" loading="lazy">
-                    <div class="activity-meta">
-                        <span class="user-name">${escapeHtml(userName)}</span>
-                        <span class="activity-action">posted in <strong>${escapeHtml(activity.collection || activity.topicName || 'Community')}</strong></span>
-                        <span class="source-badge">${activity.collectionLabel || 'Post'}</span>
-                        <div class="activity-time">${timeAgo}</div>
-                    </div>
-                </div>
-                <div class="activity-content">${escapeHtml(activity.content || '')}</div>
-                ${optimizedImage ? `<img src="${optimizedImage}" alt="Post image" class="activity-img" loading="lazy">` : ''}
-                <div class="activity-footer">
-                    <button class="action-btn${isLiked ? ' liked' : ''}" data-action="like" data-post-id="${activity.id}" data-collection="${activity.collectionName || 'social_posts'}">
-                        <i class="fas fa-heart"></i> ${likeCount}
-                    </button>
-                    <button class="action-btn" data-action="share" data-post-id="${activity.id}">
-                        <i class="fas fa-share"></i> Share
-                    </button>
-                </div>
-            `;
-            
-            // Add event listeners
-            const likeBtn = div.querySelector('[data-action="like"]');
-            const shareBtn = div.querySelector('[data-action="share"]');
-            
-            likeBtn.addEventListener('click', async () => {
-                if (!currentUser) {
-                    await window.scoraliaAlert('Please login to like posts.', 'Login Required');
-                    window.location.href = '/login.html';
-                    return;
-                }
-                
-                await handleLike(activity.id, activity.collectionName || 'social_posts', currentUser.uid, likeBtn);
-            });
-            
-            shareBtn.addEventListener('click', async () => {
-                const shareUrl = `${window.location.origin}/social.html?post=${activity.id}`;
-                
-                if (navigator.share) {
+
+            window.deleteItem = async (id, coll) => {
+                const confirmed = await window.scoraliaConfirm(ui.del_confirm);
+                if (confirmed) {
                     try {
-                        await navigator.share({
-                            title: 'Scoralia Post',
-                            text: activity.content?.substring(0, 100) || 'Check out this post!',
-                            url: shareUrl
-                        });
+                        await deleteDoc(doc(db, coll, id));
+                        // Re-load to show updated list
+                        loadActivity(auth.currentUser.uid);
                     } catch (e) {
-                        // User cancelled or share failed
+                        console.error(e);
                     }
-                } else {
-                    await navigator.clipboard.writeText(shareUrl);
-                    await window.scoraliaAlert('Link copied to clipboard!', 'Copied');
                 }
-            });
-            
-            return div;
+            };
         }
-        
-        async function handleLike(postId, collectionName, userId, btnElement) {
-            try {
-                const postRef = doc(window.db, collectionName, postId);
-                
-                // Optimistic UI update
-                const wasLiked = btnElement.classList.contains('liked');
-                const currentCount = parseInt(btnElement.innerHTML.match(/\d+/)?.[0] || '0');
-                
-                if (wasLiked) {
-                    btnElement.classList.remove('liked');
-                    btnElement.innerHTML = `<i class="fas fa-heart"></i> ${currentCount - 1}`;
-                    await updateDoc(postRef, {
-                        likeCount: increment(-1),
-                        likedBy: userId
-                    });
-                } else {
-                    btnElement.classList.add('liked');
-                    btnElement.innerHTML = `<i class="fas fa-heart"></i> ${currentCount + 1}`;
-                    await updateDoc(postRef, {
-                        likeCount: increment(1),
-                        likedBy: userId
-                    });
-                }
-            } catch (error) {
-                console.error('Error toggling like:', error);
-                await window.scoraliaAlert('Failed to update like. Please try again.', 'Error');
-            }
-        }
-        
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
+        main();
     </script>
 </body>
 </html>
