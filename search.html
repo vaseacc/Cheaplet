@@ -3,35 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <title>Browse Books — Scoralia</title>
-
-    <!-- Preconnect to external origins -->
+    
+    <!-- GLOBAL BRAIN -->
+    <script type="module" src="global.js"></script>
+    
+    <!-- FONTS & ICONS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-    <link rel="preconnect" href="https://www.gstatic.com">
-    <link rel="preconnect" href="https://firestore.googleapis.com">
-
-    <!-- DNS Prefetch -->
-    <link rel="dns-prefetch" href="https://firebaseapp.com">
-    <link rel="dns-prefetch" href="https://googleapis.com">
-
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="/manifest.json">
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-    <link rel="apple-touch-icon" href="/icons/icon-192.png">
-
-    <!-- Modulepreload for critical JS -->
-    <link rel="modulepreload" href="/global.js">
-
-    <!-- Preload critical fonts -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-
-    <!-- Font Awesome with integrity -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
-
-    <script type="module" src="global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         :root {
             --ink:       #0C1446;
@@ -43,7 +26,7 @@
             --text-body: #1a2a4a;
             --text-muted:#64748b;
             --gold:      #C8A96E;
-            --deep:      #2B5C92;
+            --green:     #2E7D32;
             --radius-md: 16px;
             --shadow-sm: 0 4px 20px rgba(12,20,70,0.06);
             --font-display: 'Playfair Display', Georgia, serif;
@@ -51,3 +34,249 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: var(--font-body); background-color: var(--off-white); color: var(--text-body); line-height: 1.6; }
+
+        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+        /* ── HEADER ── */
+        header { 
+            position: sticky; top: 0; z-index: 200; 
+            background: rgba(12, 20, 70, 0.97); backdrop-filter: blur(12px); 
+            border-bottom: 1px solid rgba(179,205,224,0.15); 
+        }
+        .header-inner { max-width: 1200px; margin: 0 auto; padding: 0 20px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-family: var(--font-display); font-size: 1.6rem; font-weight: 900; color: var(--white); text-decoration: none; letter-spacing: -0.5px; }
+        .logo em { color: var(--gold); font-style: normal; }
+        
+        nav ul { display: flex; list-style: none; gap: 28px; }
+        nav ul li a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+        nav ul li a:hover { color: var(--white); }
+
+        /* ── SEARCH & FILTERS ── */
+        .filter-section { background: var(--white); padding: 30px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid rgba(179,205,224,0.3); margin: 30px 0; animation: fadeUp 0.5s ease both; }
+        .filter-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; }
+
+        .input-group { position: relative; display: flex; align-items: center; width: 100%; }
+        .input-group i { position: absolute; left: 15px; color: var(--text-muted); z-index: 5; }
+        
+        #search-input, #sort-filter { 
+            width: 100%; padding: 12px 15px 12px 42px; border: 1.5px solid var(--mist); 
+            border-radius: 10px; font-family: inherit; font-size: 1rem; color: var(--text-body); 
+            background: var(--off-white); outline: none; transition: 0.2s; 
+        }
+        #sort-filter { padding-left: 15px; cursor: pointer; }
+        #search-input:focus, #sort-filter:focus { border-color: var(--deep); background: var(--white); box-shadow: 0 0 0 3px rgba(43,92,146,0.1); }
+
+        /* ── GRID HEADER ── */
+        .listings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .page-title { font-family: var(--font-display); font-size: 1.8rem; font-weight: 800; color: var(--ink); }
+        .item-count { background: var(--surface); color: var(--deep); padding: 5px 15px; border-radius: 50px; font-size: 0.85rem; font-weight: 700; border: 1px solid var(--mist); }
+
+        /* ── LISTINGS GRID ── */
+        .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 25px; min-height: 400px; padding-bottom: 60px; }
+
+        .listing-card { 
+            background: var(--white); border-radius: var(--radius-md); overflow: hidden; 
+            box-shadow: var(--shadow-sm); text-decoration: none; color: inherit; 
+            transition: transform 0.3s, box-shadow 0.3s; display: flex; flex-direction: column; 
+            border: 1px solid rgba(179,205,224,0.3); animation: fadeUp 0.5s ease both;
+        }
+        .listing-card:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(12,20,70,0.1); border-color: var(--deep); }
+        .listing-image { height: 200px; background-color: var(--surface); background-size: cover; background-position: center; position: relative; }
+        
+        .listing-details { padding: 18px; flex: 1; display: flex; flex-direction: column; }
+        .listing-price { color: var(--green); font-weight: 800; font-size: 1.25rem; font-family: var(--font-display); margin-bottom: 5px; }
+        .listing-title { font-weight: 600; font-size: 1rem; color: var(--ink); margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; height: 2.8em; }
+        .listing-loc { font-size: 0.85rem; color: var(--text-muted); margin-top: auto; display: flex; align-items: center; gap: 5px; font-weight: 500; }
+        .listing-loc i { color: var(--deep); }
+
+        /* ── EMPTY STATE ── */
+        .empty-state { grid-column: 1/-1; text-align: center; padding: 80px 20px; color: var(--text-muted); }
+        .empty-state i { font-size: 3.5rem; color: var(--mist); margin-bottom: 20px; display: block; }
+
+        /* ── FOOTER ── */
+        footer { background: var(--ink); color: rgba(255,255,255,0.6); padding: 60px 0 30px; text-align: center; border-top: 1px solid rgba(179,205,224,0.1); margin-top: auto; }
+        .footer-links { display: flex; justify-content: center; gap: 30px; margin-bottom: 25px; }
+        .footer-links a { color: inherit; text-decoration: none; font-size: 0.9rem; }
+        .footer-links a:hover { color: var(--white); }
+
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 768px) {
+            .filter-grid { grid-template-columns: 1fr; }
+            .listings-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .listings-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .listing-image { height: 160px; }
+            .listing-title { font-size: 0.9rem; }
+            nav { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-inner">
+            <a href="/index.html" class="logo">Scor<em>alia</em></a>
+            <nav>
+                <ul>
+                    <li><a href="/search.html">Browse</a></li>
+                    <li><a href="/social.html">Campus Hub</a></li>
+                    <li><a href="/messages.html">Messages</a></li>
+                </ul>
+            </nav>
+            <div class="header-right"></div> 
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="filter-section">
+            <div class="filter-grid">
+                <div class="input-group">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="search-input" placeholder="Search by title, author, or ISBN...">
+                </div>
+                <select id="sort-filter">
+                    <option value="newest">Newest First</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                </select>
+            </div>
+        </section>
+
+        <div class="listings-header">
+            <h1 class="page-title">Browse Books</h1>
+            <span class="item-count" id="itemCount">0 items</span>
+        </div>
+
+        <div class="listings-grid" id="listings-container">
+            <div class="empty-state"><i class="fas fa-circle-notch fa-spin"></i> Loading listings...</div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="/terms.html">Terms</a>
+                <a href="/privacy.html">Privacy</a>
+                <a href="/safety.html">Safety</a>
+                <a href="/contact.html">Contact</a>
+            </div>
+            <p style="font-size: 0.85rem;">&copy; 2026 Scoralia. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+
+        async function main() {
+            const response = await fetch('/.netlify/functions/config');
+            const config = await response.json();
+            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
+            const db = getFirestore(app);
+
+            const listingsContainer = document.getElementById('listings-container');
+            const itemCountSpan = document.getElementById('item-count');
+            const searchInput = document.getElementById('search-input');
+            const sortFilter = document.getElementById('sort-filter');
+
+            // Pick up search query from URL if passed from index.html
+            const urlParams = new URLSearchParams(window.location.search);
+            const initialQuery = urlParams.get('q');
+            if (initialQuery) {
+                searchInput.value = initialQuery;
+            }
+
+            let unsubscribe;
+
+            function fetchListings() {
+                if (unsubscribe) unsubscribe();
+
+                let q = collection(db, 'listings');
+                const constraints = [];
+                
+                // Firestore standard sorting
+                if (sortFilter.value === 'price-low') constraints.push(orderBy('price', 'asc'));
+                else if (sortFilter.value === 'price-high') constraints.push(orderBy('price', 'desc'));
+                else constraints.push(orderBy('timestamp', 'desc'));
+
+                unsubscribe = onSnapshot(query(q, ...constraints), snapshot => {
+                    listingsContainer.innerHTML = '';
+                    const term = searchInput.value.toLowerCase().trim();
+                    const cleanTerm = term.replace(/[^0-9]/g, ''); // For clean ISBN comparison
+                    
+                    const lang = localStorage.getItem('preferred_language') || 'en';
+                    
+                    const filtered = snapshot.docs.filter(doc => {
+                        const d = doc.data();
+                        if (d.status !== 'active') return false;
+
+                        // Priority 1: ISBN Match (Exact)
+                        const isbnMatch = d.isbn && (d.isbn === cleanTerm || d.isbn === term);
+                        
+                        // Priority 2: Text Match
+                        const textMatch = (d.title || '').toLowerCase().includes(term) || 
+                                          (d.description || '').toLowerCase().includes(term) ||
+                                          (d.location || '').toLowerCase().includes(term);
+
+                        return isbnMatch || textMatch;
+                    });
+                    
+                    const itemCountEl = document.getElementById('itemCount');
+                    if (itemCountEl) {
+                        itemCountEl.textContent = `${filtered.length} ${lang === 'fr' ? 'articles' : 'items'}`;
+                    }
+
+                    if (filtered.length === 0) {
+                        listingsContainer.innerHTML = `
+                            <div class="empty-state">
+                                <i class="fas fa-search"></i>
+                                <p>${lang === 'fr' ? 'Aucun livre trouvé. Essayez un autre terme ou un code ISBN.' : 'No books found. Try a different search term or ISBN code.'}</p>
+                            </div>`;
+                        return;
+                    }
+
+                    const frag = document.createDocumentFragment();
+                    filtered.forEach((doc, index) => {
+                        const d = doc.data();
+                        const card = document.createElement('a');
+                        card.className = 'listing-card';
+                        card.href = `/listing.html?id=${doc.id}`;
+                        card.style.animationDelay = `${index * 0.05}s`;
+
+                        const imgUrl = d.imageUrls?.[0] || '';
+                        const displayImg = window.optimizeImageUrl ? window.optimizeImageUrl(imgUrl) : imgUrl;
+
+                        card.innerHTML = `
+                            <div class="listing-image" style="background-image: url('${displayImg}')"></div>
+                            <div class="listing-details">
+                                <div class="listing-price">$${d.price.toFixed(2)}</div>
+                                <h3 class="listing-title">${d.title}</h3>
+                                <div class="listing-loc"><i class="fas fa-map-marker-alt"></i> ${d.location || 'Global Campus'}</div>
+                            </div>`;
+                        frag.appendChild(card);
+                    });
+                    listingsContainer.appendChild(frag);
+                });
+            }
+
+            // Listen for input (live search)
+            searchInput.addEventListener('input', () => {
+                // Update URL dynamically without reloading
+                if (searchInput.value.trim()) {
+                    window.history.replaceState({}, '', `?q=${encodeURIComponent(searchInput.value.trim())}`);
+                } else {
+                    window.history.replaceState({}, '', window.location.pathname);
+                }
+                fetchListings();
+            });
+            
+            sortFilter.addEventListener('change', fetchListings);
+            
+            // Execute initial fetch
+            fetchListings();
+        }
+        main();
+    </script>
+</body>
+</html>
