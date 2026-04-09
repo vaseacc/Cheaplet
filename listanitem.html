@@ -749,6 +749,23 @@
                         status: 'pending',
                         timestamp: serverTimestamp() 
                     });
+====
+                    // Clean the ISBN (remove dashes and spaces)
+                    const rawIsbn = document.getElementById('listing-isbn').value;
+                    const cleanIsbn = rawIsbn ? rawIsbn.replace(/[^0-9X]/gi, '') : "";
+
+                    const listingRef = await addDoc(collection(db, 'listings'), {
+                        title, description: desc, price, 
+                        condition: document.getElementById('listing-condition').value,
+                        digitalCode: document.getElementById('listing-digital-code').value,
+                        location: document.getElementById('listing-location').value,
+                        isbn: cleanIsbn, // <--- EXPLICITLY SAVE CLEAN ISBN
+                        tags, imageUrls,
+                        posterUid: currentUser.uid,
+                        posterDisplayName: currentUser.displayName || "User",
+                        status: 'pending',
+                        timestamp: serverTimestamp() 
+                    });
 
                     // 3. Instantly redirect. The moderation will be handled in the background by my-listings.html
                     window.location.href = `/my-listings.html`;
