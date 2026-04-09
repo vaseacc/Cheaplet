@@ -18,7 +18,7 @@
             --white:     #FFFFFF;
             --gold:      #C8A96E;
             --text-main: #0f172a;
-            --text-muted:#476483;
+            --text-muted:#64748b;
             --radius:    16px;
             --shadow:    0 4px 20px rgba(12,20,70,0.05);
             --border:    1px solid #e2e8f0;
@@ -27,59 +27,89 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--off-white); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--off-white); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; overflow-x: hidden; }
 
         header { position: sticky; top: 0; z-index: 200; background: var(--ink); border-bottom: 1px solid rgba(255,255,255,0.1); width: 100%; flex-shrink: 0; }
-        .header-inner { max-width: 1100px; margin: 0 auto; padding: 0 20px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
+        .header-inner { max-width: 1200px; margin: 0 auto; padding: 0 20px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
         .logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: -0.5px; }
         .logo em { color: var(--gold); font-style: normal; }
 
-        .page-header { background: linear-gradient(135deg, var(--ink) 0%, var(--deep) 60%, #4a7db5 100%); padding: 50px 20px; text-align: center; color: var(--white); position: relative; }
-        .page-header h1 { font-family: 'Playfair Display', serif; font-size: 2.4rem; font-weight: 900; margin-bottom: 10px; }
-        .page-header p { color: rgba(255,255,255,0.8); font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
+        nav ul { display: flex; list-style: none; gap: 28px; margin: 0; padding: 0; }
+        nav ul li a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+        nav ul li a:hover { color: var(--white); }
 
-        .main-wrapper { max-width: 800px; margin: 30px auto; padding: 0 20px; width: 100%; flex-grow: 1; display: flex; flex-direction: column; gap: 20px; }
+        .page-header { background: linear-gradient(135deg, var(--ink) 0%, var(--deep) 60%, #4a7db5 100%); padding: 40px 20px; text-align: center; color: var(--white); position: relative; }
+        .page-header::after { content: ''; position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 30px 30px; pointer-events: none; }
+        .page-header h1 { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 900; margin-bottom: 10px; position: relative; z-index: 1; }
+        .page-header p { color: rgba(255,255,255,0.7); font-size: 1rem; position: relative; z-index: 1; }
+
+        .main-wrapper { max-width: 800px; margin: 30px auto 60px; padding: 0 20px; width: 100%; flex-grow: 1; display: flex; flex-direction: column; }
+
+        /* ── TABS (CATEGORIES) ── */
+        .tabs-container { display: flex; gap: 10px; margin-bottom: 25px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 5px; }
+        .tabs-container::-webkit-scrollbar { display: none; }
+        .tab-btn { background: var(--white); border: var(--border); color: var(--text-muted); font-family: inherit; font-weight: 600; font-size: 0.95rem; padding: 10px 20px; border-radius: 30px; cursor: pointer; transition: 0.2s; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .tab-btn:hover { background: #f1f5f9; color: var(--deep); }
+        .tab-btn.active { background: var(--ink); color: var(--white); border-color: var(--ink); box-shadow: 0 4px 10px rgba(12,20,70,0.15); }
+
+        .loader-msg { text-align: center; padding: 50px; color: var(--text-muted); font-size: 1.1rem; font-weight: 500; }
+        .loader-msg i { font-size: 2rem; color: var(--gold); margin-bottom: 15px; display: block; }
+        
+        .empty-state { text-align: center; padding: 60px 20px; background: var(--white); border-radius: var(--radius); border: var(--border); box-shadow: var(--shadow); animation: fadeIn 0.4s ease; }
+        .empty-state i { font-size: 3rem; color: var(--mist); margin-bottom: 15px; display: block; }
+        .empty-state h3 { color: var(--ink); margin-bottom: 10px; font-family: 'Playfair Display', serif; font-size: 1.4rem; }
+        .empty-state p { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 20px; }
 
         /* ── ACTIVITY CARDS ── */
-        .activity-card { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border: var(--border); display: flex; gap: 15px; animation: fadeUp 0.4s ease both; transition: transform 0.2s; }
+        #activity-list { display: flex; flex-direction: column; gap: 15px; }
+        .activity-card { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border: var(--border); display: flex; gap: 15px; animation: fadeUp 0.4s ease both; transition: transform 0.2s, border-color 0.2s; }
         .activity-card:hover { transform: translateY(-2px); border-color: var(--gold); }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        .activity-icon-wrap { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.1rem; }
+        .activity-icon-wrap { width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.1rem; }
         .icon-post { background: rgba(43,92,146,0.1); color: var(--deep); }
         .icon-comment { background: rgba(200,169,110,0.1); color: var(--gold); }
         .icon-like { background: rgba(229,62,62,0.1); color: var(--red); }
         .icon-topic { background: rgba(46,125,50,0.1); color: var(--green); }
 
         .activity-content { flex-grow: 1; min-width: 0; }
-        .activity-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
-        .activity-type { font-weight: 800; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
-        .activity-time { font-size: 0.75rem; color: #94a3b8; }
+        .activity-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+        .activity-type { font-weight: 800; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+        .activity-time { font-size: 0.75rem; color: #94a3b8; font-weight: 500; }
         
-        .activity-text { font-size: 1rem; line-height: 1.5; color: var(--text-main); margin-bottom: 12px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-        .activity-link { font-size: 0.85rem; color: var(--deep); text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; }
-        .activity-link:hover { text-decoration: underline; }
-
-        .btn-delete { background: none; border: none; color: var(--red); cursor: pointer; padding: 5px; opacity: 0.6; transition: 0.2s; font-size: 0.9rem; }
-        .btn-delete:hover { opacity: 1; transform: scale(1.1); }
-
-        .loader-msg { text-align: center; padding: 50px; color: var(--text-muted); font-weight: 600; }
-        .loader-msg i { font-size: 2rem; color: var(--gold); margin-bottom: 15px; display: block; }
+        .activity-text { font-size: 1rem; line-height: 1.5; color: var(--text-main); margin-bottom: 12px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; word-break: break-word; }
+        .activity-img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 8px; margin-bottom: 12px; border: 1px solid var(--mist); }
         
-        .empty-state { text-align: center; padding: 60px 20px; background: var(--white); border-radius: var(--radius); border: var(--border); box-shadow: var(--shadow); }
-        .empty-state i { font-size: 3rem; color: var(--mist); margin-bottom: 15px; display: block; }
+        .activity-bottom { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--surface); padding-top: 12px; }
+        .activity-link { font-size: 0.85rem; color: var(--deep); text-decoration: none; font-weight: 700; display: inline-flex; align-items: center; gap: 5px; transition: 0.2s; }
+        .activity-link:hover { color: var(--gold); }
+
+        .btn-delete { background: #fef2f2; border: 1px solid #fecaca; color: var(--red); cursor: pointer; padding: 6px 12px; border-radius: 8px; transition: 0.2s; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+        .btn-delete:hover { background: var(--red); color: var(--white); }
+
+        .status-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; font-weight: 700; margin-left: 6px; }
+        .status-pending { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
+        .status-rejected { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
 
         /* Custom Dialog Modals */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(12,20,70,0.8); backdrop-filter: blur(4px); z-index: 10020; display: none; justify-content: center; align-items: center; padding: 20px; }
-        .modal-card { background: var(--white); padding: 35px 30px; border-radius: var(--radius); width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
-        .modal-buttons { display: flex; gap: 10px; margin-top: 25px; }
-        .modal-buttons button { flex: 1; padding: 12px; border-radius: 30px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; }
-        .btn-confirm { background: var(--red); color: white; }
-        .btn-cancel { background: var(--surface); color: var(--ink); border: 1px solid var(--border) !important; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(12,20,70,0.8); backdrop-filter: blur(6px); z-index: 10020; display: none; justify-content: center; align-items: center; padding: 20px; }
+        .modal-card { background: var(--white); padding: 35px 30px; border-radius: var(--radius); width: 100%; max-width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .modal-card h2 { font-family: 'Playfair Display', serif; color: var(--ink); margin-bottom: 10px; font-size: 1.6rem; }
+        .modal-card p { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; line-height: 1.5; }
+        .modal-buttons { display: flex; gap: 10px; }
+        .modal-buttons button { flex: 1; padding: 12px; border-radius: 30px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; font-size: 0.95rem; }
+        .btn-confirm { background: var(--red); color: white; box-shadow: 0 4px 15px rgba(229,62,62,0.3); }
+        .btn-confirm:hover { background: #b91c1c; transform: translateY(-2px); }
+        .btn-cancel { background: var(--surface); color: var(--ink); border: 1px solid var(--mist) !important; }
+        .btn-cancel:hover { background: var(--mist); }
+
+        @keyframes popIn { from { opacity: 0; transform: scale(0.9) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
         @media (max-width: 768px) {
             .page-header h1 { font-size: 1.8rem; }
             nav { display: none; }
+            .tabs-container { margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px; }
         }
     </style>
 </head>
@@ -88,27 +118,46 @@
     <header>
         <div class="header-inner">
             <a href="/index.html" class="logo">Scor<em>alia</em></a>
+            <nav>
+                <ul>
+                    <li><a href="/search.html" data-i18n="nav_browse">Browse</a></li>
+                    <li><a href="/my-listings.html" data-i18n="nav_listings">My Listings</a></li>
+                    <li><a href="/social.html" data-i18n="nav_hub">Campus Hub</a></li>
+                    <li><a href="/activity.html" data-i18n="nav_activity">My Activity</a></li>
+                    <li><a href="/messages.html" data-i18n="nav_messages">Messages</a></li>
+                </ul>
+            </nav>
             <div class="header-right"></div>
         </div>
     </header>
 
     <div class="page-header">
-        <h1 data-i18n="nav_activity">My Activity</h1>
-        <p data-i18n="activity_sub">Manage your contributions to the Scoralia community.</p>
+        <h1 data-i18n="activity_title">My Activity</h1>
+        <p data-i18n="activity_sub">Manage your contributions across all campus channels.</p>
     </div>
 
-    <main class="main-wrapper" id="activity-feed">
-        <div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span data-i18n="loading_activity">Loading your timeline...</span></div>
+    <main class="main-wrapper">
+        <div class="tabs-container" id="tabs">
+            <button class="tab-btn active" data-filter="all" data-i18n="filter_all">All Activity</button>
+            <button class="tab-btn" data-filter="post" data-i18n="filter_posts">Posts</button>
+            <button class="tab-btn" data-filter="comment" data-i18n="filter_comments">Comments</button>
+            <button class="tab-btn" data-filter="like" data-i18n="filter_likes">Likes</button>
+            <button class="tab-btn" data-filter="topic" data-i18n="filter_topics">Topics</button>
+        </div>
+
+        <div id="activity-feed">
+            <div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span data-i18n="activity_loading">Loading your timeline...</span></div>
+        </div>
     </main>
 
     <!-- CUSTOM DIALOG MODAL -->
     <div class="modal-overlay" id="custom-dialog-modal">
         <div class="modal-card">
-            <h2 id="dialog-title" style="font-family: 'Playfair Display', serif; color: var(--ink); margin-bottom: 10px;">Confirm Action</h2>
-            <p id="dialog-message" style="color: var(--text-muted); line-height: 1.5;">Are you sure you want to proceed?</p>
+            <h2 id="dialog-title" style="font-family: 'Playfair Display', serif; color: var(--ink); margin-bottom: 10px;">Confirm</h2>
+            <p id="dialog-message" style="color: var(--text-muted); line-height: 1.5;">Are you sure?</p>
             <div class="modal-buttons">
                 <button class="btn-cancel" id="dialog-cancel">Cancel</button>
-                <button class="btn-confirm" id="dialog-confirm">Confirm</button>
+                <button class="btn-confirm" id="dialog-confirm">Delete</button>
             </div>
         </div>
     </div>
@@ -116,10 +165,9 @@
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, query, where, getDocs, deleteDoc, doc, orderBy, limit } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, query, where, getDocs, deleteDoc, doc, updateDoc, increment } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
-            // 1. BOOTSTRAP: Get config before anything else
             const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
@@ -129,17 +177,28 @@
             const lang = localStorage.getItem('preferred_language') || 'en';
             const uiStrings = {
                 en: { 
-                    post: "Post", comment: "Comment", like: "Like", topic: "New Topic", view: "View Original", del_confirm: "Permanently delete this activity?",
-                    empty: "No activity found.", del_success: "Deleted successfully."
+                    activity_title: "My Activity", activity_sub: "Manage your contributions across all campus channels.", activity_loading: "Loading your timeline...",
+                    filter_all: "All Activity", filter_posts: "Posts", filter_comments: "Comments", filter_likes: "Likes", filter_topics: "Topics",
+                    post: "Post", comment: "Comment", like: "Liked", topic: "Created Topic", view: "View Original",
+                    del_confirm: "Permanently delete this activity?", empty: "No activity found in this category.", btn_del: "Delete",
+                    status_pending: "⏳ In Review", status_rejected: "❌ Rejected", btn_yes: "Yes", btn_cancel: "Cancel"
                 },
                 fr: { 
-                    post: "Publication", comment: "Commentaire", like: "J'aime", topic: "Nouveau Sujet", view: "Voir l'original", del_confirm: "Supprimer définitivement cette activité ?",
-                    empty: "Aucune activité trouvée.", del_success: "Supprimé avec succès."
+                    activity_title: "Mon Activité", activity_sub: "Gérez vos contributions sur tous les canaux du campus.", activity_loading: "Chargement de votre historique...",
+                    filter_all: "Toute l'activité", filter_posts: "Publications", filter_comments: "Commentaires", filter_likes: "J'aime", filter_topics: "Sujets",
+                    post: "Publication", comment: "Commentaire", like: "A aimé", topic: "Sujet créé", view: "Voir l'original",
+                    del_confirm: "Supprimer définitivement cette activité ?", empty: "Aucune activité trouvée dans cette catégorie.", btn_del: "Supprimer",
+                    status_pending: "⏳ En révision", status_rejected: "❌ Rejeté", btn_yes: "Oui", btn_cancel: "Annuler"
                 }
             };
             const ui = uiStrings[lang];
 
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                if (ui[el.getAttribute('data-i18n')]) el.innerHTML = ui[el.getAttribute('data-i18n')];
+            });
+
             const feedContainer = document.getElementById('activity-feed');
+            let masterTimeline = []; // Stores all fetched activity
 
             // --- Custom Dialog System ---
             window.scoraliaConfirm = (msg) => {
@@ -147,6 +206,9 @@
                     const modal = document.getElementById('custom-dialog-modal');
                     document.getElementById('dialog-message').textContent = msg;
                     modal.style.display = 'flex';
+                    document.getElementById('dialog-confirm').textContent = ui.btn_yes;
+                    document.getElementById('dialog-cancel').textContent = ui.btn_cancel;
+                    
                     document.getElementById('dialog-confirm').onclick = () => { modal.style.display = 'none'; res(true); };
                     document.getElementById('dialog-cancel').onclick = () => { modal.style.display = 'none'; res(false); };
                 });
@@ -159,76 +221,91 @@
 
             async function loadActivity(uid) {
                 try {
-                    let timeline = [];
-
-                    // Collection definitions
+                    masterTimeline = [];
                     const postColls = ["social_posts_global", "social_posts_rosemont", "social_posts"];
                     
+                    // 1. Fetch Posts
                     const fetchPosts = postColls.map(async (collName) => {
-                        const q = query(collection(db, collName), where("authorUid", "==", uid), limit(20));
+                        const q = query(collection(db, collName), where("authorUid", "==", uid));
                         const snap = await getDocs(q);
-                        snap.forEach(d => timeline.push({ type: 'post', id: d.id, collection: collName, ...d.data() }));
+                        snap.forEach(d => masterTimeline.push({ type: 'post', id: d.id, collection: collName, ...d.data() }));
                     });
 
+                    // 2. Fetch Likes
                     const fetchLikes = postColls.map(async (collName) => {
-                        const q = query(collection(db, collName), where("likedBy", "array-contains", uid), limit(20));
+                        const q = query(collection(db, collName), where("likedBy", "array-contains", uid));
                         const snap = await getDocs(q);
-                        snap.forEach(d => timeline.push({ type: 'like', id: d.id, collection: collName, ...d.data() }));
+                        snap.forEach(d => masterTimeline.push({ type: 'like', id: d.id, collection: collName, ...d.data() }));
                     });
 
+                    // 3. Fetch Topics
                     const fetchTopics = (async () => {
-                        const q = query(collection(db, "social_channels"), where("createdBy", "==", uid), limit(10));
+                        const q = query(collection(db, "social_channels"), where("createdBy", "==", uid));
                         const snap = await getDocs(q);
-                        snap.forEach(d => timeline.push({ type: 'topic', id: d.id, collection: 'social_channels', ...d.data() }));
+                        snap.forEach(d => masterTimeline.push({ type: 'topic', id: d.id, collection: 'social_channels', timestamp: d.data().createdAt, ...d.data() }));
                     })();
 
-                    // We use Promise.all to fetch everything at the same time (faster)
+                    // Wait for all queries to finish
                     await Promise.all([...fetchPosts, ...fetchLikes, fetchTopics]);
 
-                    // Sort by newest first
-                    timeline.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                    // Sort strictly by Date (Newest first)
+                    masterTimeline.sort((a, b) => {
+                        const timeA = a.timestamp ? a.timestamp.seconds : 0;
+                        const timeB = b.timestamp ? b.timestamp.seconds : 0;
+                        return timeB - timeA;
+                    });
 
-                    renderTimeline(timeline);
+                    renderTimeline('all'); // Default view
                 } catch (err) {
                     console.error("Timeline error:", err);
                     feedContainer.innerHTML = `<p style="text-align:center; color:var(--red);">Error loading activity feed.</p>`;
                 }
             }
 
-            function renderTimeline(items) {
+            function renderTimeline(filterType) {
                 feedContainer.innerHTML = '';
-                if (items.length === 0) {
+                
+                const filteredItems = filterType === 'all' ? masterTimeline : masterTimeline.filter(i => i.type === filterType);
+
+                if (filteredItems.length === 0) {
                     feedContainer.innerHTML = `<div class="empty-state"><i class="far fa-folder-open"></i><p>${ui.empty}</p></div>`;
                     return;
                 }
 
-                items.forEach(item => {
+                filteredItems.forEach(item => {
                     const card = document.createElement('div');
                     card.className = 'activity-card';
 
-                    const date = item.timestamp ? new Date(item.timestamp.toDate()).toLocaleDateString(lang, { month: 'short', day: 'numeric' }) : 'Recently';
+                    const dateObj = item.timestamp ? new Date(item.timestamp.toDate()) : new Date();
+                    const dateStr = dateObj.toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-US', { month: 'short', day: 'numeric', year: 'numeric' });
                     
-                    let iconClass = "icon-post";
-                    let iconInner = "fa-pen";
-                    let label = ui.post;
+                    let iconClass = "icon-post"; let iconInner = "fa-pen"; let label = ui.post;
                     let link = item.wayId === 'general' ? '/social.html' : `/topic.html?id=${item.wayId || item.id}`;
 
                     if (item.type === 'like') { iconClass = "icon-like"; iconInner = "fa-heart"; label = ui.like; }
                     if (item.type === 'topic') { iconClass = "icon-topic"; iconInner = "fa-hashtag"; label = ui.topic; link = `/topic.html?id=${item.id}`; }
 
+                    let statusHtml = '';
+                    if (item.type === 'post' || item.type === 'comment') {
+                        if (item.status === 'pending') statusHtml = `<span class="status-badge status-pending">${ui.status_pending}</span>`;
+                        if (item.status === 'rejected') statusHtml = `<span class="status-badge status-rejected">${ui.status_rejected}</span>`;
+                    }
+
+                    const contentText = item.text || item.name || item.description || '[Image Only]';
+                    const imgHtml = item.imageUrl ? `<img src="${window.optimizeImageUrl ? window.optimizeImageUrl(item.imageUrl) : item.imageUrl}" class="activity-img">` : '';
+
                     card.innerHTML = `
-                        <div class="activity-icon-wrap ${iconClass}">
-                            <i class="fas ${iconInner}"></i>
-                        </div>
+                        <div class="activity-icon-wrap ${iconClass}"><i class="fas ${iconInner}"></i></div>
                         <div class="activity-content">
                             <div class="activity-top">
-                                <span class="activity-type">${label}</span>
-                                <span class="activity-time">${date}</span>
+                                <span class="activity-type">${label} ${statusHtml}</span>
+                                <span class="activity-time">${dateStr}</span>
                             </div>
-                            <div class="activity-text">${item.text || item.name || item.description || ''}</div>
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <div class="activity-text">${contentText}</div>
+                            ${imgHtml}
+                            <div class="activity-bottom">
                                 <a href="${link}" class="activity-link">${ui.view} <i class="fas fa-arrow-right"></i></a>
-                                ${item.type !== 'like' ? `<button class="btn-delete" onclick="window.deleteItem('${item.id}', '${item.collection}')"><i class="fas fa-trash-alt"></i></button>` : ''}
+                                ${item.type === 'post' || item.type === 'topic' ? `<button class="btn-delete" onclick="window.deleteActivityItem('${item.id}', '${item.collection}', '${item.type}')"><i class="fas fa-trash-alt"></i> ${ui.btn_del}</button>` : ''}
                             </div>
                         </div>
                     `;
@@ -236,16 +313,27 @@
                 });
             }
 
-            window.deleteItem = async (id, coll) => {
+            // --- TAB FILTERING LOGIC ---
+            const tabs = document.querySelectorAll('.tab-btn');
+            tabs.forEach(tab => {
+                tab.addEventListener('click', (e) => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    e.target.classList.add('active');
+                    renderTimeline(e.target.getAttribute('data-filter'));
+                });
+            });
+
+            // --- DELETE LOGIC ---
+            window.deleteActivityItem = async (id, collName, type) => {
                 const confirmed = await window.scoraliaConfirm(ui.del_confirm);
                 if (confirmed) {
                     try {
-                        await deleteDoc(doc(db, coll, id));
-                        // Re-load to show updated list
-                        loadActivity(auth.currentUser.uid);
-                    } catch (e) {
-                        console.error(e);
-                    }
+                        await deleteDoc(doc(db, collName, id));
+                        // Remove from local array instantly for speed
+                        masterTimeline = masterTimeline.filter(i => i.id !== id);
+                        const currentFilter = document.querySelector('.tab-btn.active').getAttribute('data-filter');
+                        renderTimeline(currentFilter);
+                    } catch (e) { console.error(e); }
                 }
             };
         }
