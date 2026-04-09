@@ -1,4 +1,4 @@
-// moderate-listing.js - Powered by Groq Vision for reliable NSFW blocking
+// moderate-listing.js - Reliable NSFW Detection via Base64 + Groq Vision
 
 exports.handler = async (event, context) => {
     const corsHeaders = {
@@ -19,52 +19,40 @@ exports.handler = async (event, context) => {
 
         console.log("Moderation started for:", title);
 
-        // 1. INSTANT KEYWORD FILTER (The fastest layer)
-        const forbiddenWords = ["nude", "nudes", "porn", "sex", "escort", "hookup", "naked"];
-        const fullContent = (title + " " + description).toLowerCase();
-        if (forbiddenWords.some(word => fullContent.includes(word))) {
-            console.log("REJECTED: Inappropriate keywords.");
-            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Inappropriate language detected." }) };
+        // 1. KEYWORD FILTER (Fastest Layer)
+        const forbidden = ["nude", "porn", "sex", "escort", "naked", "dick", "pussy"];
+        if (forbidden.some(w => (title + " " + description).toLowerCase().includes(w))) {
+            return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Inappropriate language." }) };
         }
 
-        // 2. GROQ TEXT MODERATION
-        if (GROQ_API_KEY) {
-            try {
-                const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                    method: "POST",
-                    headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        model: "llama-3.3-70b-versatile",
-                        messages: [{ role: "user", content: `Analyze this marketplace listing: "${title} - ${description}". Is it pornographic, sexual, or a scam? Answer ONLY: SAFE or UNSAFE.` }],
-                        temperature: 0.1, max_tokens: 5
-                    })
-                });
-                const groqData = await groqRes.json();
-                const textVerdict = groqData.choices[0].message.content.trim().toUpperCase();
-                
-                if (textVerdict.includes("UNSAFE")) {
-                    console.log("REJECTED by Text AI.");
-                    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Listing content flagged by safety system." }) };
-                }
-            } catch (e) { console.error("Groq Text Error:", e); }
-        }
-
-        // 3. GROQ VISION IMAGE MODERATION (Blocks Nudes)
+        // 2. IMAGE MODERATION (Groq Vision via Base64)
         if (GROQ_API_KEY && imageUrls && imageUrls.length > 0) {
-            console.log("Checking image with Groq Vision:", imageUrls[0]);
-            
             try {
+                console.log("Downloading image for analysis...");
+                
+                // Fetch the image and convert to Base64
+                const imgResponse = await fetch(imageUrls[0]);
+                if (!imgResponse.ok) throw new Error("Failed to fetch image from Cloudinary");
+                
+                const arrayBuffer = await imgResponse.arrayBuffer();
+                const base64Image = Buffer.from(arrayBuffer).toString('base64');
+
+                console.log("Sending Base64 to Groq Vision...");
+                
                 const visionRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                     method: "POST",
-                    headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
+                    headers: { 
+                        "Authorization": `Bearer ${GROQ_API_KEY}`, 
+                        "Content-Type": "application/json" 
+                    },
                     body: JSON.stringify({
                         model: "llama-3.2-11b-vision-preview",
                         messages: [
                             {
                                 role: "user",
                                 content: [
-                                    { type: "text", text: "Does this image contain nudity, sexually explicit content, or exposed private parts? Answer ONLY: SAFE or UNSAFE." },
-                                    { type: "image_url", image_url: { url: imageUrls[0] } }
+                                    { type: "text", text: "Is this image inappropriate for a school marketplace? Does it contain nudity, sexual content, or exposed body parts? Answer ONLY 'SAFE' or 'UNSAFE'." },
+                                    { type: "image_url", image_url: { url: `data:image/jpeg;base64,${base64Image}` } }
                                 ]
                             }
                         ],
@@ -73,29 +61,51 @@ exports.handler = async (event, context) => {
                     })
                 });
 
-                if (visionRes.ok) {
-                    const visionData = await visionRes.json();
-                    const visionVerdict = visionData.choices[0].message.content.trim().toUpperCase();
-                    console.log("Vision verdict:", visionVerdict);
+                const visionData = await visionRes.json();
+                const verdict = visionData.choices?.[0]?.message?.content?.trim().toUpperCase() || "SAFE";
+                
+                console.log("Vision AI Result:", verdict);
 
-                    if (visionVerdict.includes("UNSAFE")) {
-                        console.log("REJECTED by Vision AI.");
-                        return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Image flagged for inappropriate content." }) };
-                    }
-                } else {
-                    console.warn("Groq Vision API failed, falling back to safe.");
+                if (verdict.includes("UNSAFE")) {
+                    return { 
+                        statusCode: 200, 
+                        headers: corsHeaders, 
+                        body: JSON.stringify({ verdict: "UNSAFE", reason: "Image flagged for inappropriate content." }) 
+                    };
                 }
-            } catch (e) { 
-                console.error("Vision Processing Error:", e); 
+
+            } catch (visionErr) {
+                console.error("Vision AI Error:", visionErr.message);
+                // If Vision fails, we continue to text check
             }
         }
 
-        console.log("Post APPROVED.");
+        // 3. TEXT MODERATION (Groq Llama 3.3)
+        if (GROQ_API_KEY) {
+            try {
+                const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        model: "llama-3.3-70b-versatile",
+                        messages: [{ role: "user", content: `Verdict for: "${title} - ${description}". SAFE or UNSAFE? (Sexual/Scam = UNSAFE). Answer only 1 word.` }],
+                        temperature: 0.1, max_tokens: 5
+                    })
+                });
+                const groqData = await groqRes.json();
+                const textVerdict = groqData.choices[0].message.content.trim().toUpperCase();
+                
+                if (textVerdict.includes("UNSAFE")) {
+                    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Text content flagged." }) };
+                }
+            } catch (e) { console.error("Text AI Error:", e); }
+        }
+
+        console.log("Listing APPROVED.");
         return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "SAFE" }) };
 
     } catch (error) {
-        console.error("Global Error:", error);
-        // Fallback to safe to avoid blocking users on system errors
+        console.error("Critical System Error:", error);
         return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "SAFE" }) };
     }
 };
