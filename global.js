@@ -2,6 +2,12 @@ import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebase
 import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, onSnapshot, updateDoc, setDoc, collection, query, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
+// --- Helper for non-critical tasks ---
+const runWhenIdle = (cb) => {
+    if (window.requestIdleCallback) requestIdleCallback(cb);
+    else setTimeout(cb, 1);
+};
+
 // --- 0. AUTO-IMPORT ICONS & FAVICON (Performance: Only if not present) ---
 if (!document.querySelector('link[href*="font-awesome"]')) {
     const faLink = document.createElement('link');
@@ -20,6 +26,18 @@ if (!document.querySelector('link[rel="icon"]')) {
     document.head.appendChild(favicon);
 }
 
+// --- 0.5 KILL PWA CACHING (Fixes the "ghost page" and hard-refresh issue) ---
+runWhenIdle(() => {
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+            for (let reg of registrations) reg.unregister();
+        });
+    }
+    if ('caches' in window) {
+        caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))));
+    }
+});
+
 // --- 1. INITIALIZE CONFIG ---
 const response = await fetch('/.netlify/functions/config');
 const config = await response.json();
@@ -27,11 +45,16 @@ const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getA
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+// --- EXPOSE FIREBASE TO WINDOW FOR OTHER PAGES ---
+window.scoraliaAuth = auth;
+window.scoraliaDb = db;
+window.scoraliaApp = app;
+window.scoraliaOnAuthStateChanged = (callback) => onAuthStateChanged(auth, callback);
+
 // --- HELPER: Convert Cloudinary image URLs to WebP for performance ---
 window.optimizeImageUrl = (url) => {
     if (!url) return url;
     if (url.includes('cloudinary.com') && url.includes('/upload/')) {
-        // Add f_auto,q_auto if not already present
         if (!url.includes('f_auto') && !url.includes('q_auto')) {
             return url.replace('/upload/', '/upload/f_auto,q_auto/');
         }
@@ -39,27 +62,37 @@ window.optimizeImageUrl = (url) => {
     return url;
 };
 
-// --- FIX: Add title to Firebase Auth iframe for accessibility ---
-function addTitleToFirebaseIframe() {
-    const iframe = document.querySelector('iframe[src*="firebaseapp.com"]');
-    if (iframe && !iframe.hasAttribute('title')) {
-        iframe.setAttribute('title', 'Firebase Authentication');
+// --- FIX: Add title to Firebase Auth iframe for accessibility (non-intrusive method) ---
+function setupFirebaseIframeTitleObserver() {
+    const observer = new MutationObserver(() => {
+        const iframe = document.querySelector('iframe[src*="firebaseapp.com"]');
+        if (iframe && !iframe.hasAttribute('title')) {
+            iframe.setAttribute('title', 'Firebase Authentication');
+            observer.disconnect(); 
+        }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    const existingIframe = document.querySelector('iframe[src*="firebaseapp.com"]');
+    if (existingIframe && !existingIframe.hasAttribute('title')) {
+        existingIframe.setAttribute('title', 'Firebase Authentication');
     }
 }
-setInterval(addTitleToFirebaseIframe, 500);
-setTimeout(() => clearInterval(addTitleToFirebaseIframe), 10000);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupFirebaseIframeTitleObserver);
+} else {
+    setupFirebaseIframeTitleObserver();
+}
 
 // --- 2. TRANSLATION DICTIONARY ---
 const translations = {
     "en": {
-        "nav_browse": "Browse", "nav_listings": "My Listings", "nav_messages": "Messages", "nav_profile": "My Profile", "nav_hub": "Campus Hub", "nav_activity": "Activity",
+        "nav_browse": "Browse", "nav_listings": "My Listings", "nav_messages": "Messages", "nav_profile": "My Profile", "nav_hub": "Campus Hub", "nav_activity": "My Activity",
         "btn_login": "Login / Register", "btn_list": "List an Item", "btn_signout": "Sign Out",
         "verified_student": "Verified Student",
         "ban_title": "ACCESS DENIED",
         "ban_text": "This account has been banned.",
         "ban_perm": "Permanent Ban",
         "ban_until": "Banned until: ",
-
         "tour_title_1": "Welcome to Scoralia!",
         "tour_desc_1": "Your campus marketplace for textbooks and essentials. Buy cheaply, sell quickly, and save money every semester.",
         "tour_title_2": "Trust & Safety",
@@ -82,8 +115,6 @@ const translations = {
         "warning_title": "Admin Warning",
         "warning_btn": "I Understand",
         "contact": "Contact Us",
-
-        // Social Tour strings
         "social_tour_title_1": "Welcome to the Campus Hub!",
         "social_tour_desc_1": "This is where the campus community connects. Share updates, ask questions, and engage with fellow students.",
         "social_tour_title_2": "Post & Share",
@@ -95,14 +126,13 @@ const translations = {
         "social_tour_gotit": "Got it!"
     },
     "fr": {
-        "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", "nav_hub": "Hub Campus", "nav_activity": "Activité",
+        "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", "nav_hub": "Hub Campus", "nav_activity": "Mon Activité",
         "btn_login": "Connexion", "btn_list": "Vendre", "btn_signout": "Déconnexion",
         "verified_student": "Étudiant vérifié",
         "ban_title": "ACCÈS REFUSÉ",
         "ban_text": "Ce compte a été banni.",
         "ban_perm": "Bannissement permanent",
         "ban_until": "Banni jusqu'au : ",
-
         "tour_title_1": "Bienvenue sur Scoralia !",
         "tour_desc_1": "Votre marché étudiant pour les manuels et articles essentiels. Achetez à bas prix, vendez rapidement et économisez.",
         "tour_title_2": "Confiance et Sécurité",
@@ -125,8 +155,6 @@ const translations = {
         "warning_title": "Avertissement de l'Administration",
         "warning_btn": "J'ai compris",
         "contact": "Nous contacter",
-
-        // Social Tour strings (French)
         "social_tour_title_1": "Bienvenue sur le Hub Campus !",
         "social_tour_desc_1": "C'est l'espace où la communauté étudiante se connecte. Partagez des nouvelles, posez des questions et interagissez avec d'autres étudiants.",
         "social_tour_title_2": "Publier et partager",
@@ -160,7 +188,7 @@ window.applyLanguage = (lang) => {
     document.documentElement.lang = lang;
 };
 
-// --- 3. GLOBAL CSS (with contrast fix) ---
+// --- 3. GLOBAL CSS ---
 const globalStyle = document.createElement('style');
 globalStyle.innerHTML = `
     .header-inner, .header-content { display: flex !important; align-items: center !important; justify-content: space-between !important; gap: 15px !important; flex-direction: row !important; }
@@ -201,16 +229,12 @@ globalStyle.innerHTML = `
     .desktop-only { display: inline-flex; }
     .mobile-link { display: none; }
     
-    /* Global Warning Modal Styling */
     .warning-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 10050; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
     .warning-modal { background: #fff5f5; border: 2px solid #ef4444; border-radius: 16px; padding: 30px; text-align: center; max-width: 450px; width: 90%; box-shadow: 0 20px 60px rgba(239, 68, 68, 0.2); }
     .warning-modal h2 { color: #b91c1c; font-family: 'Playfair Display', serif; font-size: 1.8rem; margin-bottom: 15px; }
     .warning-modal p { color: #7f1d1d; font-size: 1.05rem; margin-bottom: 25px; line-height: 1.5; }
     .warning-btn { background: #ef4444; color: white; border: none; padding: 12px 30px; border-radius: 30px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; }
     .warning-btn:hover { background: #dc2626; transform: translateY(-2px); }
-
-    /* 🔥 FIX: Contrast for hero badge (accessibility) */
-    .hero-badge { color: #FFFFFF !important; }
 
     @media (max-width: 767px) {
         nav { display: none !important; }
@@ -222,20 +246,6 @@ globalStyle.innerHTML = `
     }
 `;
 document.head.appendChild(globalStyle);
-
-// --- 3.5 KILL PWA CACHING (Fixes the "ghost page" reload issue) ---
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for(let registration of registrations) {
-            registration.unregister();
-        }
-    });
-}
-if ('caches' in window) {
-    caches.keys().then((keyList) => {
-        Promise.all(keyList.map((key) => caches.delete(key)));
-    });
-}
 
 // --- SCHOOL DOMAIN CHECKER ---
 const schoolDomains = {
@@ -300,12 +310,10 @@ onAuthStateChanged(auth, async (user) => {
             if (docSnap.exists()) {
                 currentUserData = docSnap.data();
                 
-                // --- ADMIN WARNING SYSTEM ---
                 if (currentUserData.activeWarning) {
                     showWarningPopup(currentUserData.activeWarning, user.uid);
                 }
 
-                // --- BAN SYSTEM ENFORCEMENT ---
                 if (currentUserData.role === 'banned') { 
                     if (currentUserData.banExpiresAt && currentUserData.banExpiresAt.toDate() < new Date()) {
                         await updateDoc(doc(db, "users", user.uid), { role: 'user', banExpiresAt: null });
@@ -316,7 +324,6 @@ onAuthStateChanged(auth, async (user) => {
                     }
                 }
                 
-                // RETROACTIVE STUDENT CHECK
                 if (currentUserData.isStudent === undefined && user.email) {
                     const schoolInfo = getSchoolInfo(user.email);
                     await updateDoc(doc(db, "users", user.uid), {
@@ -327,7 +334,6 @@ onAuthStateChanged(auth, async (user) => {
                     currentUserData.schoolName = schoolInfo.schoolName;
                 }
 
-                // LANGUAGE SYNC
                 const storedLang = currentUserData.language;
                 const localLang = localStorage.getItem('preferred_language');
                 if (storedLang && translations[storedLang]) {
@@ -345,7 +351,6 @@ onAuthStateChanged(auth, async (user) => {
                 if (!currentUserData.hasSeenTour && !localStorage.getItem(tourKey)) {
                     showWelcomeTour();
                 }
-                // Social tour (separate key, only on social/topic pages)
                 const socialTourKey = `scoralia_social_tour_seen_${user.uid}`;
                 if (!currentUserData.hasSeenSocialTour && !localStorage.getItem(socialTourKey)) {
                     const path = window.location.pathname;
@@ -374,10 +379,8 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// --- ADMIN WARNING POPUP ---
 function showWarningPopup(warningText, uid) {
     if (document.getElementById('admin-warning-modal')) return;
-
     const lang = localStorage.getItem('preferred_language') || 'en';
     const t = translations[lang];
 
@@ -400,7 +403,6 @@ function showWarningPopup(warningText, uid) {
     };
 }
 
-// --- HARD LOCKDOWN FOR BANNED USERS ---
 function triggerHardLockdown(expireTimestamp) {
     const lang = localStorage.getItem('preferred_language') || 'en';
     const t = translations[lang];
@@ -424,7 +426,6 @@ function triggerHardLockdown(expireTimestamp) {
     setTimeout(() => { signOut(auth).then(() => { window.location.href = '/login.html'; }); }, 5000);
 }
 
-// --- WELCOME TOUR (profile setup) ---
 function showWelcomeTour() {
     const user = auth.currentUser;
     if (!user) return;
@@ -466,18 +467,14 @@ function showWelcomeTour() {
                 <div class="tour-pfp-preview" id="tour-pfp-box"><img src="${defaultPfpUrl}"></div>
                 <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">${t.tour_title_4}</h2>
                 <p style="color:#6b84a3; margin-bottom:15px; line-height:1.4; font-size:0.85rem;">${t.tour_desc_4}</p>
-                
                 <input type="text" id="tour-fullname" class="tour-input" value="${existingFullName}" placeholder="${t.tour_full_name}">
                 <input type="text" id="tour-username" class="tour-input" value="${existingUsername}" placeholder="${t.tour_username}">
                 <div id="tour-username-status" style="font-size:0.75rem; text-align:center; margin-bottom:10px;"></div>
-                
                 <input type="file" id="tour-file-input" accept="image/*" style="display:none;">
                 <label for="tour-file-input" style="display:block; cursor:pointer; color:#2B5C92; font-weight:bold; margin-bottom:20px; text-decoration:underline;">
                     <i class="fas fa-camera"></i> ${t.tour_upload}
                 </label>
-                
                 <div id="tour-final-error" style="color:#d32f2f; font-size:0.85rem; margin-bottom:10px; display:none; text-align:center; font-weight:bold; border: 1px solid #ffcdd2; background: #fef2f2; padding: 8px; border-radius: 6px;"></div>
-
                 <button class="btn" id="tour-btn-4" style="width:100%;">${t.tour_start}</button>
             </div>
             <div style="display:flex; justify-content:center; gap:8px; margin-top:25px;" id="tour-dots">
@@ -517,7 +514,6 @@ function showWelcomeTour() {
     usernameInput.addEventListener('input', () => {
         finalError.style.display = 'none';
         usernameInput.style.borderColor = '#eee';
-        
         if (usernameTimeout) clearTimeout(usernameTimeout);
         const val = usernameInput.value.trim();
         if (!val) { usernameStatus.textContent = ''; isUsernameValid = false; return; }
@@ -559,7 +555,6 @@ function showWelcomeTour() {
     const finishBtn = overlay.querySelector('#tour-btn-4');
     finishBtn.onclick = async () => {
         finalError.style.display = 'none'; 
-
         const fullname = nameInput.value.trim();
         const username = usernameInput.value.trim().toLowerCase();
         
@@ -618,7 +613,7 @@ function showWelcomeTour() {
     };
 }
 
-// --- SOCIAL TOUR (explains Campus Hub features) ---
+// --- SOCIAL TOUR ---
 window.showSocialTour = () => {
     const user = auth.currentUser;
     if (!user) return;
@@ -668,22 +663,16 @@ window.showSocialTour = () => {
     document.body.appendChild(overlay);
 
     document.getElementById('social-tour-btn-1').onclick = () => {
-        document.getElementById('social-tour-step-1').style.display = 'none';
-        document.getElementById('social-tour-step-2').style.display = 'block';
-        document.getElementById('social-dot-1').classList.remove('active');
-        document.getElementById('social-dot-2').classList.add('active');
+        document.getElementById('social-tour-step-1').style.display = 'none'; document.getElementById('social-tour-step-2').style.display = 'block';
+        document.getElementById('social-dot-1').classList.remove('active'); document.getElementById('social-dot-2').classList.add('active');
     };
     document.getElementById('social-tour-btn-2').onclick = () => {
-        document.getElementById('social-tour-step-2').style.display = 'none';
-        document.getElementById('social-tour-step-3').style.display = 'block';
-        document.getElementById('social-dot-2').classList.remove('active');
-        document.getElementById('social-dot-3').classList.add('active');
+        document.getElementById('social-tour-step-2').style.display = 'none'; document.getElementById('social-tour-step-3').style.display = 'block';
+        document.getElementById('social-dot-2').classList.remove('active'); document.getElementById('social-dot-3').classList.add('active');
     };
     document.getElementById('social-tour-btn-3').onclick = () => {
-        document.getElementById('social-tour-step-3').style.display = 'none';
-        document.getElementById('social-tour-step-4').style.display = 'block';
-        document.getElementById('social-dot-3').classList.remove('active');
-        document.getElementById('social-dot-4').classList.add('active');
+        document.getElementById('social-tour-step-3').style.display = 'none'; document.getElementById('social-tour-step-4').style.display = 'block';
+        document.getElementById('social-dot-3').classList.remove('active'); document.getElementById('social-dot-4').classList.add('active');
     };
     document.getElementById('social-tour-btn-4').onclick = async () => {
         await updateDoc(doc(db, "users", user.uid), { hasSeenSocialTour: true });
@@ -693,12 +682,12 @@ window.showSocialTour = () => {
 };
 
 function refreshUI() {
-    if (currentUserData) { updateHeaderToLoggedIn(currentUserData); } 
-    else {
-        updateHeaderToLoggedOut();
-    }
-    window.applyLanguage(localStorage.getItem('preferred_language') || 'en');
-    showTermsBanner();
+    if (currentUserData) updateHeaderToLoggedIn(currentUserData);
+    else updateHeaderToLoggedOut();
+    
+    const langSelected = localStorage.getItem('preferred_language');
+    if (!langSelected) showLanguageBanner();
+    else { window.applyLanguage(langSelected); showTermsBanner(); }
 }
 
 function listenToUnreadMessages(uid) {
@@ -751,7 +740,7 @@ function updateHeaderToLoggedIn(userData) {
         <button class="btn desktop-only" id="globalListBtn" style="margin-right: 15px;">${t.btn_list}</button>
         <a href="/messages.html" class="msg-btn-mobile"><i class="fas fa-envelope"></i><span class="unread-badge" id="mobile-unread-badge"></span></a>
         <div class="profile-menu-container">
-            <div class="profile-avatar"><img src="${finalPhotoURL}" alt="Profile"></div>
+            <div class="profile-avatar"><img src="${window.optimizeImageUrl ? window.optimizeImageUrl(finalPhotoURL) : finalPhotoURL}" alt="Profile"></div>
             <div class="dropdown-menu" id="globalDropdown">
                 <div class="dropdown-header">
                     <div class="display-name">${name}</div>
@@ -761,8 +750,8 @@ function updateHeaderToLoggedIn(userData) {
                 <a href="/search.html" class="dropdown-item mobile-link"><i class="fas fa-search"></i> ${t.nav_browse}</a>
                 <a href="/my-listings.html" class="dropdown-item mobile-link"><i class="fas fa-book"></i> ${t.nav_listings}</a>
                 <a href="/social.html" class="dropdown-item mobile-link"><i class="fas fa-users"></i> ${t.nav_hub}</a>
-                <a href="/activity.html" class="dropdown-item mobile-link"><i class="fas fa-bell"></i> ${t.nav_activity}</a>
                 <a href="/profile.html" class="dropdown-item"><i class="fas fa-user-circle"></i> ${t.nav_profile}</a>
+                <a href="/activity.html" class="dropdown-item"><i class="fas fa-history"></i> ${t.nav_activity}</a>
                 <a href="#" class="dropdown-item" id="globalLogout" style="color:#ff4d4d; border-top:1px solid #eee;"><i class="fas fa-sign-out-alt"></i> ${t.btn_signout}</a>
             </div>
         </div>
@@ -779,7 +768,7 @@ function updateHeaderToLoggedIn(userData) {
     const logoutBtn = document.getElementById('globalLogout');
     if (logoutBtn) logoutBtn.onclick = (e) => {
         e.preventDefault();
-        signOut(auth).then(() => { sessionStorage.clear(); window.location.href = '/index.html'; });
+        signOut(auth).then(() => { localStorage.removeItem('scoralia_tour_seen_' + userData.uid); window.location.href = '/index.html'; });
     };
 
     listenToUnreadMessages(userData.uid);
@@ -801,8 +790,40 @@ function updateHeaderToLoggedOut() {
     container.innerHTML = `<button class="btn" onclick="window.location.href='/login.html'">${t.btn_login}</button>`;
 }
 
+function showLanguageBanner() {
+    if (document.getElementById('lang-banner-global')) return;
+    const banner = document.createElement('div');
+    banner.id = 'lang-banner-global'; 
+    banner.className = 'terms-banner';
+    banner.style.zIndex = '100000';
+    banner.innerHTML = `
+        <div style="font-weight: bold; font-family: 'Playfair Display', serif; font-size: 1.1rem;">Welcome / Bienvenue</div>
+        <div style="font-size: 0.9rem; opacity: 0.9;">Choose your language / Choisissez votre langue :</div>
+        <div style="display: flex; gap: 15px;">
+            <button class="btn-accept-terms" id="btn-en">English</button>
+            <button class="btn-accept-terms" id="btn-fr">Français</button>
+        </div>
+    `;
+    document.body.appendChild(banner);
+
+    const setLang = async (l) => {
+        localStorage.setItem('preferred_language', l);
+        window.applyLanguage(l);
+        banner.remove();
+        showTermsBanner();
+        if (auth.currentUser) {
+            try {
+                await updateDoc(doc(db, "users", auth.currentUser.uid), { language: l });
+                if (currentUserData) currentUserData.language = l;
+            } catch (e) { console.warn("Could not save language to user document", e); }
+        }
+    };
+    document.getElementById('btn-en').onclick = () => setLang('en');
+    document.getElementById('btn-fr').onclick = () => setLang('fr');
+}
+
 function showTermsBanner() {
-    if (localStorage.getItem('scoralia_terms_accepted') === 'true' || document.getElementById('terms-banner-global') || document.getElementById('lang-modal')) return;
+    if (localStorage.getItem('scoralia_terms_accepted') === 'true' || document.getElementById('terms-banner-global') || document.getElementById('lang-banner-global')) return;
     const lang = localStorage.getItem('preferred_language') || 'en';
     const banner = document.createElement('div');
     banner.id = 'terms-banner-global'; banner.className = 'terms-banner';
@@ -812,51 +833,10 @@ function showTermsBanner() {
     document.getElementById('accept-terms-btn').onclick = () => { localStorage.setItem('scoralia_terms_accepted', 'true'); banner.remove(); };
 }
 
-// --- INITIAL LANGUAGE SELECTION (BLOCKING MODAL) ---
-async function showForcedLanguageModal() {
-    const savedLang = localStorage.getItem('preferred_language');
-    if (savedLang && translations[savedLang]) {
-        window.applyLanguage(savedLang);
-        return;
-    }
-
-    return new Promise((resolve) => {
-        const overlay = document.createElement('div');
-        overlay.className = 'lang-modal-overlay';
-        overlay.style.zIndex = '20000';
-        overlay.innerHTML = `
-            <div class="lang-modal">
-                <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">Welcome / Bienvenue</h2>
-                <p style="color:#6b84a3; margin-bottom:20px; font-size:0.9rem;">Please select your preferred language.<br>Veuillez sélectionner votre langue préférée.</p>
-                <button class="lang-btn" id="forced-lang-en">English</button>
-                <button class="lang-btn" id="forced-lang-fr">Français</button>
-            </div>
-        `;
-        document.body.appendChild(overlay);
-
-        const btnEn = overlay.querySelector('#forced-lang-en');
-        const btnFr = overlay.querySelector('#forced-lang-fr');
-
-        const selectLang = async (lang) => {
-            localStorage.setItem('preferred_language', lang);
-            window.applyLanguage(lang);
-            overlay.remove();
-            if (auth.currentUser) {
-                try {
-                    await updateDoc(doc(db, "users", auth.currentUser.uid), { language: lang });
-                    if (currentUserData) currentUserData.language = lang;
-                } catch (e) { console.warn("Could not save language to user document", e); }
-            }
-            resolve(lang);
-        };
-
-        btnEn.onclick = () => selectLang('en');
-        btnFr.onclick = () => selectLang('fr');
-    });
+// Ensure the forced modal doesn't trigger anymore since we have the banner
+if (document.getElementById('lang-modal-overlay')) {
+    document.getElementById('lang-modal-overlay').remove();
 }
-
-// Run forced language modal immediately
-await showForcedLanguageModal();
 
 document.addEventListener('DOMContentLoaded', () => {
     const logo = document.querySelector('.logo');
