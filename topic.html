@@ -1011,6 +1011,10 @@
                                             await updateDoc(userRef, { pinnedTopics: arrayRemove(topicId) });
                                         } else {
                                             await updateDoc(userRef, { pinnedTopics: arrayUnion(topicId) });
+                                            // Also add user to topic members so they keep access if topic becomes private
+                                            await updateDoc(doc(db, "social_channels", topicId), {
+                                                members: arrayUnion(currentUser.uid)
+                                            });
                                         }
                                     };
                                 }
