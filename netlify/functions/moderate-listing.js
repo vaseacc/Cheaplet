@@ -1,4 +1,4 @@
-// moderate-listing.js - Optimized for Scoralia (Groq + HuggingFace)
+// moderate-listing.js - High-Speed Groq + HuggingFace (Binary Mode)
 
 exports.handler = async (event, context) => {
     const corsHeaders = {
@@ -22,27 +22,20 @@ exports.handler = async (event, context) => {
         const forbiddenWords = ["nude", "nudes", "porn", "sex", "escort", "hookup"];
         const fullContent = (title + " " + description).toLowerCase();
         if (forbiddenWords.some(word => fullContent.includes(word))) {
-            console.log("REJECTED: Forbidden keyword detected.");
             return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Inappropriate language detected." }) };
         }
 
-        // 2. GROQ TEXT MODERATION (Smart Logic for Elon Musk / Biographies)
+        // 2. GROQ TEXT MODERATION
         const GROQ_API_KEY = process.env.GROQ_API_KEY;
         if (GROQ_API_KEY) {
-            const prompt = `You are a smart moderator. Analyze: Title: "${title}", Desc: "${description}". 
-            Is it SAFE or UNSAFE (porn/drugs/slurs)? 
-            ALLOW book titles, names like Elon Musk, and biographies. 
-            Respond ONLY with: SAFE or UNSAFE.`;
-
             try {
                 const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                     method: "POST",
                     headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
                     body: JSON.stringify({
                         model: "llama-3.3-70b-versatile",
-                        messages: [{ role: "user", content: prompt }],
-                        temperature: 0.1,
-                        max_tokens: 5
+                        messages: [{ role: "user", content: `Analyze: "${title} - ${description}". SAFE or UNSAFE? Books/Biographies are SAFE. Answer ONLY: SAFE or UNSAFE.` }],
+                        temperature: 0.1, max_tokens: 5
                     })
                 });
                 const groqData = await groqRes.json();
@@ -55,18 +48,27 @@ exports.handler = async (event, context) => {
             } catch (e) { console.error("Groq Error:", e); }
         }
 
-        // 3. HUGGING FACE IMAGE MODERATION (High-Speed NSFW check)
+        // 3. HUGGING FACE IMAGE MODERATION (Fixed 410 Error)
         const HF_TOKEN = process.env.HUGGINGFACE_TOKEN;
         if (HF_TOKEN && imageUrls && imageUrls.length > 0) {
             console.log("Checking image with HuggingFace:", imageUrls[0]);
             
             try {
+                // A. Download the image from Cloudinary first
+                const imageRes = await fetch(imageUrls[0]);
+                if (!imageRes.ok) throw new Error("Could not download image from Cloudinary");
+                const imageBuffer = await imageRes.arrayBuffer();
+
+                // B. Send raw binary data to Hugging Face
                 const hfRes = await fetch(
                     "https://api-inference.huggingface.co/models/falconsai/nsfw_image_detection",
                     {
-                        headers: { Authorization: `Bearer ${HF_TOKEN}`, "Content-Type": "application/json" },
+                        headers: { 
+                            Authorization: `Bearer ${HF_TOKEN}`,
+                            "Content-Type": "application/octet-stream" 
+                        },
                         method: "POST",
-                        body: JSON.stringify({ inputs: imageUrls[0] }),
+                        body: imageBuffer,
                     }
                 );
 
@@ -80,19 +82,21 @@ exports.handler = async (event, context) => {
                         console.log("Image REJECTED by HF. Score:", nsfwScore);
                         return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Image flagged as inappropriate." }) };
                     }
-                    console.log("Image APPROVED by HF. NSFW Score:", nsfwScore);
+                    console.log("Image APPROVED. NSFW Score:", nsfwScore);
                 } else {
-                    console.warn("Hugging Face API returned error:", hfRes.status);
+                    const errorDetails = await hfRes.text();
+                    console.warn("Hugging Face API error response:", errorDetails);
                 }
-            } catch (e) { console.error("Hugging Face Connection Error:", e); }
+            } catch (e) { 
+                console.error("Hugging Face Image Processing Error:", e); 
+            }
         }
 
-        console.log("Listing APPROVED.");
+        console.log("Post APPROVED.");
         return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "SAFE" }) };
 
     } catch (error) {
-        console.error("Global Moderation Error:", error);
-        // Fail-safe: approve if the moderation system itself crashes
+        console.error("Global Error:", error);
         return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "SAFE", reason: "Bypass" }) };
     }
 };
