@@ -1,4 +1,4 @@
-// moderate-listing.js - High-Speed Groq + HuggingFace (Binary Mode)
+// moderate-listing.js - Powered by Groq Vision for reliable NSFW blocking
 
 exports.handler = async (event, context) => {
     const corsHeaders = {
@@ -15,18 +15,19 @@ exports.handler = async (event, context) => {
         
         title = title || "";
         description = description || "";
+        const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
         console.log("Moderation started for:", title);
 
-        // 1. INSTANT KEYWORD FILTER
-        const forbiddenWords = ["nude", "nudes", "porn", "sex", "escort", "hookup"];
+        // 1. INSTANT KEYWORD FILTER (The fastest layer)
+        const forbiddenWords = ["nude", "nudes", "porn", "sex", "escort", "hookup", "naked"];
         const fullContent = (title + " " + description).toLowerCase();
         if (forbiddenWords.some(word => fullContent.includes(word))) {
+            console.log("REJECTED: Inappropriate keywords.");
             return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Inappropriate language detected." }) };
         }
 
         // 2. GROQ TEXT MODERATION
-        const GROQ_API_KEY = process.env.GROQ_API_KEY;
         if (GROQ_API_KEY) {
             try {
                 const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -34,59 +35,58 @@ exports.handler = async (event, context) => {
                     headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
                     body: JSON.stringify({
                         model: "llama-3.3-70b-versatile",
-                        messages: [{ role: "user", content: `Analyze: "${title} - ${description}". SAFE or UNSAFE? Books/Biographies are SAFE. Answer ONLY: SAFE or UNSAFE.` }],
+                        messages: [{ role: "user", content: `Analyze this marketplace listing: "${title} - ${description}". Is it pornographic, sexual, or a scam? Answer ONLY: SAFE or UNSAFE.` }],
                         temperature: 0.1, max_tokens: 5
                     })
                 });
                 const groqData = await groqRes.json();
-                const aiText = groqData.choices[0].message.content.trim().toUpperCase();
-                console.log("Groq verdict:", aiText);
-
-                if (aiText.includes("UNSAFE")) {
-                    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Text flagged by AI." }) };
+                const textVerdict = groqData.choices[0].message.content.trim().toUpperCase();
+                
+                if (textVerdict.includes("UNSAFE")) {
+                    console.log("REJECTED by Text AI.");
+                    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Listing content flagged by safety system." }) };
                 }
-            } catch (e) { console.error("Groq Error:", e); }
+            } catch (e) { console.error("Groq Text Error:", e); }
         }
 
-        // 3. HUGGING FACE IMAGE MODERATION
-        const HF_TOKEN = process.env.HUGGINGFACE_TOKEN;
-        if (HF_TOKEN && imageUrls && imageUrls.length > 0) {
-            console.log("Checking image with HuggingFace:", imageUrls[0]);
+        // 3. GROQ VISION IMAGE MODERATION (Blocks Nudes)
+        if (GROQ_API_KEY && imageUrls && imageUrls.length > 0) {
+            console.log("Checking image with Groq Vision:", imageUrls[0]);
             
             try {
-                const imageRes = await fetch(imageUrls[0]);
-                if (!imageRes.ok) throw new Error("Could not download image from Cloudinary");
-                const imageBuffer = await imageRes.arrayBuffer();
+                const visionRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: "POST",
+                    headers: { "Authorization": `Bearer ${GROQ_API_KEY}`, "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        model: "llama-3.2-11b-vision-preview",
+                        messages: [
+                            {
+                                role: "user",
+                                content: [
+                                    { type: "text", text: "Does this image contain nudity, sexually explicit content, or exposed private parts? Answer ONLY: SAFE or UNSAFE." },
+                                    { type: "image_url", image_url: { url: imageUrls[0] } }
+                                ]
+                            }
+                        ],
+                        temperature: 0.1,
+                        max_tokens: 5
+                    })
+                });
 
-                // UPDATED URL: Added 'hf-inference/' prefix required by the new router
-                const hfRes = await fetch(
-                    "https://router.huggingface.co/hf-inference/models/falconsai/nsfw_image_detection",
-                    {
-                        headers: { 
-                            Authorization: `Bearer ${HF_TOKEN}`,
-                            "Content-Type": "application/octet-stream" 
-                        },
-                        method: "POST",
-                        body: imageBuffer,
+                if (visionRes.ok) {
+                    const visionData = await visionRes.json();
+                    const visionVerdict = visionData.choices[0].message.content.trim().toUpperCase();
+                    console.log("Vision verdict:", visionVerdict);
+
+                    if (visionVerdict.includes("UNSAFE")) {
+                        console.log("REJECTED by Vision AI.");
+                        return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Image flagged for inappropriate content." }) };
                     }
-                );
-
-                if (hfRes.ok) {
-                    const hfData = await hfRes.json();
-                    const nsfwItem = hfData.find(item => item.label === "nsfw");
-                    const nsfwScore = nsfwItem ? nsfwItem.score : 0;
-
-                    if (nsfwScore > 0.85) {
-                        console.log("Image REJECTED by HF. Score:", nsfwScore);
-                        return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "UNSAFE", reason: "Image flagged as inappropriate." }) };
-                    }
-                    console.log("Image APPROVED. NSFW Score:", nsfwScore);
                 } else {
-                    const errorText = await hfRes.text();
-                    console.warn(`Hugging Face API Error (${hfRes.status}):`, errorText);
+                    console.warn("Groq Vision API failed, falling back to safe.");
                 }
             } catch (e) { 
-                console.error("Hugging Face Image Processing Error:", e); 
+                console.error("Vision Processing Error:", e); 
             }
         }
 
@@ -95,6 +95,7 @@ exports.handler = async (event, context) => {
 
     } catch (error) {
         console.error("Global Error:", error);
-        return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "SAFE", reason: "Bypass" }) };
+        // Fallback to safe to avoid blocking users on system errors
+        return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ verdict: "SAFE" }) };
     }
 };
