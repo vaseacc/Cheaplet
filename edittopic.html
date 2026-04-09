@@ -176,8 +176,8 @@
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             const ui = {
-                en: { back: "Back to Topic", title: "Topic Settings", sub: "Manage your custom topic preferences.", name: "Topic Name", desc: "Description (Optional)", vis: "Visibility", pub: "Public", pubDesc: "Visible in the sidebar to everyone at your school.", priv: "Private", privDesc: "Hidden from the sidebar. Accessible only via direct link.", btn: "Save Changes", errShort: "Name must be at least 2 characters.", errLimit: "You have reached the limit for this type of topic.", saving: "Saving...", success: "Changes saved successfully!", danger: "Danger Zone", dangerDesc: "Permanently delete this topic. This action cannot be undone.", btnDel: "Delete Topic", confirmDel: "Are you sure you want to delete this topic?", kick: "Remove", noMembers: "No other members have joined yet." },
-                fr: { back: "Retour au sujet", title: "Paramètres du sujet", sub: "Gérez les préférences de votre sujet.", name: "Nom du sujet", desc: "Description (Optionnel)", vis: "Visibilité", pub: "Public", pubDesc: "Visible dans le menu par tout le monde à votre école.", priv: "Privé", privDesc: "Masqué du menu. Accessible uniquement par lien direct.", btn: "Enregistrer", errShort: "Le nom doit contenir au moins 2 caractères.", errLimit: "Vous avez atteint la limite pour ce type de sujet.", saving: "Enregistrement...", success: "Modifications enregistrées avec succès !", danger: "Zone de danger", dangerDesc: "Supprimer définitivement ce sujet. Cette action est irréversible.", btnDel: "Supprimer le sujet", confirmDel: "Êtes-vous sûr de vouloir supprimer ce sujet ?", kick: "Retirer", noMembers: "Aucun autre membre n'a encore rejoint." }
+                en: { back: "Back to Topic", title: "Topic Settings", sub: "Manage your custom topic preferences.", name: "Topic Name", desc: "Description (Optional)", vis: "Visibility", pub: "Public", pubDesc: "Visible in the sidebar to everyone at your school.", priv: "Private", privDesc: "Hidden from the sidebar. Accessible only via direct link.", btn: "Save Changes", errShort: "Name must be at least 2 characters.", errLimit: "You have reached the limit for this type of topic.", saving: "Saving...", success: "Changes saved! Redirecting...", danger: "Danger Zone", dangerDesc: "Permanently delete this topic. This action cannot be undone.", btnDel: "Delete Topic", confirmDel: "Are you sure you want to delete this topic?", kick: "Remove", noMembers: "No other members have joined yet." },
+                fr: { back: "Retour au sujet", title: "Paramètres du sujet", sub: "Gérez les préférences de votre sujet.", name: "Nom du sujet", desc: "Description (Optionnel)", vis: "Visibilité", pub: "Public", pubDesc: "Visible dans le menu par tout le monde à votre école.", priv: "Privé", privDesc: "Masqué du menu. Accessible uniquement par lien direct.", btn: "Enregistrer", errShort: "Le nom doit contenir au moins 2 caractères.", errLimit: "Vous avez atteint la limite pour ce type de sujet.", saving: "Enregistrement...", success: "Modifications enregistrées ! Redirection...", danger: "Zone de danger", dangerDesc: "Supprimer définitivement ce sujet. Cette action est irréversible.", btnDel: "Supprimer le sujet", confirmDel: "Êtes-vous sûr de vouloir supprimer ce sujet ?", kick: "Retirer", noMembers: "Aucun autre membre n'a encore rejoint." }
             }[lang];
 
             document.getElementById('ui-back').textContent = ui.back;
@@ -349,19 +349,42 @@
                 document.getElementById('ui-btn').innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${ui.saving}`;
 
                 try {
+                    // If switching from public to private, backfill members from all posts in this topic
+                    let membersUpdate = {};
+                    if (initialVisibility === 'public' && visibility === 'private') {
+                        // Query all posts in the topic's collection to gather unique authors
+                        const postsQuery = query(collection(db, "social_posts_global"), where("topicId", "==", topicId));
+                        const postsSnap = await getDocs(postsQuery);
+                        const authorUids = new Set();
+                        postsSnap.forEach(doc => {
+                            const data = doc.data();
+                            if (data.authorUid) authorUids.add(data.authorUid);
+                        });
+                        // Ensure creator is included
+                        authorUids.add(topicData.createdBy);
+                        const newMembers = Array.from(authorUids);
+                        membersUpdate = { members: newMembers };
+                        topicData.members = newMembers; // update local for immediate UI
+                    }
+
                     await updateDoc(doc(db, "social_channels", topicId), {
                         name: name.substring(0, 30),
                         description: desc.substring(0, 100),
-                        visibility: visibility
+                        visibility: visibility,
+                        ...membersUpdate
                     });
                     
-                    initialVisibility = visibility;
                     successMsg.textContent = ui.success;
                     successMsg.style.display = 'block';
+                    
+                    // Redirect back to the topic page after a short delay
+                    setTimeout(() => {
+                        window.location.href = `/topic.html?id=${topicId}`;
+                    }, 1500);
+                    
                 } catch (e) {
                     errorMsg.textContent = "Error: " + e.message;
                     errorMsg.style.display = 'block';
-                } finally {
                     btnSave.disabled = false;
                     document.getElementById('ui-btn').innerHTML = origText;
                 }
