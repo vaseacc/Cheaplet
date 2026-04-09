@@ -34,18 +34,6 @@
     <!-- Font Awesome with integrity -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
     
-    <script type="module" src="global.js"></script>
-
-    <script type="module" src="global.js"></script>
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
-
-
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-
     <style>
         :root {
             --ink:       #0C1446;
@@ -833,6 +821,50 @@
             const myFilterBtn = document.getElementById('my-school-filter');
             let currentSchoolFilter = 'all'; 
 
+            // --- FETCH MARKET LISTINGS (RESTORED FUNCTION) ---
+            async function fetchMarketListings() {
+                if (!currentUser) return;
+                const isAdmin = currentUserData?.role === 'admin';
+                const userSchool = internalSchoolName || targetSchool || "Collège de Rosemont";
+                
+                // Base query: global active books
+                let bookQuery = query(
+                    collection(db, "listings"),
+                    where("status", "==", "active"),
+                    orderBy("timestamp", "desc"),
+                    limit(6)
+                );
+
+                // If not admin, try to get school-specific books
+                if (!isAdmin && userSchool !== "Global Campus") {
+                    try {
+                        const schoolQuery = query(
+                            collection(db, "listings"),
+                            where("location", "==", userSchool),
+                            where("status", "==", "active"),
+                            orderBy("timestamp", "desc"),
+                            limit(6)
+                        );
+                        const snap = await getDocs(schoolQuery);
+                        if (!snap.empty) {
+                            listings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                            return;
+                        }
+                    } catch (e) {
+                        console.warn("School-specific listings failed, fallback to global", e);
+                    }
+                }
+
+                // Fallback to global books
+                try {
+                    const snap = await getDocs(bookQuery);
+                    listings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                } catch (e) {
+                    console.error("Failed to fetch market listings", e);
+                    listings = [];
+                }
+            }
+
             // --- COMPOSER LOGIC ---
             function updateComposerSendButton() {
                 if (!postInput) return;
@@ -1144,7 +1176,7 @@
             // --- AUTH & SECURITY LOGIC ---
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    onSnapshot(doc(db, "users", user.uid), (uSnap) => {
+                    onSnapshot(doc(db, "users", user.uid), async (uSnap) => {
                         if (uSnap.exists()) {
                             const data = uSnap.data();
                             currentUser = { ...user, ...data };
@@ -1228,6 +1260,8 @@
                                 }
                             }
                             
+                            // --- FETCH MARKET LISTINGS FIRST, THEN LOAD TOPICS AND FEED ---
+                            await fetchMarketListings();
                             loadTopics(); 
                             loadFeed();
                         } else {
@@ -1377,6 +1411,42 @@
                 });
             }
 
+            // --- CREATE MARKET BREAK ELEMENT (RESTORED) ---
+            function createMarketBreak() {
+                const breakSection = document.createElement('div');
+                breakSection.className = 'market-break';
+                
+                let bookHtml = '';
+                if (listings.length > 0) {
+                    listings.forEach(b => {
+                        const img = (b.imageUrls && b.imageUrls[0]) ? b.imageUrls[0] : '';
+                        const optimizedImg = typeof window.optimizeImageUrl === 'function' 
+                            ? window.optimizeImageUrl(img) 
+                            : img;
+                        bookHtml += `
+                            <a href="/listing.html?id=${b.id}" class="mini-book-card">
+                                <div class="mini-img" style="background-image:url('${optimizedImg}')"></div>
+                                <div class="mini-info">
+                                    <div class="mini-price">$${b.price.toFixed(2)}</div>
+                                    <div class="mini-title">${b.title}</div>
+                                </div>
+                            </a>
+                        `;
+                    });
+                } else {
+                    bookHtml = `<div style="padding:20px; text-align:center; color:var(--text-muted); width:100%;">No books listed yet. Be the first!</div>`;
+                }
+
+                breakSection.innerHTML = `
+                    <div class="break-header">
+                        <span class="break-title"><i class="fas fa-book-open"></i> ${ui.suggest || 'Campus Marketplace'}</span>
+                        <a href="/search.html" class="break-link">${ui.browse || 'Browse All →'}</a>
+                    </div>
+                    <div class="break-scroll">${bookHtml}</div>
+                `;
+                return breakSection;
+            }
+
             function loadFeed() {
                 if (unsubscribePosts) unsubscribePosts();
                 Object.values(commentUnsubscribes).forEach(unsub => unsub());
@@ -1444,6 +1514,8 @@
                         
                         if (snapshot.empty) {
                             feedContainer.innerHTML = `<div class="loader-msg">${ui.noPosts || 'No posts yet.'}</div>`;
+                            // Still show market break even if no posts
+                            feedContainer.appendChild(createMarketBreak());
                             return;
                         }
 
@@ -1459,12 +1531,12 @@
                             frag.appendChild(createPostElement(docSnap.id, d, collectionName));
                             postCounter++;
 
-                            if (postCounter === 3 && typeof createMarketBreak === 'function') {
+                            if (postCounter === 3) {
                                 frag.appendChild(createMarketBreak());
                             }
                         });
                         
-                        if (postCounter < 3 && typeof createMarketBreak === 'function') {
+                        if (postCounter < 3) {
                             frag.appendChild(createMarketBreak());
                         }
 
@@ -1486,27 +1558,6 @@
                 if (allFilterBtn) allFilterBtn.classList.remove('active');
                 loadFeed();
             };
-
-            async function preloadBooksAndLoadFeed() {
-                let bookQ = query(collection(db, "listings"), where("status", "==", "active"), orderBy("timestamp", "desc"), limit(6));
-                
-                const targetSchoolLoc = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Collège de Rosemont";
-
-                if (currentUser && currentUser.role !== 'admin') {
-                    try {
-                        const sBookQ = query(collection(db, "listings"), where("location", "==", targetSchoolLoc), where("status", "==", "active"), limit(6));
-                        const bSnap = await getDocs(sBookQ);
-                        if (!bSnap.empty) bookQ = sBookQ;
-                    } catch(e) {}
-                }
-                
-                try {
-                    const snap = await getDocs(bookQ);
-                    listings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                } catch (e) { console.error("Error preloading books", e); }
-                
-                loadFeed();
-            }
 
             function createPostElement(id, d, coll) {
                 if (d.status === 'rejected') {
@@ -1849,32 +1900,6 @@
                     window.postComment(e.target.id.replace('comment-input-', ''), coll);
                 }
             });
-
-            function createMarketBreak() {
-                const breakSection = document.createElement('div');
-                breakSection.className = 'market-break';
-                let bookHtml = '';
-                listings.forEach(b => {
-                    bookHtml += `
-                        <a href="/listing.html?id=${b.id}" class="mini-book-card">
-                            <div class="mini-img" style="background-image:url('${window.optimizeImageUrl ? window.optimizeImageUrl(b.imageUrls[0]) : b.imageUrls[0]}')"></div>
-                            <div class="mini-info">
-                                <div class="mini-price">$${b.price.toFixed(2)}</div>
-                                <div class="mini-title">${b.title}</div>
-                            </div>
-                        </a>
-                    `;
-                });
-
-                breakSection.innerHTML = `
-                    <div class="break-header">
-                        <span class="break-title"><i class="fas fa-book-open"></i> ${ui.suggest || 'Campus Marketplace'}</span>
-                        <a href="/search.html" class="break-link">${ui.browse || 'Browse All →'}</a>
-                    </div>
-                    <div class="break-scroll">${bookHtml}</div>
-                `;
-                return breakSection;
-            }
         }
         main();
     </script>
