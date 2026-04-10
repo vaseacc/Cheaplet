@@ -11,7 +11,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
-        /* ---------- CSS unchanged (same as before) ---------- */
         :root {
             --ink:       #0C1446;
             --deep:      #2B5C92;
@@ -217,17 +216,23 @@
         .loader-msg i { font-size: 2rem; color: var(--gold); margin-bottom: 15px; display: block; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
-        .modal-overlay { position: fixed; inset: 0; background: rgba(12,20,70,0.9); backdrop-filter: blur(6px); z-index: 10020; display: none; justify-content: center; align-items: center; padding: 20px; }
-        .modal-card { background: white; border-radius: 24px; padding: 32px; max-width: 420px; width: 100%; text-align: center; animation: fadeUp 0.3s ease; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; max-height: 90vh; display: flex; flex-direction: column; }
+        /* Modals */
+        .login-modal-overlay, .modal-overlay { position: fixed; inset: 0; background: rgba(12,20,70,0.9); backdrop-filter: blur(6px); z-index: 10020; display: none; justify-content: center; align-items: center; padding: 20px; }
+        .login-modal-card, .modal-card { background: white; border-radius: 24px; padding: 32px; max-width: 420px; width: 100%; text-align: center; animation: fadeUp 0.3s ease; box-shadow: 0 20px 40px rgba(0,0,0,0.3); position: relative; max-height: 90vh; display: flex; flex-direction: column; }
         .modal-card.wide { max-width: 600px; }
-        .modal-card h2 { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--ink); margin-bottom: 12px; }
-        .modal-card p { color: var(--text-muted); margin-bottom: 24px; font-size: 0.9rem; }
-        .modal-buttons { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
-        .modal-buttons .btn { padding: 10px 24px; min-width: 120px; border-radius: 30px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; }
+        .login-modal-card h2, .modal-card h2 { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--ink); margin-bottom: 12px; }
+        .login-modal-card p, .modal-card p { color: var(--text-muted); margin-bottom: 24px; font-size: 0.9rem; }
+        .login-modal-buttons, .modal-buttons { display: flex; gap: 12px; justify-content: center; margin-top: 20px; }
+        .login-modal-buttons .btn, .modal-buttons .btn { padding: 10px 24px; min-width: 120px; border-radius: 30px; font-weight: 700; cursor: pointer; border: none; transition: 0.2s; }
+        .btn-login { background: var(--gold); color: var(--ink); text-decoration: none; display: inline-block; }
+        .btn-register { background: transparent; border: 2px solid var(--gold); color: var(--ink); }
         .close-modal { position: absolute; top: 16px; right: 20px; font-size: 1.4rem; cursor: pointer; color: #aaa; z-index: 10; }
+        
+        .modal-card { text-align: left; }
         .modal-card select, .modal-card textarea { width: 100%; padding: 12px 15px; border: 2px solid #cbd5e1; border-radius: 8px; margin-bottom: 20px; font-family: inherit; font-size: 1rem; outline: none; transition: 0.2s; }
         .modal-card select:focus, .modal-card textarea:focus { border-color: var(--deep); box-shadow: 0 0 0 3px rgba(43,92,146,0.1); }
         .modal-card textarea { height: 100px; resize: none; }
+        .modal-buttons { justify-content: flex-end; }
         .btn-danger { background: var(--red); color: var(--white); padding: 10px 24px; border-radius: 30px; font-weight: 700; border: none; cursor: pointer; }
 
         .listing-selector-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 400px; margin-bottom: 10px; padding-right: 5px; }
@@ -568,7 +573,7 @@
             let internalSchoolName = "Global Campus"; 
             let unsubscribePosts = null;
             let commentUnsubscribes = {}; 
-            let allTopicsData = [];
+            let allTopicsData =[];
 
             let currentTopicName = "Topic";
             let currentTopicData = null;
@@ -692,7 +697,7 @@
                     const postData = {
                         wayId: topicId, schoolName: internalSchoolName, text: text, authorUid: currentUser.uid,
                         authorName: currentUser.displayName || "User", authorPhoto: photoToSave, authorIsStudent: isStudent,
-                        likes: 0, likedBy: [], commentCount: 0, status: requiresReview ? 'pending' : 'active', timestamp: serverTimestamp()
+                        likes: 0, likedBy:[], commentCount: 0, status: requiresReview ? 'pending' : 'active', timestamp: serverTimestamp()
                     };
                     if (uploadedImgUrl) postData.imageUrl = uploadedImgUrl;
                     if (postAttachedListing) postData.attachedListing = postAttachedListing;
@@ -784,12 +789,14 @@
                                     pinBtn.style.display = 'flex';
                                     updatePinIcon = (isPinned) => {
                                         const icon = pinBtn.querySelector('i');
-                                        if (isPinned) { icon.className = 'fas fa-bookmark'; pinBtn.style.color = 'var(--gold)'; pinBtn.style.borderColor = 'var(--gold)'; }
-                                        else { icon.className = 'far fa-bookmark'; pinBtn.style.color = 'var(--text-muted)'; pinBtn.style.borderColor = 'var(--mist)'; }
+                                        if (icon) {
+                                            if (isPinned) { icon.className = 'fas fa-bookmark'; pinBtn.style.color = 'var(--gold)'; pinBtn.style.borderColor = 'var(--gold)'; }
+                                            else { icon.className = 'far fa-bookmark'; pinBtn.style.color = 'var(--text-muted)'; pinBtn.style.borderColor = 'var(--mist)'; }
+                                        }
                                     };
-                                    updatePinIcon((data.pinnedTopics || []).includes(topicId));
+                                    updatePinIcon((data.pinnedTopics ||[]).includes(topicId));
                                     pinBtn.onclick = async () => {
-                                        const isPinned = (currentUser.pinnedTopics || []).includes(topicId);
+                                        const isPinned = (currentUser.pinnedTopics ||[]).includes(topicId);
                                         const userRef = doc(db, "users", currentUser.uid);
                                         if (isPinned) await updateDoc(userRef, { pinnedTopics: arrayRemove(topicId) });
                                         else { await updateDoc(userRef, { pinnedTopics: arrayUnion(topicId) }); await updateDoc(doc(db, "social_channels", topicId), { members: arrayUnion(currentUser.uid) }); }
@@ -822,7 +829,6 @@
                     requestBtn.style.display = 'block'; requestBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${ui.request_join}`; statusEl.style.display = 'none'; lockIcon.className = 'fas fa-lock';
                 }
 
-                // --- REQUEST BUTTON (USES CHATS COLLECTION) ---
                 requestBtn.onclick = async () => {
                     console.log("Request to Join clicked");
                     if (!currentUser) { console.warn("No current user"); return; }
@@ -834,10 +840,9 @@
                     
                     try {
                         const ownerUid = currentTopicData.createdBy;
-                        const participants = [currentUser.uid, ownerUid].sort(); // consistent order
+                        const participants =[currentUser.uid, ownerUid].sort();
                         
                         console.log("Looking for existing personal chat with owner...");
-                        // Find a chat that has both participants and no listingId
                         const chatsQuery = query(collection(db, "chats"), 
                             where("participants", "array-contains", currentUser.uid));
                         const chatsSnap = await getDocs(chatsQuery);
@@ -857,9 +862,9 @@
                             const chatRef = await addDoc(collection(db, "chats"), { 
                                 participants: participants,
                                 lastMessage: `${currentUser.displayName} requested to join ${currentTopicName}`, 
-                                lastMessageTimestamp: serverTimestamp(), 
+                                lastUpdate: serverTimestamp(), 
                                 createdAt: serverTimestamp(),
-                                listingId: null  // indicates personal chat
+                                listingId: null
                             });
                             chatId = chatRef.id;
                             console.log("New chat created:", chatId);
@@ -870,7 +875,7 @@
                             type: 'join_request',
                             topicId, 
                             topicName: currentTopicName, 
-                            senderUid: currentUser.uid, 
+                            senderId: currentUser.uid,
                             senderName: currentUser.displayName,
                             senderPhoto: currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`,
                             recipientUid: ownerUid, 
@@ -881,7 +886,7 @@
                         
                         await updateDoc(doc(db, "chats", chatId), { 
                             lastMessage: `${currentUser.displayName} requested to join ${currentTopicName}`, 
-                            lastMessageTimestamp: serverTimestamp() 
+                            lastUpdate: serverTimestamp() 
                         });
                         
                         console.log("Request message sent successfully.");
@@ -932,8 +937,8 @@
                     mobileWaysList.appendChild(mGeneral);
                 }
 
-                const myT = [], pinT = [], discT = [];
-                const pinnedArr = (currentUser && currentUser.pinnedTopics) || [];
+                const myT = [], pinT = [], discT =[];
+                const pinnedArr = (currentUser && currentUser.pinnedTopics) ||[];
 
                 allTopicsData.forEach(d => {
                     const isPrivate = d.visibility === 'private';
