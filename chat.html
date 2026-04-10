@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="en"><head>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Chat - Scoralia</title>
@@ -273,7 +274,6 @@
                         if ((!d.lastMessage || d.lastMessage.trim() === "") && docSnap.id !== currentChatId) return;
 
                         const otherId = d.participants.find(p => p !== currentUser.uid);
-                        // Fallback for missing participantInfo
                         const otherName = (d.participantInfo && d.participantInfo[otherId]) ? d.participantInfo[otherId] : 'User';
                         const itemTitle = d.listingTitle ? `<span style="font-size:0.75rem; color:#2B5C92;">(${d.listingTitle})</span>` : '';
                         
@@ -330,7 +330,6 @@
                 
                 const d = chatSnap.data();
                 const otherId = d.participants.find(p => p !== currentUser.uid);
-                // Fallback for participantInfo
                 reportTargetName = (d.participantInfo && d.participantInfo[otherId]) ? d.participantInfo[otherId] : 'User';
                 reportTargetUid = otherId;
                 chatHeaderName.textContent = reportTargetName;
@@ -536,7 +535,7 @@
             }
 
             async function handleRequestResponse(msg, msgId, newStatus, cardElement) {
-                // Immediately update UI to show status (optimistic)
+                // Optimistic UI update
                 const actionsDiv = cardElement.querySelector('.request-actions');
                 if (actionsDiv) {
                     const statusText = newStatus === 'approved' ? ui.statusApproved : ui.statusDeclined;
@@ -557,10 +556,10 @@
                     // Update message status
                     await updateDoc(doc(db, 'chats', currentChatId, 'messages', msgId), { status: newStatus });
                     
-                    // If approved, add user to topic members
+                    // If approved, add the requester to the topic's members
                     if (newStatus === 'approved' && msg.topicId) {
                         await updateDoc(doc(db, 'social_channels', msg.topicId), {
-                            members: arrayUnion(msg.senderUid)
+                            members: arrayUnion(msg.senderId)   // ✅ using senderId now
                         });
                     }
                     
@@ -580,7 +579,6 @@
                 } catch(e) {
                     console.error(e);
                     alert("Error updating request. You may not have permission.");
-                    // Revert UI if needed? Not necessary but could be added.
                 }
             }
 
@@ -600,4 +598,5 @@
         }
         main();
     </script>
-</body></html>
+</body>
+</html>
