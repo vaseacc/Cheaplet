@@ -33,6 +33,7 @@
     
     <script type="module" src="global.js"></script>
     <style>
+        /* All existing CSS remains unchanged */
         :root {
             --ink:       #0C1446;
             --deep:      #2B5C92;
@@ -277,7 +278,6 @@
 
             <div class="section-header" data-i18n="seller_title">Seller Information</div>
             
-            <!-- Easy-to-click seller block -->
             <a href="#" id="seller-section-wrapper" class="seller-section-wrapper">
                 <div class="seller-section">
                     <div id="seller-avatar-small"></div>
@@ -390,7 +390,6 @@
             });
 
             function translateData(value) {
-                // FIXED: Force 'undefined' or missing checkboxes to clearly show "No" instead of blank
                 if (value === true) return strings[lang].yes;
                 if (value === false || value === undefined || value === null || value === "") return strings[lang].no;
                 if (lang === 'fr' && dataTranslations.fr[value]) return dataTranslations.fr[value];
@@ -432,7 +431,6 @@
                         }
                     }
 
-                    // DYNAMIC TAB TITLE FIX
                     let shortTitle = data.title;
                     if(shortTitle) {
                         const words = shortTitle.split(' ');
@@ -448,7 +446,6 @@
 
                     document.getElementById('listing-title').textContent = data.title;
                     
-                    // Display Badges (Sold, Pending, Rejected)
                     const statusArea = document.getElementById('status-badge-area');
                     if (data.status === 'sold') {
                         statusArea.innerHTML = `<span class="status-badge status-sold">${strings[lang].sold}</span>`;
@@ -475,14 +472,12 @@
                     document.getElementById('listing-digital-code').textContent = translateData(data.digitalCode || "N/A");
                     document.getElementById('listing-meeting-point').textContent = data.meetingPoint || (lang === 'fr' ? "À discuter" : "To be discussed");
                     
-                    // Fixed checkmarks
                     document.getElementById('listing-writing').textContent = translateData(data.hasWriting === true);
                     document.getElementById('listing-water').textContent = translateData(data.hasWaterDamage === true);
                     document.getElementById('listing-missing').textContent = translateData(data.hasMissingPages === true);
                     
                     document.getElementById('listing-description').textContent = data.description;
                     
-                    // Set up seller profile wrapper link
                     document.getElementById('seller-section-wrapper').href = `/user.html?id=${data.posterUid}`;
                     document.getElementById('seller-name-text').textContent = data.posterDisplayName || "User";
 
@@ -526,7 +521,6 @@
                             });
                         }
                     } else {
-                        // Empty state for rejected items that had images wiped
                         mainImage.style.display = 'none';
                         document.querySelector('.main-image-container').innerHTML = '<i class="fas fa-image" style="font-size: 4rem; color: #cbd5e1;"></i><div style="color:var(--text-muted); margin-top:10px;">No Image Available</div>';
                     }
@@ -543,7 +537,6 @@
                         }
                     }
 
-                    // --- SECURE RELATED LISTINGS ---
                     if (data.tags && data.tags.length > 0) { fetchRelatedListings(data.tags, currentListingId); }
 
                 } catch (error) { console.error(error); }
@@ -554,11 +547,9 @@
                 const section = document.getElementById('related-section');
                 const searchTags = tags.slice(0, 10);
                 
-                // Fetch up to 6 matches
                 const q = query(collection(db, "listings"), where("tags", "array-contains-any", searchTags), limit(6));
                 const snap = await getDocs(q);
                 
-                // STRICT FILTER: Only show related items that are explicitly "active"
                 const related = snap.docs.filter(d => d.id !== currentId && d.data().status === 'active').slice(0, 4);
                 
                 if (related.length > 0) {
@@ -596,7 +587,7 @@
                 const url = imageUrls[index];
                 if (url) {
                     mainImage.style.animation = 'none';
-                    mainImage.offsetHeight; // reflow
+                    mainImage.offsetHeight;
                     mainImage.style.animation = 'imagePop 0.3s ease both';
                     mainImage.src = url;
                     blurBg.style.backgroundImage = `url('${url}')`;
@@ -607,23 +598,77 @@
             prevBtn.onclick = () => { if (imageUrls.length <= 1) return; let n = currentImageIndex - 1; if (n < 0) n = imageUrls.length - 1; updateMainImage(n); };
             nextBtn.onclick = () => { if (imageUrls.length <= 1) return; let n = currentImageIndex + 1; if (n >= imageUrls.length) n = 0; updateMainImage(n); };
 
+            // 🔥 FIXED: Robust chat creation that queries first and uses addDoc to avoid update permission issues
             async function createChat(posterUid, posterName, initialMessage = null) {
-                if (!currentUser) { window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`; return; }
-                const uids = [currentUser.uid, posterUid].sort();
-                const chatId = uids.join('_') + '_' + currentListingId;
-                const chatRef = doc(db, 'chats', chatId);
+                if (!currentUser) {
+                    window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+                    return;
+                }
+                if (currentUser.uid === posterUid) {
+                    alert("You cannot message yourself.");
+                    return;
+                }
+
                 try {
-                    const chatSnap = await getDoc(chatRef);
-                    const myName = currentUser.displayName || "User";
-                    if (!chatSnap.exists()) {
-                        await setDoc(chatRef, { participants: uids, participantInfo: { [currentUser.uid]: myName, [posterUid]: posterName }, lastUpdate: serverTimestamp(), lastMessage: initialMessage || "", listingId: currentListingId, listingTitle: currentListingData.title });
+                    // Check if a chat already exists for this listing between these two users
+                    const existingQuery = query(
+                        collection(db, "chats"),
+                        where("listingId", "==", currentListingId),
+                        where("participants", "array-contains", currentUser.uid)
+                    );
+                    const existingSnap = await getDocs(existingQuery);
+                    let chatId = null;
+                    for (const docSnap of existingSnap.docs) {
+                        const data = docSnap.data();
+                        if (data.participants.includes(posterUid)) {
+                            chatId = docSnap.id;
+                            break;
+                        }
                     }
+
+                    if (chatId) {
+                        // Chat exists, just redirect
+                        window.location.href = `/chat.html?id=${chatId}`;
+                        return;
+                    }
+
+                    // Create a new chat with a random ID (addDoc)
+                    const participants = [currentUser.uid, posterUid];
+                    const chatRef = await addDoc(collection(db, "chats"), {
+                        participants: participants,
+                        listingId: currentListingId,
+                        listingTitle: currentListingData.title,
+                        participantInfo: {
+                            [currentUser.uid]: currentUser.displayName || "You",
+                            [posterUid]: posterName
+                        },
+                        lastMessage: initialMessage || "",
+                        lastUpdate: serverTimestamp(),
+                        createdAt: serverTimestamp(),
+                        unreadBy: [posterUid]  // seller gets the first notification
+                    });
+
+                    chatId = chatRef.id;
+
+                    // Send initial message if provided
                     if (initialMessage) {
-                        await addDoc(collection(db, 'chats', chatId, 'messages'), { text: initialMessage, senderId: currentUser.uid, timestamp: serverTimestamp() });
-                        await updateDoc(chatRef, { lastMessage: initialMessage, lastUpdate: serverTimestamp(), lastSenderId: currentUser.uid });
+                        await addDoc(collection(db, "chats", chatId, "messages"), {
+                            text: initialMessage,
+                            senderId: currentUser.uid,
+                            timestamp: serverTimestamp()
+                        });
+                        await updateDoc(doc(db, "chats", chatId), {
+                            lastMessage: initialMessage,
+                            lastUpdate: serverTimestamp(),
+                            lastSenderId: currentUser.uid
+                        });
                     }
+
                     window.location.href = `/chat.html?id=${chatId}`;
-                } catch (error) { console.error(error); alert("Error starting chat."); }
+                } catch (error) {
+                    console.error("Error creating chat:", error);
+                    alert("Could not start chat. Please try again.");
+                }
             }
 
             document.getElementById('btn-message-seller').onclick = () => createChat(currentListingData.posterUid, currentListingData.posterDisplayName);
