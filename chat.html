@@ -6,7 +6,6 @@
     <script type="module" src="global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* ... (same styles as before) ... */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f8f9fa; color: #333; height: 100vh; height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
         .container { width: 100%; max-width: 1300px; margin: 0 auto; padding: 0 15px; height: 100%; }
@@ -69,6 +68,7 @@
         .date-separator { text-align: center; margin: 20px 0; font-size: 0.8rem; font-weight: bold; color: #888; }
         .date-separator span { background: #f0f0f0; padding: 4px 12px; border-radius: 12px; }
 
+        /* Join request card */
         .request-card { background: #f0f7ff; border: 1px solid #2B5C92; border-radius: 12px; padding: 16px; margin: 10px 0; max-width: 80%; }
         .request-text { font-weight: 600; margin-bottom: 12px; }
         .request-actions { display: flex; gap: 10px; }
@@ -273,7 +273,8 @@
                         if ((!d.lastMessage || d.lastMessage.trim() === "") && docSnap.id !== currentChatId) return;
 
                         const otherId = d.participants.find(p => p !== currentUser.uid);
-                        const otherName = d.participantInfo ? d.participantInfo[otherId] : 'User';
+                        // Fallback for missing participantInfo
+                        const otherName = (d.participantInfo && d.participantInfo[otherId]) ? d.participantInfo[otherId] : 'User';
                         const itemTitle = d.listingTitle ? `<span style="font-size:0.75rem; color:#2B5C92;">(${d.listingTitle})</span>` : '';
                         
                         let isUnread = false;
@@ -329,8 +330,8 @@
                 
                 const d = chatSnap.data();
                 const otherId = d.participants.find(p => p !== currentUser.uid);
-                // FIX: provide fallback for participantInfo
-                reportTargetName = (d.participantInfo && d.participantInfo[otherId]) || 'User';
+                // Fallback for participantInfo
+                reportTargetName = (d.participantInfo && d.participantInfo[otherId]) ? d.participantInfo[otherId] : 'User';
                 reportTargetUid = otherId;
                 chatHeaderName.textContent = reportTargetName;
                 reportChatBtn.style.display = 'block';
@@ -363,6 +364,7 @@
                     chatHeaderMeta.innerHTML = metaHtml;
                 }
 
+                // Listing status listener
                 if (d.listingId) {
                     onSnapshot(doc(db, 'listings', d.listingId), (lSnap) => {
                         if (lSnap.exists()) {
@@ -385,7 +387,7 @@
                     });
                 }
 
-                // MARK AS READ
+                // Mark as read
                 try {
                     await updateDoc(chatRef, { unreadBy: arrayRemove(currentUser.uid) });
                 } catch(e) { console.error(e); }
@@ -485,6 +487,7 @@
             function renderMessage(data, msgId, currentUserId, otherId) {
                 const isSent = data.senderId === currentUserId;
                 
+                // Handle join_request type
                 if (data.type === 'join_request') {
                     const card = document.createElement('div');
                     card.className = 'request-card';
@@ -500,8 +503,8 @@
                                 <button class="btn-decline" data-msg-id="${msgId}">${ui.decline}</button>
                             </div>
                         `;
-                        card.querySelector('.btn-accept').onclick = () => handleRequestResponse(data, msgId, 'approved');
-                        card.querySelector('.btn-decline').onclick = () => handleRequestResponse(data, msgId, 'rejected');
+                        card.querySelector('.btn-accept').onclick = () => handleRequestResponse(data, msgId, 'approved', card);
+                        card.querySelector('.btn-decline').onclick = () => handleRequestResponse(data, msgId, 'rejected', card);
                     } else {
                         let statusText = status === 'pending' ? ui.statusPending : (status === 'approved' ? ui.statusApproved : ui.statusDeclined);
                         let icon = status === 'pending' ? '⏳' : (status === 'approved' ? '✅' : '❌');
@@ -514,6 +517,7 @@
                     return;
                 }
 
+                // Regular message
                 const row = document.createElement('div');
                 row.className = `message-row ${isSent ? 'sent' : 'received'}`;
                 let avatarHtml = '';
@@ -531,7 +535,18 @@
                 row.appendChild(bubble); messagesList.appendChild(row);
             }
 
-            async function handleRequestResponse(msg, msgId, newStatus) {
+            async function handleRequestResponse(msg, msgId, newStatus, cardElement) {
+                // Immediately update UI to show status (optimistic)
+                const actionsDiv = cardElement.querySelector('.request-actions');
+                if (actionsDiv) {
+                    const statusText = newStatus === 'approved' ? ui.statusApproved : ui.statusDeclined;
+                    const icon = newStatus === 'approved' ? '✅' : '❌';
+                    cardElement.innerHTML = `
+                        <div class="request-text"><i class="fas fa-user-plus"></i> ${msg.text || ''}</div>
+                        <div class="request-status">${icon} ${statusText}</div>
+                    `;
+                }
+                
                 try {
                     const chatRef = doc(db, 'chats', currentChatId);
                     const chatSnap = await getDoc(chatRef);
@@ -539,14 +554,17 @@
                     const chatData = chatSnap.data();
                     const otherId = chatData.participants.find(p => p !== auth.currentUser.uid);
                     
+                    // Update message status
                     await updateDoc(doc(db, 'chats', currentChatId, 'messages', msgId), { status: newStatus });
                     
+                    // If approved, add user to topic members
                     if (newStatus === 'approved' && msg.topicId) {
                         await updateDoc(doc(db, 'social_channels', msg.topicId), {
                             members: arrayUnion(msg.senderUid)
                         });
                     }
                     
+                    // Send system message
                     const systemText = newStatus === 'approved' ? ui.requestApproved : ui.requestDeclined;
                     await addDoc(collection(db, 'chats', currentChatId, 'messages'), {
                         text: systemText,
@@ -559,7 +577,11 @@
                         lastSenderId: auth.currentUser.uid,
                         unreadBy: arrayUnion(otherId)
                     });
-                } catch(e) { console.error(e); alert("Error updating request."); }
+                } catch(e) {
+                    console.error(e);
+                    alert("Error updating request. You may not have permission.");
+                    // Revert UI if needed? Not necessary but could be added.
+                }
             }
 
             reportChatBtn.onclick = () => { reportModal.style.display = 'flex'; };
