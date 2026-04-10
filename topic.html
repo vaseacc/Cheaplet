@@ -588,15 +588,21 @@
             async function checkExistingRequest(uid) {
                 if (!uid) return;
                 console.log("Checking existing request for", uid);
-                const convQuery = query(collection(db, "conversations"), where("participants", "array-contains", uid));
-                const convSnap = await getDocs(convQuery);
-                for (const convDoc of convSnap.docs) {
-                    const convData = convDoc.data();
-                    if (convData.participants.includes(currentTopicData.createdBy)) {
-                        const msgQuery = query(collection(db, "conversations", convDoc.id, "messages"),
+                // Look for a chat with both users and no listingId (personal chat)
+                const chatsQuery = query(collection(db, "chats"), where("participants", "array-contains", uid));
+                const chatsSnap = await getDocs(chatsQuery);
+                for (const chatDoc of chatsSnap.docs) {
+                    const chatData = chatDoc.data();
+                    // Only consider personal chats (no listingId) that include both users
+                    if (!chatData.listingId && chatData.participants.includes(currentTopicData.createdBy)) {
+                        const msgQuery = query(collection(db, "chats", chatDoc.id, "messages"),
                             where("type", "==", "join_request"), where("topicId", "==", topicId), where("senderUid", "==", uid));
                         const msgSnap = await getDocs(msgQuery);
-                        if (!msgSnap.empty) { existingRequestStatus = msgSnap.docs[0].data().status; console.log("Found existing request:", existingRequestStatus); return; }
+                        if (!msgSnap.empty) { 
+                            existingRequestStatus = msgSnap.docs[0].data().status; 
+                            console.log("Found existing request:", existingRequestStatus); 
+                            return; 
+                        }
                     }
                 }
                 existingRequestStatus = null;
@@ -701,7 +707,7 @@
                 } catch(e) { alert(ui.upload_fail); } finally { btnSendPost.innerHTML = origIcon; updateComposerSendButton(); }
             };
 
-            // Comment logic (unchanged but included)
+            // Comment logic (unchanged)
             const globalCommentImgInput = document.getElementById('global-comment-img-upload');
             window.triggerCommentImg = (postId) => { if (!currentUser) return; activeCommentPostId = postId; globalCommentImgInput.click(); };
             if (globalCommentImgInput) globalCommentImgInput.onchange = e => {
@@ -816,7 +822,7 @@
                     requestBtn.style.display = 'block'; requestBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${ui.request_join}`; statusEl.style.display = 'none'; lockIcon.className = 'fas fa-lock';
                 }
 
-                // --- REQUEST BUTTON WITH DEBUG LOGS ---
+                // --- REQUEST BUTTON (USES CHATS COLLECTION) ---
                 requestBtn.onclick = async () => {
                     console.log("Request to Join clicked");
                     if (!currentUser) { console.warn("No current user"); return; }
@@ -828,41 +834,52 @@
                     
                     try {
                         const ownerUid = currentTopicData.createdBy;
-                        console.log("Looking for existing conversation with owner...");
-                        const convQuery = query(collection(db, "conversations"), where("participants", "array-contains", currentUser.uid));
-                        const convSnap = await getDocs(convQuery);
-                        let conversationId = null;
-                        for (const docSnap of convSnap.docs) { 
+                        const participants = [currentUser.uid, ownerUid].sort(); // consistent order
+                        
+                        console.log("Looking for existing personal chat with owner...");
+                        // Find a chat that has both participants and no listingId
+                        const chatsQuery = query(collection(db, "chats"), 
+                            where("participants", "array-contains", currentUser.uid));
+                        const chatsSnap = await getDocs(chatsQuery);
+                        let chatId = null;
+                        
+                        for (const docSnap of chatsSnap.docs) {
                             const d = docSnap.data(); 
-                            if (d.participants.includes(ownerUid)) { 
-                                conversationId = docSnap.id; 
-                                console.log("Found existing conversation:", conversationId);
+                            if (!d.listingId && d.participants.includes(ownerUid)) { 
+                                chatId = docSnap.id; 
+                                console.log("Found existing personal chat:", chatId);
                                 break; 
                             } 
                         }
-                        if (!conversationId) {
-                            console.log("Creating new conversation...");
-                            const convRef = await addDoc(collection(db, "conversations"), { 
-                                participants: [currentUser.uid, ownerUid], 
+                        
+                        if (!chatId) {
+                            console.log("Creating new personal chat...");
+                            const chatRef = await addDoc(collection(db, "chats"), { 
+                                participants: participants,
                                 lastMessage: `${currentUser.displayName} requested to join ${currentTopicName}`, 
                                 lastMessageTimestamp: serverTimestamp(), 
-                                createdAt: serverTimestamp() 
+                                createdAt: serverTimestamp(),
+                                listingId: null  // indicates personal chat
                             });
-                            conversationId = convRef.id;
-                            console.log("New conversation created:", conversationId);
+                            chatId = chatRef.id;
+                            console.log("New chat created:", chatId);
                         }
                         
                         console.log("Sending join request message...");
-                        await addDoc(collection(db, "conversations", conversationId, "messages"), {
-                            type: 'join_request', topicId, topicName: currentTopicName, 
-                            senderUid: currentUser.uid, senderName: currentUser.displayName,
+                        await addDoc(collection(db, "chats", chatId, "messages"), {
+                            type: 'join_request',
+                            topicId, 
+                            topicName: currentTopicName, 
+                            senderUid: currentUser.uid, 
+                            senderName: currentUser.displayName,
                             senderPhoto: currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`,
-                            recipientUid: ownerUid, status: 'pending', 
+                            recipientUid: ownerUid, 
+                            status: 'pending', 
                             text: `${currentUser.displayName} requested to join #${currentTopicName}`, 
                             timestamp: serverTimestamp()
                         });
                         
-                        await updateDoc(doc(db, "conversations", conversationId), { 
+                        await updateDoc(doc(db, "chats", chatId), { 
                             lastMessage: `${currentUser.displayName} requested to join ${currentTopicName}`, 
                             lastMessageTimestamp: serverTimestamp() 
                         });
