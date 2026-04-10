@@ -10,7 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* (same styles as before) */
+        /* Same styles as before */
         :root {
             --ink: #0C1446;
             --deep: #2B5C92;
@@ -60,6 +60,9 @@
         .send-btn { background: var(--deep); color: white; border: none; width: 48px; height: 48px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
         .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+        .listing-context { background: #f1f5f9; padding: 8px 16px; font-size: 0.85rem; border-bottom: var(--border); }
+        .listing-context a { color: var(--deep); font-weight: 600; text-decoration: none; }
+
         @media (max-width: 600px) {
             .message { max-width: 85%; }
         }
@@ -81,6 +84,8 @@
         <span id="chat-username" class="chat-username">Loading...</span>
     </div>
 </div>
+
+<div id="listing-context" class="listing-context" style="display: none;"></div>
 
 <div class="messages-container" id="messages-container">
     <div style="text-align:center; color:var(--text-muted);"><i class="fas fa-spinner fa-spin"></i> Loading messages...</div>
@@ -111,15 +116,18 @@
         const ui = {
             en: { 
                 accept: "Accept", decline: "Decline", requestApproved: "Request approved!", requestDeclined: "Request declined.",
-                statusPending: "Pending...", statusApproved: "Approved", statusDeclined: "Declined"
+                statusPending: "Pending...", statusApproved: "Approved", statusDeclined: "Declined",
+                listing: "About listing:"
             },
             fr: { 
                 accept: "Accepter", decline: "Refuser", requestApproved: "Demande acceptée !", requestDeclined: "Demande refusée.",
-                statusPending: "En attente...", statusApproved: "Acceptée", statusDeclined: "Refusée"
+                statusPending: "En attente...", statusApproved: "Acceptée", statusDeclined: "Refusée",
+                listing: "À propos de l'annonce :"
             }
         }[lang] || { 
             accept: "Accept", decline: "Decline", requestApproved: "Request approved!", requestDeclined: "Request declined.",
-            statusPending: "Pending...", statusApproved: "Approved", statusDeclined: "Declined"
+            statusPending: "Pending...", statusApproved: "Approved", statusDeclined: "Declined",
+            listing: "About listing:"
         };
 
         let currentUser = null;
@@ -130,6 +138,7 @@
         const sendBtn = document.getElementById('send-btn');
         const chatAvatar = document.getElementById('chat-avatar');
         const chatUsername = document.getElementById('chat-username');
+        const listingContext = document.getElementById('listing-context');
 
         onAuthStateChanged(auth, async (user) => {
             if (!user) { window.location.href = '/login.html?redirect=' + encodeURIComponent(`/chat.html?id=${chatId}`); return; }
@@ -162,6 +171,13 @@
                 otherUser = userDoc.exists() ? userDoc.data() : { displayName: "User", photoURL: null };
                 chatUsername.textContent = otherUser.displayName || "User";
                 chatAvatar.src = otherUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${otherUid}&backgroundColor=EBF2FA`;
+
+                // Show listing context if this is a listing chat
+                if (chatData.listingId) {
+                    const listingTitle = chatData.listingTitle || 'View listing';
+                    listingContext.style.display = 'block';
+                    listingContext.innerHTML = `${ui.listing} <a href="/listing.html?id=${chatData.listingId}">${escapeHtml(listingTitle)}</a>`;
+                }
 
                 messageInput.addEventListener('input', () => sendBtn.disabled = !messageInput.value.trim());
                 sendBtn.onclick = sendMessage;
