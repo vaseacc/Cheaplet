@@ -1,191 +1,332 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+<html lang="en"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Messages — Scoralia</title>
-    <script type="module" src="global.js"></script>
+    <title>My Messages - Scoralia</title>
+    
+    <!-- Preconnect to external origins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://www.gstatic.com">
+    <link rel="preconnect" href="https://firestore.googleapis.com">
+    
+    <!-- DNS Prefetch -->
+    <link rel="dns-prefetch" href="https://firebaseapp.com">
+    <link rel="dns-prefetch" href="https://googleapis.com">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    
+    <!-- Modulepreload for critical JS -->
+    <link rel="modulepreload" href="/global.js">
+    
+    <!-- Preload critical fonts -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,700;0,900;1,700&amp;family=Source+Sans+3:wght@300;400;500;600&amp;display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,700;0,900;1,700&amp;family=Source+Sans+3:wght@300;400;500;600&amp;display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome with integrity -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+    
+    <script type="module" src="global.js"></script>
     <style>
         :root {
-            --ink: #0C1446;
-            --deep: #2B5C92;
-            --off-white: #F8FAFC;
-            --white: #FFFFFF;
-            --gold: #C8A96E;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --radius: 16px;
-            --shadow: 0 4px 20px rgba(12,20,70,0.05);
-            --border: 1px solid #e2e8f0;
-            --red: #e53e3e;
-            --green: #2E7D32;
+            --ink:       #0C1446;
+            --deep:      #2B5C92;
+            --mist:      #B3CDE0;
+            --white:     #FFFFFF;
+            --off-white: #F4F7FC;
+            --surface:   #EBF2FA;
+            --text-body: #1a2a4a;
+            --text-muted:#6b84a3;
+            --gold:      #C8A96E;
+            --unread:    #C0392B;
+            --radius-sm: 8px;
+            --radius-md: 16px;
+            --shadow-sm: 0 2px 12px rgba(12,20,70,0.08);
+            --shadow-md: 0 8px 32px rgba(12,20,70,0.13);
+            --font-display: 'Source Serif 4', Georgia, serif;
+            --font-body:    'Source Sans 3', sans-serif;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--off-white); color: var(--text-main); }
+        html { scroll-behavior: smooth; }
+        body { font-family: var(--font-body); background: var(--off-white); color: var(--text-body); }
 
-        header { position: sticky; top: 0; z-index: 200; background: var(--ink); border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .header-inner { max-width: 1100px; margin: 0 auto; padding: 0 20px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
-        .logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: -0.5px; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100%{ background-position: -200% 0; } }
+
+        header { position: sticky; top: 0; z-index: 200; background: rgba(12, 20, 70, 0.97); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(179,205,224,0.15); animation: slideDown 0.4s ease both; }
+        .header-inner { max-width: 1280px; margin: 0 auto; padding: 0 28px; height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+        .logo { font-family: var(--font-display); font-size: 1.6rem; font-weight: 900; color: var(--white); text-decoration: none; letter-spacing: -0.5px; }
         .logo em { color: var(--gold); font-style: normal; }
-
         nav ul { display: flex; list-style: none; gap: 28px; }
-        nav ul li a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.9rem; font-weight: 500; }
+        nav ul li a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
         nav ul li a:hover { color: var(--white); }
+        .header-right { display: flex; align-items: center; gap: 10px; }
 
-        .container { max-width: 800px; margin: 40px auto; padding: 0 20px; }
+        .page-header { background: linear-gradient(135deg, var(--ink) 0%, var(--deep) 60%, #4a7db5 100%); padding: 40px 28px 36px; position: relative; overflow: hidden; }
+        .page-header::after { content: ''; position: absolute; inset: 0; background-image: linear-gradient(rgba(179,205,224,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(179,205,224,0.06) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; }
+        .page-header-inner { max-width: 1280px; margin: 0 auto; position: relative; z-index: 1; animation: fadeUp 0.5s ease both; }
+        .page-header h1 { font-family: var(--font-display); font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 900; color: var(--white); letter-spacing: -0.5px; margin-bottom: 6px; }
+        .page-header p { color: rgba(255,255,255,0.6); font-size: 0.92rem; }
 
-        .inbox-header { margin-bottom: 25px; }
-        .inbox-header h1 { font-family: 'Playfair Display', serif; font-size: 2.2rem; color: var(--ink); }
+        .main-wrap { max-width: 860px; margin: 0 auto; padding: 36px 28px; }
+        .info-message { text-align: center; padding: 80px 20px; color: var(--text-muted); font-size: 1rem; animation: fadeIn 0.4s ease both; }
+        .info-message i { display: block; font-size: 2.5rem; color: var(--mist); margin-bottom: 16px; }
 
-        .conversation-list { display: flex; flex-direction: column; gap: 12px; }
+        #inbox-container { background: var(--white); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid rgba(179,205,224,0.3); overflow: hidden; }
 
-        .conversation-item { background: var(--white); border-radius: var(--radius); padding: 16px 20px; box-shadow: var(--shadow); border: var(--border); display: flex; align-items: center; gap: 15px; text-decoration: none; color: inherit; transition: 0.2s; }
-        .conversation-item:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+        .conversation-item { display: flex; align-items: center; padding: 16px 20px; border-bottom: 1px solid rgba(179,205,224,0.25); cursor: pointer; text-decoration: none; color: inherit; transition: background 0.18s; position: relative; animation: fadeUp 0.35s ease both; }
+        .conversation-item:last-child { border-bottom: none; }
+        .conversation-item:hover { background: var(--surface); }
 
-        .conv-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: #cbd5e1; flex-shrink: 0; }
+        .conversation-item.unread::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--deep); border-radius: 0 2px 2px 0; }
 
-        .conv-info { flex-grow: 1; overflow: hidden; }
-        .conv-name { font-weight: 700; font-size: 1rem; color: var(--ink); display: flex; align-items: center; gap: 6px; }
-        .conv-last-message { font-size: 0.9rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; }
-        .conv-time { font-size: 0.75rem; color: var(--text-muted); flex-shrink: 0; }
-        .conv-badge { background: var(--red); color: white; border-radius: 12px; padding: 2px 8px; font-size: 0.7rem; font-weight: 700; margin-left: 8px; }
-        .join-request-badge { background: var(--gold); color: var(--ink); }
-        .listing-badge { background: #e2e8f0; color: var(--ink); margin-left: 8px; padding: 2px 8px; border-radius: 12px; font-size: 0.7rem; }
-        .empty-state { text-align: center; padding: 60px; color: var(--text-muted); }
+        .avatar-wrap { position: relative; margin-right: 16px; flex-shrink: 0; }
+        .avatar { width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, var(--ink), var(--deep)); color: var(--white); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1.1rem; overflow: hidden; border: 2px solid var(--surface); }
+        .avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-        @media (max-width: 600px) {
-            .container { margin: 20px auto; }
+        .unread-dot {
+            position: absolute; top: -2px; right: -2px;
+            width: 12px; height: 12px;
+            background: var(--unread);
+            border-radius: 50%;
+            border: 2px solid var(--white);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .conversation-details { flex-grow: 1; overflow: hidden; }
+        .convo-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 3px; }
+        .participant-name { font-weight: 600; font-size: 0.95rem; color: var(--text-body); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .conversation-item.unread .participant-name { color: var(--ink); font-weight: 700; }
+        .listing-tag { font-size: 0.72rem; color: var(--deep); font-weight: 600; background: var(--surface); padding: 2px 8px; border-radius: 50px; border: 1px solid var(--mist); white-space: nowrap; flex-shrink: 0; }
+        .join-request-badge { background: var(--gold); color: var(--ink); margin-left: 6px; padding: 2px 8px; border-radius: 50px; font-size: 0.7rem; font-weight: 700; white-space: nowrap; }
+        
+        .last-message { color: var(--text-muted); font-size: 0.86rem; display: flex; align-items: center; }
+        .last-message-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+        .conversation-item.unread .last-message { color: var(--text-body); font-weight: 500; }
+
+        .convo-arrow { color: var(--mist); font-size: 0.75rem; flex-shrink: 0; margin-left: 12px; transition: transform 0.2s, color 0.2s; }
+        .conversation-item:hover .convo-arrow { transform: translateX(3px); color: var(--deep); }
+
+        .skeleton-item { display: flex; align-items: center; padding: 16px 20px; border-bottom: 1px solid rgba(179,205,224,0.25); animation: fadeIn 0.3s ease both; }
+        .skeleton { background: linear-gradient(90deg, var(--surface) 25%, var(--mist) 50%, var(--surface) 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: var(--radius-sm); }
+        .sk-avatar { width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0; margin-right: 16px; }
+        .sk-lines { flex: 1; }
+        .sk-line { height: 13px; margin-bottom: 8px; border-radius: 4px; }
+
+        @media (max-width: 767px) {
+            nav { display: none; }
+            .page-header { padding: 28px 16px; }
+            .main-wrap { padding: 20px 12px; }
+            .conversation-item { padding: 14px 16px; }
         }
     </style>
 </head>
 <body>
 
-<header>
-    <div class="header-inner">
-        <a href="/index.html" class="logo">Scor<em>alia</em></a>
-        <nav>
-            <ul>
-                <li><a href="/search.html">Browse</a></li>
-                <li><a href="/my-listings.html">My Listings</a></li>
-                <li><a href="/social.html">Campus Hub</a></li>
-                <li><a href="/messages.html">Messages</a></li>
-            </ul>
-        </nav>
-        <div class="header-right"></div>
+    <header>
+        <div class="header-inner">
+            <a href="/index.html" class="logo">Cheap<em>let</em></a>
+            <nav>
+                <ul>
+                    <li><a href="/search.html" id="nav-browse-link">Browse</a></li>
+                    <li><a href="/my-listings.html" id="nav-listings-link">My Listings</a></li>
+                    <li><a href="/messages.html" id="nav-messages-link">Messages</a></li>
+                </ul>
+            </nav>
+            <div class="header-right"></div>
+        </div>
+    </header>
+
+    <div class="page-header">
+        <div class="page-header-inner">
+            <h1 data-i18n="nav_messages">My Messages</h1>
+            <p id="page-sub">Your conversations with buyers and sellers.</p>
+        </div>
     </div>
-</header>
 
-<main class="container">
-    <div class="inbox-header">
-        <h1>Messages</h1>
+    <div class="main-wrap">
+        <div id="info-container"></div>
+        <div id="inbox-container"></div>
     </div>
-    <div class="conversation-list" id="conversation-list">
-        <div class="empty-state"><i class="fas fa-spinner fa-spin"></i> Loading conversations...</div>
-    </div>
-</main>
 
-<script type="module">
-    import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-    import { getFirestore, collection, query, where, orderBy, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+    <script type="module">
+        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getFirestore, collection, query, where, onSnapshot, orderBy, getDoc, doc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
-    async function main() {
-        const response = await fetch('/.netlify/functions/config');
-        const config = await response.json();
-        const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
-        const auth = getAuth(app);
-        const db = getFirestore(app);
+        async function main() {
+            const response = await fetch('/.netlify/functions/config');
+            const config = await response.json();
+            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
+            const auth = getAuth(app);
+            const db = getFirestore(app);
 
-        const lang = localStorage.getItem('preferred_language') || 'en';
-        const ui = {
-            en: { loading: "Loading conversations...", noMessages: "No messages yet.", you: "You", requestPrefix: "Request to join", listingChat: "Listing chat" },
-            fr: { loading: "Chargement des conversations...", noMessages: "Aucun message.", you: "Vous", requestPrefix: "Demande pour rejoindre", listingChat: "Annonce" }
-        }[lang] || { loading: "Loading...", noMessages: "No messages yet.", you: "You", requestPrefix: "Request to join", listingChat: "Listing chat" };
+            const infoContainer = document.getElementById('info-container');
+            const inboxContainer = document.getElementById('inbox-container');
 
-        let currentUser = null;
-        const listEl = document.getElementById('conversation-list');
+            const lang = localStorage.getItem('preferred_language') || 'en';
+            const strings = {
+                en: { loading: "Loading conversations…", empty: "You have no messages yet.", login: "Please log in to view messages.", pageSub: "Your conversations with buyers and sellers.", navB: "Browse", navL: "My Listings", navM: "Messages", sent: "Sent", seen: "Seen", requestPrefix: "requested to join", listingChat: "Listing" },
+                fr: { loading: "Chargement des conversations…", empty: "Vous n'avez pas encore de messages.", login: "Veuillez vous connecter pour voir vos messages.", pageSub: "Vos conversations avec acheteurs et vendeurs.", navB: "Parcourir", navL: "Mes Annonces", navM: "Messages", sent: "Envoyé", seen: "Vu", requestPrefix: "demandé à rejoindre", listingChat: "Annonce" }
+            };
 
-        onAuthStateChanged(auth, async (user) => {
-            if (!user) { window.location.href = '/login.html?redirect=/messages.html'; return; }
-            currentUser = user;
-            loadConversations();
-        });
+            const ui = strings[lang];
+            document.getElementById('nav-browse-link').textContent = ui.navB;
+            document.getElementById('nav-listings-link').textContent = ui.navL;
+            document.getElementById('nav-messages-link').textContent = ui.navM;
+            document.getElementById('page-sub').textContent = ui.pageSub;
 
-        function loadConversations() {
-            const q = query(
-                collection(db, "chats"),
-                where("participants", "array-contains", currentUser.uid),
-                orderBy("lastMessageTimestamp", "desc")
-            );
-            onSnapshot(q, async (snapshot) => {
-                if (snapshot.empty) {
-                    listEl.innerHTML = `<div class="empty-state"><i class="far fa-comment-dots"></i><br>${ui.noMessages}</div>`;
-                    return;
-                }
-                listEl.innerHTML = '';
-                const frag = document.createDocumentFragment();
-                for (const docSnap of snapshot.docs) {
-                    const chat = docSnap.data();
-                    const chatId = docSnap.id;
-                    const otherUid = chat.participants.find(uid => uid !== currentUser.uid);
-                    if (!otherUid) continue;
+            const userCache = {};
+            let unsubscribe = null;
 
-                    let otherUser = { displayName: "User", photoURL: null };
-                    try {
-                        const userDoc = await getDoc(doc(db, "users", otherUid));
-                        if (userDoc.exists()) otherUser = userDoc.data();
-                    } catch(e) { console.warn(e); }
-
-                    const pfp = otherUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${otherUid}&backgroundColor=EBF2FA`;
-                    const lastMessage = chat.lastMessage || '';
-                    const isJoinRequest = lastMessage.includes(ui.requestPrefix) || lastMessage.includes('requested to join');
-                    const timeStr = chat.lastMessageTimestamp ? formatTime(chat.lastMessageTimestamp.toDate()) : '';
-                    const isListingChat = chat.listingId != null;
-                    
-                    let nameHtml = `${otherUser.displayName || 'User'}`;
-                    if (isListingChat) {
-                        nameHtml += ` <span class="listing-badge"><i class="fas fa-tag"></i> ${chat.listingTitle || ui.listingChat}</span>`;
-                    }
-                    if (isJoinRequest) {
-                        nameHtml += ` <span class="conv-badge join-request-badge"><i class="fas fa-user-plus"></i> Join Request</span>`;
-                    }
-
-                    const item = document.createElement('a');
-                    item.className = 'conversation-item';
-                    item.href = `/chat.html?id=${chatId}`;
-                    item.innerHTML = `
-                        <img src="${pfp}" class="conv-avatar">
-                        <div class="conv-info">
-                            <div class="conv-name">${nameHtml}</div>
-                            <div class="conv-last-message">${escapeHtml(lastMessage)}</div>
+            function showSkeletons() {
+                inboxContainer.innerHTML = [1,2,3].map((_, i) => `
+                    <div class="skeleton-item" style="animation-delay:${i*0.07}s">
+                        <div class="skeleton sk-avatar"></div>
+                        <div class="sk-lines">
+                            <div class="skeleton sk-line" style="width:${40+i*15}%"></div>
+                            <div class="skeleton sk-line" style="width:${60+i*10}%; opacity:0.6"></div>
                         </div>
-                        <div class="conv-time">${timeStr}</div>
-                    `;
-                    frag.appendChild(item);
+                    </div>`).join('');
+            }
+
+            onAuthStateChanged(auth, user => {
+                const isOAuth = user && user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
+                if (user && (user.emailVerified || isOAuth)) {
+                    showSkeletons();
+                    fetchConversations(user);
+                } else {
+                    if (unsubscribe) unsubscribe();
+                    inboxContainer.innerHTML = '';
+                    infoContainer.innerHTML = `<div class="info-message"><i class="fas fa-lock"></i>${ui.login}</div>`;
                 }
-                listEl.appendChild(frag);
             });
-        }
 
-        function formatTime(date) {
-            const diff = Math.round((new Date() - date) / 60000);
-            if (diff < 60) return `${diff}m`;
-            if (diff < 1440) return `${Math.round(diff/60)}h`;
-            return `${Math.round(diff/1440)}d`;
-        }
+            function fetchConversations(currentUser) {
+                const q = query(
+                    collection(db, "chats"),
+                    where("participants", "array-contains", currentUser.uid),
+                    orderBy("lastMessageTimestamp", "desc")
+                );
 
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+                unsubscribe = onSnapshot(q, (snapshot) => {
+                    inboxContainer.innerHTML = '';
+                    infoContainer.innerHTML = '';
+                    let hasVisibleChats = false;
+
+                    snapshot.forEach((docSnap) => {
+                        const chatData = docSnap.data();
+                        if (!chatData.lastMessage || chatData.lastMessage.trim() === "") return;
+                        hasVisibleChats = true;
+                        inboxContainer.appendChild(renderConversation(docSnap, currentUser));
+                    });
+
+                    if (!hasVisibleChats) {
+                        infoContainer.innerHTML = `<div class="info-message"><i class="fas fa-comment-slash"></i>${ui.empty}</div>`;
+                    }
+                });
+            }
+
+            function renderConversation(docSnap, currentUser) {
+                const chatData = docSnap.data();
+                const otherId = chatData.participants.find(p => p !== currentUser.uid);
+                let displayName = chatData.participantInfo?.[otherId] || 'User';
+
+                // Unread logic using unreadBy array
+                let isUnread = false;
+                if (chatData.unreadBy !== undefined) {
+                    isUnread = chatData.unreadBy.includes(currentUser.uid);
+                } else {
+                    // fallback: if last sender isn't me, treat as unread
+                    isUnread = chatData.lastSenderId && chatData.lastSenderId !== currentUser.uid;
+                }
+
+                // Read status indicator (double check / single check)
+                let readStatusHtml = '';
+                if (chatData.lastSenderId === currentUser.uid) {
+                    let isSeen = true; 
+                    if (chatData.unreadBy !== undefined) {
+                        isSeen = !chatData.unreadBy.includes(otherId);
+                    }
+                    if (isSeen) {
+                        readStatusHtml = `<span style="color: var(--deep); font-size: 0.75rem; margin-right: 6px;" title="${ui.seen}"><i class="fas fa-check-double"></i></span>`;
+                    } else {
+                        readStatusHtml = `<span style="color: var(--text-muted); font-size: 0.75rem; margin-right: 6px;" title="${ui.sent}"><i class="fas fa-check"></i></span>`;
+                    }
+                }
+
+                // Detect join request
+                const isJoinRequest = chatData.lastMessage && 
+                    (chatData.lastMessage.includes(ui.requestPrefix) || chatData.lastMessage.toLowerCase().includes('requested to join'));
+
+                const link = document.createElement('a');
+                link.href = `/chat.html?id=${docSnap.id}`;
+                link.className = 'conversation-item' + (isUnread ? ' unread' : '');
+                const avatarId = `msg-avatar-${docSnap.id}`;
+
+                // Build tags
+                let tagsHtml = '';
+                if (chatData.listingId) {
+                    tagsHtml += `<span class="listing-tag"><i class="fas fa-tag"></i> ${chatData.listingTitle || ui.listingChat}</span>`;
+                }
+                if (isJoinRequest) {
+                    tagsHtml += `<span class="join-request-badge"><i class="fas fa-user-plus"></i> Join Request</span>`;
+                }
+
+                const unreadDot = isUnread ? `<span class="unread-dot"></span>` : '';
+
+                link.innerHTML = `
+                    <div class="avatar-wrap">
+                        <div class="avatar" id="${avatarId}">${displayName.charAt(0).toUpperCase()}</div>
+                        ${unreadDot}
+                    </div>
+                    <div class="conversation-details">
+                        <div class="convo-top">
+                            <span class="participant-name">${displayName}</span>
+                            ${tagsHtml}
+                        </div>
+                        <p class="last-message">
+                            ${readStatusHtml}
+                            <span class="last-message-text">${escapeHtml(chatData.lastMessage)}</span>
+                        </p>
+                    </div>
+                    <i class="fas fa-chevron-right convo-arrow"></i>`;
+
+                // Load avatar
+                if (userCache[otherId]) {
+                    if (userCache[otherId].photoURL) {
+                        const avatarEl = link.querySelector(`#${avatarId}`);
+                        if (avatarEl) avatarEl.innerHTML = `<img src="${userCache[otherId].photoURL}">`;
+                    }
+                } else {
+                    getDoc(doc(db, 'users', otherId)).then(uSnap => {
+                        if (uSnap.exists()) {
+                            const data = uSnap.data();
+                            userCache[otherId] = data;
+                            let finalUrl = data.photoURL;
+                            if (!finalUrl || finalUrl.includes("googleusercontent.com") || finalUrl.includes("live.com")) {
+                                finalUrl = `https://api.dicebear.com/7.x/identicon/svg?seed=${otherId}&backgroundColor=EBF2FA`;
+                            }
+                            const avatarEl = link.querySelector(`#${avatarId}`);
+                            if (avatarEl) avatarEl.innerHTML = `<img src="${finalUrl}">`;
+                        }
+                    });
+                }
+                return link;
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
         }
-    }
-    main();
-</script>
-</body>
-</html>
+        main();
+    </script>
+</body></html>
