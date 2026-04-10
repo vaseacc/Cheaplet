@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="en"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -5,6 +6,7 @@
     <script type="module" src="global.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* ... (same styles as before) ... */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f8f9fa; color: #333; height: 100vh; height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
         .container { width: 100%; max-width: 1300px; margin: 0 auto; padding: 0 15px; height: 100%; }
@@ -67,7 +69,6 @@
         .date-separator { text-align: center; margin: 20px 0; font-size: 0.8rem; font-weight: bold; color: #888; }
         .date-separator span { background: #f0f0f0; padding: 4px 12px; border-radius: 12px; }
 
-        /* Join request card */
         .request-card { background: #f0f7ff; border: 1px solid #2B5C92; border-radius: 12px; padding: 16px; margin: 10px 0; max-width: 80%; }
         .request-text { font-weight: 600; margin-bottom: 12px; }
         .request-actions { display: flex; gap: 10px; }
@@ -328,7 +329,9 @@
                 
                 const d = chatSnap.data();
                 const otherId = d.participants.find(p => p !== currentUser.uid);
-                reportTargetUid = otherId; reportTargetName = d.participantInfo[otherId];
+                // FIX: provide fallback for participantInfo
+                reportTargetName = (d.participantInfo && d.participantInfo[otherId]) || 'User';
+                reportTargetUid = otherId;
                 chatHeaderName.textContent = reportTargetName;
                 reportChatBtn.style.display = 'block';
 
@@ -360,7 +363,6 @@
                     chatHeaderMeta.innerHTML = metaHtml;
                 }
 
-                // Listing status listener
                 if (d.listingId) {
                     onSnapshot(doc(db, 'listings', d.listingId), (lSnap) => {
                         if (lSnap.exists()) {
@@ -383,7 +385,7 @@
                     });
                 }
 
-                // 🔥 MARK AS READ: remove current user from unreadBy
+                // MARK AS READ
                 try {
                     await updateDoc(chatRef, { unreadBy: arrayRemove(currentUser.uid) });
                 } catch(e) { console.error(e); }
@@ -483,7 +485,6 @@
             function renderMessage(data, msgId, currentUserId, otherId) {
                 const isSent = data.senderId === currentUserId;
                 
-                // Handle join_request type
                 if (data.type === 'join_request') {
                     const card = document.createElement('div');
                     card.className = 'request-card';
@@ -513,7 +514,6 @@
                     return;
                 }
 
-                // Regular message
                 const row = document.createElement('div');
                 row.className = `message-row ${isSent ? 'sent' : 'received'}`;
                 let avatarHtml = '';
@@ -539,17 +539,14 @@
                     const chatData = chatSnap.data();
                     const otherId = chatData.participants.find(p => p !== auth.currentUser.uid);
                     
-                    // Update message status
                     await updateDoc(doc(db, 'chats', currentChatId, 'messages', msgId), { status: newStatus });
                     
-                    // If approved, add user to topic members
                     if (newStatus === 'approved' && msg.topicId) {
                         await updateDoc(doc(db, 'social_channels', msg.topicId), {
                             members: arrayUnion(msg.senderUid)
                         });
                     }
                     
-                    // Send system message
                     const systemText = newStatus === 'approved' ? ui.requestApproved : ui.requestDeclined;
                     await addDoc(collection(db, 'chats', currentChatId, 'messages'), {
                         text: systemText,
