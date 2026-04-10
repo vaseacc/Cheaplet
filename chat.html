@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* (same styles as before) */
         :root {
             --ink: #0C1446;
             --deep: #2B5C92;
@@ -47,7 +48,6 @@
         .sent .message-bubble { background: var(--deep); color: white; border: none; }
         .message-time { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; text-align: right; }
 
-        /* Join request card */
         .request-card { background: #f0f7ff; border: 1px solid var(--deep); border-radius: 12px; padding: 16px; margin: 10px 0; }
         .request-text { font-weight: 600; margin-bottom: 12px; }
         .request-actions { display: flex; gap: 10px; }
@@ -134,6 +134,7 @@
         onAuthStateChanged(auth, async (user) => {
             if (!user) { window.location.href = '/login.html?redirect=' + encodeURIComponent(`/chat.html?id=${chatId}`); return; }
             currentUser = user;
+            console.log("Chat page: currentUser UID:", currentUser.uid);
             await initializeChat();
         });
 
@@ -141,29 +142,42 @@
             try {
                 const chatRef = doc(db, "chats", chatId);
                 const chatSnap = await getDoc(chatRef);
-                if (!chatSnap.exists()) { window.location.href = '/messages.html'; return; }
+                if (!chatSnap.exists()) { 
+                    console.error("Chat document not found");
+                    window.location.href = '/messages.html'; 
+                    return; 
+                }
                 chatData = chatSnap.data();
+                console.log("Chat data:", chatData);
                 
                 const otherUid = chatData.participants.find(uid => uid !== currentUser.uid);
-                if (!otherUid) { window.location.href = '/messages.html'; return; }
+                if (!otherUid) { 
+                    console.error("Other participant not found in", chatData.participants);
+                    window.location.href = '/messages.html'; 
+                    return; 
+                }
+                console.log("Other participant UID:", otherUid);
 
                 const userDoc = await getDoc(doc(db, "users", otherUid));
                 otherUser = userDoc.exists() ? userDoc.data() : { displayName: "User", photoURL: null };
                 chatUsername.textContent = otherUser.displayName || "User";
                 chatAvatar.src = otherUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${otherUid}&backgroundColor=EBF2FA`;
 
-                // Enable send button
                 messageInput.addEventListener('input', () => sendBtn.disabled = !messageInput.value.trim());
                 sendBtn.onclick = sendMessage;
                 messageInput.addEventListener('keydown', (e) => { if(e.key === 'Enter' && !sendBtn.disabled) sendMessage(); });
 
                 loadMessages();
-            } catch(e) { console.error(e); window.location.href = '/messages.html'; }
+            } catch(e) { 
+                console.error("Initialize chat error:", e); 
+                window.location.href = '/messages.html'; 
+            }
         }
 
         function loadMessages() {
             const q = query(collection(db, "chats", chatId, "messages"), orderBy("timestamp", "asc"));
             onSnapshot(q, (snapshot) => {
+                console.log(`Loaded ${snapshot.docs.length} messages`);
                 messagesContainer.innerHTML = '';
                 if (snapshot.empty) {
                     messagesContainer.innerHTML = '<div style="text-align:center; color:var(--text-muted);">No messages yet.</div>';
@@ -174,6 +188,8 @@
                     const msgId = docSnap.id;
                     const isSent = msg.senderUid === currentUser.uid;
 
+                    console.log("Message:", msg.type || 'regular', "ID:", msgId, "isSent:", isSent);
+
                     if (msg.type === 'join_request') {
                         renderJoinRequest(msg, msgId, isSent);
                     } else {
@@ -181,6 +197,9 @@
                     }
                 });
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }, (error) => {
+                console.error("Error loading messages:", error);
+                messagesContainer.innerHTML = '<div style="text-align:center; color:var(--red);">Error loading messages. Check console.</div>';
             });
         }
 
@@ -188,7 +207,7 @@
             const div = document.createElement('div');
             div.className = `message ${isSent ? 'sent' : 'received'}`;
             div.innerHTML = `
-                <div class="message-bubble">${escapeHtml(msg.text)}</div>
+                <div class="message-bubble">${escapeHtml(msg.text || '')}</div>
                 <div class="message-time">${formatTime(msg.timestamp?.toDate() || new Date())}</div>
             `;
             messagesContainer.appendChild(div);
@@ -200,11 +219,11 @@
             
             const status = msg.status || 'pending';
             const isOwner = currentUser.uid === msg.recipientUid;
+            console.log("Rendering join request:", { msgId, status, isOwner, recipientUid: msg.recipientUid, currentUid: currentUser.uid });
             
             if (isOwner && status === 'pending') {
-                // Owner sees accept/decline buttons
                 card.innerHTML = `
-                    <div class="request-text"><i class="fas fa-user-plus"></i> ${escapeHtml(msg.text)}</div>
+                    <div class="request-text"><i class="fas fa-user-plus"></i> ${escapeHtml(msg.text || '')}</div>
                     <div class="request-actions">
                         <button class="btn-accept" data-msg-id="${msgId}">${ui.accept}</button>
                         <button class="btn-decline" data-msg-id="${msgId}">${ui.decline}</button>
@@ -213,11 +232,10 @@
                 card.querySelector('.btn-accept').onclick = () => handleRequestResponse(msg, msgId, 'approved');
                 card.querySelector('.btn-decline').onclick = () => handleRequestResponse(msg, msgId, 'rejected');
             } else {
-                // Requester sees status
                 let statusText = status === 'pending' ? ui.statusPending : (status === 'approved' ? ui.statusApproved : ui.statusDeclined);
                 let icon = status === 'pending' ? '⏳' : (status === 'approved' ? '✅' : '❌');
                 card.innerHTML = `
-                    <div class="request-text"><i class="fas fa-user-plus"></i> ${escapeHtml(msg.text)}</div>
+                    <div class="request-text"><i class="fas fa-user-plus"></i> ${escapeHtml(msg.text || '')}</div>
                     <div class="request-status">${icon} ${statusText}</div>
                 `;
             }
@@ -225,28 +243,32 @@
         }
 
         async function handleRequestResponse(msg, msgId, newStatus) {
+            console.log(`Handling request response: ${newStatus} for message ${msgId}`);
             try {
-                // Update the message status
                 await updateDoc(doc(db, "chats", chatId, "messages", msgId), { status: newStatus });
                 
-                // If approved, add the user to the topic members
                 if (newStatus === 'approved' && msg.topicId) {
+                    console.log(`Adding user ${msg.senderUid} to topic ${msg.topicId} members`);
                     await updateDoc(doc(db, "social_channels", msg.topicId), {
                         members: arrayUnion(msg.senderUid)
                     });
                 }
                 
-                // Optionally send a system message
+                const systemText = newStatus === 'approved' ? ui.requestApproved : ui.requestDeclined;
                 await addDoc(collection(db, "chats", chatId, "messages"), {
-                    text: newStatus === 'approved' ? ui.requestApproved : ui.requestDeclined,
+                    text: systemText,
                     senderUid: currentUser.uid,
                     timestamp: serverTimestamp()
                 });
                 await updateDoc(doc(db, "chats", chatId), { 
-                    lastMessage: newStatus === 'approved' ? ui.requestApproved : ui.requestDeclined,
+                    lastMessage: systemText,
                     lastMessageTimestamp: serverTimestamp() 
                 });
-            } catch(e) { console.error(e); alert("Error updating request."); }
+                console.log("Request handled successfully.");
+            } catch(e) { 
+                console.error("Error handling request:", e); 
+                alert("Error updating request."); 
+            }
         }
 
         async function sendMessage() {
@@ -264,7 +286,11 @@
                     lastMessage: text,
                     lastMessageTimestamp: serverTimestamp() 
                 });
-            } catch(e) { alert("Failed to send message."); }
+                console.log("Message sent.");
+            } catch(e) { 
+                console.error("Send message error:", e);
+                alert("Failed to send message."); 
+            }
             sendBtn.disabled = false;
         }
 
