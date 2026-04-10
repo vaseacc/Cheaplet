@@ -1,5 +1,5 @@
 // sw.js - Service Worker for Scoralia PWA
-const CACHE_NAME = 'scoralia-v3';
+const CACHE_NAME = 'scoralia-v4';
 
 // Files to cache for offline access
 const urlsToCache = [
@@ -49,30 +49,26 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Helper to check if a request should be bypassed (never cached)
+// Helper to check if a request should bypass the service worker entirely
 function shouldBypass(url) {
-  // Bypass Firebase / Firestore / Google APIs
-  if (url.includes('firestore.googleapis.com') ||
-      url.includes('googleapis.com') ||
-      url.includes('firebaseapp.com') ||
-      url.includes('/listen') ||
-      url.includes('firebase')) {
-    return true;
-  }
-  // Bypass any non-GET requests (like POST, etc.)
-  return false;
+  // Never intercept Firestore / Firebase / Google APIs
+  return url.includes('firestore.googleapis.com') ||
+         url.includes('googleapis.com') ||
+         url.includes('firebaseapp.com') ||
+         url.includes('/Listen') ||
+         url.includes('firebase') ||
+         url.includes('google.firestore.v1.Firestore');
 }
 
-// Fetch event – bypass Firebase and Firestore requests
+// Fetch event – bypass Firebase and Firestore requests, cache static assets
 self.addEventListener('fetch', event => {
   const url = event.request.url;
   const request = event.request;
 
-  // Special case: favicon.ico – return a transparent pixel to avoid 404
+  // Special case: favicon.ico – return a transparent pixel
   if (url.endsWith('/favicon.ico')) {
     event.respondWith(
       fetch('/favicon.svg').catch(() => {
-        // Fallback: return a 1x1 transparent pixel (base64)
         return new Response(
           'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
           { headers: { 'Content-Type': 'image/gif' } }
@@ -82,19 +78,20 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // If the request must bypass the cache, go straight to network
+  // 🔥 CRITICAL: For Firestore / API requests, DO NOT intercept.
+  // Let the browser handle them normally.
   if (shouldBypass(url) || request.method !== 'GET') {
-    event.respondWith(fetch(request));
-    return;
+    return; // Service worker does nothing, browser fetches directly
   }
 
-  // For everything else: serve from cache, fallback to network
+  // For static assets (HTML, JS, CSS, images), use cache-first strategy
   event.respondWith(
     caches.match(request)
-      .then(response => {
-        if (response) {
-          return response;
+      .then(cachedResponse => {
+        if (cachedResponse) {
+          return cachedResponse;
         }
+        // Not in cache, fetch from network and add to cache
         return fetch(request).then(networkResponse => {
           if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
             return networkResponse;
