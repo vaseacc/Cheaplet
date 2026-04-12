@@ -556,10 +556,18 @@
                     // Update message status
                     await updateDoc(doc(db, 'chats', currentChatId, 'messages', msgId), { status: newStatus });
                     
-                    // If approved, add the requester to the topic's members
+                    // If approved, add the requester to the topic's members AND automatically pin the topic for them
                     if (newStatus === 'approved' && msg.topicId) {
+                        const requesterUid = msg.senderId;
+                        
+                        // Add to topic members
                         await updateDoc(doc(db, 'social_channels', msg.topicId), {
-                            members: arrayUnion(msg.senderId)   // ✅ using senderId now
+                            members: arrayUnion(requesterUid)
+                        });
+                        
+                        // Auto-pin the topic for the requester
+                        await updateDoc(doc(db, 'users', requesterUid), {
+                            pinnedTopics: arrayUnion(msg.topicId)
                         });
                     }
                     
