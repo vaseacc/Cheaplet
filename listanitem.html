@@ -416,7 +416,7 @@
             let currentUser = null;
             let internalSchoolName = "Global Campus";
             let selectedFiles = [];
-            let tags = [];
+            let tags =[];
             const pageLoader = document.getElementById('page-loader');
             const loaderTimeout = setTimeout(() => { pageLoader.style.display = 'none'; }, 4000);
 
@@ -607,10 +607,15 @@
                 document.getElementById('add-photo-label').style.display = selectedFiles.length < 5 ? 'flex' : 'none';
             }
 
-            imageInput.onchange = (e) => {
+            imageInput.onchange = async (e) => {
+                // TRIGGER BOT SHIELD
+                const isHuman = await window.checkBotLimits();
+                if (!isHuman) { e.target.value = ''; return; }
+
                 const file = e.target.files[0];
                 if (file) {
                     if (file.size > 5 * 1024 * 1024) { alert(ui[lang].imgSizeErr); return; }
+                    window.recordActivity('images');
                     selectedFiles.push(file); renderPreviews();
                 }
                 e.target.value = '';
@@ -619,12 +624,19 @@
             // --- SUBMIT HANDLER ---
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
+
+                // TRIGGER BOT SHIELD
+                const isHuman = await window.checkBotLimits();
+                if (!isHuman) return;
+
                 const title = document.getElementById('listing-title').value.trim();
                 const desc = document.getElementById('listing-description').value.trim();
                 const price = parseFloat(document.getElementById('listing-price').value);
 
                 if (price > 1200) { alert(ui[lang].priceErr); return; }
                 if (selectedFiles.length === 0) { alert(ui[lang].imgErr); return; }
+
+                window.recordActivity('listings');
 
                 const submitBtn = document.getElementById('postListingBtn');
                 const postBtnText = document.getElementById('post-btn-text');
@@ -633,7 +645,7 @@
 
                 try {
                     // 1. Upload images to Cloudinary
-                    const imageUrls = [];
+                    const imageUrls =[];
                     for (const file of selectedFiles) {
                         const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
                         const formData = new FormData();
