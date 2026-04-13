@@ -573,7 +573,7 @@
             let internalSchoolName = "Global Campus"; 
             let unsubscribePosts = null;
             let commentUnsubscribes = {}; 
-            let allTopicsData =[];
+            let allTopicsData = [];
 
             let currentTopicName = "Topic";
             let currentTopicData = null;
@@ -684,9 +684,15 @@
                 return res.secure_url;
             }
 
+            // --- POST CREATION (with bot shield) ---
             if (btnSendPost && postInput) btnSendPost.onclick = async () => {
                 if (!currentUser) return;
                 const text = postInput.value.trim();
+                
+                // 🔥 BOT SHIELD CHECK
+                const allowed = await window.checkBotLimits();
+                if (!allowed) return;
+
                 btnSendPost.disabled = true; const origIcon = btnSendPost.innerHTML; btnSendPost.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
                 try {
                     let uploadedImgUrl = null; if (postImageFile) uploadedImgUrl = await uploadImageToCloudinary(postImageFile);
@@ -697,12 +703,16 @@
                     const postData = {
                         wayId: topicId, schoolName: internalSchoolName, text: text, authorUid: currentUser.uid,
                         authorName: currentUser.displayName || "User", authorPhoto: photoToSave, authorIsStudent: isStudent,
-                        likes: 0, likedBy:[], commentCount: 0, status: requiresReview ? 'pending' : 'active', timestamp: serverTimestamp()
+                        likes: 0, likedBy: [], commentCount: 0, status: requiresReview ? 'pending' : 'active', timestamp: serverTimestamp()
                     };
                     if (uploadedImgUrl) postData.imageUrl = uploadedImgUrl;
                     if (postAttachedListing) postData.attachedListing = postAttachedListing;
                     const postRef = await addDoc(collection(db, "social_posts"), postData);
                     await updateDoc(doc(db, "social_channels", topicId), { postCount: increment(1), members: arrayUnion(currentUser.uid) });
+                    
+                    // Record activity
+                    window.recordActivity('listings');
+
                     if (requiresReview) {
                         fetch('/.netlify/functions/moderate-listing', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ imageUrls: [uploadedImgUrl], title: "Topic Post", description: text }) })
                             .then(r => r.json()).then(aiData => { if (aiData.verdict === "UNSAFE") updateDoc(postRef, { status: 'rejected', rejectionReason: aiData.reason || "Inappropriate content" }); else updateDoc(postRef, { status: 'active' }); })
@@ -731,6 +741,11 @@
                 if (!inputEl || !btnEl) return;
                 const text = inputEl.value.trim(), file = commentImageFiles[postId];
                 if (!text && !file) return;
+                
+                // 🔥 BOT SHIELD CHECK
+                const allowed = await window.checkBotLimits();
+                if (!allowed) return;
+
                 btnEl.disabled = true; const origIcon = btnEl.innerHTML; btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
                 try {
                     let uploadedImgUrl = null; if (file) uploadedImgUrl = await uploadImageToCloudinary(file);
@@ -745,6 +760,9 @@
                     if (uploadedImgUrl) commentData.imageUrl = uploadedImgUrl;
                     const commentRef = await addDoc(collection(db, "social_posts", postId, "comments"), commentData);
                     await updateDoc(doc(db, "social_posts", postId), { commentCount: increment(1) });
+                    
+                    window.recordActivity('listings');
+
                     if (requiresReview) {
                         fetch('/.netlify/functions/moderate-listing', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ imageUrls: [uploadedImgUrl], title: "Topic Comment", description: text }) })
                             .then(r => r.json()).then(aiData => { if (aiData.verdict === "UNSAFE") updateDoc(commentRef, { status: 'rejected', rejectionReason: aiData.reason || "Inappropriate content" }); else updateDoc(commentRef, { status: 'active' }); });
@@ -794,9 +812,9 @@
                                             else { icon.className = 'far fa-bookmark'; pinBtn.style.color = 'var(--text-muted)'; pinBtn.style.borderColor = 'var(--mist)'; }
                                         }
                                     };
-                                    updatePinIcon((data.pinnedTopics ||[]).includes(topicId));
+                                    updatePinIcon((data.pinnedTopics || []).includes(topicId));
                                     pinBtn.onclick = async () => {
-                                        const isPinned = (currentUser.pinnedTopics ||[]).includes(topicId);
+                                        const isPinned = (currentUser.pinnedTopics || []).includes(topicId);
                                         const userRef = doc(db, "users", currentUser.uid);
                                         if (isPinned) await updateDoc(userRef, { pinnedTopics: arrayRemove(topicId) });
                                         else { await updateDoc(userRef, { pinnedTopics: arrayUnion(topicId) }); await updateDoc(doc(db, "social_channels", topicId), { members: arrayUnion(currentUser.uid) }); }
@@ -832,6 +850,11 @@
                 requestBtn.onclick = async () => {
                     console.log("Request to Join clicked");
                     if (!currentUser) { console.warn("No current user"); return; }
+                    
+                    // 🔥 BOT SHIELD CHECK
+                    const allowed = await window.checkBotLimits();
+                    if (!allowed) return;
+
                     console.log("Current user:", currentUser.uid);
                     console.log("Topic owner:", currentTopicData.createdBy);
                     
@@ -840,7 +863,7 @@
                     
                     try {
                         const ownerUid = currentTopicData.createdBy;
-                        const participants =[currentUser.uid, ownerUid].sort();
+                        const participants = [currentUser.uid, ownerUid].sort();
                         
                         console.log("Looking for existing personal chat with owner...");
                         const chatsQuery = query(collection(db, "chats"), 
@@ -888,6 +911,8 @@
                             lastMessage: `${currentUser.displayName} requested to join ${currentTopicName}`, 
                             lastUpdate: serverTimestamp() 
                         });
+                        
+                        window.recordActivity('listings');
                         
                         console.log("Request message sent successfully.");
                         existingRequestStatus = 'pending'; 
@@ -937,8 +962,8 @@
                     mobileWaysList.appendChild(mGeneral);
                 }
 
-                const myT = [], pinT = [], discT =[];
-                const pinnedArr = (currentUser && currentUser.pinnedTopics) ||[];
+                const myT = [], pinT = [], discT = [];
+                const pinnedArr = (currentUser && currentUser.pinnedTopics) || [];
 
                 allTopicsData.forEach(d => {
                     const isPrivate = d.visibility === 'private';
