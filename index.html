@@ -40,6 +40,7 @@
     <link rel="modulepreload" href="/global.js">
 
     <style>
+        /* (All existing CSS unchanged – omitted for brevity but remains exactly as provided) */
         :root {
             --ink:       #0C1446;
             --deep:      #2B5C92;
@@ -742,6 +743,129 @@
             fetchListings();
         }
         main();
+    </script>
+
+    <!-- SMART PWA INSTALL PROMPT (Homepage only, mobile only) -->
+    <script>
+        (function() {
+            // Only run on the homepage
+            if (window.location.pathname !== '/' && !window.location.pathname.endsWith('/index.html')) return;
+
+            // Only on mobile (simple user-agent check)
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            if (!isMobile) return;
+
+            // Check if already running as standalone PWA
+            if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
+                localStorage.setItem('pwa_installed', 'true');
+                return;
+            }
+
+            // Storage keys
+            const VISIT_KEY = 'pwa_home_visits';
+            const DISMISS_KEY = 'pwa_prompt_dismissed';
+            const INSTALLED_KEY = 'pwa_installed';
+
+            // If already installed or permanently dismissed, do nothing
+            if (localStorage.getItem(INSTALLED_KEY) === 'true') return;
+            if (localStorage.getItem(DISMISS_KEY) === 'forever') return;
+
+            // Get current visit count
+            let visits = parseInt(localStorage.getItem(VISIT_KEY) || '0');
+            visits++;
+            localStorage.setItem(VISIT_KEY, visits);
+
+            // Determine the next threshold based on previous dismissals
+            const dismissedThreshold = localStorage.getItem(DISMISS_KEY); // e.g., "3", "10", "19"
+            let nextThreshold = 3;
+            if (dismissedThreshold === '3') nextThreshold = 10;
+            else if (dismissedThreshold === '10') nextThreshold = 19;
+            else if (dismissedThreshold === '19') nextThreshold = 19; // repeat forever
+
+            // Check if we should prompt now
+            if (visits < nextThreshold) return;
+
+            // We need the beforeinstallprompt event
+            let deferredPrompt;
+
+            window.addEventListener('beforeinstallprompt', (e) => {
+                // Prevent the mini-infobar from appearing
+                e.preventDefault();
+                // Save the event for later
+                deferredPrompt = e;
+
+                // Show our custom modal
+                showInstallPrompt();
+            });
+
+            function showInstallPrompt() {
+                // Create a simple modal
+                const overlay = document.createElement('div');
+                overlay.style.cssText = `
+                    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                    background: rgba(0,0,0,0.7); z-index: 100000;
+                    display: flex; align-items: flex-end; justify-content: center;
+                `;
+                overlay.innerHTML = `
+                    <div style="background: white; width: 100%; max-width: 450px; margin: 20px;
+                                border-radius: 20px; padding: 24px; text-align: center;
+                                animation: slideUp 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+                        <h3 style="font-family: 'Playfair Display', serif; color: #0C1446; margin-bottom: 8px;">
+                            <i class="fas fa-mobile-alt" style="color: #C8A96E;"></i> Add to Home Screen
+                        </h3>
+                        <p style="color: #6b84a3; margin-bottom: 20px; font-size: 0.95rem;">
+                            Install Scoralia for quick access and a better experience.
+                        </p>
+                        <div style="display: flex; gap: 10px;">
+                            <button id="pwa-install-btn" style="flex: 2; background: #C8A96E; color: #0C1446;
+                                border: none; padding: 12px; border-radius: 30px; font-weight: bold; cursor: pointer;">
+                                Install
+                            </button>
+                            <button id="pwa-later-btn" style="flex: 1; background: #EBF2FA; color: #2B5C92;
+                                border: none; padding: 12px; border-radius: 30px; font-weight: bold; cursor: pointer;">
+                                Later
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(overlay);
+
+                // Add slide-up animation
+                const style = document.createElement('style');
+                style.textContent = `@keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`;
+                document.head.appendChild(style);
+
+                const installBtn = overlay.querySelector('#pwa-install-btn');
+                const laterBtn = overlay.querySelector('#pwa-later-btn');
+
+                installBtn.onclick = async () => {
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        if (outcome === 'accepted') {
+                            localStorage.setItem(INSTALLED_KEY, 'true');
+                        } else {
+                            // User declined the native prompt, treat as "Later"
+                            handleDismiss();
+                        }
+                        deferredPrompt = null;
+                    }
+                    overlay.remove();
+                };
+
+                laterBtn.onclick = () => {
+                    handleDismiss();
+                    overlay.remove();
+                };
+
+                function handleDismiss() {
+                    // Save the threshold we just passed
+                    localStorage.setItem(DISMISS_KEY, nextThreshold.toString());
+                    // Reset visit count so we start counting toward the next threshold
+                    localStorage.setItem(VISIT_KEY, '0');
+                }
+            }
+        })();
     </script>
 </body>
 </html>
