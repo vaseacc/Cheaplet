@@ -13,7 +13,6 @@
 
     <link rel="preconnect" href="https://firestore.googleapis.com">
 
-    
     <!-- DNS Prefetch -->
     <link rel="dns-prefetch" href="https://firebaseapp.com">
     <link rel="dns-prefetch" href="https://googleapis.com">
@@ -26,7 +25,6 @@
     <!-- Modulepreload for critical JS -->
     <link rel="modulepreload" href="/global.js">
     
- 
     <!-- Preload critical fonts -->
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
@@ -51,7 +49,7 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--off-white); color: var(--text-main); overflow-x: hidden; width: 100%; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--off-white); color: var(--text-main); overflow-x: hidden; width: 100%; min-height: 100vh; display: flex; flex-direction: column; }
 
         header { position: sticky; top: 0; z-index: 200; background: var(--ink); border-bottom: 1px solid rgba(255,255,255,0.1); width: 100%; }
         .header-inner { max-width: 1100px; margin: 0 auto; padding: 0 20px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
@@ -312,21 +310,19 @@
         .btn-comment-send:hover:not(:disabled) { background: var(--ink); transform: translateY(-2px); }
         .btn-comment-send:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        .market-break { margin: 10px 0; padding: 25px; background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); border: var(--border); width: 100%; overflow-x: auto; overflow-y: visible; }
-        .break-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px; width: 100%; flex-wrap: wrap; }
-        .break-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 900; color: var(--ink); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-        .break-link { color: var(--deep); font-size: 0.85rem; font-weight: 700; text-decoration: none; white-space: nowrap; flex-shrink: 0; }
-        .break-link:hover { text-decoration: underline; }
-        .break-scroll { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x mandatory; width: 100%; -webkit-overflow-scrolling: touch; }
+        /* ── MARKET BREAK SECTION (Horizontal Scroll) ── */
+        .market-break { margin: 10px 0; padding: 25px; background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); border: var(--border); width: 100%; }
+        .break-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .break-title { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 900; color: var(--ink); }
+        .break-scroll { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x mandatory; }
         .break-scroll::-webkit-scrollbar { height: 6px; }
-        .break-scroll::-webkit-scrollbar-track { background: var(--off-white); border-radius: 10px; }
-        .break-scroll::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
-        .mini-book-card { flex: 0 0 160px; background: var(--white); border-radius: 12px; overflow: hidden; text-decoration: none; color: var(--text-main); scroll-snap-align: start; border: var(--border); transition: 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.04); display: flex; flex-direction: column; flex-shrink: 0; }
-        .mini-book-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
-        .mini-img { height: 130px; background-size: cover; background-position: center; background-color: #f1f5f9; flex-shrink: 0; }
-        .mini-info { padding: 12px; flex-grow: 1; display: flex; flex-direction: column; }
-        .mini-price { font-weight: 800; font-size: 1rem; color: var(--deep); margin-bottom: 4px; }
-        .mini-title { font-size: 0.8rem; font-weight: 600; line-height: 1.3; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .break-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        
+        .mini-book-card { flex: 0 0 160px; background: var(--white); border-radius: 12px; overflow: hidden; text-decoration: none; color: var(--text-main); scroll-snap-align: start; border: var(--border); transition: 0.2s; display: flex; flex-direction: column; }
+        .mini-img { height: 130px; background-size: cover; background-position: center; background-color: #f1f5f9; }
+        .mini-info { padding: 10px; flex-grow: 1; }
+        .mini-price { font-weight: 800; font-size: 1rem; color: var(--deep); }
+        .mini-title { font-size: 0.8rem; font-weight: 600; line-height: 1.3; height: 2.6em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 
         .loader-msg { text-align: center; padding: 50px; color: var(--text-muted); font-size: 1.1rem; font-weight: 500; }
         .loader-msg i { font-size: 2rem; color: var(--gold); margin-bottom: 15px; display: block; }
@@ -794,7 +790,7 @@
             let unsubscribePosts = null;
             let commentUnsubscribes = {}; 
             let listings = []; 
-            let allTopicsData = [];
+            let allTopicsData =[];
 
             // --- COMPOSER STATE ---
             let postImageFile = null;
@@ -832,36 +828,33 @@
                     collection(db, "listings"),
                     where("status", "==", "active"),
                     orderBy("timestamp", "desc"),
-                    limit(6)
+                    limit(8)
                 );
 
-                // If not admin, try to get school-specific books
-                if (!isAdmin && userSchool !== "Global Campus") {
+                // If looking at 'My School' feed, try to prioritize local books
+                if (currentSchoolFilter === 'my') {
                     try {
-                        const schoolQuery = query(
+                        const sBookQ = query(
                             collection(db, "listings"),
                             where("location", "==", userSchool),
                             where("status", "==", "active"),
                             orderBy("timestamp", "desc"),
-                            limit(6)
+                            limit(8)
                         );
-                        const snap = await getDocs(schoolQuery);
-                        if (!snap.empty) {
-                            listings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                            return;
-                        }
+                        const bSnap = await getDocs(sBookQ);
+                        if (!bSnap.empty) bookQ = sBookQ;
                     } catch (e) {
                         console.warn("School-specific listings failed, fallback to global", e);
                     }
                 }
 
-                // Fallback to global books
+                // Execute the query
                 try {
                     const snap = await getDocs(bookQuery);
                     listings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 } catch (e) {
                     console.error("Failed to fetch market listings", e);
-                    listings = [];
+                    listings =[];
                 }
             }
 
@@ -916,9 +909,14 @@
             window.removePostListing = () => { postAttachedListing = null; renderComposerPreview(); };
 
             if (btnAttachImg) btnAttachImg.onclick = () => { if(currentUser && imgUploadInput) imgUploadInput.click(); };
-            if (imgUploadInput) imgUploadInput.onchange = (e) => {
+            
+            if (imgUploadInput) imgUploadInput.onchange = async (e) => {
+                const isHuman = await window.checkBotLimits();
+                if (!isHuman) { e.target.value = ''; return; }
+
                 if (e.target.files[0]) {
                     postImageFile = e.target.files[0];
+                    window.recordActivity('images');
                     renderComposerPreview();
                 }
                 e.target.value = '';
@@ -983,11 +981,16 @@
             // --- POST CREATION ---
             if (btnSendPost && postInput) btnSendPost.onclick = async () => {
                 if (!currentUser) return;
+                
+                const isHuman = await window.checkBotLimits();
+                if (!isHuman) return;
+
                 const text = postInput.value.trim();
                 
                 btnSendPost.disabled = true;
                 const origIcon = btnSendPost.innerHTML;
                 btnSendPost.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                window.recordActivity('listings');
 
                 try {
                     let uploadedImgUrl = null;
@@ -1013,7 +1016,7 @@
                         authorName: currentUser.displayName || "User",
                         authorPhoto: photoToSave,
                         authorIsStudent: isStudent,
-                        likes: 0, likedBy: [], commentCount: 0,
+                        likes: 0, likedBy:[], commentCount: 0,
                         status: requiresReview ? 'pending' : 'active',
                         timestamp: serverTimestamp()
                     };
@@ -1069,10 +1072,14 @@
 
             let activeCommentColl = null;
 
-            if (globalCommentImgInput) globalCommentImgInput.onchange = (e) => {
+            if (globalCommentImgInput) globalCommentImgInput.onchange = async (e) => {
+                const isHuman = await window.checkBotLimits();
+                if (!isHuman) { e.target.value = ''; return; }
+
                 if (e.target.files[0] && activeCommentPostId) {
                     const file = e.target.files[0];
                     commentImageFiles[activeCommentPostId] = file;
+                    window.recordActivity('images');
                     
                     const pArea = document.getElementById(`comment-preview-area-${activeCommentPostId}`);
                     if (pArea) {
@@ -1109,6 +1116,10 @@
                 const file = commentImageFiles[postId];
                 
                 if (!text && !file) return;
+
+                const isHuman = await window.checkBotLimits();
+                if (!isHuman) return;
+                window.recordActivity('listings');
                 
                 btnEl.disabled = true;
                 const origIcon = btnEl.innerHTML;
@@ -1165,7 +1176,7 @@
                     window.removeCommentImg(postId);
                 } catch(e) { 
                     console.error(e); 
-                    window.scoraliaAlert("Upload failed."); 
+                    window.scoraliaAlert(ui.upload_fail); 
                 } finally { 
                     btnEl.innerHTML = origIcon;
                     btnEl.disabled = true; 
@@ -1336,8 +1347,8 @@
                     mobileWaysList.appendChild(mGeneral);
                 }
 
-                const myT = [], pinT = [], discT = [];
-                const pinnedArr = (currentUser && currentUser.pinnedTopics) || [];
+                const myT =[], pinT = [], discT = [];
+                const pinnedArr = (currentUser && currentUser.pinnedTopics) ||[];
 
                 // ✅ FIX: Show ALL topics, including private ones, with a lock icon.
                 allTopicsData.forEach(d => {
@@ -1415,29 +1426,29 @@
 
             // --- CREATE MARKET BREAK ELEMENT (RESTORED) ---
             function createMarketBreak() {
+                if (!listings || listings.length === 0) {
+                    return document.createDocumentFragment();
+                }
+
                 const breakSection = document.createElement('div');
                 breakSection.className = 'market-break';
                 
                 let bookHtml = '';
-                if (listings.length > 0) {
-                    listings.forEach(b => {
-                        const img = (b.imageUrls && b.imageUrls[0]) ? b.imageUrls[0] : '';
-                        const optimizedImg = typeof window.optimizeImageUrl === 'function' 
-                            ? window.optimizeImageUrl(img) 
-                            : img;
-                        bookHtml += `
-                            <a href="/listing.html?id=${b.id}" class="mini-book-card">
-                                <div class="mini-img" style="background-image:url('${optimizedImg}')"></div>
-                                <div class="mini-info">
-                                    <div class="mini-price">$${b.price.toFixed(2)}</div>
-                                    <div class="mini-title">${b.title}</div>
-                                </div>
-                            </a>
-                        `;
-                    });
-                } else {
-                    bookHtml = `<div style="padding:20px; text-align:center; color:var(--text-muted); width:100%;">No books listed yet. Be the first!</div>`;
-                }
+                listings.forEach(b => {
+                    const rawImg = (b.imageUrls && b.imageUrls.length > 0) ? b.imageUrls[0] : '';
+                    const optimizedImg = window.optimizeImageUrl ? window.optimizeImageUrl(rawImg) : rawImg;
+                    const displayPrice = typeof b.price === 'number' ? b.price.toFixed(2) : '0.00';
+
+                    bookHtml += `
+                        <a href="/listing.html?id=${b.id}" class="mini-book-card">
+                            <div class="mini-img" style="background-image:url('${optimizedImg}')"></div>
+                            <div class="mini-info">
+                                <div class="mini-price">$${displayPrice}</div>
+                                <div class="mini-title">${b.title || 'Untitled'}</div>
+                            </div>
+                        </a>
+                    `;
+                });
 
                 breakSection.innerHTML = `
                     <div class="break-header">
@@ -1551,14 +1562,14 @@
                 currentSchoolFilter = 'all';
                 allFilterBtn.classList.add('active');
                 if (myFilterBtn) myFilterBtn.classList.remove('active');
-                loadFeed();
+                preloadBooksAndLoadFeed();
             };
             
             if (myFilterBtn) myFilterBtn.onclick = () => {
                 currentSchoolFilter = 'my';
                 myFilterBtn.classList.add('active');
                 if (allFilterBtn) allFilterBtn.classList.remove('active');
-                loadFeed();
+                preloadBooksAndLoadFeed();
             };
 
             function createPostElement(id, d, coll) {
@@ -1853,7 +1864,7 @@
                             </a>
                         `;
                         
-                        const pendingBadgeHtml = c.status === 'pending' ? `<span style="font-size:0.65rem; color:#d97706; background:#fef3c7; padding:2px 6px; border-radius:10px; margin-left:6px;">⏳ In Review</span>` : '';
+                        const pendingBadgeHtml = c.status === 'pending' ? `<span style="font-size:0.65rem; color:#d97706; background:#fef3c7; padding:2px 6px; border-radius:10px; margin-left:6px; border: 1px solid #fde68a;">⏳ In Review</span>` : '';
 
                         const isCommentAuthor = currentUser && currentUser.uid === c.authorUid;
                         const isAdmin = currentUser && currentUser.role === 'admin';
