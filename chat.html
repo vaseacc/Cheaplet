@@ -412,6 +412,11 @@
                     e.preventDefault();
                     const text = messageInput.value.trim();
                     if (!text) return;
+
+                    // 🔥 BOT SHIELD CHECK
+                    const allowed = await window.checkBotLimits();
+                    if (!allowed) return;
+
                     messageInput.value = '';
                     messageInput.blur(); 
                     await addDoc(collection(db, 'chats', chatId, 'messages'), { text, senderId: currentUser.uid, timestamp: serverTimestamp() });
@@ -422,12 +427,21 @@
                         lastSenderId: currentUser.uid,
                         unreadBy: arrayUnion(otherId) 
                     });
+
+                    window.recordActivity('listings');
                 };
 
                 imgBtn.onclick = () => fileInput.click();
                 fileInput.onchange = async (e) => {
                     const file = e.target.files[0];
                     if (!file) return;
+
+                    // 🔥 BOT SHIELD CHECK
+                    const allowed = await window.checkBotLimits();
+                    if (!allowed) {
+                        e.target.value = '';
+                        return;
+                    }
                     
                     try {
                         const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
@@ -452,12 +466,16 @@
                                 lastSenderId: currentUser.uid,
                                 unreadBy: arrayUnion(otherId) 
                             });
+
+                            window.recordActivity('images');
                         } else {
                             throw new Error("Upload response invalid.");
                         }
                     } catch (err) {
                         console.error(err);
                         alert(ui.uploadFail);
+                    } finally {
+                        e.target.value = '';
                     }
                 };
 
