@@ -38,9 +38,18 @@ runWhenIdle(() => {
     }
 });
 
-// --- 1. INITIALIZE CONFIG ---
-const response = await fetch('/.netlify/functions/config');
-const config = await response.json();
+// --- 1. INITIALIZE CONFIG (With caching for speed) ---
+let config;
+const savedConfig = sessionStorage.getItem('scoralia_config');
+
+if (savedConfig) {
+    config = JSON.parse(savedConfig);
+} else {
+    const res = await fetch('/.netlify/functions/config');
+    config = await res.json();
+    sessionStorage.setItem('scoralia_config', JSON.stringify(config));
+}
+
 const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -62,7 +71,7 @@ window.optimizeImageUrl = (url) => {
     return url;
 };
 
-// --- FIX: Add title to Firebase Auth iframe for accessibility (non-intrusive method) ---
+// --- FIX: Add title to Firebase Auth iframe for accessibility ---
 function setupFirebaseIframeTitleObserver() {
     const observer = new MutationObserver(() => {
         const iframe = document.querySelector('iframe[src*="firebaseapp.com"]');
@@ -82,6 +91,110 @@ if (document.readyState === 'loading') {
 } else {
     setupFirebaseIframeTitleObserver();
 }
+
+// =========================================================================
+// --- NEW: CLOUDFLARE TURNSTILE BOT SHIELD LOGIC ---
+// =========================================================================
+
+window.checkBotLimits = async () => {
+    // 1. Define Limits (Set to 1 for testing. Change to 10 later!)
+    const MAX_LISTINGS = 1; 
+    const MAX_IMAGES = 20;
+
+    // 2. Get current usage from localStorage (resetting every 24h)
+    let stats = JSON.parse(localStorage.getItem('scoralia_usage_stats') || '{"listings":0, "images":0, "lastReset":0}');
+    const now = Date.now();
+
+    // Reset stats if 24 hours passed
+    if (now - stats.lastReset > 86400000) {
+        stats = { listings: 0, images: 0, lastReset: now };
+        localStorage.setItem('scoralia_usage_stats', JSON.stringify(stats));
+    }
+
+    // 3. Check if they cross the "Bot Threshold"
+    if (stats.listings >= MAX_LISTINGS || stats.images >= MAX_IMAGES) {
+        return await triggerBotChallenge();
+    }
+    return true; // Safe, human limits not reached
+};
+
+// Function to increment usage
+window.recordActivity = (type) => {
+    let stats = JSON.parse(localStorage.getItem('scoralia_usage_stats') || '{"listings":0, "images":0, "lastReset":0}');
+    
+    // Ensure lastReset exists
+    if (!stats.lastReset) stats.lastReset = Date.now();
+    
+    if (stats[type] !== undefined) stats[type]++;
+    localStorage.setItem('scoralia_usage_stats', JSON.stringify(stats));
+};
+
+// The Visual Challenge
+async function triggerBotChallenge() {
+    return new Promise((resolve) => {
+        // Create modal overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'lang-modal-overlay';
+        overlay.style.zIndex = '20000';
+        overlay.id = 'bot-shield-overlay';
+        overlay.innerHTML = `
+            <div class="lang-modal" style="padding: 40px 20px;">
+                <i class="fas fa-robot fa-3x" style="color:var(--gold); margin-bottom:15px;"></i>
+                <h2 style="font-family: 'Playfair Display', serif; color: var(--ink); margin-bottom: 10px;">Security Check</h2>
+                <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px;">To keep Scoralia safe from bots, please complete this quick verification.</p>
+                <div id="turnstile-container" style="display: flex; justify-content: center; margin: 20px 0;"></div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+
+        // Load Cloudflare Turnstile explicitly
+        const script = document.createElement('script');
+        script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+
+        window.onTurnstileSuccess = async (token) => {
+            try {
+                // 1. Send the token to your Netlify Function for verification
+                const res = await fetch('/.netlify/functions/verify-bot', {
+                    method: 'POST',
+                    body: JSON.stringify({ token: token })
+                });
+
+                const data = await res.json();
+
+                if (data.success) {
+                    // 2. If backend confirms it's a human, close the modal and reset stats
+                    document.getElementById('bot-shield-overlay').remove();
+                    localStorage.setItem('scoralia_usage_stats', JSON.stringify({
+                        listings: 0, 
+                        images: 0, 
+                        lastReset: Date.now()
+                    }));
+                    console.log("Verification successful!");
+                    resolve(true); // Let the code continue!
+                } else {
+                    alert("Verification failed. Please try again.");
+                    window.location.reload();
+                }
+            } catch (err) {
+                console.error("Bot verification error:", err);
+                alert("Error connecting to security server. Please try again.");
+                window.location.reload();
+            }
+        };
+
+        // Render the widget once script is loaded
+        script.onload = () => {
+            turnstile.render('#turnstile-container', {
+                sitekey: '0x4AAAAAAC8mKfhLYButTzAM', // <--- Your Site Key
+                callback: window.onTurnstileSuccess,
+            });
+        };
+    });
+}
+// =========================================================================
 
 // --- 2. TRANSLATION DICTIONARY ---
 const translations = {
@@ -172,7 +285,7 @@ window.applyLanguage = (lang) => {
         const key = el.getAttribute('data-i18n');
         if (translations[lang] && translations[lang][key]) el.textContent = translations[lang][key];
     });
-    const footerLinks = [
+    const footerLinks =[
         { id: 'link-terms', key: 'terms' },
         { id: 'link-privacy', key: 'priv' },
         { id: 'link-safety', key: 'safe' },
