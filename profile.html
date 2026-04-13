@@ -388,12 +388,19 @@
                 return false;
             }
 
-            // --- AUTO UPLOAD AVATAR ---
+            // --- AUTO UPLOAD AVATAR (with Bot Shield) ---
             editAvatarBtn.onclick = () => photoUploadInput.click();
             
             photoUploadInput.onchange = async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
+
+                // 🔥 BOT SHIELD CHECK
+                const allowed = await window.checkBotLimits();
+                if (!allowed) {
+                    photoUploadInput.value = '';
+                    return;
+                }
 
                 // 1. Show local preview instantly
                 const reader = new FileReader();
@@ -427,6 +434,9 @@
                         await updateProfile(currentUser, { photoURL: finalPhotoURL });
                         await updateDoc(doc(db, "users", currentUser.uid), { photoURL: finalPhotoURL });
                         currentUserData.photoURL = finalPhotoURL;
+                        
+                        // Record activity
+                        window.recordActivity('images');
                     } else {
                         throw new Error("Upload Failed");
                     }
