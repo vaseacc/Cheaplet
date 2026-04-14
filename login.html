@@ -758,7 +758,7 @@
                     placeEmail: "Email Address", placePass: "Password",
                     google: "Continue with Google", microsoft: "Continue with Microsoft", or: "or", verify: "Verifying...",
                     errBanned: "Account banned.", errVerify: "Please verify your email first! A verification link was sent to your inbox.", 
-                    errSent: "Verification email sent! You can continue using the site, but some features require verification.",
+                    errSent: "Account created! Please check your email to verify your account before logging in.",
                     forgotPass: "Forgot Password?", enterEmailFirst: "Please enter your email address to reset your password.", 
                     resetSent: "Password reset email sent! Check your inbox.",
                 },
@@ -784,7 +784,7 @@
                     placeEmail: "Adresse e-mail", placePass: "Mot de passe",
                     google: "Continuer avec Google", microsoft: "Continuer avec Microsoft", or: "ou", verify: "Vérification...",
                     errBanned: "Compte banni.", errVerify: "Veuillez d'abord vérifier votre e-mail ! Un lien de vérification a été envoyé.",
-                    errSent: "E-mail de vérification envoyé ! Vous pouvez continuer à utiliser le site, mais certaines fonctionnalités nécessitent une vérification.",
+                    errSent: "Compte créé ! Veuillez vérifier votre boîte mail pour activer votre compte avant de vous connecter.",
                     forgotPass: "Mot de passe oublié ?", enterEmailFirst: "Veuillez entrer votre adresse e-mail pour réinitialiser le mot de passe.", 
                     resetSent: "E-mail de réinitialisation envoyé ! Vérifiez votre boîte de réception.",
                 }
@@ -976,7 +976,10 @@
                 if (user) {
                     const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
                     // For email/password, we allow login even if email not verified (banner will show)
-                    handleLoginSuccess(user);
+                    // But we only redirect if NOT on login page (to avoid redirect loop)
+                    if (!window.location.pathname.includes('/login.html')) {
+                        handleLoginSuccess(user);
+                    }
                 }
             });
 
@@ -1034,15 +1037,16 @@
                         }
                         
                         const cred = await createUserWithEmailAndPassword(auth, email, pass);
-await updateProfile(cred.user, { displayName: fullName });
-await createUserDocument(cred.user, fullName, username);
-await sendEmailVerification(cred.user);
-
-// 🔥 CRITICAL: Sign out immediately – user must verify email before logging in
-await signOut(auth);
-
-alert(strings[lang].errSent);
-location.reload(); // or stay on login page
+                        await updateProfile(cred.user, { displayName: fullName });
+                        await createUserDocument(cred.user, fullName, username);
+                        await sendEmailVerification(cred.user);
+                        
+                        // 🔥 CRITICAL: Sign out immediately – user must verify email before logging in
+                        await signOut(auth);
+                        
+                        alert(strings[lang].errSent);
+                        // Stay on login page (refresh to clear form)
+                        location.reload();
                     }
                 } catch (err) {
                     alert(err.message);
