@@ -1034,12 +1034,15 @@
                         }
                         
                         const cred = await createUserWithEmailAndPassword(auth, email, pass);
-                        await updateProfile(cred.user, { displayName: fullName });
-                        await createUserDocument(cred.user, fullName, username);
-                        await sendEmailVerification(cred.user);
-                        
-                        alert(strings[lang].errSent);
-                        // User stays logged in
+await updateProfile(cred.user, { displayName: fullName });
+await createUserDocument(cred.user, fullName, username);
+await sendEmailVerification(cred.user);
+
+// 🔥 CRITICAL: Sign out immediately – user must verify email before logging in
+await signOut(auth);
+
+alert(strings[lang].errSent);
+location.reload(); // or stay on login page
                     }
                 } catch (err) {
                     alert(err.message);
