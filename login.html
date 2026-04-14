@@ -32,6 +32,7 @@
     
     <script type="module" src="global.js"></script>
     <style>
+        /* (All CSS unchanged from previous version) */
         :root {
             --gold:        #C8A96E;
             --gold-light:  #e0c48f;
@@ -527,7 +528,6 @@
 
                     <form id="auth-form">
                         <div id="register-fields">
-                            <!-- Full Name with real-time validation -->
                             <div class="field-wrap">
                                 <label class="field-label" id="fullname-label">Full Name (max 15 letters)</label>
                                 <div class="input-status">
@@ -539,7 +539,6 @@
                                 </div>
                             </div>
 
-                            <!-- Username with real-time validation -->
                             <div class="field-wrap">
                                 <label class="field-label" id="username-label">Username</label>
                                 <div class="input-status">
@@ -719,7 +718,6 @@
             const loadingOverlay = document.getElementById('loading-overlay');
             const forgotPasswordLink = document.getElementById('forgot-password-link');
 
-            // Register fields
             const registerFields = document.getElementById('register-fields');
             const fullNameInput = document.getElementById('full-name');
             const usernameInput = document.getElementById('username');
@@ -733,6 +731,8 @@
             let usernameCheckTimeout = null;
             let isUsernameValid = false;
             let isFullnameValid = false;
+            // 🔥 Flag to prevent redirect during registration
+            let isRegistering = false;
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = {
@@ -815,12 +815,10 @@
                 document.getElementById('loading-text').textContent = strings[lang].verify;
                 forgotPasswordLink.textContent = strings[lang].forgotPass;
                 
-                // Update hints based on current validation state
                 updateFullnameUI();
                 updateUsernameUI();
             }
 
-            // Validation functions
             function isValidFullName(name) {
                 return /^[A-Za-z]{1,15}$/.test(name);
             }
@@ -874,7 +872,6 @@
                     return;
                 }
 
-                // Format valid, check availability
                 usernameStatusIcon.innerHTML = '<i class="fas fa-spinner fa-spin status-checking"></i>';
                 usernameHintText.textContent = strings[lang].usernameHint;
                 usernameAvailability.textContent = strings[lang].usernameChecking;
@@ -904,19 +901,16 @@
                     submitBtn.disabled = false;
                     return;
                 }
-                // In register mode, enable only if all fields are valid and email/password not empty
                 const email = document.getElementById('email').value.trim();
                 const pass = document.getElementById('password').value;
                 submitBtn.disabled = !(isFullnameValid && isUsernameValid && email && pass);
             }
 
-            // Event listeners for real-time validation
             fullNameInput.addEventListener('input', updateFullnameUI);
             usernameInput.addEventListener('input', updateUsernameUI);
             document.getElementById('email').addEventListener('input', updateSubmitButton);
             document.getElementById('password').addEventListener('input', updateSubmitButton);
 
-            // School domains
             const schoolDomains = {
                 "@etu.cegepjonquiere.ca": "Cégep de Jonquière",
                 "@cegep-lanaudiere.qc.ca": "Cégep de Lanaudière",
@@ -973,6 +967,9 @@
             }
 
             onAuthStateChanged(auth, async (user) => {
+                // 🔥 CRITICAL: If we're in the middle of registration, do NOT redirect
+                if (isRegistering) return;
+                
                 if (user) {
                     const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
                     // For email/password, we allow login even if email not verified (banner will show)
@@ -997,7 +994,6 @@
                 if (!isLoginMode) {
                     registerFields.style.display = 'block';
                     setTimeout(() => registerFields.classList.add('visible'), 10);
-                    // Reset validation
                     isFullnameValid = false;
                     isUsernameValid = false;
                     updateSubmitButton();
@@ -1010,7 +1006,6 @@
                 applyUIText();
             };
 
-            // OAuth
             document.getElementById('google-btn').onclick = async () => {
                 try { await signInWithPopup(auth, googleProvider); } catch (e) { alert(e.message); }
             };
@@ -1036,20 +1031,25 @@
                             return;
                         }
                         
+                        // 🔥 Set flag to prevent redirect
+                        isRegistering = true;
+                        
                         const cred = await createUserWithEmailAndPassword(auth, email, pass);
                         await updateProfile(cred.user, { displayName: fullName });
                         await createUserDocument(cred.user, fullName, username);
                         await sendEmailVerification(cred.user);
                         
-                        // 🔥 CRITICAL: Sign out immediately – user must verify email before logging in
+                        // Sign out immediately – user must verify email before logging in
                         await signOut(auth);
                         
                         alert(strings[lang].errSent);
-                        // Stay on login page (refresh to clear form)
+                        // Reset flag and reload to clear state
+                        isRegistering = false;
                         location.reload();
                     }
                 } catch (err) {
                     alert(err.message);
+                    isRegistering = false;
                     submitBtn.disabled = false;
                 }
             };
