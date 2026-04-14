@@ -32,7 +32,7 @@
     
     <script type="module" src="global.js"></script>
     <style>
-        /* (All CSS unchanged from previous version) */
+        /* All CSS unchanged from previous version – omitted for brevity but remains identical */
         :root {
             --gold:        #C8A96E;
             --gold-light:  #e0c48f;
@@ -292,7 +292,6 @@
             border-color: rgba(200,169,110,0.35) !important;
         }
 
-        /* Validation status icons */
         .input-status {
             position: relative;
         }
@@ -528,6 +527,7 @@
 
                     <form id="auth-form">
                         <div id="register-fields">
+                            <!-- Full Name with real-time validation -->
                             <div class="field-wrap">
                                 <label class="field-label" id="fullname-label">Full Name (max 15 letters)</label>
                                 <div class="input-status">
@@ -539,6 +539,7 @@
                                 </div>
                             </div>
 
+                            <!-- Username with real-time validation -->
                             <div class="field-wrap">
                                 <label class="field-label" id="username-label">Username</label>
                                 <div class="input-status">
@@ -718,6 +719,7 @@
             const loadingOverlay = document.getElementById('loading-overlay');
             const forgotPasswordLink = document.getElementById('forgot-password-link');
 
+            // Register fields
             const registerFields = document.getElementById('register-fields');
             const fullNameInput = document.getElementById('full-name');
             const usernameInput = document.getElementById('username');
@@ -731,8 +733,7 @@
             let usernameCheckTimeout = null;
             let isUsernameValid = false;
             let isFullnameValid = false;
-            // 🔥 Flag to prevent redirect during registration
-            let isRegistering = false;
+            let isSubmitting = false; // 🔥 Prevent double submission
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = {
@@ -815,10 +816,12 @@
                 document.getElementById('loading-text').textContent = strings[lang].verify;
                 forgotPasswordLink.textContent = strings[lang].forgotPass;
                 
+                // Update hints based on current validation state
                 updateFullnameUI();
                 updateUsernameUI();
             }
 
+            // Validation functions
             function isValidFullName(name) {
                 return /^[A-Za-z]{1,15}$/.test(name);
             }
@@ -872,6 +875,7 @@
                     return;
                 }
 
+                // Format valid, check availability
                 usernameStatusIcon.innerHTML = '<i class="fas fa-spinner fa-spin status-checking"></i>';
                 usernameHintText.textContent = strings[lang].usernameHint;
                 usernameAvailability.textContent = strings[lang].usernameChecking;
@@ -901,16 +905,19 @@
                     submitBtn.disabled = false;
                     return;
                 }
+                // In register mode, enable only if all fields are valid and email/password not empty
                 const email = document.getElementById('email').value.trim();
                 const pass = document.getElementById('password').value;
                 submitBtn.disabled = !(isFullnameValid && isUsernameValid && email && pass);
             }
 
+            // Event listeners for real-time validation
             fullNameInput.addEventListener('input', updateFullnameUI);
             usernameInput.addEventListener('input', updateUsernameUI);
             document.getElementById('email').addEventListener('input', updateSubmitButton);
             document.getElementById('password').addEventListener('input', updateSubmitButton);
 
+            // School domains
             const schoolDomains = {
                 "@etu.cegepjonquiere.ca": "Cégep de Jonquière",
                 "@cegep-lanaudiere.qc.ca": "Cégep de Lanaudière",
@@ -947,35 +954,21 @@
                 });
             }
 
-            async function handleLoginSuccess(user) {
-                loadingOverlay.style.display = 'flex';
-                try {
+            // 🔥 IMPORTANT: Do NOT automatically redirect on auth state change while on login page
+            // Let the user explicitly log in. The global.js will handle redirect after successful login elsewhere.
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
                     const userDocRef = doc(db, "users", user.uid);
                     const userDoc = await getDoc(userDocRef);
                     const data = userDoc.data();
                     if (data && data.role === 'banned') {
                         await signOut(auth);
                         alert(strings[lang].errBanned);
-                        window.location.reload();
                         return;
                     }
-                    window.location.href = new URLSearchParams(window.location.search).get('redirect') || '/index.html';
-                } catch (e) {
-                    console.error(e);
-                    window.location.href = '/index.html';
-                }
-            }
-
-            onAuthStateChanged(auth, async (user) => {
-                // 🔥 CRITICAL: If we're in the middle of registration, do NOT redirect
-                if (isRegistering) return;
-                
-                if (user) {
-                    const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
-                    // For email/password, we allow login even if email not verified (banner will show)
-                    // But we only redirect if NOT on login page (to avoid redirect loop)
+                    // Only auto-redirect if we are NOT on the login page (prevents redirect loop)
                     if (!window.location.pathname.includes('/login.html')) {
-                        handleLoginSuccess(user);
+                        window.location.href = new URLSearchParams(window.location.search).get('redirect') || '/index.html';
                     }
                 }
             });
@@ -994,6 +987,7 @@
                 if (!isLoginMode) {
                     registerFields.style.display = 'block';
                     setTimeout(() => registerFields.classList.add('visible'), 10);
+                    // Reset validation
                     isFullnameValid = false;
                     isUsernameValid = false;
                     updateSubmitButton();
@@ -1006,6 +1000,7 @@
                 applyUIText();
             };
 
+            // OAuth
             document.getElementById('google-btn').onclick = async () => {
                 try { await signInWithPopup(auth, googleProvider); } catch (e) { alert(e.message); }
             };
@@ -1015,41 +1010,45 @@
 
             authForm.onsubmit = async (e) => {
                 e.preventDefault();
+                if (isSubmitting) return; // 🔥 Prevent double submission
+                isSubmitting = true;
                 submitBtn.disabled = true;
                 const email = document.getElementById('email').value.toLowerCase();
                 const pass = document.getElementById('password').value;
                 try {
                     if (isLoginMode) {
+                        loadingOverlay.style.display = 'flex';
                         await signInWithEmailAndPassword(auth, email, pass);
+                        // Auth state listener will handle redirect
                     } else {
                         const fullName = fullNameInput.value.trim();
                         const username = usernameInput.value.trim().toLowerCase();
                         
                         if (!isFullnameValid || !isUsernameValid) {
                             alert("Please fix the errors before submitting.");
+                            isSubmitting = false;
                             submitBtn.disabled = false;
                             return;
                         }
                         
-                        // 🔥 Set flag to prevent redirect
-                        isRegistering = true;
-                        
+                        loadingOverlay.style.display = 'flex';
                         const cred = await createUserWithEmailAndPassword(auth, email, pass);
                         await updateProfile(cred.user, { displayName: fullName });
                         await createUserDocument(cred.user, fullName, username);
                         await sendEmailVerification(cred.user);
                         
-                        // Sign out immediately – user must verify email before logging in
+                        // 🔥 CRITICAL: Sign out immediately – user must verify email before logging in
                         await signOut(auth);
+                        loadingOverlay.style.display = 'none';
                         
                         alert(strings[lang].errSent);
-                        // Reset flag and reload to clear state
-                        isRegistering = false;
+                        // Stay on login page (refresh to clear form)
                         location.reload();
                     }
                 } catch (err) {
+                    loadingOverlay.style.display = 'none';
                     alert(err.message);
-                    isRegistering = false;
+                    isSubmitting = false;
                     submitBtn.disabled = false;
                 }
             };
