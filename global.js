@@ -553,6 +553,12 @@ function showWelcomeTour() {
     const existingFullName = currentUserData?.displayName || '';
     const existingUsername = currentUserData?.username || '';
 
+    // Check if user is OAuth (Google/Microsoft) – they may need profile setup
+    const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
+    // Email/password users already provided full name and username during registration
+    const hasProfileData = existingFullName && existingUsername;
+    const skipProfileStep = !isOAuth && hasProfileData;
+
     const overlay = document.createElement('div');
     overlay.className = 'lang-modal-overlay';
     overlay.style.zIndex = '10005';
@@ -574,8 +580,9 @@ function showWelcomeTour() {
                 <i class="fas fa-bookmark fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
                 <h2 style="color:#0C1446; margin-bottom:15px; font-family:'Playfair Display', serif;">${t.tour_title_3}</h2>
                 <p style="color:#6b84a3; margin-bottom:30px; line-height:1.6; font-size:0.95rem;">${t.tour_desc_3}</p>
-                <button class="btn" id="tour-btn-3" style="width:100%;">${t.tour_next}</button>
+                <button class="btn" id="tour-btn-3" style="width:100%;">${skipProfileStep ? t.tour_start : t.tour_next}</button>
             </div>
+            ${!skipProfileStep ? `
             <div id="tour-step-4" style="display:none;">
                 <div class="tour-pfp-preview" id="tour-pfp-box"><img src="${defaultPfpUrl}"></div>
                 <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">${t.tour_title_4}</h2>
@@ -590,140 +597,165 @@ function showWelcomeTour() {
                 <div id="tour-final-error" style="color:#d32f2f; font-size:0.85rem; margin-bottom:10px; display:none; text-align:center; font-weight:bold; border: 1px solid #ffcdd2; background: #fef2f2; padding: 8px; border-radius: 6px;"></div>
                 <button class="btn" id="tour-btn-4" style="width:100%;">${t.tour_start}</button>
             </div>
+            ` : ''}
             <div style="display:flex; justify-content:center; gap:8px; margin-top:25px;" id="tour-dots">
                 <div class="tour-dot active" id="dot-1"></div><div class="tour-dot" id="dot-2"></div>
-                <div class="tour-dot" id="dot-3"></div><div class="tour-dot" id="dot-4"></div>
+                <div class="tour-dot" id="dot-3"></div>${!skipProfileStep ? '<div class="tour-dot" id="dot-4"></div>' : ''}
             </div>
         </div>
     `;
     document.body.appendChild(overlay);
 
+    // Function to finish the tour (for both skip and full paths)
+    const finishTour = async () => {
+        await updateDoc(doc(db, "users", user.uid), { hasSeenTour: true });
+        localStorage.setItem(tourKey, 'true');
+        overlay.remove();
+    };
+
+    // Button handlers
     document.getElementById('tour-btn-1').onclick = () => {
-        document.getElementById('tour-step-1').style.display = 'none'; document.getElementById('tour-step-2').style.display = 'block';
-        document.getElementById('dot-1').classList.remove('active'); document.getElementById('dot-2').classList.add('active');
+        document.getElementById('tour-step-1').style.display = 'none'; 
+        document.getElementById('tour-step-2').style.display = 'block';
+        document.getElementById('dot-1').classList.remove('active'); 
+        document.getElementById('dot-2').classList.add('active');
     };
     document.getElementById('tour-btn-2').onclick = () => {
-        document.getElementById('tour-step-2').style.display = 'none'; document.getElementById('tour-step-3').style.display = 'block';
-        document.getElementById('dot-2').classList.remove('active'); document.getElementById('dot-3').classList.add('active');
+        document.getElementById('tour-step-2').style.display = 'none'; 
+        document.getElementById('tour-step-3').style.display = 'block';
+        document.getElementById('dot-2').classList.remove('active'); 
+        document.getElementById('dot-3').classList.add('active');
     };
-    document.getElementById('tour-btn-3').onclick = () => {
-        document.getElementById('tour-step-3').style.display = 'none'; document.getElementById('tour-step-4').style.display = 'block';
-        document.getElementById('dot-3').classList.remove('active'); document.getElementById('dot-4').classList.add('active');
-    };
-
-    const usernameInput = overlay.querySelector('#tour-username');
-    const nameInput = overlay.querySelector('#tour-fullname');
-    const usernameStatus = overlay.querySelector('#tour-username-status');
-    const finalError = overlay.querySelector('#tour-final-error');
-
-    let usernameTimeout = null;
-    let isUsernameValid = false;
-
-    nameInput.addEventListener('input', () => {
-        finalError.style.display = 'none';
-        nameInput.style.borderColor = '#eee';
-    });
     
-    usernameInput.addEventListener('input', () => {
-        finalError.style.display = 'none';
-        usernameInput.style.borderColor = '#eee';
-        if (usernameTimeout) clearTimeout(usernameTimeout);
-        const val = usernameInput.value.trim();
-        if (!val) { usernameStatus.textContent = ''; isUsernameValid = false; return; }
-        usernameTimeout = setTimeout(() => checkUsernameAvailability(val), 500);
-    });
-
-    function validateUsernameFormat(username) { return /^[a-zA-Z0-9_]{3,}$/.test(username); }
-
-    async function checkUsernameAvailability(username) {
-        if (!validateUsernameFormat(username)) {
-            usernameStatus.textContent = t.tour_username_err; usernameStatus.style.color = '#d32f2f';
-            isUsernameValid = false; return false;
-        }
-        usernameStatus.textContent = t.tour_username_checking; usernameStatus.style.color = '#ff9800';
-        const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
-        const snap = await getDocs(q);
-        if (snap.empty) {
-            usernameStatus.textContent = t.tour_username_available; usernameStatus.style.color = '#2E7D32';
-            isUsernameValid = true; return true;
+    const btn3 = document.getElementById('tour-btn-3');
+    btn3.onclick = () => {
+        if (skipProfileStep) {
+            // Finish tour immediately
+            finishTour();
         } else {
-            usernameStatus.textContent = t.tour_username_taken; usernameStatus.style.color = '#d32f2f';
-            isUsernameValid = false; return false;
-        }
-    }
-
-    if (existingUsername) { setTimeout(() => checkUsernameAvailability(existingUsername), 100); }
-
-    let selectedFile = null;
-    const fileInput = overlay.querySelector('#tour-file-input');
-    fileInput.onchange = (e) => {
-        if (e.target.files[0]) {
-            selectedFile = e.target.files[0];
-            const reader = new FileReader();
-            reader.onload = (ev) => { overlay.querySelector('#tour-pfp-box').innerHTML = `<img src="${ev.target.result}">`; };
-            reader.readAsDataURL(selectedFile);
+            document.getElementById('tour-step-3').style.display = 'none'; 
+            document.getElementById('tour-step-4').style.display = 'block';
+            document.getElementById('dot-3').classList.remove('active'); 
+            document.getElementById('dot-4').classList.add('active');
         }
     };
 
-    const finishBtn = overlay.querySelector('#tour-btn-4');
-    finishBtn.onclick = async () => {
-        finalError.style.display = 'none'; 
-        const fullname = nameInput.value.trim();
-        const username = usernameInput.value.trim().toLowerCase();
+    if (!skipProfileStep) {
+        // Step 4 logic (only for OAuth users)
+        const usernameInput = overlay.querySelector('#tour-username');
+        const nameInput = overlay.querySelector('#tour-fullname');
+        const usernameStatus = overlay.querySelector('#tour-username-status');
+        const finalError = overlay.querySelector('#tour-final-error');
+
+        let usernameTimeout = null;
+        let isUsernameValid = false;
+
+        nameInput.addEventListener('input', () => {
+            finalError.style.display = 'none';
+            nameInput.style.borderColor = '#eee';
+        });
         
-        if (!fullname) {
-            finalError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${t.tour_name_err}`;
-            finalError.style.display = 'block';
-            nameInput.style.borderColor = '#d32f2f';
-            return;
+        usernameInput.addEventListener('input', () => {
+            finalError.style.display = 'none';
+            usernameInput.style.borderColor = '#eee';
+            if (usernameTimeout) clearTimeout(usernameTimeout);
+            const val = usernameInput.value.trim();
+            if (!val) { usernameStatus.textContent = ''; isUsernameValid = false; return; }
+            usernameTimeout = setTimeout(() => checkUsernameAvailability(val), 500);
+        });
+
+        function validateUsernameFormat(username) { return /^[a-zA-Z0-9_]{3,}$/.test(username); }
+
+        async function checkUsernameAvailability(username) {
+            if (!validateUsernameFormat(username)) {
+                usernameStatus.textContent = t.tour_username_err; usernameStatus.style.color = '#d32f2f';
+                isUsernameValid = false; return false;
+            }
+            usernameStatus.textContent = t.tour_username_checking; usernameStatus.style.color = '#ff9800';
+            const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
+            const snap = await getDocs(q);
+            if (snap.empty) {
+                usernameStatus.textContent = t.tour_username_available; usernameStatus.style.color = '#2E7D32';
+                isUsernameValid = true; return true;
+            } else {
+                usernameStatus.textContent = t.tour_username_taken; usernameStatus.style.color = '#d32f2f';
+                isUsernameValid = false; return false;
+            }
         }
 
-        if (!username || !validateUsernameFormat(username)) {
-            finalError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${t.tour_username_err}`;
-            finalError.style.display = 'block';
-            usernameInput.style.borderColor = '#d32f2f';
-            return;
-        }
+        if (existingUsername) { setTimeout(() => checkUsernameAvailability(existingUsername), 100); }
 
-        if (!isUsernameValid) {
-            const available = await checkUsernameAvailability(username);
-            if (!available) {
-                finalError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${t.tour_username_taken}`;
+        let selectedFile = null;
+        const fileInput = overlay.querySelector('#tour-file-input');
+        fileInput.onchange = (e) => {
+            if (e.target.files[0]) {
+                selectedFile = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = (ev) => { overlay.querySelector('#tour-pfp-box').innerHTML = `<img src="${ev.target.result}">`; };
+                reader.readAsDataURL(selectedFile);
+            }
+        };
+
+        const finishBtn = overlay.querySelector('#tour-btn-4');
+        finishBtn.onclick = async () => {
+            finalError.style.display = 'none'; 
+            const fullname = nameInput.value.trim();
+            const username = usernameInput.value.trim().toLowerCase();
+            
+            if (!fullname) {
+                finalError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${t.tour_name_err}`;
+                finalError.style.display = 'block';
+                nameInput.style.borderColor = '#d32f2f';
+                return;
+            }
+
+            if (!username || !validateUsernameFormat(username)) {
+                finalError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${t.tour_username_err}`;
                 finalError.style.display = 'block';
                 usernameInput.style.borderColor = '#d32f2f';
                 return;
             }
-        }
-        
-        finishBtn.disabled = true; finishBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${t.tour_saving}`;
 
-        let finalPhoto = defaultPfpUrl;
-        if (selectedFile) {
+            if (!isUsernameValid) {
+                const available = await checkUsernameAvailability(username);
+                if (!available) {
+                    finalError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${t.tour_username_taken}`;
+                    finalError.style.display = 'block';
+                    usernameInput.style.borderColor = '#d32f2f';
+                    return;
+                }
+            }
+            
+            finishBtn.disabled = true; finishBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${t.tour_saving}`;
+
+            let finalPhoto = defaultPfpUrl;
+            if (selectedFile) {
+                try {
+                    const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
+                    const formData = new FormData();
+                    formData.append('file', selectedFile); formData.append('api_key', signRes.apiKey);
+                    formData.append('timestamp', signRes.timestamp); formData.append('signature', signRes.signature);
+                    formData.append('upload_preset', signRes.uploadPreset);
+                    const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { method: 'POST', body: formData }).then(r => r.json());
+                    if (res.secure_url) finalPhoto = res.secure_url;
+                } catch (err) { console.error(err); }
+            }
+
             try {
-                const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
-                const formData = new FormData();
-                formData.append('file', selectedFile); formData.append('api_key', signRes.apiKey);
-                formData.append('timestamp', signRes.timestamp); formData.append('signature', signRes.signature);
-                formData.append('upload_preset', signRes.uploadPreset);
-                const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { method: 'POST', body: formData }).then(r => r.json());
-                if (res.secure_url) finalPhoto = res.secure_url;
-            } catch (err) { console.error(err); }
-        }
-
-        try {
-            const oldDisplayName = currentUserData?.displayName || '';
-            await updateProfile(user, { displayName: fullname, photoURL: finalPhoto });
-            await updateDoc(doc(db, "users", user.uid), { displayName: fullname, username: username, photoURL: finalPhoto, hasSeenTour: true });
-            if (fullname !== oldDisplayName) await updateUserContent(user.uid, fullname);
-            localStorage.setItem(tourKey, 'true');
-            overlay.remove(); refreshUI();
-        } catch (err) {
-            console.error(err); 
-            finalError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Error saving profile. Please try again.`;
-            finalError.style.display = 'block';
-            finishBtn.disabled = false; finishBtn.textContent = t.tour_start;
-        }
-    };
+                const oldDisplayName = currentUserData?.displayName || '';
+                await updateProfile(user, { displayName: fullname, photoURL: finalPhoto });
+                await updateDoc(doc(db, "users", user.uid), { displayName: fullname, username: username, photoURL: finalPhoto, hasSeenTour: true });
+                if (fullname !== oldDisplayName) await updateUserContent(user.uid, fullname);
+                localStorage.setItem(tourKey, 'true');
+                overlay.remove(); refreshUI();
+            } catch (err) {
+                console.error(err); 
+                finalError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Error saving profile. Please try again.`;
+                finalError.style.display = 'block';
+                finishBtn.disabled = false; finishBtn.textContent = t.tour_start;
+            }
+        };
+    }
 }
 
 // --- SOCIAL TOUR ---
