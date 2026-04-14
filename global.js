@@ -540,6 +540,9 @@ function triggerHardLockdown(expireTimestamp) {
 }
 
 function showWelcomeTour() {
+    // 🔥 NEVER show the tour on the login page
+    if (window.location.pathname.includes('/login.html')) return;
+
     const user = auth.currentUser;
     if (!user) return;
     const tourKey = `scoralia_tour_seen_${user.uid}`;
