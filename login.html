@@ -43,6 +43,8 @@
             --border-dim:  rgba(255,255,255,0.09);
             --text:        #f4eedd;
             --muted:       rgba(244,238,221,0.55);
+            --success:     #2E7D32;
+            --error:       #e53e3e;
         }
 
         *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -56,7 +58,6 @@
             min-height: 100vh;
         }
 
-        /* ── CANVAS BACKGROUND ── */
         #bg-canvas {
             position: fixed;
             inset: 0;
@@ -64,7 +65,6 @@
             pointer-events: none;
         }
 
-        /* ── HEADER ── */
         header {
             position: relative;
             z-index: 20;
@@ -96,7 +96,6 @@
 
         .logo span { color: var(--gold); }
 
-        /* Mobile back button – only visible on small screens */
         .back-btn-mobile {
             display: none;
             background: rgba(255,255,255,0.08);
@@ -118,12 +117,9 @@
         }
 
         @media (max-width: 767px) {
-            .back-btn-mobile {
-                display: flex;
-            }
+            .back-btn-mobile { display: flex; }
         }
 
-        /* ── WRAPPER ── */
         .auth-wrapper {
             position: relative;
             z-index: 10;
@@ -135,7 +131,6 @@
             perspective: 1200px;
         }
 
-        /* ── 3D CARD ── */
         .card-scene {
             width: 100%;
             max-width: 460px;
@@ -167,7 +162,6 @@
             to   { opacity: 1; transform: translateY(0)    rotateX(0deg) scale(1); }
         }
 
-        /* Sheen layer that reacts to mouse */
         .card-sheen {
             position: absolute;
             inset: 0;
@@ -182,7 +176,6 @@
             transition: background 0.15s ease;
         }
 
-        /* Top-left corner accent line */
         .auth-card::before {
             content: '';
             position: absolute;
@@ -196,7 +189,6 @@
 
         .card-inner { position: relative; z-index: 2; }
 
-        /* ── TITLE AREA ── */
         .card-title {
             font-family: 'Playfair Display', serif;
             font-size: 28px;
@@ -213,7 +205,6 @@
             line-height: 1.6;
         }
 
-        /* ── ERROR ── */
         .error-message {
             color: #ff8f8f;
             background: rgba(255,80,80,0.07);
@@ -232,7 +223,6 @@
             75%      { transform: translateX(5px); }
         }
 
-        /* ── STUDENT TIP (always visible) ── */
         .student-tip {
             display: flex;
             align-items: flex-start;
@@ -256,7 +246,6 @@
         .student-tip i { color: var(--gold); font-size: 13px; flex-shrink: 0; margin-top: 2px; }
         .student-tip strong { color: var(--gold-light); font-weight: 600; }
 
-        /* ── FIELDS ── */
         .field-wrap { margin-bottom: 12px; }
 
         .field-label {
@@ -269,7 +258,6 @@
             margin-bottom: 6px;
         }
 
-        /* Unified input styling */
         input[type="text"],
         input[type="email"],
         input[type="password"] {
@@ -296,7 +284,6 @@
             box-shadow: 0 0 0 3px rgba(200,169,110,0.08);
         }
 
-        /* Autofill fix */
         input:-webkit-autofill,
         input:-webkit-autofill:focus {
             -webkit-box-shadow: 0 0 0 1000px rgba(12,20,70,0.95) inset !important;
@@ -304,7 +291,33 @@
             border-color: rgba(200,169,110,0.35) !important;
         }
 
-        /* Slide-in register fields */
+        /* Validation status icons */
+        .input-status {
+            position: relative;
+        }
+        .status-icon {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+            pointer-events: none;
+        }
+        .status-valid { color: var(--success); }
+        .status-invalid { color: var(--error); }
+        .status-checking { color: var(--gold); }
+
+        .field-hint {
+            font-size: 10px;
+            margin-top: 4px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .hint-text { color: var(--muted); }
+        .hint-error { color: var(--error); }
+
         #register-fields {
             overflow: hidden;
             max-height: 0;
@@ -313,28 +326,8 @@
         }
 
         #register-fields.visible {
-            max-height: 200px;
+            max-height: 300px;
             opacity: 1;
-        }
-
-        /* Username hint & availability */
-        .username-hint {
-            font-size: 10px;
-            color: var(--muted);
-            margin-top: 4px;
-            margin-bottom: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .username-available {
-            color: #8bc34a;
-        }
-        .username-unavailable {
-            color: #ff8f8f;
-        }
-        .username-loading {
-            color: var(--gold-light);
         }
 
         .forgot-pass-link {
@@ -352,7 +345,6 @@
 
         .forgot-pass-link:hover { opacity: 1; text-decoration: underline; }
 
-        /* ── SOLID BUTTONS ── */
         .btn-submit {
             width: 100%;
             height: 46px;
@@ -384,7 +376,7 @@
             transition: left 0.5s ease;
         }
 
-        .btn-submit:hover {
+        .btn-submit:hover:not(:disabled) {
             background: var(--gold-light);
             transform: translateY(-2px);
             box-shadow: 0 8px 28px rgba(200,169,110,0.40), 0 1px 0 rgba(255,255,255,0.15) inset;
@@ -392,9 +384,13 @@
 
         .btn-submit:hover::before { left: 160%; }
         .btn-submit:active { transform: translateY(0); box-shadow: 0 2px 10px rgba(200,169,110,0.22); }
-        .btn-submit:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+        .btn-submit:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
 
-        /* ── SEPARATOR ── */
         .separator {
             display: flex;
             align-items: center;
@@ -414,7 +410,6 @@
         .separator::before { margin-right: 14px; }
         .separator::after  { margin-left: 14px; }
 
-        /* ── OAUTH BUTTONS ── */
         .btn-google, .btn-microsoft {
             background: rgba(255,255,255,0.04);
             color: rgba(244,238,221,0.80);
@@ -445,7 +440,6 @@
 
         .btn-google img, .btn-microsoft img { width: 16px; flex-shrink: 0; }
 
-        /* ── TOGGLE LINK ── */
         .toggle-link {
             display: block;
             margin-top: 22px;
@@ -461,7 +455,6 @@
 
         .toggle-link:hover { opacity: 1; text-decoration: underline; }
 
-        /* ── LOADING OVERLAY ── */
         #loading-overlay {
             position: fixed;
             inset: 0;
@@ -500,10 +493,8 @@
 </head>
 <body>
 
-    <!-- Particle canvas -->
     <canvas id="bg-canvas"></canvas>
 
-    <!-- Loading overlay -->
     <div id="loading-overlay">
         <div class="spinner"></div>
         <div id="loading-text">Verifying...</div>
@@ -529,23 +520,35 @@
 
                     <div id="auth-error" class="error-message"></div>
 
-                    <!-- Student tip – always visible -->
                     <div class="student-tip" id="student-tip">
                         <i class="fas fa-graduation-cap"></i>
-                        <span id="student-tip-text">To get the <strong>Verified Student</strong> badge, you must sign in with your school's <strong>Microsoft</strong> account. School emails block our verification links, so Microsoft is the only reliable method.</span>
+                        <span id="student-tip-text">To get the <strong>Verified Student</strong> badge, sign in with your school's <strong>Microsoft</strong> account. School emails block verification links.</span>
                     </div>
 
                     <form id="auth-form">
                         <div id="register-fields">
+                            <!-- Full Name with real-time validation -->
                             <div class="field-wrap">
-                                <label class="field-label">Full Name (max 10 letters, no spaces)</label>
-                                <input type="text" id="full-name" placeholder="John" maxlength="10" autocomplete="name">
+                                <label class="field-label" id="fullname-label">Full Name (max 15 letters)</label>
+                                <div class="input-status">
+                                    <input type="text" id="full-name" placeholder="Alex" maxlength="15" autocomplete="name">
+                                    <span class="status-icon" id="fullname-status"></span>
+                                </div>
+                                <div class="field-hint" id="fullname-hint">
+                                    <span class="hint-text">Letters only, no spaces</span>
+                                </div>
                             </div>
+
+                            <!-- Username with real-time validation -->
                             <div class="field-wrap">
-                                <label class="field-label">Username</label>
-                                <input type="text" id="username" placeholder="jhondoe" autocomplete="off">
-                                <div class="username-hint" id="username-status">
-                                    <span id="username-status-text">Only letters, numbers, underscore</span>
+                                <label class="field-label" id="username-label">Username</label>
+                                <div class="input-status">
+                                    <input type="text" id="username" placeholder="alex_123" maxlength="30" autocomplete="off">
+                                    <span class="status-icon" id="username-status-icon"></span>
+                                </div>
+                                <div class="field-hint" id="username-hint">
+                                    <span class="hint-text" id="username-hint-text">Letters, numbers, _ and .</span>
+                                    <span id="username-availability"></span>
                                 </div>
                             </div>
                         </div>
@@ -562,7 +565,7 @@
 
                         <a id="forgot-password-link" class="forgot-pass-link">Forgot Password?</a>
 
-                        <button type="submit" class="btn-submit" id="submit-btn">Log In</button>
+                        <button type="submit" class="btn-submit" id="submit-btn" disabled>Log In</button>
                     </form>
 
                     <div class="separator" id="or-text">or</div>
@@ -585,11 +588,9 @@
 
     <script>
     (() => {
-        /* ---- Canvas particle network ---- */
         const canvas = document.getElementById('bg-canvas');
         const ctx = canvas.getContext('2d');
         let W, H, nodes =[];
-
         const NODE_COUNT = 90;
         const LINK_DIST  = 145;
         const GOLD = { r:200, g:169, b:110 };
@@ -615,9 +616,8 @@
             nodes = Array.from({ length: NODE_COUNT }, mkNode);
         }
 
-        function draw(ts) {
+        function draw() {
             ctx.clearRect(0, 0, W, H);
-
             const vignette = ctx.createRadialGradient(W/2, H/2, H*0.2, W/2, H/2, H*0.85);
             vignette.addColorStop(0, 'rgba(12,20,70,0)');
             vignette.addColorStop(1, 'rgba(6,10,35,0.35)');
@@ -630,7 +630,6 @@
                 if (n.y < 0 || n.y > H) n.vy *= -1;
                 n.pulse += 0.018;
                 const alpha = 0.30 + 0.20 * Math.sin(n.pulse);
-
                 ctx.beginPath();
                 ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
                 ctx.fillStyle = `rgba(${GOLD.r},${GOLD.g},${GOLD.b},${alpha})`;
@@ -653,7 +652,6 @@
                     }
                 }
             }
-
             requestAnimationFrame(draw);
         }
 
@@ -661,10 +659,6 @@
         init();
         requestAnimationFrame(draw);
 
-        let mx = -9999, my = -9999;
-        window.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
-
-        /* ---- 3D tilt on card ---- */
         const scene = document.getElementById('card-scene');
         const sheen = document.getElementById('card-sheen');
         const wrapper = document.getElementById('auth-wrapper');
@@ -678,9 +672,7 @@
             const dy = (e.clientY - cy) / (rect.height / 2);
             const rotY =  dx * MAX_TILT;
             const rotX = -dy * MAX_TILT * 0.6;
-
             scene.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
-
             const mx = ((e.clientX - rect.left) / rect.width  * 100).toFixed(1);
             const my = ((e.clientY - rect.top)  / rect.height * 100).toFixed(1);
             sheen.style.setProperty('--mx', `${mx}%`);
@@ -693,7 +685,6 @@
             setTimeout(() => scene.style.transition = 'transform 0.1s ease-out', 620);
         });
 
-        // Mobile back button functionality
         const backBtn = document.getElementById('mobile-back-btn');
         if (backBtn) {
             backBtn.addEventListener('click', () => {
@@ -726,14 +717,22 @@
             const authForm = document.getElementById('auth-form');
             const submitBtn = document.getElementById('submit-btn');
             const loadingOverlay = document.getElementById('loading-overlay');
-            const studentTip = document.getElementById('student-tip'); // now always visible
             const forgotPasswordLink = document.getElementById('forgot-password-link');
-            const authError = document.getElementById('auth-error');
+
+            // Register fields
+            const registerFields = document.getElementById('register-fields');
+            const fullNameInput = document.getElementById('full-name');
+            const usernameInput = document.getElementById('username');
+            const fullnameStatus = document.getElementById('fullname-status');
+            const fullnameHint = document.getElementById('fullname-hint');
+            const usernameStatusIcon = document.getElementById('username-status-icon');
+            const usernameHintText = document.getElementById('username-hint-text');
+            const usernameAvailability = document.getElementById('username-availability');
 
             let isLoginMode = true;
-            let isRegistering = false;
             let usernameCheckTimeout = null;
-            let currentUsernameValid = false;
+            let isUsernameValid = false;
+            let isFullnameValid = false;
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = {
@@ -744,14 +743,24 @@
                     loginBtn: "Log In", regBtn: "Create Account",
                     toggleToReg: "New to Scoralia? Create an account.", toggleToLogin: "Already have an account? Log in.",
                     studentTip: "To get the <strong>Verified Student</strong> badge, you must sign in with your school's <strong>Microsoft</strong> account. School emails (like @crosemont.qc.ca) block our verification links, so Microsoft is the only reliable method.",
-                    fullName: "Full Name (max 10 letters, no spaces)", username: "Username", usernameHint: "Only letters, numbers, underscore",
-                    usernameAvailable: "✓ Username available", usernameUnavailable: "✗ Username already taken", usernameChecking: "Checking...",
+                    fullNameLabel: "Full Name (max 15 letters)",
+                    fullNamePlaceholder: "Alex",
+                    fullNameHint: "Letters only, no spaces",
+                    fullNameValid: "✓ Looks good",
+                    fullNameInvalid: "Only letters, max 15 characters",
+                    usernameLabel: "Username",
+                    usernamePlaceholder: "alex_123",
+                    usernameHint: "Letters, numbers, _ and .",
+                    usernameAvailable: "✓ Available",
+                    usernameUnavailable: "✗ Already taken",
+                    usernameChecking: "Checking...",
+                    usernameInvalid: "Invalid characters",
                     placeEmail: "Email Address", placePass: "Password",
                     google: "Continue with Google", microsoft: "Continue with Microsoft", or: "or", verify: "Verifying...",
-                    errBanned: "Account banned.", errVerify: "Please verify your email first! A verification link was sent to your inbox.", errSent: "Verification email sent! Please check your inbox to verify your account before logging in.",
-                    forgotPass: "Forgot Password?", enterEmailFirst: "Please enter your email address to reset your password.", resetSent: "Password reset email sent! Check your inbox.",
-                    usernameInvalid: "Username must contain only letters, numbers, and underscore (no spaces).",
-                    fullNameInvalid: "Full name must be 1-10 letters only, no spaces or special characters.",
+                    errBanned: "Account banned.", errVerify: "Please verify your email first! A verification link was sent to your inbox.", 
+                    errSent: "Verification email sent! You can continue using the site, but some features require verification.",
+                    forgotPass: "Forgot Password?", enterEmailFirst: "Please enter your email address to reset your password.", 
+                    resetSent: "Password reset email sent! Check your inbox.",
                 },
                 fr: {
                     loginTitle: "Bon retour", loginSub: "Connectez-vous pour continuer vos achats et ventes.",
@@ -760,36 +769,44 @@
                     loginBtn: "Connexion", regBtn: "Créer un compte",
                     toggleToReg: "Nouveau sur Scoralia ? Créez un compte.", toggleToLogin: "Vous avez déjà un compte ? Connectez-vous.",
                     studentTip: "Pour obtenir le badge <strong>Étudiant vérifié</strong>, vous devez vous connecter avec votre compte <strong>Microsoft</strong> scolaire. Les courriels scolaires (ex: @crosemont.qc.ca) bloquent nos liens de vérification ; Microsoft est la seule méthode fiable.",
-                    fullName: "Nom complet (max 10 lettres, sans espaces)", username: "Nom d'utilisateur", usernameHint: "Lettres, chiffres, tiret bas uniquement",
-                    usernameAvailable: "✓ Disponible", usernameUnavailable: "✗ Déjà pris", usernameChecking: "Vérification...",
+                    fullNameLabel: "Nom complet (max 15 lettres)",
+                    fullNamePlaceholder: "Alex",
+                    fullNameHint: "Lettres uniquement, sans espaces",
+                    fullNameValid: "✓ Parfait",
+                    fullNameInvalid: "Lettres seulement, max 15 caractères",
+                    usernameLabel: "Nom d'utilisateur",
+                    usernamePlaceholder: "alex_123",
+                    usernameHint: "Lettres, chiffres, _ et .",
+                    usernameAvailable: "✓ Disponible",
+                    usernameUnavailable: "✗ Déjà pris",
+                    usernameChecking: "Vérification...",
+                    usernameInvalid: "Caractères invalides",
                     placeEmail: "Adresse e-mail", placePass: "Mot de passe",
                     google: "Continuer avec Google", microsoft: "Continuer avec Microsoft", or: "ou", verify: "Vérification...",
-                    errBanned: "Compte banni.", errVerify: "Veuillez d'abord vérifier votre e-mail ! Un lien de vérification a été envoyé.", errSent: "E-mail de vérification envoyé ! Veuillez vérifier votre boîte de réception pour activer votre compte avant de vous connecter.",
-                    forgotPass: "Mot de passe oublié ?", enterEmailFirst: "Veuillez entrer votre adresse e-mail pour réinitialiser le mot de passe.", resetSent: "E-mail de réinitialisation envoyé ! Vérifiez votre boîte de réception.",
-                    usernameInvalid: "Le nom d'utilisateur ne peut contenir que des lettres, chiffres et tiret bas (pas d'espaces).",
-                    fullNameInvalid: "Le nom complet doit comporter 1 à 10 lettres uniquement, sans espaces ni caractères spéciaux.",
+                    errBanned: "Compte banni.", errVerify: "Veuillez d'abord vérifier votre e-mail ! Un lien de vérification a été envoyé.",
+                    errSent: "E-mail de vérification envoyé ! Vous pouvez continuer à utiliser le site, mais certaines fonctionnalités nécessitent une vérification.",
+                    forgotPass: "Mot de passe oublié ?", enterEmailFirst: "Veuillez entrer votre adresse e-mail pour réinitialiser le mot de passe.", 
+                    resetSent: "E-mail de réinitialisation envoyé ! Vérifiez votre boîte de réception.",
                 }
             };
 
             const urlParams = new URLSearchParams(window.location.search);
             const msgParam = urlParams.get('msg');
 
-            // Apply translations
-            const applyUIText = () => {
+            function applyUIText() {
                 formTitle.textContent = isLoginMode ? strings[lang].loginTitle : strings[lang].regTitle;
-                
                 if (msgParam === 'social') {
                     document.getElementById('form-subtitle').textContent = strings[lang].socialMsg;
                 } else {
                     document.getElementById('form-subtitle').textContent = isLoginMode ? strings[lang].loginSub : strings[lang].regSub;
                 }
-
                 submitBtn.textContent = isLoginMode ? strings[lang].loginBtn : strings[lang].regBtn;
                 toggleLink.textContent = isLoginMode ? strings[lang].toggleToReg : strings[lang].toggleToLogin;
                 document.getElementById('student-tip-text').innerHTML = strings[lang].studentTip;
-                document.getElementById('full-name').placeholder = strings[lang].fullName;
-                document.getElementById('username').placeholder = strings[lang].username;
-                document.getElementById('username-status-text').textContent = strings[lang].usernameHint;
+                document.getElementById('fullname-label').textContent = strings[lang].fullNameLabel;
+                fullNameInput.placeholder = strings[lang].fullNamePlaceholder;
+                document.getElementById('username-label').textContent = strings[lang].usernameLabel;
+                usernameInput.placeholder = strings[lang].usernamePlaceholder;
                 document.getElementById('email').placeholder = strings[lang].placeEmail;
                 document.getElementById('password').placeholder = strings[lang].placePass;
                 document.getElementById('google-btn-text').textContent = strings[lang].google;
@@ -797,12 +814,109 @@
                 document.getElementById('or-text').textContent = strings[lang].or;
                 document.getElementById('loading-text').textContent = strings[lang].verify;
                 forgotPasswordLink.textContent = strings[lang].forgotPass;
-                // Update full name label
-                document.querySelector('#register-fields .field-wrap:first-child .field-label').textContent = strings[lang].fullName;
-            };
-            applyUIText();
+                
+                // Update hints based on current validation state
+                updateFullnameUI();
+                updateUsernameUI();
+            }
 
-            // School domains for verified badge
+            // Validation functions
+            function isValidFullName(name) {
+                return /^[A-Za-z]{1,15}$/.test(name);
+            }
+
+            function isValidUsernameFormat(username) {
+                return /^[a-zA-Z0-9_.]{1,30}$/.test(username);
+            }
+
+            async function checkUsernameAvailability(username) {
+                if (!username || username.length < 1) return false;
+                const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
+                const snapshot = await getDocs(q);
+                return snapshot.empty;
+            }
+
+            function updateFullnameUI() {
+                const name = fullNameInput.value.trim();
+                if (!name) {
+                    fullnameStatus.innerHTML = '';
+                    fullnameHint.innerHTML = `<span class="hint-text">${strings[lang].fullNameHint}</span>`;
+                    isFullnameValid = false;
+                } else if (isValidFullName(name)) {
+                    fullnameStatus.innerHTML = '<i class="fas fa-check-circle status-valid"></i>';
+                    fullnameHint.innerHTML = `<span class="hint-text" style="color: var(--success);">${strings[lang].fullNameValid}</span>`;
+                    isFullnameValid = true;
+                } else {
+                    fullnameStatus.innerHTML = '<i class="fas fa-times-circle status-invalid"></i>';
+                    fullnameHint.innerHTML = `<span class="hint-error">${strings[lang].fullNameInvalid}</span>`;
+                    isFullnameValid = false;
+                }
+                updateSubmitButton();
+            }
+
+            async function updateUsernameUI() {
+                const username = usernameInput.value.trim();
+                if (!username) {
+                    usernameStatusIcon.innerHTML = '';
+                    usernameHintText.textContent = strings[lang].usernameHint;
+                    usernameAvailability.textContent = '';
+                    isUsernameValid = false;
+                    updateSubmitButton();
+                    return;
+                }
+
+                if (!isValidUsernameFormat(username)) {
+                    usernameStatusIcon.innerHTML = '<i class="fas fa-times-circle status-invalid"></i>';
+                    usernameHintText.textContent = strings[lang].usernameInvalid;
+                    usernameAvailability.textContent = '';
+                    isUsernameValid = false;
+                    updateSubmitButton();
+                    return;
+                }
+
+                // Format valid, check availability
+                usernameStatusIcon.innerHTML = '<i class="fas fa-spinner fa-spin status-checking"></i>';
+                usernameHintText.textContent = strings[lang].usernameHint;
+                usernameAvailability.textContent = strings[lang].usernameChecking;
+                isUsernameValid = false;
+                updateSubmitButton();
+
+                if (usernameCheckTimeout) clearTimeout(usernameCheckTimeout);
+                usernameCheckTimeout = setTimeout(async () => {
+                    const available = await checkUsernameAvailability(username);
+                    if (available) {
+                        usernameStatusIcon.innerHTML = '<i class="fas fa-check-circle status-valid"></i>';
+                        usernameAvailability.textContent = strings[lang].usernameAvailable;
+                        usernameAvailability.style.color = 'var(--success)';
+                        isUsernameValid = true;
+                    } else {
+                        usernameStatusIcon.innerHTML = '<i class="fas fa-times-circle status-invalid"></i>';
+                        usernameAvailability.textContent = strings[lang].usernameUnavailable;
+                        usernameAvailability.style.color = 'var(--error)';
+                        isUsernameValid = false;
+                    }
+                    updateSubmitButton();
+                }, 500);
+            }
+
+            function updateSubmitButton() {
+                if (isLoginMode) {
+                    submitBtn.disabled = false;
+                    return;
+                }
+                // In register mode, enable only if all fields are valid and email/password not empty
+                const email = document.getElementById('email').value.trim();
+                const pass = document.getElementById('password').value;
+                submitBtn.disabled = !(isFullnameValid && isUsernameValid && email && pass);
+            }
+
+            // Event listeners for real-time validation
+            fullNameInput.addEventListener('input', updateFullnameUI);
+            usernameInput.addEventListener('input', updateUsernameUI);
+            document.getElementById('email').addEventListener('input', updateSubmitButton);
+            document.getElementById('password').addEventListener('input', updateSubmitButton);
+
+            // School domains
             const schoolDomains = {
                 "@etu.cegepjonquiere.ca": "Cégep de Jonquière",
                 "@cegep-lanaudiere.qc.ca": "Cégep de Lanaudière",
@@ -823,66 +937,6 @@
                     : { isStudent: false, schoolName: null };
             }
 
-            // Validate username format
-            function isValidUsername(username) {
-                return /^[a-zA-Z0-9_]+$/.test(username);
-            }
-
-            // Validate full name: 1-10 letters only, no spaces or special chars
-            function isValidFullName(name) {
-                return /^[A-Za-z]{1,10}$/.test(name);
-            }
-
-            // Check username availability in Firestore
-            async function checkUsernameAvailability(username) {
-                if (!username || username.length < 3) return false;
-                const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
-                const snapshot = await getDocs(q);
-                return snapshot.empty;
-            }
-
-            // Real-time username availability
-            const usernameInput = document.getElementById('username');
-            const usernameStatusSpan = document.getElementById('username-status-text');
-            const usernameStatusDiv = document.getElementById('username-status');
-
-            usernameInput.addEventListener('input', async () => {
-                const username = usernameInput.value.trim();
-                if (usernameCheckTimeout) clearTimeout(usernameCheckTimeout);
-                
-                if (!username) {
-                    usernameStatusSpan.textContent = strings[lang].usernameHint;
-                    usernameStatusSpan.className = '';
-                    currentUsernameValid = false;
-                    return;
-                }
-                
-                if (!isValidUsername(username)) {
-                    usernameStatusSpan.textContent = strings[lang].usernameInvalid;
-                    usernameStatusSpan.className = 'username-unavailable';
-                    currentUsernameValid = false;
-                    return;
-                }
-                
-                usernameStatusSpan.textContent = strings[lang].usernameChecking;
-                usernameStatusSpan.className = 'username-loading';
-                currentUsernameValid = false;
-                
-                usernameCheckTimeout = setTimeout(async () => {
-                    const available = await checkUsernameAvailability(username);
-                    if (available) {
-                        usernameStatusSpan.textContent = strings[lang].usernameAvailable;
-                        usernameStatusSpan.className = 'username-available';
-                        currentUsernameValid = true;
-                    } else {
-                        usernameStatusSpan.textContent = strings[lang].usernameUnavailable;
-                        usernameStatusSpan.className = 'username-unavailable';
-                        currentUsernameValid = false;
-                    }
-                }, 500);
-            });
-
-            // Helper to create user document with username
             async function createUserDocument(user, displayName, username) {
                 const email = user.email.toLowerCase();
                 const schoolInfo = getSchoolInfo(email);
@@ -899,13 +953,11 @@
                 });
             }
 
-            // Redirect only if user is verified (email/password) or OAuth
             async function handleLoginSuccess(user) {
                 loadingOverlay.style.display = 'flex';
                 try {
                     const userDocRef = doc(db, "users", user.uid);
                     const userDoc = await getDoc(userDocRef);
-                    
                     const data = userDoc.data();
                     if (data && data.role === 'banned') {
                         await signOut(auth);
@@ -913,9 +965,6 @@
                         window.location.reload();
                         return;
                     }
-                    
-                    // For email/password users, we already checked emailVerified in onAuthStateChanged
-                    // For OAuth users, they are considered verified
                     window.location.href = new URLSearchParams(window.location.search).get('redirect') || '/index.html';
                 } catch (e) {
                     console.error(e);
@@ -924,18 +973,9 @@
             }
 
             onAuthStateChanged(auth, async (user) => {
-                if (user && !isRegistering) {
+                if (user) {
                     const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
-                    
-                    // If email/password user and email not verified, sign them out and show message
-                    if (!isOAuth && !user.emailVerified) {
-                        await signOut(auth);
-                        alert(strings[lang].errVerify);
-                        loadingOverlay.style.display = 'none';
-                        return;
-                    }
-                    
-                    // Otherwise, proceed to login
+                    // For email/password, we allow login even if email not verified (banner will show)
                     handleLoginSuccess(user);
                 }
             });
@@ -951,31 +991,28 @@
 
             toggleLink.onclick = () => {
                 isLoginMode = !isLoginMode;
-                const regFields = document.getElementById('register-fields');
                 if (!isLoginMode) {
-                    regFields.style.display = 'block';
-                    setTimeout(() => regFields.classList.add('visible'), 10);
+                    registerFields.style.display = 'block';
+                    setTimeout(() => registerFields.classList.add('visible'), 10);
+                    // Reset validation
+                    isFullnameValid = false;
+                    isUsernameValid = false;
+                    updateSubmitButton();
                 } else {
-                    regFields.classList.remove('visible');
-                    setTimeout(() => regFields.style.display = '', 450);
+                    registerFields.classList.remove('visible');
+                    setTimeout(() => registerFields.style.display = '', 450);
+                    submitBtn.disabled = false;
                 }
-                // Student tip is always visible
                 forgotPasswordLink.style.display = isLoginMode ? 'block' : 'none';
                 applyUIText();
             };
 
-            // OAuth handlers – these providers handle email verification themselves
+            // OAuth
             document.getElementById('google-btn').onclick = async () => {
-                try {
-                    await signInWithPopup(auth, googleProvider);
-                    // OAuth users are considered verified
-                } catch (e) { alert(e.message); }
+                try { await signInWithPopup(auth, googleProvider); } catch (e) { alert(e.message); }
             };
             document.getElementById('microsoft-btn').onclick = async () => {
-                try {
-                    await signInWithPopup(auth, msProvider);
-                    // OAuth users are considered verified
-                } catch (e) { alert(e.message); }
+                try { await signInWithPopup(auth, msProvider); } catch (e) { alert(e.message); }
             };
 
             authForm.onsubmit = async (e) => {
@@ -985,39 +1022,32 @@
                 const pass = document.getElementById('password').value;
                 try {
                     if (isLoginMode) {
-                        const cred = await signInWithEmailAndPassword(auth, email, pass);
-                        // onAuthStateChanged will handle email verification check
+                        await signInWithEmailAndPassword(auth, email, pass);
                     } else {
-                        // Registration
-                        const fullName = document.getElementById('full-name').value.trim();
-                        const username = document.getElementById('username').value.trim().toLowerCase();
+                        const fullName = fullNameInput.value.trim();
+                        const username = usernameInput.value.trim().toLowerCase();
                         
-                        if (!fullName) { alert("Full name is required"); submitBtn.disabled = false; return; }
-                        if (!isValidFullName(fullName)) { alert(strings[lang].fullNameInvalid); submitBtn.disabled = false; return; }
-                        if (!username) { alert("Username is required"); submitBtn.disabled = false; return; }
-                        if (!isValidUsername(username)) { alert(strings[lang].usernameInvalid); submitBtn.disabled = false; return; }
-                        if (!currentUsernameValid) { alert("Please choose a different username"); submitBtn.disabled = false; return; }
+                        if (!isFullnameValid || !isUsernameValid) {
+                            alert("Please fix the errors before submitting.");
+                            submitBtn.disabled = false;
+                            return;
+                        }
                         
-                        isRegistering = true;
                         const cred = await createUserWithEmailAndPassword(auth, email, pass);
                         await updateProfile(cred.user, { displayName: fullName });
                         await createUserDocument(cred.user, fullName, username);
                         await sendEmailVerification(cred.user);
                         
-                        // IMPORTANT: Sign out immediately – user must verify email before logging in
-                        await signOut(auth);
-                        isRegistering = false;
-                        
                         alert(strings[lang].errSent);
-                        // Stay on login page
-                        location.reload();
+                        // User stays logged in
                     }
                 } catch (err) {
                     alert(err.message);
-                    isRegistering = false;
+                    submitBtn.disabled = false;
                 }
-                submitBtn.disabled = false;
             };
+
+            applyUIText();
         }
         main();
     </script>
