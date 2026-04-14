@@ -532,14 +532,14 @@
                     <!-- Student tip – always visible -->
                     <div class="student-tip" id="student-tip">
                         <i class="fas fa-graduation-cap"></i>
-                        <span id="student-tip-text">Use your school email (or link your school's Google/Microsoft account) to automatically get a <strong>Verified Student</strong> badge!</span>
+                        <span id="student-tip-text">To get the <strong>Verified Student</strong> badge, you must sign in with your school's <strong>Microsoft</strong> account. School emails block our verification links, so Microsoft is the only reliable method.</span>
                     </div>
 
                     <form id="auth-form">
                         <div id="register-fields">
                             <div class="field-wrap">
-                                <label class="field-label">Full Name</label>
-                                <input type="text" id="full-name" placeholder="John Doe" autocomplete="name">
+                                <label class="field-label">Full Name (max 10 letters, no spaces)</label>
+                                <input type="text" id="full-name" placeholder="John" maxlength="10" autocomplete="name">
                             </div>
                             <div class="field-wrap">
                                 <label class="field-label">Username</label>
@@ -744,13 +744,14 @@
                     loginBtn: "Log In", regBtn: "Create Account",
                     toggleToReg: "New to Scoralia? Create an account.", toggleToLogin: "Already have an account? Log in.",
                     studentTip: "To get the <strong>Verified Student</strong> badge, you must sign in with your school's <strong>Microsoft</strong> account. School emails (like @crosemont.qc.ca) block our verification links, so Microsoft is the only reliable method.",
-                    fullName: "Full Name", username: "Username", usernameHint: "Only letters, numbers, underscore",
+                    fullName: "Full Name (max 10 letters, no spaces)", username: "Username", usernameHint: "Only letters, numbers, underscore",
                     usernameAvailable: "✓ Username available", usernameUnavailable: "✗ Username already taken", usernameChecking: "Checking...",
                     placeEmail: "Email Address", placePass: "Password",
                     google: "Continue with Google", microsoft: "Continue with Microsoft", or: "or", verify: "Verifying...",
-                    errBanned: "Account banned.", errVerify: "Please verify your email first!", errSent: "Verification email sent! Please check your inbox.",
+                    errBanned: "Account banned.", errVerify: "Please verify your email first! A verification link was sent to your inbox.", errSent: "Verification email sent! Please check your inbox to verify your account before logging in.",
                     forgotPass: "Forgot Password?", enterEmailFirst: "Please enter your email address to reset your password.", resetSent: "Password reset email sent! Check your inbox.",
-                    usernameInvalid: "Username must contain only letters, numbers, and underscore (no spaces)."
+                    usernameInvalid: "Username must contain only letters, numbers, and underscore (no spaces).",
+                    fullNameInvalid: "Full name must be 1-10 letters only, no spaces or special characters.",
                 },
                 fr: {
                     loginTitle: "Bon retour", loginSub: "Connectez-vous pour continuer vos achats et ventes.",
@@ -759,13 +760,14 @@
                     loginBtn: "Connexion", regBtn: "Créer un compte",
                     toggleToReg: "Nouveau sur Scoralia ? Créez un compte.", toggleToLogin: "Vous avez déjà un compte ? Connectez-vous.",
                     studentTip: "Pour obtenir le badge <strong>Étudiant vérifié</strong>, vous devez vous connecter avec votre compte <strong>Microsoft</strong> scolaire. Les courriels scolaires (ex: @crosemont.qc.ca) bloquent nos liens de vérification ; Microsoft est la seule méthode fiable.",
-                    fullName: "Nom complet", username: "Nom d'utilisateur", usernameHint: "Lettres, chiffres, tiret bas uniquement",
+                    fullName: "Nom complet (max 10 lettres, sans espaces)", username: "Nom d'utilisateur", usernameHint: "Lettres, chiffres, tiret bas uniquement",
                     usernameAvailable: "✓ Disponible", usernameUnavailable: "✗ Déjà pris", usernameChecking: "Vérification...",
                     placeEmail: "Adresse e-mail", placePass: "Mot de passe",
                     google: "Continuer avec Google", microsoft: "Continuer avec Microsoft", or: "ou", verify: "Vérification...",
-                    errBanned: "Compte banni.", errVerify: "Veuillez d'abord vérifier votre e-mail !", errSent: "E-mail de vérification envoyé ! Vérifiez votre boîte de réception.",
+                    errBanned: "Compte banni.", errVerify: "Veuillez d'abord vérifier votre e-mail ! Un lien de vérification a été envoyé.", errSent: "E-mail de vérification envoyé ! Veuillez vérifier votre boîte de réception pour activer votre compte avant de vous connecter.",
                     forgotPass: "Mot de passe oublié ?", enterEmailFirst: "Veuillez entrer votre adresse e-mail pour réinitialiser le mot de passe.", resetSent: "E-mail de réinitialisation envoyé ! Vérifiez votre boîte de réception.",
-                    usernameInvalid: "Le nom d'utilisateur ne peut contenir que des lettres, chiffres et tiret bas (pas d'espaces)."
+                    usernameInvalid: "Le nom d'utilisateur ne peut contenir que des lettres, chiffres et tiret bas (pas d'espaces).",
+                    fullNameInvalid: "Le nom complet doit comporter 1 à 10 lettres uniquement, sans espaces ni caractères spéciaux.",
                 }
             };
 
@@ -784,7 +786,6 @@
 
                 submitBtn.textContent = isLoginMode ? strings[lang].loginBtn : strings[lang].regBtn;
                 toggleLink.textContent = isLoginMode ? strings[lang].toggleToReg : strings[lang].toggleToLogin;
-                // Student tip text is always visible, but we update it anyway
                 document.getElementById('student-tip-text').innerHTML = strings[lang].studentTip;
                 document.getElementById('full-name').placeholder = strings[lang].fullName;
                 document.getElementById('username').placeholder = strings[lang].username;
@@ -796,6 +797,8 @@
                 document.getElementById('or-text').textContent = strings[lang].or;
                 document.getElementById('loading-text').textContent = strings[lang].verify;
                 forgotPasswordLink.textContent = strings[lang].forgotPass;
+                // Update full name label
+                document.querySelector('#register-fields .field-wrap:first-child .field-label').textContent = strings[lang].fullName;
             };
             applyUIText();
 
@@ -823,6 +826,11 @@
             // Validate username format
             function isValidUsername(username) {
                 return /^[a-zA-Z0-9_]+$/.test(username);
+            }
+
+            // Validate full name: 1-10 letters only, no spaces or special chars
+            function isValidFullName(name) {
+                return /^[A-Za-z]{1,10}$/.test(name);
             }
 
             // Check username availability in Firestore
@@ -891,17 +899,12 @@
                 });
             }
 
+            // Redirect only if user is verified (email/password) or OAuth
             async function handleLoginSuccess(user) {
                 loadingOverlay.style.display = 'flex';
                 try {
                     const userDocRef = doc(db, "users", user.uid);
                     const userDoc = await getDoc(userDocRef);
-                    
-                    if (!userDoc.exists()) {
-                        // Should not happen for email/password, but for OAuth we might need to prompt for username
-                        // Instead of signing out, we'll let global.js handle it via the tour.
-                        // So we'll just redirect.
-                    }
                     
                     const data = userDoc.data();
                     if (data && data.role === 'banned') {
@@ -910,6 +913,9 @@
                         window.location.reload();
                         return;
                     }
+                    
+                    // For email/password users, we already checked emailVerified in onAuthStateChanged
+                    // For OAuth users, they are considered verified
                     window.location.href = new URLSearchParams(window.location.search).get('redirect') || '/index.html';
                 } catch (e) {
                     console.error(e);
@@ -920,13 +926,17 @@
             onAuthStateChanged(auth, async (user) => {
                 if (user && !isRegistering) {
                     const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
-                    if (user.emailVerified || isOAuth) {
-                        // For OAuth, we just proceed; global.js will show the tour if username missing
-                        handleLoginSuccess(user);
-                    } else {
+                    
+                    // If email/password user and email not verified, sign them out and show message
+                    if (!isOAuth && !user.emailVerified) {
                         await signOut(auth);
+                        alert(strings[lang].errVerify);
                         loadingOverlay.style.display = 'none';
+                        return;
                     }
+                    
+                    // Otherwise, proceed to login
+                    handleLoginSuccess(user);
                 }
             });
 
@@ -949,22 +959,22 @@
                     regFields.classList.remove('visible');
                     setTimeout(() => regFields.style.display = '', 450);
                 }
-                // Student tip is always visible, so we don't hide it anymore.
+                // Student tip is always visible
                 forgotPasswordLink.style.display = isLoginMode ? 'block' : 'none';
                 applyUIText();
             };
 
-            // OAuth handlers without username check
+            // OAuth handlers – these providers handle email verification themselves
             document.getElementById('google-btn').onclick = async () => {
                 try {
                     await signInWithPopup(auth, googleProvider);
-                    // No further checks; global.js will handle missing username via tour
+                    // OAuth users are considered verified
                 } catch (e) { alert(e.message); }
             };
             document.getElementById('microsoft-btn').onclick = async () => {
                 try {
                     await signInWithPopup(auth, msProvider);
-                    // No further checks; global.js will handle missing username via tour
+                    // OAuth users are considered verified
                 } catch (e) { alert(e.message); }
             };
 
@@ -976,16 +986,14 @@
                 try {
                     if (isLoginMode) {
                         const cred = await signInWithEmailAndPassword(auth, email, pass);
-                        if (!cred.user.emailVerified) {
-                            await signOut(auth);
-                            alert(strings[lang].errVerify);
-                        }
+                        // onAuthStateChanged will handle email verification check
                     } else {
                         // Registration
                         const fullName = document.getElementById('full-name').value.trim();
                         const username = document.getElementById('username').value.trim().toLowerCase();
                         
                         if (!fullName) { alert("Full name is required"); submitBtn.disabled = false; return; }
+                        if (!isValidFullName(fullName)) { alert(strings[lang].fullNameInvalid); submitBtn.disabled = false; return; }
                         if (!username) { alert("Username is required"); submitBtn.disabled = false; return; }
                         if (!isValidUsername(username)) { alert(strings[lang].usernameInvalid); submitBtn.disabled = false; return; }
                         if (!currentUsernameValid) { alert("Please choose a different username"); submitBtn.disabled = false; return; }
@@ -995,9 +1003,13 @@
                         await updateProfile(cred.user, { displayName: fullName });
                         await createUserDocument(cred.user, fullName, username);
                         await sendEmailVerification(cred.user);
+                        
+                        // IMPORTANT: Sign out immediately – user must verify email before logging in
                         await signOut(auth);
                         isRegistering = false;
+                        
                         alert(strings[lang].errSent);
+                        // Stay on login page
                         location.reload();
                     }
                 } catch (err) {
