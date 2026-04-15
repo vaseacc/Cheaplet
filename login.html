@@ -526,7 +526,6 @@
 
                     <form id="auth-form">
                         <div id="register-fields">
-                            <!-- Full Name with real-time validation -->
                             <div class="field-wrap">
                                 <label class="field-label" id="fullname-label">Full Name (max 15 letters)</label>
                                 <div class="input-status">
@@ -538,7 +537,6 @@
                                 </div>
                             </div>
 
-                            <!-- Username with real-time validation -->
                             <div class="field-wrap">
                                 <label class="field-label" id="username-label">Username</label>
                                 <div class="input-status">
@@ -700,7 +698,7 @@
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged, GoogleAuthProvider, OAuthProvider, signInWithRedirect, getRedirectResult, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -718,7 +716,6 @@
             const loadingOverlay = document.getElementById('loading-overlay');
             const forgotPasswordLink = document.getElementById('forgot-password-link');
 
-            // Register fields
             const registerFields = document.getElementById('register-fields');
             const fullNameInput = document.getElementById('full-name');
             const usernameInput = document.getElementById('username');
@@ -729,7 +726,7 @@
             const usernameAvailability = document.getElementById('username-availability');
 
             let isLoginMode = true;
-            let isRegistering = false; // Added to prevent race conditions during signup
+            let isRegistering = false; 
             let usernameCheckTimeout = null;
             let isUsernameValid = false;
             let isFullnameValid = false;
@@ -820,13 +817,8 @@
                 updateUsernameUI();
             }
 
-            function isValidFullName(name) {
-                return /^[A-Za-z]{1,15}$/.test(name);
-            }
-
-            function isValidUsernameFormat(username) {
-                return /^[a-zA-Z0-9_.]{1,30}$/.test(username);
-            }
+            function isValidFullName(name) { return /^[A-Za-z]{1,15}$/.test(name); }
+            function isValidUsernameFormat(username) { return /^[a-zA-Z0-9_.]{1,30}$/.test(username); }
 
             async function checkUsernameAvailability(username) {
                 if (!username || username.length < 1) return false;
@@ -898,10 +890,7 @@
             }
 
             function updateSubmitButton() {
-                if (isLoginMode) {
-                    submitBtn.disabled = false;
-                    return;
-                }
+                if (isLoginMode) { submitBtn.disabled = false; return; }
                 const email = document.getElementById('email').value.trim();
                 const pass = document.getElementById('password').value;
                 submitBtn.disabled = !(isFullnameValid && isUsernameValid && email && pass);
@@ -927,9 +916,7 @@
 
             function getSchoolInfo(email) {
                 const domain = email.substring(email.lastIndexOf("@")).toLowerCase();
-                return schoolDomains[domain]
-                    ? { isStudent: true, schoolName: schoolDomains[domain] }
-                    : { isStudent: false, schoolName: null };
+                return schoolDomains[domain] ? { isStudent: true, schoolName: schoolDomains[domain] } : { isStudent: false, schoolName: null };
             }
 
             async function createUserDocument(user, displayName, username) {
@@ -948,7 +935,7 @@
                 });
             }
 
-            // Handle OAuth redirect result
+            // 1. Handle OAuth Redirect Result (Just creates document if needed, NO REDIRECT HERE)
             try {
                 const result = await getRedirectResult(auth);
                 if (result) {
@@ -958,14 +945,13 @@
                     const userDoc = await getDoc(userDocRef);
                     
                     if (!userDoc.exists()) {
-                        // New OAuth user
                         const displayName = user.displayName || '';
                         const email = user.email || '';
                         const schoolInfo = getSchoolInfo(email);
                         await setDoc(userDocRef, {
                             uid: user.uid,
                             displayName: displayName,
-                            username: '', // Settled during global tour
+                            username: '',
                             email: email,
                             role: 'user',
                             isStudent: schoolInfo.isStudent,
@@ -973,7 +959,7 @@
                             createdAt: new Date().toISOString()
                         });
                     }
-                    // Redirect handled smoothly by onAuthStateChanged
+                    // We do NOT redirect here. onAuthStateChanged will handle it.
                 }
             } catch (error) {
                 console.error("Redirect result error:", error);
@@ -983,20 +969,22 @@
                 }
             }
 
-            // Unified Auth State Listener
+            // 2. The Single Source of Truth for Session State
             onAuthStateChanged(auth, async (user) => {
-                if (user && !isRegistering) {
+                if (isRegistering) return; // Ignore state changes during registration flow
+
+                if (user) {
+                    loadingOverlay.style.display = 'flex';
+                    
                     const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
                     
-                    // Force verification for email/password users
+                    // Enforce email verification for email/password users
                     if (!isOAuth && !user.emailVerified) {
                         await signOut(auth);
                         loadingOverlay.style.display = 'none';
-                        alert(strings[lang].errVerify);
-                        return;
+                        return; 
                     }
 
-                    loadingOverlay.style.display = 'flex';
                     try {
                         const userDocRef = doc(db, "users", user.uid);
                         const userDoc = await getDoc(userDocRef);
@@ -1009,22 +997,23 @@
                                 return;
                             }
                         }
-                        // Valid user, let's get them off the login page
+                        
+                        // All clear -> Redirect
                         window.location.href = new URLSearchParams(window.location.search).get('redirect') || '/index.html';
                     } catch(e) {
                         console.error(e);
                         loadingOverlay.style.display = 'none';
                     }
+                } else {
+                    loadingOverlay.style.display = 'none';
                 }
             });
 
             forgotPasswordLink.onclick = async () => {
                 const emailVal = document.getElementById('email').value.trim();
                 if (!emailVal) { alert(strings[lang].enterEmailFirst); return; }
-                try {
-                    await sendPasswordResetEmail(auth, emailVal);
-                    alert(strings[lang].resetSent);
-                } catch (e) { alert(e.message); }
+                try { await sendPasswordResetEmail(auth, emailVal); alert(strings[lang].resetSent); } 
+                catch (e) { alert(e.message); }
             };
 
             toggleLink.onclick = () => {
@@ -1032,9 +1021,7 @@
                 if (!isLoginMode) {
                     registerFields.style.display = 'block';
                     setTimeout(() => registerFields.classList.add('visible'), 10);
-                    isFullnameValid = false;
-                    isUsernameValid = false;
-                    updateSubmitButton();
+                    isFullnameValid = false; isUsernameValid = false; updateSubmitButton();
                 } else {
                     registerFields.classList.remove('visible');
                     setTimeout(() => registerFields.style.display = '', 450);
@@ -1045,48 +1032,42 @@
             };
 
             document.getElementById('google-btn').onclick = async () => {
-                try {
-                    loadingOverlay.style.display = 'flex';
-                    await signInWithRedirect(auth, googleProvider);
-                } catch (e) {
-                    loadingOverlay.style.display = 'none';
-                    alert(e.message);
-                }
+                try { loadingOverlay.style.display = 'flex'; await signInWithRedirect(auth, googleProvider); } 
+                catch (e) { loadingOverlay.style.display = 'none'; alert(e.message); }
             };
             
             document.getElementById('microsoft-btn').onclick = async () => {
-                try {
-                    loadingOverlay.style.display = 'flex';
-                    await signInWithRedirect(auth, msProvider);
-                } catch (e) {
-                    loadingOverlay.style.display = 'none';
-                    alert(e.message);
-                }
+                try { loadingOverlay.style.display = 'flex'; await signInWithRedirect(auth, msProvider); } 
+                catch (e) { loadingOverlay.style.display = 'none'; alert(e.message); }
             };
 
+            // 3. Form Submit
             authForm.onsubmit = async (e) => {
                 e.preventDefault();
                 if (isSubmitting) return;
-                isSubmitting = true;
-                submitBtn.disabled = true;
+                isSubmitting = true; submitBtn.disabled = true;
                 const email = document.getElementById('email').value.toLowerCase();
                 const pass = document.getElementById('password').value;
+                
                 try {
                     if (isLoginMode) {
                         loadingOverlay.style.display = 'flex';
-                        await signInWithEmailAndPassword(auth, email, pass);
+                        const cred = await signInWithEmailAndPassword(auth, email, pass);
+                        
+                        const isOAuth = cred.user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
+                        if (!isOAuth && !cred.user.emailVerified) {
+                            await signOut(auth);
+                            throw new Error(strings[lang].errVerify);
+                        }
                     } else {
                         const fullName = fullNameInput.value.trim();
                         const username = usernameInput.value.trim().toLowerCase();
                         
                         if (!isFullnameValid || !isUsernameValid) {
-                            alert("Please fix the errors before submitting.");
-                            isSubmitting = false;
-                            submitBtn.disabled = false;
-                            return;
+                            throw new Error("Please fix the errors before submitting.");
                         }
                         
-                        isRegistering = true; // Block onAuthStateChanged from firing prematurely
+                        isRegistering = true; // Lock onAuthStateChanged
                         loadingOverlay.style.display = 'flex';
                         
                         const cred = await createUserWithEmailAndPassword(auth, email, pass);
@@ -1095,8 +1076,9 @@
                         await sendEmailVerification(cred.user);
                         
                         await signOut(auth);
+                        
                         loadingOverlay.style.display = 'none';
-                        isRegistering = false; 
+                        isRegistering = false; // Unlock
                         
                         alert(strings[lang].errSent);
                         location.reload();
@@ -1104,12 +1086,9 @@
                 } catch (err) {
                     loadingOverlay.style.display = 'none';
                     alert(err.message);
-                    isSubmitting = false;
-                    isRegistering = false;
-                    submitBtn.disabled = false;
+                    isSubmitting = false; submitBtn.disabled = false; isRegistering = false;
                 }
             };
-
             applyUIText();
         }
         main();
