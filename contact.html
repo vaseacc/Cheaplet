@@ -34,7 +34,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: var(--font-body); background-color: var(--off-white); color: var(--text-body); line-height: 1.6; }
 
-        /* ── HEADER ── */
         header { position: sticky; top: 0; z-index: 200; background: rgba(12, 20, 70, 0.97); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(179,205,224,0.15); width: 100%; }
         .header-inner { max-width: 1100px; margin: 0 auto; padding: 0 20px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
         .logo { font-family: var(--font-display); font-size: 1.6rem; font-weight: 900; color: var(--white); text-decoration: none; letter-spacing: -0.5px; }
@@ -48,7 +47,9 @@
         h1 { font-family: var(--font-display); color: var(--ink); margin-bottom: 15px; font-size: 2.5rem; }
         p.subtitle { color: var(--text-muted); margin-bottom: 35px; font-size: 1.1rem; }
 
-        /* ── FORM STYLES ── */
+        /* SUCCESS MESSAGE */
+        .success-banner { display: none; background: #dcfce7; color: #166534; padding: 15px; border-radius: 8px; margin-bottom: 25px; font-weight: 600; text-align: center; border: 1px solid #bbf7d0; }
+
         .form-group { margin-bottom: 20px; }
         .form-label { display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
         .form-input { width: 100%; padding: 12px 16px; border: 1.5px solid var(--surface); border-radius: 8px; font-family: inherit; font-size: 1rem; color: var(--text-body); background: var(--off-white); outline: none; transition: 0.2s; }
@@ -58,13 +59,11 @@
         .btn-submit { background: var(--ink); color: white; border: none; padding: 14px 35px; border-radius: 50px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 10px; }
         .btn-submit:hover { background: var(--deep); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(12,20,70,0.2); }
 
-        /* ── INFO PANEL ── */
         .info-panel { background: var(--off-white); padding: 30px; border-radius: 12px; border: 1px solid var(--surface); }
         .info-item { display: flex; gap: 15px; margin-bottom: 25px; }
         .info-icon { width: 44px; height: 44px; background: var(--white); border: 1.5px solid var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 1.1rem; flex-shrink: 0; }
         .info-text h3 { font-size: 0.95rem; color: var(--ink); margin-bottom: 4px; font-weight: 700; }
         .info-text p, .info-text a { font-size: 0.95rem; color: var(--text-muted); text-decoration: none; }
-        .info-text a:hover { color: var(--deep); text-decoration: underline; }
 
         footer { background: var(--ink); color: white; padding: 40px 0 20px; margin-top: 60px; text-align: center; border-top: 1px solid rgba(179,205,224,0.15); }
         .footer-link { color: rgba(255,255,255,0.6); text-decoration: none; margin: 0 15px; font-size: 0.85rem; }
@@ -86,15 +85,20 @@
     </header>
 
     <main class="main-wrapper">
+        <!-- SUCCESS NOTIFICATION -->
+        <div id="success-banner" class="success-banner">
+            <i class="fas fa-check-circle"></i> <span id="ui-success-msg">Message sent! We will contact you soon.</span>
+        </div>
+
         <div class="content-card">
-            
-            <!-- LEFT COLUMN: FORM -->
             <div class="form-section">
                 <h1 id="ui-title">Get in Touch</h1>
                 <p class="subtitle" id="ui-subtitle">Have a question or need help? Send us a message and our team will get back to you shortly.</p>
 
-                <!-- NETLIFY FORM HANDLING -->
-                <form name="contact" method="POST" data-netlify="true">
+                <!-- FIXED FORM: Added hidden form-name and explicit action -->
+                <form name="contact" method="POST" data-netlify="true" action="/contact.html?success=true">
+                    <input type="hidden" name="form-name" value="contact">
+                    
                     <div class="form-group">
                         <label class="form-label" id="ui-label-name">Your Name</label>
                         <input type="text" name="name" class="form-input" placeholder="Enter your name" required>
@@ -113,7 +117,6 @@
                 </form>
             </div>
 
-            <!-- RIGHT COLUMN: INFO -->
             <div class="info-section">
                 <div class="info-panel">
                     <div class="info-item">
@@ -141,16 +144,15 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </main>
 
     <footer>
         <div class="container">
             <div style="margin-bottom: 20px;">
-                <a href="/terms.html" id="link-terms" class="footer-link" data-i18n="terms">Terms</a>
-                <a href="/privacy.html" id="link-privacy" class="footer-link" data-i18n="priv">Privacy</a>
-                <a href="/safety.html" id="link-safety" class="footer-link" data-i18n="safe">Safety</a>
+                <a href="/terms.html" id="link-terms" class="footer-link">Terms</a>
+                <a href="/privacy.html" id="link-privacy" class="footer-link">Privacy</a>
+                <a href="/safety.html" id="link-safety" class="footer-link">Safety</a>
             </div>
             <div style="font-size: 0.8rem; opacity: 0.6;">© 2026 Scoralia. All rights reserved.</div>
         </div>
@@ -160,6 +162,12 @@
         document.addEventListener('DOMContentLoaded', () => {
             const lang = localStorage.getItem('preferred_language') || 'en';
             
+            // Check for success URL parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('success')) {
+                document.getElementById('success-banner').style.display = 'block';
+            }
+
             const strings = {
                 en: {
                     title: "Get in Touch",
@@ -168,6 +176,7 @@
                     lblEmail: "Email Address",
                     lblMsg: "Message",
                     btn: "Send Message",
+                    success: "Message sent! We will contact you soon.",
                     infoEmail: "Email Us",
                     infoSafety: "Trust & Safety",
                     infoSafetyText: "Reported issues are reviewed by admins within 24 hours.",
@@ -181,6 +190,7 @@
                     lblEmail: "Adresse E-mail",
                     lblMsg: "Message",
                     btn: "Envoyer le message",
+                    success: "Message envoyé ! Nous vous contacterons bientôt.",
                     infoEmail: "Écrivez-nous",
                     infoSafety: "Confiance et Sécurité",
                     infoSafetyText: "Les signalements sont examinés par les administrateurs sous 24h.",
@@ -189,13 +199,13 @@
                 }
             }[lang];
 
-            // Apply translations
             document.getElementById('ui-title').textContent = strings.title;
             document.getElementById('ui-subtitle').textContent = strings.subtitle;
             document.getElementById('ui-label-name').textContent = strings.lblName;
             document.getElementById('ui-label-email').textContent = strings.lblEmail;
             document.getElementById('ui-label-message').textContent = strings.lblMsg;
             document.getElementById('ui-btn').textContent = strings.btn;
+            document.getElementById('ui-success-msg').textContent = strings.success;
             document.getElementById('ui-info-email').textContent = strings.infoEmail;
             document.getElementById('ui-info-safety').textContent = strings.infoSafety;
             document.getElementById('ui-info-safety-text').textContent = strings.infoSafetyText;
