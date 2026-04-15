@@ -219,7 +219,7 @@ const translations = {
         "tour_full_name_valid": "✓ Looks good",
         "tour_full_name_invalid": "Only letters, max 15 characters",
         "tour_username_lbl": "Username",
-        "tour_username_hint: "Letters, numbers, _ and .",
+        "tour_username_hint": "Letters, numbers, _ and .",
         "tour_username_invalid": "Invalid characters",
         "tour_username_unavailable": "✗ Already taken",
         "tour_username_available": "✓ Available",
@@ -337,16 +337,15 @@ globalStyle.innerHTML = `
     .lang-modal { background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
     .lang-btn { display: block; width: 100%; padding: 16px; margin: 12px 0; border: 2px solid #EBF2FA; border-radius: 12px; background: white; font-weight: bold; cursor: pointer; font-size: 1.1rem; transition: all 0.2s; color: #0C1446; }
     .lang-btn:hover { border-color: #C8A96E; background: #fdfaf4; }
-    
     .tour-dot { width: 8px; height: 8px; border-radius: 50%; background: #e0e0e0; transition: 0.3s; }
     .tour-dot.active { background: #C8A96E; width: 24px; border-radius: 10px; }
-    .tour-input { width: 100%; padding: 10px 35px 10px 12px; border: 2px solid #eee; border-radius: 8px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; font-weight: bold; color: #0C1446; }
+    .tour-input { width: 100%; padding: 10px 12px; border: 2px solid #eee; border-radius: 8px; margin-bottom: 12px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; text-align: left; font-weight: bold; color: #0C1446; }
     .tour-input:focus { border-color: #C8A96E; }
     .tour-pfp-preview { width: 80px; height: 80px; border-radius: 50%; background: #eee; margin: 0 auto 15px; border: 3px solid #C8A96E; object-fit: cover; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #aaa; overflow: hidden; }
     .tour-pfp-preview img { width: 100%; height: 100%; object-fit: cover; }
     
     /* Tour form classes (ported from login) */
-    .field-wrap { margin-bottom: 12px; }
+    .field-wrap { margin-bottom: 12px; text-align: left; }
     .field-label { display: block; font-size: 10px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
     .input-status { position: relative; }
     .status-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; pointer-events: none; }
@@ -611,7 +610,7 @@ function showWelcomeTour() {
                 <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">${t.tour_title_4}</h2>
                 <p style="color:#6b84a3; margin-bottom:15px; line-height:1.4; font-size:0.85rem;">${t.tour_desc_4}</p>
                 
-                <div class="field-wrap" style="text-align: left;">
+                <div class="field-wrap">
                     <label class="field-label">${t.tour_full_name_lbl}</label>
                     <div class="input-status">
                         <input type="text" id="tour-fullname" class="tour-input" value="${existingFullName}" placeholder="Alex" maxlength="15" autocomplete="name">
@@ -622,7 +621,7 @@ function showWelcomeTour() {
                     </div>
                 </div>
 
-                <div class="field-wrap" style="text-align: left;">
+                <div class="field-wrap">
                     <label class="field-label">${t.tour_username_lbl}</label>
                     <div class="input-status">
                         <input type="text" id="tour-username" class="tour-input" value="${existingUsername}" placeholder="alex_123" maxlength="30" autocomplete="off">
@@ -737,7 +736,19 @@ function showWelcomeTour() {
             if (!username || username.length < 1) return false;
             const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
             const snap = await getDocs(q);
-            return snap.empty;
+            if (snap.empty) {
+                usernameStatusIcon.innerHTML = '<i class="fas fa-check-circle status-valid"></i>';
+                usernameAvailability.textContent = t.tour_username_available;
+                usernameAvailability.style.color = '#2E7D32';
+                isUsernameValid = true;
+                return true;
+            } else {
+                usernameStatusIcon.innerHTML = '<i class="fas fa-times-circle status-invalid"></i>';
+                usernameAvailability.textContent = t.tour_username_unavailable;
+                usernameAvailability.style.color = '#e53e3e';
+                isUsernameValid = false;
+                return false;
+            }
         }
 
         function updateUsernameUI() {
@@ -771,18 +782,7 @@ function showWelcomeTour() {
 
             if (usernameTimeout) clearTimeout(usernameTimeout);
             usernameTimeout = setTimeout(async () => {
-                const available = await checkUsernameAvailability(username);
-                if (available) {
-                    usernameStatusIcon.innerHTML = '<i class="fas fa-check-circle status-valid"></i>';
-                    usernameAvailability.textContent = t.tour_username_available;
-                    usernameAvailability.style.color = '#2E7D32';
-                    isUsernameValid = true;
-                } else {
-                    usernameStatusIcon.innerHTML = '<i class="fas fa-times-circle status-invalid"></i>';
-                    usernameAvailability.textContent = t.tour_username_unavailable;
-                    usernameAvailability.style.color = '#e53e3e';
-                    isUsernameValid = false;
-                }
+                await checkUsernameAvailability(username);
                 updateSubmitButton();
             }, 500);
         }
@@ -1067,6 +1067,7 @@ function showTermsBanner() {
     document.getElementById('accept-terms-btn').onclick = () => { localStorage.setItem('scoralia_terms_accepted', 'true'); banner.remove(); };
 }
 
+// Ensure the forced modal doesn't trigger anymore since we have the banner
 if (document.getElementById('lang-modal-overlay')) {
     document.getElementById('lang-modal-overlay').remove();
 }
