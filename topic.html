@@ -142,6 +142,9 @@
         .btn-composer-send:disabled { background: #cbd5e1; cursor: not-allowed; }
         .btn-composer-send:not(:disabled):hover { background: var(--ink); transform: translateY(-2px); }
 
+        .btn-action { background: var(--gold); color: var(--ink); border: none; padding: 10px 28px; border-radius: 30px; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 12px rgba(200, 169, 110, 0.2); }
+        .btn-action:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(200, 169, 110, 0.4); }
+
         .post-card { background: var(--white); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); border: var(--border); animation: fadeUp 0.4s ease both; width: 100%; overflow: visible; position: relative; }
         .post-header-top { display: flex; justify-content: space-between; align-items: flex-start; }
         .post-author-link { text-decoration: none; color: inherit; display: flex; align-items: center; gap: 15px; margin-bottom: 18px; transition: opacity 0.2s; }
@@ -233,7 +236,10 @@
         .modal-card select:focus, .modal-card textarea:focus { border-color: var(--deep); box-shadow: 0 0 0 3px rgba(43,92,146,0.1); }
         .modal-card textarea { height: 100px; resize: none; }
         .modal-buttons { justify-content: flex-end; }
-        .btn-danger { background: var(--red); color: var(--white); padding: 10px 24px; border-radius: 30px; font-weight: 700; border: none; cursor: pointer; }
+        .btn-danger { background: var(--red); color: var(--white); padding: 10px 24px; border-radius: 30px; font-weight: 700; border: none; cursor: pointer; transition: 0.2s; }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-ghost { background: var(--surface); color: var(--text-main); padding: 10px 24px; border-radius: 30px; font-weight: 700; border: none; cursor: pointer; transition: 0.2s; }
+        .btn-ghost:hover { background: #e2e8f0; }
 
         .listing-selector-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 400px; margin-bottom: 10px; padding-right: 5px; }
         .listing-selector-item { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 12px; cursor: pointer; transition: 0.2s; }
@@ -242,6 +248,13 @@
         .ls-info { flex-grow: 1; }
         .ls-title { font-weight: 700; font-size: 0.9rem; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
         .ls-price { color: var(--deep); font-weight: 700; font-size: 0.85rem; }
+
+        /* Additional modal for create topic restriction */
+        .restricted-modal .modal-card { text-align: center; }
+        .restricted-modal .modal-icon { font-size: 3rem; color: var(--gold); margin-bottom: 20px; }
+
+        /* Custom Dialog Modals */
+        #custom-dialog-modal .modal-card { text-align: center; }
 
         @media (max-width: 850px) {
             .hub-layout { display: flex; flex-direction: column; padding: 0; gap: 0; margin: 0; width: 100%; }
@@ -457,6 +470,18 @@
         </div>
     </div>
 
+    <!-- Custom Dialog Modals -->
+    <div class="modal-overlay" id="custom-dialog-modal">
+        <div class="modal-card">
+            <h2 id="dialog-title">Confirm</h2>
+            <p id="dialog-message">Are you sure?</p>
+            <div class="modal-buttons" id="dialog-buttons">
+                <button class="btn btn-ghost" id="dialog-cancel">Cancel</button>
+                <button class="btn btn-danger" id="dialog-confirm">Yes</button>
+            </div>
+        </div>
+    </div>
+
     <input type="file" id="global-comment-img-upload" accept="image/*" style="display:none;">
 
     <script type="module">
@@ -481,9 +506,9 @@
                 en: { 
                     topics_public: "Public Channels", topics_campus: "Campus Public", topics_custom: "Custom Topics", topics_new: "Create Topic",
                     post_placeholder: "What's happening on campus?", loading_hub: "Loading topic...",
-                    noPosts: "No posts yet. Be the first to share something!", justNow: "Just now",
-                    comment_placeholder: "Write a comment...", no_comments: "No comments yet.",
-                    post_in: "Post in #",
+                    noPosts: "No posts yet. Be the first to share something!", justNow: "Just now", suggest: "Campus Marketplace", browse: "Browse All →", 
+                    guest: "Campus Hub", sell: "List a Book", comment_placeholder: "Write a comment...", no_comments: "No comments yet.",
+                    post_in: "Post in #", lock_title: "Restricted Access", lock_desc: "This topic is private. You must be invited to view it.", lock_btn: "Back to Campus Hub",
                     rep_title: "Report Post", rep_desc: "Help us keep Scoralia safe.", rep_place: "Details...", rep_cancel: "Cancel", rep_submit: "Submit", rep_success: "Report submitted.",
                     attach_title: "Attach a Listing", attach_desc: "Select one of your active listings to share.", attach_empty: "You have no active listings.", upload_fail: "Image upload failed.",
                     search_social_place: "Search posts, topics, people...", edit_post_title: "Edit Post", save_changes: "Save Changes", edited_label: " • Edited",
@@ -495,14 +520,16 @@
                     request_pending: "Request pending...",
                     request_approved: "Approved! Refresh the page.",
                     request_rejected: "Request Again",
-                    back_to_hub: "Back to Campus Hub"
+                    back_to_hub: "Back to Campus Hub",
+                    dialog_confirm: "Confirm", dialog_delete_post: "Are you sure you want to delete this post?", dialog_delete_comment: "Delete this comment?",
+                    btn_yes: "Yes", btn_no: "No", btn_delete: "Delete", btn_ok: "OK", alert_title: "Notice"
                 },
                 fr: { 
                     topics_public: "Canaux Publics", topics_campus: "Campus Public", topics_custom: "Sujets Personnalisés", topics_new: "Nouveau Sujet",
                     post_placeholder: "Que se passe-t-il sur le campus ?", loading_hub: "Chargement du sujet...",
-                    noPosts: "Aucune publication. Soyez le premier à partager !", justNow: "À l'instant",
-                    comment_placeholder: "Écrire un commentaire...", no_comments: "Aucun commentaire pour le moment.",
-                    post_in: "Publier dans #",
+                    noPosts: "Aucune publication. Soyez le premier à partager !", justNow: "À l'instant", suggest: "Marché du Campus", browse: "Voir tout →", 
+                    guest: "Hub Campus", sell: "Vendre un livre", comment_placeholder: "Écrire un commentaire...", no_comments: "Aucun commentaire pour le moment.",
+                    post_in: "Publier dans #", lock_title: "Accès Restreint", lock_desc: "Ce sujet est privé. Vous devez y être invité pour le voir.", lock_btn: "Retour au Hub Campus",
                     rep_title: "Signaler le message", rep_desc: "Aidez-nous à protéger Scoralia.", rep_place: "Détails...", rep_cancel: "Annuler", rep_submit: "Envoyer", rep_success: "Signalement envoyé.",
                     attach_title: "Joindre une annonce", attach_desc: "Sélectionnez l'une de vos annonces actives.", attach_empty: "Vous n'avez aucune annonce active.", upload_fail: "Échec du téléchargement.",
                     search_social_place: "Rechercher messages, sujets, personnes...", edit_post_title: "Modifier le message", save_changes: "Enregistrer", edited_label: " • Modifié",
@@ -514,10 +541,58 @@
                     request_pending: "Demande en attente...",
                     request_approved: "Approuvé ! Actualisez la page.",
                     request_rejected: "Redemander",
-                    back_to_hub: "Retour au Hub Campus"
+                    back_to_hub: "Retour au Hub Campus",
+                    dialog_confirm: "Confirmer", dialog_delete_post: "Êtes-vous sûr de vouloir supprimer ce message ?", dialog_delete_comment: "Supprimer ce commentaire ?",
+                    btn_yes: "Oui", btn_no: "Non", btn_delete: "Supprimer", btn_ok: "OK", alert_title: "Avis"
                 }
             };
             const ui = allStrings[lang] || allStrings['en'];
+
+            // --- CUSTOM DIALOGS SYSTEM ---
+            const dialogOverlay = document.getElementById('custom-dialog-modal');
+            const dialogTitle = document.getElementById('dialog-title');
+            const dialogMessage = document.getElementById('dialog-message');
+            const dialogCancel = document.getElementById('dialog-cancel');
+            const dialogConfirm = document.getElementById('dialog-confirm');
+
+            window.scoraliaConfirm = (message, title = ui.dialog_confirm) => {
+                return new Promise((resolve) => {
+                    dialogTitle.textContent = title;
+                    dialogMessage.textContent = message;
+                    dialogCancel.style.display = 'block';
+                    dialogCancel.textContent = ui.btn_no;
+                    dialogConfirm.textContent = ui.btn_yes;
+                    dialogConfirm.className = "btn btn-danger";
+                    dialogOverlay.style.display = 'flex';
+
+                    const cleanup = (val) => {
+                        dialogOverlay.style.display = 'none';
+                        dialogConfirm.onclick = null;
+                        dialogCancel.onclick = null;
+                        resolve(val);
+                    };
+
+                    dialogConfirm.onclick = () => cleanup(true);
+                    dialogCancel.onclick = () => cleanup(false);
+                });
+            };
+
+            window.scoraliaAlert = (message, title = ui.alert_title) => {
+                return new Promise((resolve) => {
+                    dialogTitle.textContent = title;
+                    dialogMessage.textContent = message;
+                    dialogCancel.style.display = 'none';
+                    dialogConfirm.textContent = ui.btn_ok;
+                    dialogConfirm.className = "btn btn-action";
+                    dialogConfirm.style.background = "var(--gold)";
+                    dialogOverlay.style.display = 'flex';
+
+                    dialogConfirm.onclick = () => {
+                        dialogOverlay.style.display = 'none';
+                        resolve();
+                    };
+                });
+            };
 
             const setElemText = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
             const setElemPlaceholder = (id, text) => { const el = document.getElementById(id); if (el) el.placeholder = text; };
@@ -573,7 +648,7 @@
             let internalSchoolName = "Global Campus"; 
             let unsubscribePosts = null;
             let commentUnsubscribes = {}; 
-            let allTopicsData = [];
+            let allTopicsData =[];
 
             let currentTopicName = "Topic";
             let currentTopicData = null;
@@ -601,7 +676,7 @@
                     // Only consider personal chats (no listingId) that include both users
                     if (!chatData.listingId && chatData.participants.includes(currentTopicData.createdBy)) {
                         const msgQuery = query(collection(db, "chats", chatDoc.id, "messages"),
-                            where("type", "==", "join_request"), where("topicId", "==", topicId), where("senderUid", "==", uid));
+                            where("type", "==", "join_request"), where("topicId", "==", topicId), where("senderId", "==", uid));
                         const msgSnap = await getDocs(msgQuery);
                         if (!msgSnap.empty) { 
                             existingRequestStatus = msgSnap.docs[0].data().status; 
@@ -614,7 +689,7 @@
                 console.log("No existing request found.");
             }
 
-            // --- Composer state (unchanged) ---
+            // --- Composer state ---
             let postImageFile = null, postAttachedListing = null, activeCommentPostId = null, commentImageFiles = {};
             const dSchoolName = document.getElementById('d-user-school'), mobileWaysList = document.getElementById('mobile-ways-list'),
                   feedContainer = document.getElementById('feed-container'), settingsBtn = document.getElementById('topic-settings-btn'),
@@ -653,8 +728,22 @@
             }
             window.removePostImg = () => { postImageFile = null; renderComposerPreview(); };
             window.removePostListing = () => { postAttachedListing = null; renderComposerPreview(); };
+            
             if (btnAttachImg) btnAttachImg.onclick = () => { if(currentUser && imgUploadInput) imgUploadInput.click(); };
-            if (imgUploadInput) imgUploadInput.onchange = e => { if(e.target.files[0]) { postImageFile = e.target.files[0]; renderComposerPreview(); } e.target.value = ''; };
+            
+            if (imgUploadInput) imgUploadInput.onchange = async (e) => {
+                // TRIGGER BOT SHIELD
+                const isHuman = await window.checkBotLimits();
+                if (!isHuman) { e.target.value = ''; return; }
+
+                if (e.target.files[0]) { 
+                    postImageFile = e.target.files[0]; 
+                    window.recordActivity('images');
+                    renderComposerPreview(); 
+                } 
+                e.target.value = ''; 
+            };
+
             if (btnAttachListing) btnAttachListing.onclick = async () => {
                 if (!currentUser || !attachListingModal || !listingSelectorList) return;
                 attachListingModal.style.display = 'flex';
@@ -684,16 +773,19 @@
                 return res.secure_url;
             }
 
-            // --- POST CREATION (with bot shield) ---
             if (btnSendPost && postInput) btnSendPost.onclick = async () => {
                 if (!currentUser) return;
-                const text = postInput.value.trim();
                 
-                // 🔥 BOT SHIELD CHECK
-                const allowed = await window.checkBotLimits();
-                if (!allowed) return;
+                // TRIGGER BOT SHIELD
+                const isHuman = await window.checkBotLimits();
+                if (!isHuman) return;
 
-                btnSendPost.disabled = true; const origIcon = btnSendPost.innerHTML; btnSendPost.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                const text = postInput.value.trim();
+                btnSendPost.disabled = true; 
+                const origIcon = btnSendPost.innerHTML; 
+                btnSendPost.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                window.recordActivity('listings');
+
                 try {
                     let uploadedImgUrl = null; if (postImageFile) uploadedImgUrl = await uploadImageToCloudinary(postImageFile);
                     const userDoc = await getDoc(doc(db, "users", currentUser.uid)); const freshUserData = userDoc.data(); const isStudent = freshUserData?.isStudent === true;
@@ -703,50 +795,60 @@
                     const postData = {
                         wayId: topicId, schoolName: internalSchoolName, text: text, authorUid: currentUser.uid,
                         authorName: currentUser.displayName || "User", authorPhoto: photoToSave, authorIsStudent: isStudent,
-                        likes: 0, likedBy: [], commentCount: 0, status: requiresReview ? 'pending' : 'active', timestamp: serverTimestamp()
+                        likes: 0, likedBy:[], commentCount: 0, status: requiresReview ? 'pending' : 'active', timestamp: serverTimestamp()
                     };
                     if (uploadedImgUrl) postData.imageUrl = uploadedImgUrl;
                     if (postAttachedListing) postData.attachedListing = postAttachedListing;
                     const postRef = await addDoc(collection(db, "social_posts"), postData);
                     await updateDoc(doc(db, "social_channels", topicId), { postCount: increment(1), members: arrayUnion(currentUser.uid) });
-                    
-                    // Record activity
-                    window.recordActivity('listings');
-
                     if (requiresReview) {
                         fetch('/.netlify/functions/moderate-listing', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ imageUrls: [uploadedImgUrl], title: "Topic Post", description: text }) })
                             .then(r => r.json()).then(aiData => { if (aiData.verdict === "UNSAFE") updateDoc(postRef, { status: 'rejected', rejectionReason: aiData.reason || "Inappropriate content" }); else updateDoc(postRef, { status: 'active' }); })
                             .catch(e => console.error(e));
                     }
                     postInput.value = ''; postInput.style.height = '40px'; postInput.blur(); postImageFile = null; postAttachedListing = null; renderComposerPreview();
-                } catch(e) { alert(ui.upload_fail); } finally { btnSendPost.innerHTML = origIcon; updateComposerSendButton(); }
+                } catch(e) { window.scoraliaAlert(ui.upload_fail); } finally { btnSendPost.innerHTML = origIcon; updateComposerSendButton(); }
             };
 
-            // Comment logic (unchanged)
+            // Comment logic
             const globalCommentImgInput = document.getElementById('global-comment-img-upload');
             window.triggerCommentImg = (postId) => { if (!currentUser) return; activeCommentPostId = postId; globalCommentImgInput.click(); };
-            if (globalCommentImgInput) globalCommentImgInput.onchange = e => {
+            
+            if (globalCommentImgInput) globalCommentImgInput.onchange = async (e) => {
+                // TRIGGER BOT SHIELD
+                const isHuman = await window.checkBotLimits();
+                if (!isHuman) { e.target.value = ''; return; }
+
                 if (e.target.files[0] && activeCommentPostId) {
-                    const file = e.target.files[0]; commentImageFiles[activeCommentPostId] = file;
+                    const file = e.target.files[0]; 
+                    commentImageFiles[activeCommentPostId] = file;
+                    window.recordActivity('images');
+                    
                     const pArea = document.getElementById(`comment-preview-area-${activeCommentPostId}`);
                     if (pArea) { pArea.innerHTML = `<div class="preview-img-wrap" style="width: 50px; height: 50px;"><img src="${URL.createObjectURL(file)}"><button class="remove-preview-btn" onclick="window.removeCommentImg('${activeCommentPostId}')">&times;</button></div>`; pArea.style.display = 'flex'; }
                     const btnSend = document.getElementById(`btn-send-comment-${activeCommentPostId}`); if (btnSend) btnSend.disabled = false;
                 }
                 e.target.value = '';
             };
+
             window.removeCommentImg = (postId) => { delete commentImageFiles[postId]; const pArea = document.getElementById(`comment-preview-area-${postId}`); if(pArea) pArea.style.display = 'none'; const inputEl = document.getElementById(`comment-input-${postId}`); const btnSend = document.getElementById(`btn-send-comment-${postId}`); if(btnSend && inputEl) btnSend.disabled = inputEl.value.trim().length === 0; };
+            
             window.postComment = async (postId) => {
                 if (!currentUser) return;
                 const inputEl = document.getElementById(`comment-input-${postId}`), btnEl = document.getElementById(`btn-send-comment-${postId}`);
                 if (!inputEl || !btnEl) return;
                 const text = inputEl.value.trim(), file = commentImageFiles[postId];
                 if (!text && !file) return;
-                
-                // 🔥 BOT SHIELD CHECK
-                const allowed = await window.checkBotLimits();
-                if (!allowed) return;
 
-                btnEl.disabled = true; const origIcon = btnEl.innerHTML; btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                // TRIGGER BOT SHIELD
+                const isHuman = await window.checkBotLimits();
+                if (!isHuman) return;
+                window.recordActivity('listings');
+
+                btnEl.disabled = true; 
+                const origIcon = btnEl.innerHTML; 
+                btnEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                
                 try {
                     let uploadedImgUrl = null; if (file) uploadedImgUrl = await uploadImageToCloudinary(file);
                     const userDoc = await getDoc(doc(db, "users", currentUser.uid)); const freshUserData = userDoc.data(); const isStudent = freshUserData?.isStudent === true;
@@ -760,16 +862,14 @@
                     if (uploadedImgUrl) commentData.imageUrl = uploadedImgUrl;
                     const commentRef = await addDoc(collection(db, "social_posts", postId, "comments"), commentData);
                     await updateDoc(doc(db, "social_posts", postId), { commentCount: increment(1) });
-                    
-                    window.recordActivity('listings');
-
                     if (requiresReview) {
                         fetch('/.netlify/functions/moderate-listing', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ imageUrls: [uploadedImgUrl], title: "Topic Comment", description: text }) })
                             .then(r => r.json()).then(aiData => { if (aiData.verdict === "UNSAFE") updateDoc(commentRef, { status: 'rejected', rejectionReason: aiData.reason || "Inappropriate content" }); else updateDoc(commentRef, { status: 'active' }); });
                     }
                     inputEl.value = ''; window.removeCommentImg(postId);
-                } catch(e) { alert(ui.upload_fail); } finally { btnEl.innerHTML = origIcon; btnEl.disabled = true; }
+                } catch(e) { window.scoraliaAlert(ui.upload_fail); } finally { btnEl.innerHTML = origIcon; btnEl.disabled = true; }
             };
+
 
             // --- AUTH & MAIN FLOW ---
             onAuthStateChanged(auth, async (user) => {
@@ -778,7 +878,6 @@
                         if (uSnap.exists()) {
                             const data = uSnap.data();
                             currentUser = { ...user, ...data }; currentUserData = data; internalSchoolName = data.schoolName || "Global Campus";
-                            console.log("User authenticated:", currentUser.uid);
                             await checkExistingRequest(currentUser.uid);
                             
                             if (currentTopicData && currentTopicData.visibility === 'private') {
@@ -786,7 +885,6 @@
                                 const isMember = currentTopicData.members && currentTopicData.members.includes(currentUser.uid);
                                 const isAdmin = currentUser.role === 'admin';
                                 if (!isCreator && !isMember && !isAdmin) { 
-                                    console.log("Access denied: showing request screen.");
                                     showLockedScreenWithRequest(); 
                                     return; 
                                 }
@@ -812,9 +910,9 @@
                                             else { icon.className = 'far fa-bookmark'; pinBtn.style.color = 'var(--text-muted)'; pinBtn.style.borderColor = 'var(--mist)'; }
                                         }
                                     };
-                                    updatePinIcon((data.pinnedTopics || []).includes(topicId));
+                                    updatePinIcon((data.pinnedTopics ||[]).includes(topicId));
                                     pinBtn.onclick = async () => {
-                                        const isPinned = (currentUser.pinnedTopics || []).includes(topicId);
+                                        const isPinned = (currentUser.pinnedTopics ||[]).includes(topicId);
                                         const userRef = doc(db, "users", currentUser.uid);
                                         if (isPinned) await updateDoc(userRef, { pinnedTopics: arrayRemove(topicId) });
                                         else { await updateDoc(userRef, { pinnedTopics: arrayUnion(topicId) }); await updateDoc(doc(db, "social_channels", topicId), { members: arrayUnion(currentUser.uid) }); }
@@ -848,24 +946,15 @@
                 }
 
                 requestBtn.onclick = async () => {
-                    console.log("Request to Join clicked");
                     if (!currentUser) { console.warn("No current user"); return; }
-                    
-                    // 🔥 BOT SHIELD CHECK
-                    const allowed = await window.checkBotLimits();
-                    if (!allowed) return;
-
-                    console.log("Current user:", currentUser.uid);
-                    console.log("Topic owner:", currentTopicData.createdBy);
                     
                     requestBtn.disabled = true; 
                     requestBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
                     
                     try {
                         const ownerUid = currentTopicData.createdBy;
-                        const participants = [currentUser.uid, ownerUid].sort();
+                        const participants =[currentUser.uid, ownerUid].sort();
                         
-                        console.log("Looking for existing personal chat with owner...");
                         const chatsQuery = query(collection(db, "chats"), 
                             where("participants", "array-contains", currentUser.uid));
                         const chatsSnap = await getDocs(chatsQuery);
@@ -875,13 +964,11 @@
                             const d = docSnap.data(); 
                             if (!d.listingId && d.participants.includes(ownerUid)) { 
                                 chatId = docSnap.id; 
-                                console.log("Found existing personal chat:", chatId);
                                 break; 
                             } 
                         }
                         
                         if (!chatId) {
-                            console.log("Creating new personal chat...");
                             const chatRef = await addDoc(collection(db, "chats"), { 
                                 participants: participants,
                                 lastMessage: `${currentUser.displayName} requested to join ${currentTopicName}`, 
@@ -890,15 +977,13 @@
                                 listingId: null
                             });
                             chatId = chatRef.id;
-                            console.log("New chat created:", chatId);
                         }
                         
-                        console.log("Sending join request message...");
                         await addDoc(collection(db, "chats", chatId, "messages"), {
                             type: 'join_request',
                             topicId, 
                             topicName: currentTopicName, 
-                            senderId: currentUser.uid,
+                            senderId: currentUser.uid, 
                             senderName: currentUser.displayName,
                             senderPhoto: currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`,
                             recipientUid: ownerUid, 
@@ -912,9 +997,6 @@
                             lastUpdate: serverTimestamp() 
                         });
                         
-                        window.recordActivity('listings');
-                        
-                        console.log("Request message sent successfully.");
                         existingRequestStatus = 'pending'; 
                         requestBtn.style.display = 'none'; 
                         statusEl.style.display = 'block'; 
@@ -923,7 +1005,7 @@
                         
                     } catch(e) {
                         console.error("Failed to send request:", e);
-                        alert("Failed to send request. Check console for details.");
+                        alert("Failed to send request.");
                         requestBtn.disabled = false; 
                         requestBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${ui.request_join}`;
                     }
@@ -962,8 +1044,8 @@
                     mobileWaysList.appendChild(mGeneral);
                 }
 
-                const myT = [], pinT = [], discT = [];
-                const pinnedArr = (currentUser && currentUser.pinnedTopics) || [];
+                const myT = [], pinT =[], discT = [];
+                const pinnedArr = (currentUser && currentUser.pinnedTopics) ||[];
 
                 allTopicsData.forEach(d => {
                     const isPrivate = d.visibility === 'private';
@@ -1012,7 +1094,7 @@
                 Object.values(commentUnsubscribes).forEach(unsub => unsub());
                 commentUnsubscribes = {};
 
-                if (feedContainer) feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i> <br><span>${ui.loading_hub}</span></div>`;
+                if (feedContainer) feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i> <br><span id="ui-loading">${ui.loading_hub}</span></div>`;
 
                 let q = query(collection(db, "social_posts"), where("wayId", "==", topicId), orderBy("timestamp", "desc"), limit(100));
                 try {
@@ -1045,10 +1127,6 @@
                 const verifiedAvatarBadge = d.authorIsStudent ? '<div class="avatar-badge"><i class="fas fa-check-circle"></i></div>' : '';
                 const avatarHtml = `<div class="post-avatar-wrap"><img src="${pfp}" class="post-avatar" alt="Avatar">${verifiedAvatarBadge}</div>`;
                 const ownerBadge = (currentTopicData && d.authorUid === currentTopicData.createdBy) ? '<i class="fas fa-crown" style="color: var(--gold); margin-left: 4px;"></i>' : '';
-                
-                // ✅ ADDED: Green checkmark next to author name if verified student
-                const verifiedNameBadge = d.authorIsStudent ? '<i class="fas fa-check-circle" style="color: #2E7D32; font-size: 0.9rem; margin-left: 4px;" title="Verified Student"></i>' : '';
-                
                 const pendingBadgeHtml = d.status === 'pending' ? `<span style="font-size:0.7rem; color:#d97706; background:#fef3c7; padding:2px 6px; border-radius:10px; margin-left:6px; border: 1px solid #fde68a;">⏳ In Review</span>` : '';
                 const canEdit = currentUser && currentUser.uid === d.authorUid;
                 const canDelete = currentUser && (currentUser.uid === d.authorUid || currentUser.uid === currentTopicData.createdBy || currentUser.role === 'admin');
@@ -1056,10 +1134,10 @@
                 const editBtnHtml = canEdit ? `<button class="post-dropdown-item" onclick="window.openEditPost('${id}', '${safeText}')"><i class="fas fa-edit"></i> Edit Post</button>` : '';
                 const deleteBtnHtml = canDelete ? `<button class="post-dropdown-item danger" onclick="window.deletePost('${id}')"><i class="fas fa-trash-alt"></i> Delete Post</button>` : '';
                 const editedLabel = d.edited ? `<span class="edited-badge">${ui.edited_label}</span>` : '';
-                let attachedImgHtml = d.imageUrl ? `<img src="${d.imageUrl}" class="post-image-attachment" onclick="window.open('${d.imageUrl}', '_blank')">` : '';
+                let attachedImgHtml = d.imageUrl ? `<img src="${window.optimizeImageUrl ? window.optimizeImageUrl(d.imageUrl) : d.imageUrl}" class="post-image-attachment" onclick="window.open('${d.imageUrl}', '_blank')">` : '';
                 let attachedListHtml = '';
                 if (d.attachedListing) {
-                    attachedListHtml = `<a href="/listing.html?id=${d.attachedListing.id}" class="post-listing-attachment"><div class="pla-img" style="background-image:url('${d.attachedListing.img}')"></div><div class="pla-info"><div class="pla-title">${d.attachedListing.title}</div><div class="pla-price">$${d.attachedListing.price}</div></div></a>`;
+                    attachedListHtml = `<a href="/listing.html?id=${d.attachedListing.id}" class="post-listing-attachment"><div class="pla-img" style="background-image:url('${window.optimizeImageUrl ? window.optimizeImageUrl(d.attachedListing.img) : d.attachedListing.img}')"></div><div class="pla-info"><div class="pla-title">${d.attachedListing.title}</div><div class="pla-price">$${d.attachedListing.price}</div></div></a>`;
                 }
                 const card = document.createElement('div'); card.className = 'post-card';
                 card.innerHTML = `
@@ -1067,9 +1145,7 @@
                         <a href="/user.html?id=${d.authorUid}" class="post-author-link">
                             ${avatarHtml}
                             <div class="post-meta">
-                                <span class="post-author" style="display:flex; align-items:center; flex-wrap:wrap;">
-                                    ${d.authorName}${verifiedNameBadge} ${ownerBadge} ${pendingBadgeHtml}
-                                </span>
+                                <span class="post-author" style="display:flex; align-items:center; flex-wrap:wrap;">${d.authorName} ${ownerBadge} ${pendingBadgeHtml}</span>
                                 <span class="post-time">${timeStr}${editedLabel}</span>
                             </div>
                         </a>
@@ -1125,9 +1201,10 @@
             };
             window.addEventListener('click', (e) => { if (!e.target.closest('.post-menu-container')) document.querySelectorAll('.post-dropdown').forEach(d => d.classList.remove('show')); });
             window.deletePost = async (id) => {
-                if(confirm("Are you sure you want to delete this post?")) {
+                const confirmed = await window.scoraliaConfirm(ui.dialog_delete_post);
+                if(confirmed) {
                     try { await deleteDoc(doc(db, "social_posts", id)); await updateDoc(doc(db, "social_channels", topicId), { postCount: increment(-1) }); } 
-                    catch(e) { alert("Error deleting post."); }
+                    catch(e) { window.scoraliaAlert("Error deleting post."); }
                 }
             };
             let reportTargetId, reportTargetName, reportTargetPostId;
@@ -1143,8 +1220,8 @@
                 const btn = document.getElementById('submit-report-btn'); btn.disabled = true;
                 try {
                     await addDoc(collection(db, "reports"), { reporterUid: currentUser.uid, reporterName: currentUser.displayName, targetUid: reportTargetId, targetUserName: reportTargetName, reason: `Post Report: ${reason}`, details: `Post ID: ${reportTargetPostId}\nTopic: ${topicId}\n\n${details}`, timestamp: serverTimestamp() });
-                    alert(ui.rep_success); document.getElementById('report-modal').style.display = 'none';
-                } catch(e) { alert("Error submitting report."); } finally { btn.disabled = false; }
+                    window.scoraliaAlert(ui.rep_success); document.getElementById('report-modal').style.display = 'none';
+                } catch(e) { window.scoraliaAlert("Error submitting report."); } finally { btn.disabled = false; }
             };
             let editTargetPostId = null;
             window.openEditPost = (postId, encodedText) => {
@@ -1160,7 +1237,7 @@
                 const newText = document.getElementById('edit-post-text').value.trim();
                 const btn = document.getElementById('btn-submit-edit'); btn.disabled = true;
                 try { await updateDoc(doc(db, "social_posts", editTargetPostId), { text: newText, edited: true }); document.getElementById('edit-post-modal').style.display = 'none'; } 
-                catch(e) { alert("Error updating post."); } finally { btn.disabled = false; }
+                catch(e) { window.scoraliaAlert("Error updating post."); } finally { btn.disabled = false; }
             };
             window.likePost = async (id, alreadyLiked) => {
                 if (!currentUser) return;
@@ -1188,7 +1265,7 @@
                         let timeStr = ui.justNow;
                         if (c.timestamp) { const diffMins = Math.round((new Date() - c.timestamp.toDate()) / 60000); timeStr = diffMins < 60 ? (lang === 'fr' ? `Il y a ${diffMins}m` : `${diffMins}m`) : diffMins < 1440 ? (lang === 'fr' ? `Il y a ${Math.round(diffMins/60)}h` : `${Math.round(diffMins/60)}h`) : (lang === 'fr' ? `Il y a ${Math.round(diffMins/1440)}j` : `${Math.round(diffMins/1440)}d`); }
                         const pfp = c.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${c.authorUid}&backgroundColor=EBF2FA`;
-                        const imgHtml = c.imageUrl ? `<img src="${c.imageUrl}" class="comment-image-attachment" onclick="window.open('${c.imageUrl}', '_blank')">` : '';
+                        const imgHtml = c.imageUrl ? `<img src="${window.optimizeImageUrl ? window.optimizeImageUrl(c.imageUrl) : c.imageUrl}" class="comment-image-attachment" onclick="window.open('${c.imageUrl}', '_blank')">` : '';
                         const commentVerifiedAvatar = c.authorIsStudent ? '<div class="comment-avatar-badge"><i class="fas fa-check-circle"></i></div>' : '';
                         const commentAvatarHtml = `<a href="/user.html?id=${c.authorUid}"><div class="comment-avatar-wrap"><img src="${pfp}" class="comment-avatar" alt="Avatar">${commentVerifiedAvatar}</div></a>`;
                         const commentOwnerBadge = (currentTopicData && c.authorUid === currentTopicData.createdBy) ? '<i class="fas fa-crown" style="color: var(--gold); font-size: 0.7rem; margin-left: 2px;"></i>' : '';
@@ -1205,9 +1282,10 @@
                 });
             }
             window.deleteComment = async (postId, commentId) => {
-                if(confirm("Delete this comment?")) {
+                const confirmed = await window.scoraliaConfirm(ui.dialog_delete_comment);
+                if(confirmed) {
                     try { await deleteDoc(doc(db, "social_posts", postId, "comments", commentId)); await updateDoc(doc(db, "social_posts", postId), { commentCount: increment(-1) }); } 
-                    catch(e) { alert("Permission denied or error deleting."); }
+                    catch(e) { window.scoraliaAlert("Permission denied or error deleting."); }
                 }
             };
             document.body.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.classList.contains('comment-input')) { e.preventDefault(); window.postComment(e.target.id.replace('comment-input-', '')); } });
