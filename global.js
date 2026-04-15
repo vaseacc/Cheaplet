@@ -214,17 +214,20 @@ const translations = {
         "tour_desc_3": "Click the bookmark icon on any listing to save it. You can easily find your saved items later in <b>My Profile</b>.",
         "tour_title_4": "Personalize Your Profile",
         "tour_desc_4": "Set your full name and a unique username (e.g., @jhondoe). Add a photo to personalize your account.",
-        "tour_full_name": "Full Name (e.g., John Doe)",
-        "tour_username": "Username (letters, numbers, underscore only)",
+        "tour_full_name_lbl": "Full Name (max 15 letters)",
+        "tour_full_name_hint": "Letters only, no spaces",
+        "tour_full_name_valid": "✓ Looks good",
+        "tour_full_name_invalid": "Only letters, max 15 characters",
+        "tour_username_lbl": "Username",
+        "tour_username_hint: "Letters, numbers, _ and .",
+        "tour_username_invalid": "Invalid characters",
+        "tour_username_unavailable": "✗ Already taken",
+        "tour_username_available": "✓ Available",
+        "tour_username_checking": "Checking...",
         "tour_upload": "Choose Photo",
         "tour_next": "Next",
         "tour_start": "Finish & Explore",
         "tour_saving": "Saving...",
-        "tour_name_err": "Please enter a valid full name.",
-        "tour_username_err": "Please enter a valid username (min 3 chars).",
-        "tour_username_taken": "Username already taken. Please choose another.",
-        "tour_username_available": "✓ Available",
-        "tour_username_checking": "Checking...",
         "warning_title": "Admin Warning",
         "warning_btn": "I Understand",
         "contact": "Contact Us",
@@ -254,17 +257,20 @@ const translations = {
         "tour_desc_3": "Cliquez sur l'icône de signet pour sauvegarder une annonce. Retrouvez-les facilement dans <b>Mon Profil</b>.",
         "tour_title_4": "Personnalisez votre profil",
         "tour_desc_4": "Définissez votre nom complet et un nom d'utilisateur unique (ex: @jhondoe). Ajoutez une photo pour personnaliser votre compte.",
-        "tour_full_name": "Nom complet (ex: Jean Dupont)",
-        "tour_username": "Nom d'utilisateur (lettres, chiffres, tiret bas)",
+        "tour_full_name_lbl": "Nom complet (max 15 lettres)",
+        "tour_full_name_hint": "Lettres uniquement, sans espaces",
+        "tour_full_name_valid": "✓ Parfait",
+        "tour_full_name_invalid": "Lettres seulement, max 15 caractères",
+        "tour_username_lbl": "Nom d'utilisateur",
+        "tour_username_hint": "Lettres, chiffres, _ et .",
+        "tour_username_invalid": "Caractères invalides",
+        "tour_username_unavailable": "✗ Déjà pris",
+        "tour_username_available": "✓ Disponible",
+        "tour_username_checking": "Vérification...",
         "tour_upload": "Choisir une photo",
         "tour_next": "Suivant",
         "tour_start": "Terminer & Explorer",
         "tour_saving": "Enregistrement...",
-        "tour_name_err": "Veuillez entrer un nom complet valide.",
-        "tour_username_err": "Veuillez entrer un nom d'utilisateur valide (min 3 car.).",
-        "tour_username_taken": "Nom d'utilisateur déjà pris. Veuillez en choisir un autre.",
-        "tour_username_available": "✓ Disponible",
-        "tour_username_checking": "Vérification...",
         "warning_title": "Avertissement de l'Administration",
         "warning_btn": "J'ai compris",
         "contact": "Nous contacter",
@@ -331,12 +337,26 @@ globalStyle.innerHTML = `
     .lang-modal { background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
     .lang-btn { display: block; width: 100%; padding: 16px; margin: 12px 0; border: 2px solid #EBF2FA; border-radius: 12px; background: white; font-weight: bold; cursor: pointer; font-size: 1.1rem; transition: all 0.2s; color: #0C1446; }
     .lang-btn:hover { border-color: #C8A96E; background: #fdfaf4; }
+    
     .tour-dot { width: 8px; height: 8px; border-radius: 50%; background: #e0e0e0; transition: 0.3s; }
     .tour-dot.active { background: #C8A96E; width: 24px; border-radius: 10px; }
-    .tour-input { width: 100%; padding: 10px 12px; border: 2px solid #eee; border-radius: 8px; margin-bottom: 12px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; text-align: center; font-weight: bold; color: #0C1446; }
+    .tour-input { width: 100%; padding: 10px 35px 10px 12px; border: 2px solid #eee; border-radius: 8px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; font-weight: bold; color: #0C1446; }
     .tour-input:focus { border-color: #C8A96E; }
     .tour-pfp-preview { width: 80px; height: 80px; border-radius: 50%; background: #eee; margin: 0 auto 15px; border: 3px solid #C8A96E; object-fit: cover; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #aaa; overflow: hidden; }
     .tour-pfp-preview img { width: 100%; height: 100%; object-fit: cover; }
+    
+    /* Tour form classes (ported from login) */
+    .field-wrap { margin-bottom: 12px; }
+    .field-label { display: block; font-size: 10px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+    .input-status { position: relative; }
+    .status-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; pointer-events: none; }
+    .status-valid { color: #2E7D32; }
+    .status-invalid { color: #e53e3e; }
+    .status-checking { color: #C8A96E; }
+    .field-hint { font-size: 10px; margin-top: 4px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .hint-text { color: var(--text-muted); }
+    .hint-error { color: #e53e3e; }
+
     .terms-banner { position: fixed; bottom: 0; left: 0; width: 100%; background: rgba(12, 20, 70, 0.98); color: #fff; padding: 15px 25px; display: flex; justify-content: center; align-items: center; gap: 25px; z-index: 99999; font-size: 0.85rem; backdrop-filter: blur(10px); border-top: 1px solid rgba(200,169,110,0.3); }
     .btn-accept-terms { background: #C8A96E; color: #0C1446; border: none; padding: 8px 30px; border-radius: 20px; font-weight: 800; cursor: pointer; }
     .desktop-only { display: inline-flex; }
@@ -590,15 +610,38 @@ function showWelcomeTour() {
                 <div class="tour-pfp-preview" id="tour-pfp-box"><img src="${defaultPfpUrl}"></div>
                 <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">${t.tour_title_4}</h2>
                 <p style="color:#6b84a3; margin-bottom:15px; line-height:1.4; font-size:0.85rem;">${t.tour_desc_4}</p>
-                <input type="text" id="tour-fullname" class="tour-input" value="${existingFullName}" placeholder="${t.tour_full_name}">
-                <input type="text" id="tour-username" class="tour-input" value="${existingUsername}" placeholder="${t.tour_username}">
-                <div id="tour-username-status" style="font-size:0.75rem; text-align:center; margin-bottom:10px;"></div>
+                
+                <div class="field-wrap" style="text-align: left;">
+                    <label class="field-label">${t.tour_full_name_lbl}</label>
+                    <div class="input-status">
+                        <input type="text" id="tour-fullname" class="tour-input" value="${existingFullName}" placeholder="Alex" maxlength="15" autocomplete="name">
+                        <span class="status-icon" id="tour-fullname-status"></span>
+                    </div>
+                    <div class="field-hint" id="tour-fullname-hint">
+                        <span class="hint-text">${t.tour_full_name_hint}</span>
+                    </div>
+                </div>
+
+                <div class="field-wrap" style="text-align: left;">
+                    <label class="field-label">${t.tour_username_lbl}</label>
+                    <div class="input-status">
+                        <input type="text" id="tour-username" class="tour-input" value="${existingUsername}" placeholder="alex_123" maxlength="30" autocomplete="off">
+                        <span class="status-icon" id="tour-username-status-icon"></span>
+                    </div>
+                    <div class="field-hint" id="tour-username-hint">
+                        <span class="hint-text" id="tour-username-hint-text">${t.tour_username_hint}</span>
+                        <span id="tour-username-availability"></span>
+                    </div>
+                </div>
+
                 <input type="file" id="tour-file-input" accept="image/*" style="display:none;">
                 <label for="tour-file-input" style="display:block; cursor:pointer; color:#2B5C92; font-weight:bold; margin-bottom:20px; text-decoration:underline;">
                     <i class="fas fa-camera"></i> ${t.tour_upload}
                 </label>
+                
                 <div id="tour-final-error" style="color:#d32f2f; font-size:0.85rem; margin-bottom:10px; display:none; text-align:center; font-weight:bold; border: 1px solid #ffcdd2; background: #fef2f2; padding: 8px; border-radius: 6px;"></div>
-                <button class="btn" id="tour-btn-4" style="width:100%;">${t.tour_start}</button>
+                
+                <button class="btn" id="tour-btn-4" style="width:100%;" disabled>${t.tour_start}</button>
             </div>
             ` : ''}
             <div style="display:flex; justify-content:center; gap:8px; margin-top:25px;" id="tour-dots">
@@ -609,7 +652,7 @@ function showWelcomeTour() {
     `;
     document.body.appendChild(overlay);
 
-    // Function to finish the tour (for both skip and full paths)
+    // Function to finish the tour
     const finishTour = async () => {
         await updateDoc(doc(db, "users", user.uid), { hasSeenTour: true });
         localStorage.setItem(tourKey, 'true');
@@ -633,60 +676,119 @@ function showWelcomeTour() {
     const btn3 = document.getElementById('tour-btn-3');
     btn3.onclick = () => {
         if (skipProfileStep) {
-            // Finish tour immediately
             finishTour();
         } else {
             document.getElementById('tour-step-3').style.display = 'none'; 
             document.getElementById('tour-step-4').style.display = 'block';
             document.getElementById('dot-3').classList.remove('active'); 
             document.getElementById('dot-4').classList.add('active');
+            
+            // Trigger UI update if values exist (e.g. pulled from OAuth)
+            const nameInput = overlay.querySelector('#tour-fullname');
+            const usernameInput = overlay.querySelector('#tour-username');
+            if (nameInput.value) nameInput.dispatchEvent(new Event('input'));
+            if (usernameInput.value) usernameInput.dispatchEvent(new Event('input'));
         }
     };
 
     if (!skipProfileStep) {
-        // Step 4 logic (only for OAuth users)
-        const usernameInput = overlay.querySelector('#tour-username');
         const nameInput = overlay.querySelector('#tour-fullname');
-        const usernameStatus = overlay.querySelector('#tour-username-status');
+        const usernameInput = overlay.querySelector('#tour-username');
+        const fullnameStatus = overlay.querySelector('#tour-fullname-status');
+        const fullnameHint = overlay.querySelector('#tour-fullname-hint');
+        const usernameStatusIcon = overlay.querySelector('#tour-username-status-icon');
+        const usernameHintText = overlay.querySelector('#tour-username-hint-text');
+        const usernameAvailability = overlay.querySelector('#tour-username-availability');
+        const finishBtn = overlay.querySelector('#tour-btn-4');
         const finalError = overlay.querySelector('#tour-final-error');
 
-        let usernameTimeout = null;
+        let isFullnameValid = false;
         let isUsernameValid = false;
+        let usernameTimeout = null;
 
-        nameInput.addEventListener('input', () => {
-            finalError.style.display = 'none';
-            nameInput.style.borderColor = '#eee';
-        });
-        
-        usernameInput.addEventListener('input', () => {
-            finalError.style.display = 'none';
-            usernameInput.style.borderColor = '#eee';
-            if (usernameTimeout) clearTimeout(usernameTimeout);
-            const val = usernameInput.value.trim();
-            if (!val) { usernameStatus.textContent = ''; isUsernameValid = false; return; }
-            usernameTimeout = setTimeout(() => checkUsernameAvailability(val), 500);
-        });
+        function isValidFullName(name) { return /^[A-Za-z]{1,15}$/.test(name); }
+        function isValidUsernameFormat(username) { return /^[a-zA-Z0-9_.]{1,30}$/.test(username); }
 
-        function validateUsernameFormat(username) { return /^[a-zA-Z0-9_]{3,}$/.test(username); }
-
-        async function checkUsernameAvailability(username) {
-            if (!validateUsernameFormat(username)) {
-                usernameStatus.textContent = t.tour_username_err; usernameStatus.style.color = '#d32f2f';
-                isUsernameValid = false; return false;
-            }
-            usernameStatus.textContent = t.tour_username_checking; usernameStatus.style.color = '#ff9800';
-            const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
-            const snap = await getDocs(q);
-            if (snap.empty) {
-                usernameStatus.textContent = t.tour_username_available; usernameStatus.style.color = '#2E7D32';
-                isUsernameValid = true; return true;
-            } else {
-                usernameStatus.textContent = t.tour_username_taken; usernameStatus.style.color = '#d32f2f';
-                isUsernameValid = false; return false;
-            }
+        function updateSubmitButton() {
+            if (finishBtn) finishBtn.disabled = !(isFullnameValid && isUsernameValid);
         }
 
-        if (existingUsername) { setTimeout(() => checkUsernameAvailability(existingUsername), 100); }
+        function updateFullnameUI() {
+            finalError.style.display = 'none';
+            nameInput.style.borderColor = '#eee';
+            const name = nameInput.value.trim();
+            if (!name) {
+                fullnameStatus.innerHTML = '';
+                fullnameHint.innerHTML = `<span class="hint-text">${t.tour_full_name_hint}</span>`;
+                isFullnameValid = false;
+            } else if (isValidFullName(name)) {
+                fullnameStatus.innerHTML = '<i class="fas fa-check-circle status-valid"></i>';
+                fullnameHint.innerHTML = `<span class="hint-text" style="color: #2E7D32;">${t.tour_full_name_valid}</span>`;
+                isFullnameValid = true;
+            } else {
+                fullnameStatus.innerHTML = '<i class="fas fa-times-circle status-invalid"></i>';
+                fullnameHint.innerHTML = `<span class="hint-error">${t.tour_full_name_invalid}</span>`;
+                isFullnameValid = false;
+            }
+            updateSubmitButton();
+        }
+
+        async function checkUsernameAvailability(username) {
+            if (!username || username.length < 1) return false;
+            const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
+            const snap = await getDocs(q);
+            return snap.empty;
+        }
+
+        function updateUsernameUI() {
+            finalError.style.display = 'none';
+            usernameInput.style.borderColor = '#eee';
+            const username = usernameInput.value.trim();
+            
+            if (!username) {
+                usernameStatusIcon.innerHTML = '';
+                usernameHintText.textContent = t.tour_username_hint;
+                usernameAvailability.textContent = '';
+                isUsernameValid = false;
+                updateSubmitButton();
+                return;
+            }
+
+            if (!isValidUsernameFormat(username)) {
+                usernameStatusIcon.innerHTML = '<i class="fas fa-times-circle status-invalid"></i>';
+                usernameHintText.textContent = t.tour_username_invalid;
+                usernameAvailability.textContent = '';
+                isUsernameValid = false;
+                updateSubmitButton();
+                return;
+            }
+
+            usernameStatusIcon.innerHTML = '<i class="fas fa-spinner fa-spin status-checking"></i>';
+            usernameHintText.textContent = t.tour_username_hint;
+            usernameAvailability.textContent = t.tour_username_checking;
+            isUsernameValid = false;
+            updateSubmitButton();
+
+            if (usernameTimeout) clearTimeout(usernameTimeout);
+            usernameTimeout = setTimeout(async () => {
+                const available = await checkUsernameAvailability(username);
+                if (available) {
+                    usernameStatusIcon.innerHTML = '<i class="fas fa-check-circle status-valid"></i>';
+                    usernameAvailability.textContent = t.tour_username_available;
+                    usernameAvailability.style.color = '#2E7D32';
+                    isUsernameValid = true;
+                } else {
+                    usernameStatusIcon.innerHTML = '<i class="fas fa-times-circle status-invalid"></i>';
+                    usernameAvailability.textContent = t.tour_username_unavailable;
+                    usernameAvailability.style.color = '#e53e3e';
+                    isUsernameValid = false;
+                }
+                updateSubmitButton();
+            }, 500);
+        }
+
+        nameInput.addEventListener('input', updateFullnameUI);
+        usernameInput.addEventListener('input', updateUsernameUI);
 
         let selectedFile = null;
         const fileInput = overlay.querySelector('#tour-file-input');
@@ -699,34 +801,16 @@ function showWelcomeTour() {
             }
         };
 
-        const finishBtn = overlay.querySelector('#tour-btn-4');
         finishBtn.onclick = async () => {
             finalError.style.display = 'none'; 
             const fullname = nameInput.value.trim();
             const username = usernameInput.value.trim().toLowerCase();
             
-            if (!fullname) {
-                finalError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${t.tour_name_err}`;
+            // Double check validity before processing
+            if (!isFullnameValid || !isUsernameValid) {
+                finalError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Please fix errors before continuing.`;
                 finalError.style.display = 'block';
-                nameInput.style.borderColor = '#d32f2f';
                 return;
-            }
-
-            if (!username || !validateUsernameFormat(username)) {
-                finalError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${t.tour_username_err}`;
-                finalError.style.display = 'block';
-                usernameInput.style.borderColor = '#d32f2f';
-                return;
-            }
-
-            if (!isUsernameValid) {
-                const available = await checkUsernameAvailability(username);
-                if (!available) {
-                    finalError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> ${t.tour_username_taken}`;
-                    finalError.style.display = 'block';
-                    usernameInput.style.borderColor = '#d32f2f';
-                    return;
-                }
             }
             
             finishBtn.disabled = true; finishBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${t.tour_saving}`;
@@ -763,6 +847,7 @@ function showWelcomeTour() {
 
 // --- SOCIAL TOUR ---
 window.showSocialTour = () => {
+    if (window.location.pathname.includes('/login.html')) return;
     const user = auth.currentUser;
     if (!user) return;
     const socialTourKey = `scoralia_social_tour_seen_${user.uid}`;
@@ -861,6 +946,7 @@ function listenToUnreadMessages(uid) {
 }
 
 function updateHeaderToLoggedIn(userData) {
+    if (window.location.pathname.includes('/login.html')) return;
     const lang = localStorage.getItem('preferred_language') || 'en';
     const t = translations[lang];
     const navUl = document.querySelector('nav ul');
@@ -981,7 +1067,6 @@ function showTermsBanner() {
     document.getElementById('accept-terms-btn').onclick = () => { localStorage.setItem('scoralia_terms_accepted', 'true'); banner.remove(); };
 }
 
-// Ensure the forced modal doesn't trigger anymore since we have the banner
 if (document.getElementById('lang-modal-overlay')) {
     document.getElementById('lang-modal-overlay').remove();
 }
