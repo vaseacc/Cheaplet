@@ -42,10 +42,11 @@
             --off-white: #F4F7FC;
             --surface:   #EBF2FA;
             --text-body: #1a2a4a;
-            --text-muted:#6b84a3;
+            --text-muted:#64748b;
             --gold:      #C8A96E;
             --red:       #e53e3e;
-            --deep:      #2B5C92;
+            --success:   #2E7D32;
+            --error:     #e53e3e;
             --radius-sm: 8px;
             --radius-md: 16px;
             --shadow-sm: 0 4px 20px rgba(12,20,70,0.06);
@@ -125,30 +126,37 @@
         .section-title i { color: var(--gold); font-size: 1.2rem; }
 
         .edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .form-group { margin-bottom: 20px; }
+        .form-group { margin-bottom: 5px; }
         .form-group.full-width { grid-column: 1 / -1; }
         .form-label { display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+        
+        /* ── REAL-TIME VALIDATION STYLES ── */
+        .input-status { position: relative; display: block; }
         .form-input { width: 100%; padding: 12px 16px; border: 1.5px solid var(--mist); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 1rem; color: var(--text-body); background: var(--off-white); outline: none; transition: 0.2s; }
         .form-input:focus { border-color: var(--deep); background: var(--white); box-shadow: 0 0 0 3px rgba(43,92,146,0.1); }
         textarea.form-input { resize: vertical; min-height: 100px; }
-
-        .username-status { font-size: 0.8rem; margin-top: 6px; font-weight: 500; }
-        .username-status.valid { color: var(--deep); }
-        .username-status.invalid { color: var(--red); }
-        .username-status.checking { color: #f59e0b; }
+        
+        .status-icon { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 15px; pointer-events: none; }
+        .status-valid { color: var(--success); }
+        .status-invalid { color: var(--error); }
+        .status-checking { color: var(--gold); }
+        
+        .field-hint { font-size: 0.8rem; margin-top: 6px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .hint-text { color: var(--text-muted); font-weight: 500; }
+        .hint-error { color: var(--error); font-weight: 500; }
 
         /* ── BUTTONS ── */
-        .btn-group { display: flex; gap: 15px; justify-content: flex-end; margin-top: 10px; }
+        .btn-group { display: flex; gap: 15px; justify-content: flex-end; margin-top: 20px; }
         .btn { padding: 12px 24px; border-radius: 50px; font-family: var(--font-body); font-weight: 700; font-size: 0.95rem; cursor: pointer; transition: 0.2s; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-primary { background: var(--gold); color: var(--ink); box-shadow: 0 4px 15px rgba(200,169,110,0.3); }
         .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(200,169,110,0.4); }
-        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; filter: grayscale(50%); }
         .btn-secondary { background: var(--surface); color: var(--deep); border: 1.5px solid var(--mist); }
         .btn-secondary:hover { background: var(--mist); color: var(--ink); }
         .btn-danger { background: #fef2f2; color: var(--red); border: 1.5px solid #fecaca; }
         .btn-danger:hover { background: var(--red); color: var(--white); }
 
-        #save-feedback { text-align: right; font-weight: 600; font-size: 0.9rem; margin-top: 10px; }
+        #save-feedback { text-align: right; font-weight: 600; font-size: 0.95rem; margin-top: 15px; }
 
         /* ── SAVED LISTINGS ── */
         .saved-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
@@ -226,16 +234,33 @@
             <div class="content-section">
                 <h2 class="section-title"><i class="fas fa-user-edit"></i> <span id="ui-edit-profile">Edit Profile</span></h2>
                 <div class="edit-grid">
-                    <div class="form-group">
+                    
+                    <!-- FULL NAME with live validation -->
+                    <div class="form-group field-wrap">
                         <label class="form-label" id="ui-fullname-lbl">Full Name</label>
-                        <input type="text" id="edit-fullname" class="form-input" placeholder="">
+                        <div class="input-status">
+                            <input type="text" id="edit-fullname" class="form-input" placeholder="Alex" maxlength="15" autocomplete="name">
+                            <span class="status-icon" id="edit-fullname-status"></span>
+                        </div>
+                        <div class="field-hint" id="edit-fullname-hint">
+                            <span class="hint-text" id="edit-fullname-hint-text">Letters only, no spaces</span>
+                        </div>
                     </div>
-                    <div class="form-group">
+
+                    <!-- USERNAME with live validation -->
+                    <div class="form-group field-wrap">
                         <label class="form-label" id="ui-username-lbl">Username</label>
-                        <input type="text" id="edit-username" class="form-input" placeholder="username" autocomplete="off">
-                        <div class="username-status" id="username-status"></div>
+                        <div class="input-status">
+                            <input type="text" id="edit-username" class="form-input" placeholder="alex_123" autocomplete="off" maxlength="30">
+                            <span class="status-icon" id="edit-username-status-icon"></span>
+                        </div>
+                        <div class="field-hint" id="edit-username-hint">
+                            <span class="hint-text" id="edit-username-hint-text">Letters, numbers, _ and .</span>
+                            <span id="edit-username-availability"></span>
+                        </div>
                     </div>
-                    <div class="form-group full-width">
+
+                    <div class="form-group full-width" style="margin-top: 10px;">
                         <label class="form-label" id="ui-bio-lbl">Bio</label>
                         <textarea id="edit-bio" class="form-input" maxlength="160" placeholder=""></textarea>
                     </div>
@@ -299,7 +324,14 @@
             const editUsername = document.getElementById('edit-username');
             const editBio = document.getElementById('edit-bio');
             const languageSelect = document.getElementById('language-select');
-            const usernameStatus = document.getElementById('username-status');
+            
+            // Validation UI Elements
+            const editFullnameStatus = document.getElementById('edit-fullname-status');
+            const editFullnameHint = document.getElementById('edit-fullname-hint');
+            const editUsernameStatusIcon = document.getElementById('edit-username-status-icon');
+            const editUsernameHintText = document.getElementById('edit-username-hint-text');
+            const editUsernameAvailability = document.getElementById('edit-username-availability');
+            
             const saveBtn = document.getElementById('save-profile-btn');
             const resetPwdBtn = document.getElementById('reset-password-btn');
             const deleteBtn = document.getElementById('delete-account-btn');
@@ -310,7 +342,8 @@
             let currentUser = null;
             let currentUserData = null;
             let usernameCheckTimeout = null;
-            let isUsernameValid = false;
+            let isUsernameValid = true; 
+            let isFullnameValid = true;
             let originalUsername = '';
 
             // --- BILINGUAL TRANSLATIONS ---
@@ -318,7 +351,9 @@
             const t = {
                 en: {
                     loading: "Loading profile...",
-                    editProfile: "Edit Profile", fullName: "Full Name", usernameLbl: "Username",
+                    editProfile: "Edit Profile", 
+                    fullName: "Full Name (max 15 letters)", fullNameHint: "Letters only, no spaces", fullNameValid: "✓ Looks good", fullNameInvalid: "Only letters, max 15 characters",
+                    usernameLbl: "Username", usernameHint: "Letters, numbers, _ and .", usernameAvailable: "✓ Available", usernameUnavailable: "✗ Already taken", usernameChecking: "Checking...", usernameInvalid: "Invalid characters",
                     bio: "Bio", bioPlace: "Tell the campus a little about yourself...",
                     appLang: "App Language / Langue", resetPwd: "Reset Password", saveChanges: "Save Changes",
                     savedItems: "Saved Items", loadingSaved: "Loading saved items...", noSaved: "You haven't saved any items yet.",
@@ -327,13 +362,13 @@
                     verified: "Verified Student", joinPrefix: "Joined ", noRating: "No ratings yet",
                     saveSuccess: "Profile updated successfully!", saveError: "Error saving profile.",
                     pwdResetSent: "Password reset email sent!", deleteConfirm: "Are you sure? This will permanently delete your account and all your data.",
-                    usernameTaken: "Username already taken", usernameAvailable: "✓ Available",
-                    usernameInvalid: "Only letters, numbers, underscore", usernameChecking: "Checking...", usernameHint: "Only letters, numbers, underscore",
                     imgUploadFailed: "Failed to upload image. Please try again."
                 },
                 fr: {
                     loading: "Chargement du profil...",
-                    editProfile: "Modifier le profil", fullName: "Nom complet", usernameLbl: "Nom d'utilisateur",
+                    editProfile: "Modifier le profil", 
+                    fullName: "Nom complet (max 15 lettres)", fullNameHint: "Lettres uniquement, sans espaces", fullNameValid: "✓ Parfait", fullNameInvalid: "Lettres seulement, max 15 caractères",
+                    usernameLbl: "Nom d'utilisateur", usernameHint: "Lettres, chiffres, _ et .", usernameAvailable: "✓ Disponible", usernameUnavailable: "✗ Déjà pris", usernameChecking: "Vérification...", usernameInvalid: "Caractères invalides",
                     bio: "Biographie", bioPlace: "Parlez-nous un peu de vous...",
                     appLang: "Langue de l'application", resetPwd: "Réinitialiser le mot de passe", saveChanges: "Enregistrer les modifications",
                     savedItems: "Articles sauvegardés", loadingSaved: "Chargement des articles sauvegardés...", noSaved: "Vous n'avez pas encore d'articles sauvegardés.",
@@ -342,8 +377,6 @@
                     verified: "Étudiant vérifié", joinPrefix: "Membre depuis ", noRating: "Aucune évaluation",
                     saveSuccess: "Profil mis à jour avec succès !", saveError: "Erreur lors de la mise à jour.",
                     pwdResetSent: "E-mail de réinitialisation envoyé !", deleteConfirm: "Êtes-vous sûr ? Cela supprimera définitivement votre compte et toutes vos données.",
-                    usernameTaken: "Nom d'utilisateur déjà pris", usernameAvailable: "✓ Disponible",
-                    usernameInvalid: "Lettres, chiffres, tiret bas uniquement", usernameChecking: "Vérification...", usernameHint: "Lettres, chiffres, tiret bas uniquement",
                     imgUploadFailed: "Échec du téléchargement de l'image. Veuillez réessayer."
                 }
             }[lang];
@@ -363,21 +396,12 @@
             document.getElementById('ui-danger-zone').textContent = t.dangerZone;
             document.getElementById('ui-danger-text').textContent = t.dangerText;
             document.getElementById('ui-btn-delete').textContent = t.deleteBtn;
+            editUsernameHintText.textContent = t.usernameHint;
+            document.querySelector('#edit-fullname-hint .hint-text').textContent = t.fullNameHint;
 
-            // Helpers
-            function generateBannerGradient(uid) {
-                let hash = 0;
-                for (let i = 0; i < uid.length; i++) { hash = ((hash << 5) - hash) + uid.charCodeAt(i); hash |= 0; }
-                const hue1 = Math.abs(hash % 360);
-                const hue2 = (hue1 + 40) % 360;
-                const sat = 65 + (Math.abs(hash >> 8) % 20);
-                const light = 35 + (Math.abs(hash >> 16) % 20);
-                return `linear-gradient(135deg, hsl(${hue1}, ${sat}%, ${light}%), hsl(${hue2}, ${sat}%, ${light - 15}%))`;
-            }
-
-            function isValidUsernameFormat(username) {
-                return /^[a-zA-Z0-9_]{3,}$/.test(username);
-            }
+            // --- VALIDATION HELPERS ---
+            function isValidFullName(name) { return /^[A-Za-z]{1,15}$/.test(name); }
+            function isValidUsernameFormat(username) { return /^[a-zA-Z0-9_.]{1,30}$/.test(username); }
 
             async function checkUsernameAvailability(username, currentUid) {
                 if (!username || !isValidUsernameFormat(username)) return false;
@@ -388,19 +412,107 @@
                 return false;
             }
 
-            // --- AUTO UPLOAD AVATAR (with Bot Shield) ---
+            function updateSubmitButton() {
+                saveBtn.disabled = !(isFullnameValid && isUsernameValid);
+            }
+
+            function updateFullnameUI() {
+                saveFeedback.textContent = '';
+                const name = editFullname.value.trim();
+                
+                if (!name) {
+                    editFullnameStatus.innerHTML = '';
+                    editFullnameHint.innerHTML = `<span class="hint-text">${t.fullNameHint}</span>`;
+                    isFullnameValid = false;
+                } else if (isValidFullName(name)) {
+                    editFullnameStatus.innerHTML = '<i class="fas fa-check-circle status-valid"></i>';
+                    editFullnameHint.innerHTML = `<span class="hint-text" style="color: var(--success);">${t.fullNameValid}</span>`;
+                    isFullnameValid = true;
+                } else {
+                    editFullnameStatus.innerHTML = '<i class="fas fa-times-circle status-invalid"></i>';
+                    editFullnameHint.innerHTML = `<span class="hint-error">${t.fullNameInvalid}</span>`;
+                    isFullnameValid = false;
+                }
+                updateSubmitButton();
+            }
+
+            async function updateUsernameUI() {
+                saveFeedback.textContent = '';
+                const username = editUsername.value.trim().toLowerCase();
+                
+                if (!username) {
+                    editUsernameStatusIcon.innerHTML = '';
+                    editUsernameHintText.textContent = t.usernameHint;
+                    editUsernameAvailability.textContent = '';
+                    isUsernameValid = false;
+                    updateSubmitButton();
+                    return;
+                }
+
+                if (!isValidUsernameFormat(username)) {
+                    editUsernameStatusIcon.innerHTML = '<i class="fas fa-times-circle status-invalid"></i>';
+                    editUsernameHintText.textContent = t.usernameInvalid;
+                    editUsernameAvailability.textContent = '';
+                    isUsernameValid = false;
+                    updateSubmitButton();
+                    return;
+                }
+
+                // If it's unchanged from original, it's immediately valid
+                if (username === originalUsername) {
+                    editUsernameStatusIcon.innerHTML = '<i class="fas fa-check-circle status-valid"></i>';
+                    editUsernameHintText.textContent = t.usernameHint;
+                    editUsernameAvailability.textContent = t.usernameAvailable;
+                    editUsernameAvailability.style.color = 'var(--success)';
+                    isUsernameValid = true;
+                    updateSubmitButton();
+                    return;
+                }
+
+                editUsernameStatusIcon.innerHTML = '<i class="fas fa-spinner fa-spin status-checking"></i>';
+                editUsernameHintText.textContent = t.usernameHint;
+                editUsernameAvailability.textContent = t.usernameChecking;
+                isUsernameValid = false;
+                updateSubmitButton();
+
+                if (usernameCheckTimeout) clearTimeout(usernameCheckTimeout);
+                usernameCheckTimeout = setTimeout(async () => {
+                    const available = await checkUsernameAvailability(username, currentUser.uid);
+                    if (available) {
+                        editUsernameStatusIcon.innerHTML = '<i class="fas fa-check-circle status-valid"></i>';
+                        editUsernameAvailability.textContent = t.usernameAvailable;
+                        editUsernameAvailability.style.color = 'var(--success)';
+                        isUsernameValid = true;
+                    } else {
+                        editUsernameStatusIcon.innerHTML = '<i class="fas fa-times-circle status-invalid"></i>';
+                        editUsernameAvailability.textContent = t.usernameUnavailable;
+                        editUsernameAvailability.style.color = 'var(--error)';
+                        isUsernameValid = false;
+                    }
+                    updateSubmitButton();
+                }, 500);
+            }
+
+            editFullname.addEventListener('input', updateFullnameUI);
+            editUsername.addEventListener('input', updateUsernameUI);
+
+
+            function generateBannerGradient(uid) {
+                let hash = 0;
+                for (let i = 0; i < uid.length; i++) { hash = ((hash << 5) - hash) + uid.charCodeAt(i); hash |= 0; }
+                const hue1 = Math.abs(hash % 360);
+                const hue2 = (hue1 + 40) % 360;
+                const sat = 65 + (Math.abs(hash >> 8) % 20);
+                const light = 35 + (Math.abs(hash >> 16) % 20);
+                return `linear-gradient(135deg, hsl(${hue1}, ${sat}%, ${light}%), hsl(${hue2}, ${sat}%, ${light - 15}%))`;
+            }
+
+            // --- AUTO UPLOAD AVATAR ---
             editAvatarBtn.onclick = () => photoUploadInput.click();
             
             photoUploadInput.onchange = async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-
-                // 🔥 BOT SHIELD CHECK
-                const allowed = await window.checkBotLimits();
-                if (!allowed) {
-                    photoUploadInput.value = '';
-                    return;
-                }
 
                 // 1. Show local preview instantly
                 const reader = new FileReader();
@@ -434,9 +546,6 @@
                         await updateProfile(currentUser, { photoURL: finalPhotoURL });
                         await updateDoc(doc(db, "users", currentUser.uid), { photoURL: finalPhotoURL });
                         currentUserData.photoURL = finalPhotoURL;
-                        
-                        // Record activity
-                        window.recordActivity('images');
                     } else {
                         throw new Error("Upload Failed");
                     }
@@ -452,30 +561,6 @@
                     photoUploadInput.value = ''; // clear input
                 }
             };
-
-            // Username validation listener
-            editUsername.addEventListener('input', async () => {
-                if (usernameCheckTimeout) clearTimeout(usernameCheckTimeout);
-                const newUsername = editUsername.value.trim().toLowerCase();
-                
-                if (!newUsername) {
-                    usernameStatus.textContent = t.usernameHint; usernameStatus.className = 'username-status'; isUsernameValid = false; return;
-                }
-                if (!isValidUsernameFormat(newUsername)) {
-                    usernameStatus.textContent = t.usernameInvalid; usernameStatus.className = 'username-status invalid'; isUsernameValid = false; return;
-                }
-                
-                usernameStatus.textContent = t.usernameChecking; usernameStatus.className = 'username-status checking'; isUsernameValid = false;
-                
-                usernameCheckTimeout = setTimeout(async () => {
-                    const available = await checkUsernameAvailability(newUsername, currentUser.uid);
-                    if (available) {
-                        usernameStatus.textContent = t.usernameAvailable; usernameStatus.className = 'username-status valid'; isUsernameValid = true;
-                    } else {
-                        usernameStatus.textContent = t.usernameTaken; usernameStatus.className = 'username-status invalid'; isUsernameValid = false;
-                    }
-                }, 500);
-            });
 
             // Load Data
             async function loadProfile() {
@@ -511,6 +596,10 @@
                 avatarImg.src = photoURL;
                 bannerDiv.style.background = generateBannerGradient(user.uid);
                 
+                // Run initial validation UI to show green checks on load
+                if (editFullname.value) updateFullnameUI();
+                if (editUsername.value) updateUsernameUI();
+
                 const ratingContainer = document.getElementById('rating-display');
                 if (currentUserData.ratingCount && currentUserData.ratingCount > 0) {
                     const avg = (currentUserData.ratingSum / currentUserData.ratingCount).toFixed(1);
@@ -574,7 +663,7 @@
                 profileContainer.style.display = 'block';
             }
             
-            // Save logic (Only handles text fields now)
+            // Save logic
             async function saveProfile() {
                 saveBtn.disabled = true;
                 saveFeedback.textContent = '';
@@ -585,23 +674,10 @@
                 const newBio = editBio.value.trim();
                 const newLanguage = languageSelect.value;
                 
-                if (!newFullname || !newUsername) {
-                    saveFeedback.textContent = 'Name and Username are required.';
+                if (!isFullnameValid || !isUsernameValid) {
+                    saveFeedback.textContent = 'Please fix the errors above.';
                     saveFeedback.style.color = 'var(--red)';
-                    saveBtn.disabled = false; return;
-                }
-                if (!isValidUsernameFormat(newUsername)) {
-                    saveFeedback.textContent = t.usernameInvalid;
-                    saveFeedback.style.color = 'var(--red)';
-                    saveBtn.disabled = false; return;
-                }
-                if (newUsername !== originalUsername && !isUsernameValid) {
-                    const available = await checkUsernameAvailability(newUsername, currentUser.uid);
-                    if (!available) {
-                        saveFeedback.textContent = t.usernameTaken;
-                        saveFeedback.style.color = 'var(--red)';
-                        saveBtn.disabled = false; return;
-                    }
+                    return; // Button stays disabled
                 }
                 
                 saveFeedback.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
