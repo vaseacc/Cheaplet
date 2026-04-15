@@ -32,7 +32,6 @@
     
     <script type="module" src="global.js"></script>
     <style>
-        /* All CSS unchanged from previous version – omitted for brevity but remains identical */
         :root {
             --gold:        #C8A96E;
             --gold-light:  #e0c48f;
@@ -730,6 +729,7 @@
             const usernameAvailability = document.getElementById('username-availability');
 
             let isLoginMode = true;
+            let isRegistering = false; // Added to prevent race conditions during signup
             let usernameCheckTimeout = null;
             let isUsernameValid = false;
             let isFullnameValid = false;
@@ -952,21 +952,20 @@
             try {
                 const result = await getRedirectResult(auth);
                 if (result) {
-                    // User successfully signed in via redirect
                     loadingOverlay.style.display = 'flex';
                     const user = result.user;
                     const userDocRef = doc(db, "users", user.uid);
                     const userDoc = await getDoc(userDocRef);
                     
                     if (!userDoc.exists()) {
-                        // New OAuth user – create document with default values (displayName from provider)
+                        // New OAuth user
                         const displayName = user.displayName || '';
                         const email = user.email || '';
                         const schoolInfo = getSchoolInfo(email);
                         await setDoc(userDocRef, {
                             uid: user.uid,
                             displayName: displayName,
-                            username: '', // Will be set during tour
+                            username: '', // Settled during global tour
                             email: email,
                             role: 'user',
                             isStudent: schoolInfo.isStudent,
@@ -974,16 +973,7 @@
                             createdAt: new Date().toISOString()
                         });
                     }
-                    
-                    const data = (await getDoc(userDocRef)).data();
-                    if (data && data.role === 'banned') {
-                        await signOut(auth);
-                        alert(strings[lang].errBanned);
-                        loadingOverlay.style.display = 'none';
-                        return;
-                    }
-                    
-                    window.location.href = new URLSearchParams(window.location.search).get('redirect') || '/index.html';
+                    // Redirect handled smoothly by onAuthStateChanged
                 }
             } catch (error) {
                 console.error("Redirect result error:", error);
@@ -993,18 +983,37 @@
                 }
             }
 
+            // Unified Auth State Listener
             onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    const userDocRef = doc(db, "users", user.uid);
-                    const userDoc = await getDoc(userDocRef);
-                    const data = userDoc.data();
-                    if (data && data.role === 'banned') {
+                if (user && !isRegistering) {
+                    const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
+                    
+                    // Force verification for email/password users
+                    if (!isOAuth && !user.emailVerified) {
                         await signOut(auth);
-                        alert(strings[lang].errBanned);
+                        loadingOverlay.style.display = 'none';
+                        alert(strings[lang].errVerify);
                         return;
                     }
-                    if (!window.location.pathname.includes('/login.html')) {
+
+                    loadingOverlay.style.display = 'flex';
+                    try {
+                        const userDocRef = doc(db, "users", user.uid);
+                        const userDoc = await getDoc(userDocRef);
+                        if (userDoc.exists()) {
+                            const data = userDoc.data();
+                            if (data && data.role === 'banned') {
+                                await signOut(auth);
+                                loadingOverlay.style.display = 'none';
+                                alert(strings[lang].errBanned);
+                                return;
+                            }
+                        }
+                        // Valid user, let's get them off the login page
                         window.location.href = new URLSearchParams(window.location.search).get('redirect') || '/index.html';
+                    } catch(e) {
+                        console.error(e);
+                        loadingOverlay.style.display = 'none';
                     }
                 }
             });
@@ -1035,7 +1044,6 @@
                 applyUIText();
             };
 
-            // 🔥 Use redirect instead of popup for OAuth
             document.getElementById('google-btn').onclick = async () => {
                 try {
                     loadingOverlay.style.display = 'flex';
@@ -1078,7 +1086,9 @@
                             return;
                         }
                         
+                        isRegistering = true; // Block onAuthStateChanged from firing prematurely
                         loadingOverlay.style.display = 'flex';
+                        
                         const cred = await createUserWithEmailAndPassword(auth, email, pass);
                         await updateProfile(cred.user, { displayName: fullName });
                         await createUserDocument(cred.user, fullName, username);
@@ -1086,6 +1096,7 @@
                         
                         await signOut(auth);
                         loadingOverlay.style.display = 'none';
+                        isRegistering = false; 
                         
                         alert(strings[lang].errSent);
                         location.reload();
@@ -1094,6 +1105,7 @@
                     loadingOverlay.style.display = 'none';
                     alert(err.message);
                     isSubmitting = false;
+                    isRegistering = false;
                     submitBtn.disabled = false;
                 }
             };
