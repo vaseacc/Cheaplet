@@ -348,9 +348,7 @@
                     imgSizeErr: "Image too large (Max 5MB).", uploading: "Uploading Images…",
                     tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.",
                     tagUses: "uses", uploadFail: "Image upload failed. Please try again.",
-                    reviewMessage: "Your listing is being reviewed. You will be notified once approved.",
-                    cameraDenied: "Camera access was denied. Please allow camera permission in your browser settings and try again.",
-                    noCamera: "No camera found on this device."
+                    reviewMessage: "Your listing is being reviewed. You will be notified once approved."
                 },
                 fr: {
                     mainTitle: "Publier un article", mainSub: "Remplissez les détails ci-dessous et votre livre sera automatiquement examiné.",
@@ -371,9 +369,7 @@
                     imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Téléchargement…",
                     tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.",
                     tagUses: "utilisations", uploadFail: "Échec du téléchargement. Veuillez réessayer.",
-                    reviewMessage: "Votre annonce est en cours d'examen. Vous serez notifié une fois approuvée.",
-                    cameraDenied: "L'accès à la caméra a été refusé. Veuillez autoriser la caméra dans les paramètres de votre navigateur et réessayer.",
-                    noCamera: "Aucune caméra trouvée sur cet appareil."
+                    reviewMessage: "Votre annonce est en cours d'examen. Vous serez notifié une fois approuvée."
                 }
             };
 
@@ -419,7 +415,7 @@
 
             let currentUser = null;
             let internalSchoolName = "Global Campus";
-            let selectedFiles = [];
+            let selectedFiles =[];
             let tags =[];
             const pageLoader = document.getElementById('page-loader');
             const loaderTimeout = setTimeout(() => { pageLoader.style.display = 'none'; }, 4000);
@@ -467,7 +463,7 @@
                     const cached = isbnCache[cleanIsbn];
                     document.getElementById('listing-title').value = cached.title;
                     document.getElementById('listing-description').value = cached.description;
-                    document.getElementById('listing-isbn').value = cleanIsbn;
+                    document.getElementById('listing-isbn').value = cleanIsbn; 
                     document.getElementById('isbn-section').style.display = 'none';
                     document.getElementById('main-form-section').style.display = 'block';
                     if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
@@ -479,7 +475,20 @@
                 scanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${ui[lang].fetching}</span>`;
                 scanBtn.disabled = true; manualBtn.disabled = true;
 
+                // Added request camera permission on button click
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function (stream) {
+                        console.log("Camera permission granted");
+                        // You can stop the stream immediately if you just wanted to prompt
+                        stream.getTracks().forEach(track => track.stop());
+                    })
+                    .catch(function (error) {
+                        console.warn("Camera permission denied", error);
+                    });
+
                 let bookData = null;
+                const userLang = localStorage.getItem('preferred_language') || 'en';
+                const isFrench = userLang === 'fr';
 
                 try {
                     const workUrl = `https://openlibrary.org/isbn/${cleanIsbn}.json`;
@@ -510,7 +519,7 @@
                     saveCache();
                     document.getElementById('listing-title').value = bookData.title;
                     document.getElementById('listing-description').value = bookData.description;
-                    document.getElementById('listing-isbn').value = cleanIsbn;
+                    document.getElementById('listing-isbn').value = cleanIsbn; 
                     document.getElementById('isbn-section').style.display = 'none';
                     document.getElementById('main-form-section').style.display = 'block';
                     if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
@@ -522,48 +531,25 @@
                 scanBtn.disabled = false; manualBtn.disabled = false;
             }
 
-            // 🔥 NEW: Explicit camera permission request before scanning
-            async function requestCameraAndScan() {
+            document.getElementById('start-scan-btn').onclick = async () => {
+                // Request camera permission before attempting to start the scanner
                 try {
-                    // Check if device has any video input
-                    const devices = await navigator.mediaDevices.enumerateDevices();
-                    const hasCamera = devices.some(device => device.kind === 'videoinput');
-                    if (!hasCamera) {
-                        alert(ui[lang].noCamera);
-                        return;
-                    }
-
-                    // Request camera permission explicitly
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
-                    // Permission granted – stop the stream immediately (we only needed the permission)
-                    stream.getTracks().forEach(track => track.stop());
-
-                    // Now start the QR scanner
-                    if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-                    document.getElementById('reader').style.display = 'block';
-                    
-                    await html5QrCode.start(
-                        { facingMode: { ideal: "environment" } }, 
-                        { fps: 10, qrbox: { width: 250, height: 150 } }, 
-                        (decodedText) => {
-                            html5QrCode.stop().then(() => { 
-                                document.getElementById('reader').style.display = 'none'; 
-                                fetchBookData(decodedText); 
-                            });
-                        }
-                    );
-                } catch (err) {
-                    document.getElementById('reader').style.display = 'none';
-                    console.error("Camera error:", err);
-                    if (err.name === 'NotAllowedError' || err.message.includes("Permission denied")) {
-                        alert(ui[lang].cameraDenied);
-                    } else {
-                        alert("Unable to start camera. Please make sure your device has a camera and try again.");
-                    }
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    stream.getTracks().forEach(track => track.stop()); // Clean up immediately after permission granted
+                } catch (error) {
+                    alert("Camera access denied or not available. Please allow camera access to scan barcodes.");
+                    return; // Stop execution if denied
                 }
-            }
 
-            document.getElementById('start-scan-btn').onclick = requestCameraAndScan;
+                if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+                document.getElementById('reader').style.display = 'block';
+                html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, (decodedText) => {
+                    html5QrCode.stop().then(() => { document.getElementById('reader').style.display = 'none'; fetchBookData(decodedText); });
+                }).catch(err => { 
+                    alert("Unable to start the camera. Please check your browser permissions."); 
+                    document.getElementById('reader').style.display = 'none';
+                });
+            };
 
             document.getElementById('manual-isbn-btn').onclick = () => {
                 const val = document.getElementById('manual-isbn-input').value.trim();
@@ -577,7 +563,6 @@
                 document.getElementById('main-form-section').style.display = 'block';
             };
 
-            // Tags logic
             const tagInput = document.getElementById('tag-input');
             const selectedTagsContainer = document.getElementById('selected-tags');
             const suggestionsBox = document.getElementById('suggestions-box');
@@ -644,6 +629,7 @@
             }
 
             imageInput.onchange = async (e) => {
+                // TRIGGER BOT SHIELD
                 const isHuman = await window.checkBotLimits();
                 if (!isHuman) { e.target.value = ''; return; }
 
@@ -660,6 +646,7 @@
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
 
+                // TRIGGER BOT SHIELD
                 const isHuman = await window.checkBotLimits();
                 if (!isHuman) return;
 
@@ -698,7 +685,7 @@
                         digitalCode: document.getElementById('listing-digital-code').value,
                         location: document.getElementById('listing-location').value,
                         tags, imageUrls,
-                        isbn: cleanIsbn,
+                        isbn: cleanIsbn, 
                         posterUid: currentUser.uid,
                         posterDisplayName: currentUser.displayName || "User",
                         status: 'pending',
