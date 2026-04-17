@@ -1,4 +1,6 @@
-<html lang="en"><head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Messages - Scoralia</title>
@@ -131,11 +133,12 @@
 
     <header>
         <div class="header-inner">
-            <a href="/index.html" class="logo">Cheap<em>let</em></a>
+            <a href="/index.html" class="logo">Scor<em>alia</em></a>
             <nav>
                 <ul>
                     <li><a href="/search.html" id="nav-browse-link">Browse</a></li>
                     <li><a href="/my-listings.html" id="nav-listings-link">My Listings</a></li>
+                    <li><a href="/social.html" id="nav-hub-link">Campus Hub</a></li>
                     <li><a href="/messages.html" id="nav-messages-link">Messages</a></li>
                 </ul>
             </nav>
@@ -172,14 +175,15 @@
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = {
-                en: { loading: "Loading conversations…", empty: "You have no messages yet.", login: "Please log in to view messages.", pageSub: "Your conversations with buyers and sellers.", navB: "Browse", navL: "My Listings", navM: "Messages", sent: "Sent", seen: "Seen", requestPrefix: "requested to join", listingChat: "Listing" },
-                fr: { loading: "Chargement des conversations…", empty: "Vous n'avez pas encore de messages.", login: "Veuillez vous connecter pour voir vos messages.", pageSub: "Vos conversations avec acheteurs et vendeurs.", navB: "Parcourir", navL: "Mes Annonces", navM: "Messages", sent: "Envoyé", seen: "Vu", requestPrefix: "demandé à rejoindre", listingChat: "Annonce" }
+                en: { loading: "Loading conversations…", empty: "You have no messages yet.", login: "Please log in to view messages.", pageSub: "Your conversations with buyers and sellers.", navB: "Browse", navL: "My Listings", navM: "Messages", navH: "Campus Hub", sent: "Sent", seen: "Seen", requestPrefix: "requested to join", listingChat: "Listing" },
+                fr: { loading: "Chargement des conversations…", empty: "Vous n'avez pas encore de messages.", login: "Veuillez vous connecter pour voir vos messages.", pageSub: "Vos conversations avec acheteurs et vendeurs.", navB: "Parcourir", navL: "Mes Annonces", navM: "Messages", navH: "Hub Campus", sent: "Envoyé", seen: "Vu", requestPrefix: "demandé à rejoindre", listingChat: "Annonce" }
             };
 
             const ui = strings[lang];
             document.getElementById('nav-browse-link').textContent = ui.navB;
             document.getElementById('nav-listings-link').textContent = ui.navL;
             document.getElementById('nav-messages-link').textContent = ui.navM;
+            if(document.getElementById('nav-hub-link')) document.getElementById('nav-hub-link').textContent = ui.navH;
             document.getElementById('page-sub').textContent = ui.pageSub;
 
             const userCache = {};
@@ -212,7 +216,7 @@
                 const q = query(
                     collection(db, "chats"),
                     where("participants", "array-contains", currentUser.uid),
-                    orderBy("lastMessageTimestamp", "desc")
+                    orderBy("lastUpdate", "desc") // Fixed: Using lastUpdate instead of lastMessageTimestamp as per your DB schema
                 );
 
                 unsubscribe = onSnapshot(q, (snapshot) => {
@@ -329,4 +333,5 @@
         }
         main();
     </script>
-</body></html>
+</body>
+</html>
