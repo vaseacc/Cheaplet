@@ -348,7 +348,8 @@
                     imgSizeErr: "Image too large (Max 5MB).", uploading: "Uploading Images…",
                     tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.",
                     tagUses: "uses", uploadFail: "Image upload failed. Please try again.",
-                    reviewMessage: "Your listing is being reviewed. You will be notified once approved."
+                    reviewMessage: "Your listing is being reviewed. You will be notified once approved.",
+                    cameraDenied: "Camera access was denied. Please allow camera permission in your browser settings and try again."
                 },
                 fr: {
                     mainTitle: "Publier un article", mainSub: "Remplissez les détails ci-dessous et votre livre sera automatiquement examiné.",
@@ -369,7 +370,8 @@
                     imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Téléchargement…",
                     tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.",
                     tagUses: "utilisations", uploadFail: "Échec du téléchargement. Veuillez réessayer.",
-                    reviewMessage: "Votre annonce est en cours d'examen. Vous serez notifié une fois approuvée."
+                    reviewMessage: "Votre annonce est en cours d'examen. Vous serez notifié une fois approuvée.",
+                    cameraDenied: "L'accès à la caméra a été refusé. Veuillez autoriser la caméra dans les paramètres de votre navigateur et réessayer."
                 }
             };
 
@@ -521,12 +523,32 @@
                 scanBtn.disabled = false; manualBtn.disabled = false;
             }
 
-            document.getElementById('start-scan-btn').onclick = () => {
+            document.getElementById('start-scan-btn').onclick = async () => {
                 if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
                 document.getElementById('reader').style.display = 'block';
-                html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, (decodedText) => {
-                    html5QrCode.stop().then(() => { document.getElementById('reader').style.display = 'none'; fetchBookData(decodedText); });
-                }).catch(err => { alert("Camera access denied."); });
+                
+                // 🔥 Use ideal facingMode to gracefully fallback if environment camera isn't available
+                try {
+                    await html5QrCode.start(
+                        { facingMode: { ideal: "environment" } }, 
+                        { fps: 10, qrbox: { width: 250, height: 150 } }, 
+                        (decodedText) => {
+                            html5QrCode.stop().then(() => { 
+                                document.getElementById('reader').style.display = 'none'; 
+                                fetchBookData(decodedText); 
+                            });
+                        }
+                    );
+                } catch (err) {
+                    document.getElementById('reader').style.display = 'none';
+                    console.error("Camera error:", err);
+                    // Show a friendly message if camera access was denied
+                    if (err.message && err.message.includes("Permission denied")) {
+                        alert(ui[lang].cameraDenied);
+                    } else {
+                        alert("Unable to start camera. Please make sure your device has a camera and try again.");
+                    }
+                }
             };
 
             document.getElementById('manual-isbn-btn').onclick = () => {
