@@ -19,7 +19,22 @@
 
         .chat-main-wrapper { display: flex; flex-grow: 1; width: 100%; max-width: 1300px; margin: 0 auto; background: white; border-left: 1px solid #eee; border-right: 1px solid #eee; overflow: hidden; }
         .chat-sidebar { width: 320px; border-right: 1px solid #eee; display: flex; flex-direction: column; background: #fdfdfd; flex-shrink: 0; transition: 0.3s ease; }
-        .sidebar-header { padding: 20px; font-weight: 800; font-size: 1.2rem; border-bottom: 1px solid #eee; color: #2B5C92; flex-shrink: 0; }
+        .sidebar-header { 
+            padding: 20px; 
+            font-weight: 800; 
+            font-size: 1.2rem; 
+            border-bottom: 1px solid #eee; 
+            color: #2B5C92; 
+            flex-shrink: 0; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .sidebar-header:hover { background: #f0f4fa; }
+        .sidebar-header i { color: #2B5C92; font-size: 1rem; }
         #sidebar-list { flex-grow: 1; overflow-y: auto; }
         
         .side-conv-item { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f9f9f9; text-decoration: none; color: inherit; position: relative; }
@@ -117,7 +132,10 @@
 
     <div class="chat-main-wrapper">
         <aside class="chat-sidebar" id="chat-sidebar">
-            <div class="sidebar-header" data-i18n="nav_messages">Messages</div>
+            <a href="/messages.html" class="sidebar-header" id="sidebar-header-link">
+                <i class="fas fa-arrow-left"></i>
+                <span data-i18n="nav_messages">Messages</span>
+            </a>
             <div id="sidebar-list"></div>
         </aside>
 
@@ -240,15 +258,24 @@
                 en: { 
                     imageSent: "Sent a photo", sold: "SOLD", reportSuccess: "Report submitted.", soldBanner: "Listing Sold - Chat Disabled", rateText: "Rate your experience", rateSuccess: "Thanks for rating!", verifiedStudent: "Verified Student", noRatings: "No ratings yet", uploadFail: "Image upload failed.", sent: "Sent", seen: "Seen",
                     accept: "Accept", decline: "Decline", requestApproved: "Request approved!", requestDeclined: "Request declined.",
-                    statusPending: "Pending...", statusApproved: "Approved", statusDeclined: "Declined"
+                    statusPending: "Pending...", statusApproved: "Approved", statusDeclined: "Declined",
+                    nav_messages: "Messages"
                 }, 
                 fr: { 
                     imageSent: "A envoyé une photo", sold: "VENDU", reportSuccess: "Signalement envoyé.", soldBanner: "Annonce vendue - Chat désactivé", rateText: "Évaluez votre expérience", rateSuccess: "Merci pour votre évaluation !", verifiedStudent: "Étudiant vérifié", noRatings: "Aucune évaluation", uploadFail: "Échec du téléchargement.", sent: "Envoyé", seen: "Vu",
                     accept: "Accepter", decline: "Refuser", requestApproved: "Demande acceptée !", requestDeclined: "Demande refusée.",
-                    statusPending: "En attente...", statusApproved: "Acceptée", statusDeclined: "Refusée"
+                    statusPending: "En attente...", statusApproved: "Acceptée", statusDeclined: "Refusée",
+                    nav_messages: "Messages"
                 } 
             };
             const ui = strings[lang];
+
+            // Update the sidebar header text dynamically
+            const sidebarHeaderLink = document.getElementById('sidebar-header-link');
+            if (sidebarHeaderLink) {
+                const span = sidebarHeaderLink.querySelector('span');
+                if (span) span.textContent = ui.nav_messages;
+            }
 
             const userCache = {};
             mobileMenuBtn.onclick = (e) => { e.stopPropagation(); sidebar.classList.toggle('open'); };
