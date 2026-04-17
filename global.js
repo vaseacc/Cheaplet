@@ -2,7 +2,13 @@ import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebase
 import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, onSnapshot, updateDoc, setDoc, collection, query, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
-// --- 0. AUTO-IMPORT ICONS & FAVICON ---
+// --- Helper for non-critical tasks ---
+const runWhenIdle = (cb) => {
+    if (window.requestIdleCallback) requestIdleCallback(cb);
+    else setTimeout(cb, 1);
+};
+
+// --- 0. AUTO-IMPORT ICONS & FAVICON (Performance: Only if not present) ---
 if (!document.querySelector('link[href*="font-awesome"]')) {
     const faLink = document.createElement('link');
     faLink.rel = 'stylesheet';
@@ -27,23 +33,51 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+// Track index visits for PWA prompt logic
+if (window.location.pathname === '/' || window.location.pathname.includes('index.html')) {
+    // Use sessionStorage so we only count 1 visit per active browser session
+    if (!sessionStorage.getItem('index_visited_this_session')) {
+        let visits = parseInt(localStorage.getItem('pwa_index_visits') || '0');
+        localStorage.setItem('pwa_index_visits', (visits + 1).toString());
+        sessionStorage.setItem('index_visited_this_session', 'true');
+    }
+}
+
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
     // Prevent the mini-infobar from appearing on mobile
     e.preventDefault();
     // Stash the event so it can be triggered later.
     deferredPrompt = e;
-    // Show our custom install UI
-    showInstallPromotion();
+    
+    // 1. Only show on mobile devices
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (!isMobile) return;
+
+    // 2. Do not prompt if already installed (standalone mode)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+    if (isStandalone) return;
+
+    // 3. Check dismissal logic (Reminders)
+    let dismissCount = parseInt(localStorage.getItem('pwa_dismiss_count') || '0');
+    let indexVisits = parseInt(localStorage.getItem('pwa_index_visits') || '0');
+    
+    let threshold = 0;
+    if (dismissCount === 1) threshold = 3;         // Wait 3 visits if dismissed once
+    else if (dismissCount === 2) threshold = 10;   // Wait 10 visits if dismissed twice
+    else if (dismissCount >= 3) threshold = 14;    // Wait 14 visits for all subsequent dismissals
+
+    if (indexVisits >= threshold) {
+        showInstallPromotion();
+    }
 });
 
 function showInstallPromotion() {
-    if (localStorage.getItem('scoralia_pwa_dismissed') === 'true') return;
     if (document.getElementById('pwa-install-banner')) return;
 
     const lang = localStorage.getItem('preferred_language') || 'en';
     const textTitle = lang === 'fr' ? 'Installer Scoralia' : 'Install Scoralia';
-    const textSub = lang === 'fr' ? 'Ajouter à l\'écran d\'accueil' : 'Add to home screen for quick access';
+    const textSub = lang === 'fr' ? "Ajouter à l'écran d'accueil" : 'Add to home screen for quick access';
     const btnText = lang === 'fr' ? 'Installer' : 'Install';
 
     const banner = document.createElement('div');
@@ -78,7 +112,10 @@ function showInstallPromotion() {
 
     document.getElementById('btn-pwa-dismiss').addEventListener('click', () => {
         banner.style.display = 'none';
-        localStorage.setItem('scoralia_pwa_dismissed', 'true');
+        // Increment dismiss count and reset index visits back to 0
+        let currentCount = parseInt(localStorage.getItem('pwa_dismiss_count') || '0');
+        localStorage.setItem('pwa_dismiss_count', (currentCount + 1).toString());
+        localStorage.setItem('pwa_index_visits', '0');
     });
 }
 
@@ -147,7 +184,7 @@ if (document.readyState === 'loading') {
 // =========================================================================
 
 window.checkBotLimits = async () => {
-    // 1. Define Limits (Set to 1 for testing. Change to 10 later!)
+    // 1. Define Limits
     const MAX_LISTINGS = 1; 
     const MAX_IMAGES = 20;
 
@@ -379,22 +416,25 @@ globalStyle.innerHTML = `
     .dropdown-header .username { font-size: 0.75rem; color: #666; font-family: monospace; }
     .dropdown-item { padding: 12px 15px; text-decoration: none; color: #333; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.9rem; transition: background 0.2s; }
     .dropdown-item:hover { background-color: #f4f7fc; color: #2B5C92; }
+    
+    /* 🔴 MOBILE UNREAD BADGE & ICON CSS HERE */
     .msg-btn-mobile { background: #C8A96E; color: #0C1446; width: 36px; height: 36px; border-radius: 50%; display: none; align-items: center; justify-content: center; text-decoration: none; margin-right: 12px; font-size: 1rem; position: relative; }
     .badge-container { position: relative; display: inline-block; }
     .unread-badge { position: absolute; top: -6px; right: -12px; background-color: #C0392B; color: white; font-size: 0.65rem; font-weight: bold; padding: 2px 5px; border-radius: 10px; display: none; align-items: center; justify-content: center; z-index: 10; min-width: 18px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
     .msg-btn-mobile .unread-badge { top: -2px; right: -4px; border: 2px solid #C8A96E; }
+
     .lang-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(12,20,70,0.85); z-index: 10000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
     .lang-modal { background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
     .lang-btn { display: block; width: 100%; padding: 16px; margin: 12px 0; border: 2px solid #EBF2FA; border-radius: 12px; background: white; font-weight: bold; cursor: pointer; font-size: 1.1rem; transition: all 0.2s; color: #0C1446; }
     .lang-btn:hover { border-color: #C8A96E; background: #fdfaf4; }
     .tour-dot { width: 8px; height: 8px; border-radius: 50%; background: #e0e0e0; transition: 0.3s; }
     .tour-dot.active { background: #C8A96E; width: 24px; border-radius: 10px; }
-    .tour-input { width: 100%; padding: 10px 35px 10px 12px; border: 2px solid #eee; border-radius: 8px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; text-align: left; font-weight: bold; color: #0C1446; }
+    .tour-input { width: 100%; padding: 10px 12px; border: 2px solid #eee; border-radius: 8px; margin-bottom: 12px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; text-align: left; font-weight: bold; color: #0C1446; }
     .tour-input:focus { border-color: #C8A96E; }
     .tour-pfp-preview { width: 80px; height: 80px; border-radius: 50%; background: #eee; margin: 0 auto 15px; border: 3px solid #C8A96E; object-fit: cover; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #aaa; overflow: hidden; }
     .tour-pfp-preview img { width: 100%; height: 100%; object-fit: cover; }
     
-    /* Tour form classes */
+    /* Tour form classes (ported from login) */
     .field-wrap { margin-bottom: 12px; text-align: left; }
     .field-label { display: block; font-size: 10px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
     .input-status { position: relative; }
@@ -1022,7 +1062,7 @@ function updateHeaderToLoggedIn(userData) {
 
     container.innerHTML = `
         <button class="btn desktop-only" id="globalListBtn" style="margin-right: 15px;">${t.btn_list}</button>
-        <a href="/messages.html" class="msg-btn-mobile"><i class="fas fa-envelope"></i><span class="unread-badge" id="mobile-unread-badge"></span></a>
+        <a href="/messages.html" class="msg-btn-mobile"><i class="fas fa-comment-dots"></i><span class="unread-badge" id="mobile-unread-badge"></span></a>
         <div class="profile-menu-container">
             <div class="profile-avatar"><img src="${window.optimizeImageUrl ? window.optimizeImageUrl(finalPhotoURL) : finalPhotoURL}" alt="Profile"></div>
             <div class="dropdown-menu" id="globalDropdown">
@@ -1117,6 +1157,7 @@ function showTermsBanner() {
     document.getElementById('accept-terms-btn').onclick = () => { localStorage.setItem('scoralia_terms_accepted', 'true'); banner.remove(); };
 }
 
+// Ensure the forced modal doesn't trigger anymore since we have the banner
 if (document.getElementById('lang-modal-overlay')) {
     document.getElementById('lang-modal-overlay').remove();
 }
