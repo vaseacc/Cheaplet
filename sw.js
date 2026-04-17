@@ -1,5 +1,5 @@
 // sw.js - Service Worker for Scoralia PWA
-const CACHE_NAME = 'scoralia-v5';
+const CACHE_NAME = 'scoralia-v6';
 
 // Files to cache for offline access
 const urlsToCache = [
