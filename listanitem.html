@@ -129,6 +129,9 @@
         .btn-cancel { flex: 1; min-width: 120px; background: var(--surface); color: var(--text-muted); border: 1.5px solid rgba(179,205,224,0.5); border-radius: var(--radius-sm); padding: 12px 20px; font-family: var(--font-body); font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s, color 0.2s; }
         .btn-cancel:hover { background: var(--mist); color: var(--ink); }
 
+        .social-promo { margin-top: 16px; text-align: center; font-size: 0.8rem; color: var(--text-muted); background: var(--off-white); padding: 8px 12px; border-radius: 40px; display: inline-block; width: 100%; }
+        .social-promo i { color: var(--gold); margin-right: 6px; }
+
         @media (max-width: 767px) {
             nav { display: none; }
             .page-hero { padding: 28px 16px; }
@@ -155,6 +158,7 @@
                 <ul>
                     <li><a href="/search.html">Browse</a></li>
                     <li><a href="/my-listings.html">My Listings</a></li>
+                    <li><a href="/social.html">Campus Hub</a></li>
                     <li><a href="/messages.html">Messages</a></li>
                 </ul>
             </nav>
@@ -165,7 +169,7 @@
     <div class="page-hero">
         <div class="page-hero-inner">
             <h1 id="ui-main-title">List an Item</h1>
-            <p id="ui-main-subtitle">Fill in the details below and your book will be reviewed by our AI safety system.</p>
+            <p id="ui-main-subtitle">Fill in the details below and your book will be automatically reviewed.</p>
         </div>
     </div>
 
@@ -194,19 +198,15 @@
         <div id="main-form-section" style="display: none;">
             <div class="form-wrapper">
                 <form id="listing-form">
-
-                    <!-- Hidden ISBN field -->
+                    <!-- HIDDEN FIELD FOR ISBN -->
                     <input type="hidden" id="listing-isbn" value="">
 
                     <div class="form-section">
                         <div class="section-label"><i class="fas fa-pen"></i> <span id="ui-sec-basic">Basic Info</span></div>
-
                         <label class="field-label" id="ui-label-title">Title</label>
                         <input type="text" id="listing-title" maxlength="80" required>
-
                         <label class="field-label" id="ui-label-desc">Description</label>
                         <textarea id="listing-description" maxlength="1500" required></textarea>
-
                         <div class="price-row">
                             <div>
                                 <label class="field-label" id="ui-label-price">Sale Price ($)</label>
@@ -233,7 +233,6 @@
 
                     <div class="form-section">
                         <div class="section-label"><i class="fas fa-book"></i> <span id="ui-sec-cond">Condition & Details</span></div>
-
                         <div class="two-col">
                             <div>
                                 <label class="field-label" id="ui-label-condition">Condition</label>
@@ -254,7 +253,6 @@
                                 </select>
                             </div>
                         </div>
-
                         <label class="field-label" id="ui-label-details">Additional Details</label>
                         <div class="checkbox-group">
                             <label class="checkbox-item"><input type="checkbox" id="cond-writing"> <span id="ui-check-writing">Writing inside</span></label>
@@ -265,7 +263,6 @@
 
                     <div class="form-section">
                         <div class="section-label"><i class="fas fa-location-dot"></i> <span id="ui-sec-loc">Location</span></div>
-
                         <div class="two-col">
                             <div>
                                 <label class="field-label" id="ui-label-location">Campus Location</label>
@@ -310,6 +307,9 @@
                         <button type="button" class="btn-cancel" id="cancelListingBtn" onclick="window.location.href='/index.html'">Cancel</button>
                     </div>
 
+                    <div class="social-promo">
+                        <i class="fas fa-share-alt"></i> Also share your listing in the <strong>Campus Hub</strong> social feed!
+                    </div>
                 </form>
             </div>
         </div>
@@ -318,7 +318,7 @@
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, setDoc, increment, limit } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, setDoc, increment, limit, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch('/.netlify/functions/config');
@@ -330,7 +330,7 @@
             const lang = localStorage.getItem('preferred_language') || 'en';
             const ui = {
                 en: {
-                    mainTitle: "List an Item", mainSub: "Your book will be reviewed by our AI safety system.",
+                    mainTitle: "List an Item", mainSub: "Fill in the details below and your book will be automatically reviewed.",
                     isbnTitle: "Quick Book Scan", isbnDesc: "Scan your book's barcode to fill in info automatically.",
                     btnScan: "Scan Barcode", btnSkip: "Skip & Fill Manually", isbnPlace: "Enter ISBN manually...",
                     fetching: "Fetching info...", notFound: "Book not found. Please fill manually.",
@@ -345,12 +345,13 @@
                     lblPhotos: "Photos (Max 5, Max 5MB each)", btnAddPhoto: "Add Photo", btnPost: "Submit for Review", btnCancel: "Cancel",
                     priceErr: "Price cannot exceed $1200.", origPriceErr: "Original price cannot exceed $5000.",
                     imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type.",
-                    imgSizeErr: "Image too large (Max 5MB).", uploading: "Processing Content…",
+                    imgSizeErr: "Image too large (Max 5MB).", uploading: "Uploading Images…",
                     tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.",
-                    tagUses: "uses", uploadFail: "Image upload failed. Please try again."
+                    tagUses: "uses", uploadFail: "Image upload failed. Please try again.",
+                    reviewMessage: "Your listing is being reviewed. You will be notified once approved."
                 },
                 fr: {
-                    mainTitle: "Publier un article", mainSub: "Votre livre sera analysé par notre système de sécurité IA.",
+                    mainTitle: "Publier un article", mainSub: "Remplissez les détails ci-dessous et votre livre sera automatiquement examiné.",
                     isbnTitle: "Scan rapide du livre", isbnDesc: "Scannez le code-barres pour remplir les infos automatiquement.",
                     btnScan: "Scanner le code-barres", btnSkip: "Ignorer et remplir manuellement", isbnPlace: "Entrer l'ISBN manuellement...",
                     fetching: "Recherche en cours...", notFound: "Livre introuvable. Veuillez remplir manuellement.",
@@ -362,12 +363,13 @@
                     lblCode: "Code d'accès numérique", optNa: "Non applicable", optAvail: "Disponible / Inutilisé", optUsed: "Déjà utilisé",
                     lblLoc: "Emplacement du campus", lblMeet: "Point de rencontre (Max 60 car.)", meetPlace: "ex: Près de la bibliothèque",
                     lblDet: "Détails supplémentaires", chkWrite: "Écritures à l'intérieur", chkWater: "Dommages causés par l'eau", chkMiss: "Pages manquantes",
-                    lblPhotos: "Photos (Max 5, Max 5MB chacune)", btnAddPhoto: "Ajouter une photo", btnPost: "Soumettre pour révision", btnCancel: "Annuler",
+                    lblPhotos: "Photos (Max 5, Max 5MB chacune)", btnAddPhoto: "Ajouter une photo", btnPost: "Soumettre pour examen", btnCancel: "Annuler",
                     priceErr: "Le prix ne peut dépasser 1200$.", origPriceErr: "Le prix d'origine ne peut dépasser 5000$.",
                     imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté.",
-                    imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Traitement du contenu…",
+                    imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Téléchargement…",
                     tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.",
-                    tagUses: "utilisations", uploadFail: "Échec du téléchargement. Veuillez réessayer."
+                    tagUses: "utilisations", uploadFail: "Échec du téléchargement. Veuillez réessayer.",
+                    reviewMessage: "Votre annonce est en cours d'examen. Vous serez notifié une fois approuvée."
                 }
             };
 
@@ -413,9 +415,8 @@
 
             let currentUser = null;
             let internalSchoolName = "Global Campus";
-            let selectedFiles = [];
-            let tags = [];
-            let currentISBN = null;  
+            let selectedFiles =[];
+            let tags =[];
             const pageLoader = document.getElementById('page-loader');
             const loaderTimeout = setTimeout(() => { pageLoader.style.display = 'none'; }, 4000);
 
@@ -428,68 +429,132 @@
                         internalSchoolName = data.schoolName || "Global Campus";
                         clearTimeout(loaderTimeout); pageLoader.style.display = 'none';
                     }
-                } else { window.location.href = '/LoginInToCheaplet.html'; }
+                } else { window.location.href = '/login.html'; }
             });
 
             let html5QrCode;
             
+            const isbnCache = {};
+            try {
+                const saved = localStorage.getItem('scoralia_isbn_cache');
+                if (saved) Object.assign(isbnCache, JSON.parse(saved));
+            } catch(e) { console.warn("Could not load ISBN cache"); }
+
+            function saveCache() {
+                try {
+                    const entries = Object.entries(isbnCache);
+                    if (entries.length > 50) {
+                        const trimmed = Object.fromEntries(entries.slice(-50));
+                        localStorage.setItem('scoralia_isbn_cache', JSON.stringify(trimmed));
+                    } else {
+                        localStorage.setItem('scoralia_isbn_cache', JSON.stringify(isbnCache));
+                    }
+                } catch(e) { console.warn("Could not save ISBN cache"); }
+            }
+
             async function fetchBookData(isbn) {
+                const cleanIsbn = isbn.replace(/[^0-9]/g, '');
+                if (cleanIsbn.length < 10) {
+                    alert("Invalid ISBN format. Please enter a valid 10 or 13 digit ISBN.");
+                    return;
+                }
+
+                if (isbnCache[cleanIsbn]) {
+                    const cached = isbnCache[cleanIsbn];
+                    document.getElementById('listing-title').value = cached.title;
+                    document.getElementById('listing-description').value = cached.description;
+                    document.getElementById('listing-isbn').value = cleanIsbn; 
+                    document.getElementById('isbn-section').style.display = 'none';
+                    document.getElementById('main-form-section').style.display = 'block';
+                    if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
+                    return;
+                }
+
                 const scanBtn = document.getElementById('start-scan-btn');
                 const manualBtn = document.getElementById('manual-isbn-btn');
                 scanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${ui[lang].fetching}</span>`;
                 scanBtn.disabled = true; manualBtn.disabled = true;
 
+                // Added request camera permission on button click
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function (stream) {
+                        console.log("Camera permission granted");
+                        // You can stop the stream immediately if you just wanted to prompt
+                        stream.getTracks().forEach(track => track.stop());
+                    })
+                    .catch(function (error) {
+                        console.warn("Camera permission denied", error);
+                    });
+
+                let bookData = null;
+                const userLang = localStorage.getItem('preferred_language') || 'en';
+                const isFrench = userLang === 'fr';
+
                 try {
-                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`);
-                    const data = await res.json();
-                    
-                    if (data.items && data.items.length > 0) {
-                        const book = data.items[0].volumeInfo;
-                        const fullTitle = book.title + (book.authors ? ` by ${book.authors.join(', ')}` : '');
-                        document.getElementById('listing-title').value = fullTitle;
-                        let originalDesc = book.description ? book.description.replace(/<[^>]*>?/gm, '') : '';
-                        
-                        // --- Translation to French ---
-                        let frenchDesc = '';
-                        if (originalDesc) {
-                            try {
-                                const transRes = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=fr&dt=t&q=${encodeURIComponent(originalDesc)}`);
-                                const transData = await transRes.json();
-                                frenchDesc = transData[0].map(item => item[0]).join('');
-                            } catch (e) {
-                                console.error("Translation failed:", e);
-                            }
+                    const workUrl = `https://openlibrary.org/isbn/${cleanIsbn}.json`;
+                    const workRes = await fetch(workUrl);
+                    if (workRes.ok) {
+                        const workData = await workRes.json();
+                        let fullTitle = workData.title || "Unknown Title";
+                        if (workData.authors && workData.authors.length) {
+                            const authorNames = workData.authors.map(a => a.name).join(', ');
+                            fullTitle += ` by ${authorNames}`;
                         }
-                        
-                        // Combine: French first, then English (with separator)
-                        let finalDesc = originalDesc;
-                        if (frenchDesc && frenchDesc !== originalDesc) {
-                            finalDesc = frenchDesc + "\n\n" + originalDesc;
+                        let description = "";
+                        if (workData.description) {
+                            description = typeof workData.description === 'string' ? workData.description : (workData.description.value || "");
                         }
-                        document.getElementById('listing-description').value = finalDesc;
-                        
-                        currentISBN = isbn;
-                        document.getElementById('listing-isbn').value = isbn;
-                        document.getElementById('isbn-section').style.display = 'none';
-                        document.getElementById('main-form-section').style.display = 'block';
-                        if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
-                    } else { alert(ui[lang].notFound); }
-                } catch (err) { alert(ui[lang].notFound); }
+                        if (!description && workData.excerpts && workData.excerpts.length) {
+                            description = workData.excerpts[0].text;
+                        }
+                        if (!description && workData.subtitle) description = workData.subtitle;
+                        if (description) {
+                            bookData = { title: fullTitle, description: description };
+                        }
+                    }
+                } catch (err) { console.warn("OpenLibrary fetch failed:", err); }
+
+                if (bookData && bookData.title && bookData.description) {
+                    isbnCache[cleanIsbn] = bookData;
+                    saveCache();
+                    document.getElementById('listing-title').value = bookData.title;
+                    document.getElementById('listing-description').value = bookData.description;
+                    document.getElementById('listing-isbn').value = cleanIsbn; 
+                    document.getElementById('isbn-section').style.display = 'none';
+                    document.getElementById('main-form-section').style.display = 'block';
+                    if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
+                } else {
+                    alert(ui[lang].notFound);
+                }
+
                 scanBtn.innerHTML = `<i class="fas fa-camera"></i> <span id="ui-btn-scan">${ui[lang].btnScan}</span>`;
                 scanBtn.disabled = false; manualBtn.disabled = false;
             }
 
-            document.getElementById('start-scan-btn').onclick = () => {
+            document.getElementById('start-scan-btn').onclick = async () => {
+                // Request camera permission before attempting to start the scanner
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    stream.getTracks().forEach(track => track.stop()); // Clean up immediately after permission granted
+                } catch (error) {
+                    alert("Camera access denied or not available. Please allow camera access to scan barcodes.");
+                    return; // Stop execution if denied
+                }
+
                 if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
                 document.getElementById('reader').style.display = 'block';
                 html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, (decodedText) => {
                     html5QrCode.stop().then(() => { document.getElementById('reader').style.display = 'none'; fetchBookData(decodedText); });
-                }).catch(err => { alert("Camera access denied."); });
+                }).catch(err => { 
+                    alert("Unable to start the camera. Please check your browser permissions."); 
+                    document.getElementById('reader').style.display = 'none';
+                });
             };
 
             document.getElementById('manual-isbn-btn').onclick = () => {
                 const val = document.getElementById('manual-isbn-input').value.trim();
                 if(val) fetchBookData(val);
+                else alert("Please enter an ISBN.");
             };
 
             document.getElementById('skip-scan-btn').onclick = () => {
@@ -525,9 +590,10 @@
                 if (val.length < 1) { suggestionsBox.style.display = 'none'; return; }
                 const snap = await getDocs(query(collection(db, "global_tags"), where("tag_lowercase", ">=", val), where("tag_lowercase", "<=", val + "\uf8ff"), limit(5)));
                 suggestionsBox.innerHTML = '';
+                let hasMatch = false;
                 if (!snap.empty) {
-                    suggestionsBox.style.display = 'block';
                     snap.forEach(doc => {
+                        hasMatch = true;
                         const div = document.createElement('div');
                         div.className = 'suggestion-item';
                         div.innerHTML = `<span>${doc.data().tag}</span><span class="suggestion-count">${doc.data().count || 1} ${ui[lang].tagUses}</span>`;
@@ -535,6 +601,14 @@
                         suggestionsBox.appendChild(div);
                     });
                 }
+                if (val && !tags.includes(val) && (!hasMatch || ![...suggestionsBox.children].some(child => child.innerText.trim().startsWith(val)))) {
+                    const createDiv = document.createElement('div');
+                    createDiv.className = 'suggestion-item create-tag-item';
+                    createDiv.innerHTML = `<span><i class="fas fa-plus-circle"></i> Create new tag: "<strong>${val}</strong>"</span>`;
+                    createDiv.onmousedown = (ev) => { ev.preventDefault(); addTag(val); };
+                    suggestionsBox.appendChild(createDiv);
+                }
+                if (suggestionsBox.children.length > 0) suggestionsBox.style.display = 'block';
             };
             
             tagInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput.value); } };
@@ -554,16 +628,28 @@
                 document.getElementById('add-photo-label').style.display = selectedFiles.length < 5 ? 'flex' : 'none';
             }
 
-            imageInput.onchange = (e) => {
+            imageInput.onchange = async (e) => {
+                // TRIGGER BOT SHIELD
+                const isHuman = await window.checkBotLimits();
+                if (!isHuman) { e.target.value = ''; return; }
+
                 const file = e.target.files[0];
                 if (file) {
                     if (file.size > 5 * 1024 * 1024) { alert(ui[lang].imgSizeErr); return; }
+                    window.recordActivity('images');
                     selectedFiles.push(file); renderPreviews();
                 }
+                e.target.value = '';
             };
 
+            // --- SUBMIT HANDLER ---
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
+
+                // TRIGGER BOT SHIELD
+                const isHuman = await window.checkBotLimits();
+                if (!isHuman) return;
+
                 const title = document.getElementById('listing-title').value.trim();
                 const desc = document.getElementById('listing-description').value.trim();
                 const price = parseFloat(document.getElementById('listing-price').value);
@@ -571,13 +657,15 @@
                 if (price > 1200) { alert(ui[lang].priceErr); return; }
                 if (selectedFiles.length === 0) { alert(ui[lang].imgErr); return; }
 
+                window.recordActivity('listings');
+
                 const submitBtn = document.getElementById('postListingBtn');
                 const postBtnText = document.getElementById('post-btn-text');
                 submitBtn.disabled = true;
-                postBtnText.textContent = ui[lang].uploading;
+                postBtnText.textContent = "AI Safety Check... (Please wait)";
 
                 try {
-                    const imageUrls = [];
+                    const imageUrls =[];
                     for (const file of selectedFiles) {
                         const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
                         const formData = new FormData();
@@ -588,42 +676,56 @@
                         if (res.secure_url) imageUrls.push(res.secure_url);
                     }
 
-                    const docRef = await addDoc(collection(db, 'listings'), {
+                    const rawIsbn = document.getElementById('listing-isbn').value.trim();
+                    const cleanIsbn = rawIsbn ? rawIsbn.replace(/[^0-9]/g, '') : null;
+
+                    const listingRef = await addDoc(collection(db, 'listings'), {
                         title, description: desc, price, 
                         condition: document.getElementById('listing-condition').value,
                         digitalCode: document.getElementById('listing-digital-code').value,
                         location: document.getElementById('listing-location').value,
                         tags, imageUrls,
+                        isbn: cleanIsbn, 
                         posterUid: currentUser.uid,
                         posterDisplayName: currentUser.displayName || "User",
                         status: 'pending',
-                        timestamp: serverTimestamp()
+                        timestamp: serverTimestamp() 
                     });
 
-                    const idToken = await currentUser.getIdToken();
-
-                    postBtnText.textContent = "AI Safety Check...";
                     try {
-                        await fetch('/.netlify/functions/moderate-listing', {
+                        const aiRes = await fetch('/.netlify/functions/moderate-listing', {
                             method: 'POST',
-                            headers: { 
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${idToken}`
-                            },
-                            body: JSON.stringify({ 
-                                listingId: docRef.id, 
-                                imageUrls: imageUrls, 
-                                title: title, 
-                                description: desc 
-                            })
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ imageUrls, title, description: desc })
                         });
+                        
+                        if (!aiRes.ok) throw new Error("Moderation server error");
+                        
+                        const aiData = await aiRes.json();
+
+                        if (aiData.verdict === "UNSAFE") {
+                            await updateDoc(doc(db, "listings", listingRef.id), {
+                                status: 'rejected',
+                                rejectionReason: aiData.reason || "Violates community guidelines."
+                            });
+                            alert("Your listing was rejected by safety checks: " + (aiData.reason || "Inappropriate content."));
+                            submitBtn.disabled = false;
+                            postBtnText.textContent = ui[lang].btnPost;
+                            return; 
+                        } else {
+                            await updateDoc(doc(db, "listings", listingRef.id), {
+                                status: 'active',
+                                approvedAt: serverTimestamp()
+                            });
+                            window.location.href = `/my-listings.html`;
+                        }
                     } catch (err) {
-                        console.error("AI trigger error:", err);
+                        console.error("Moderation failed or timed out:", err);
+                        window.location.href = `/my-listings.html?pending=true&id=${listingRef.id}`;
                     }
 
-                    window.location.href = `/my-listings.html`;
                 } catch (err) {
-                    alert(err.message);
+                    alert("Error: " + err.message);
                     submitBtn.disabled = false;
                     postBtnText.textContent = ui[lang].btnPost;
                 }
