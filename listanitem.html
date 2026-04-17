@@ -349,7 +349,8 @@
                     tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.",
                     tagUses: "uses", uploadFail: "Image upload failed. Please try again.",
                     reviewMessage: "Your listing is being reviewed. You will be notified once approved.",
-                    cameraDenied: "Camera access was denied. Please allow camera permission in your browser settings and try again."
+                    cameraDenied: "Camera access was denied. Please allow camera permission in your browser settings and try again.",
+                    noCamera: "No camera found on this device."
                 },
                 fr: {
                     mainTitle: "Publier un article", mainSub: "Remplissez les détails ci-dessous et votre livre sera automatiquement examiné.",
@@ -371,7 +372,8 @@
                     tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.",
                     tagUses: "utilisations", uploadFail: "Échec du téléchargement. Veuillez réessayer.",
                     reviewMessage: "Votre annonce est en cours d'examen. Vous serez notifié une fois approuvée.",
-                    cameraDenied: "L'accès à la caméra a été refusé. Veuillez autoriser la caméra dans les paramètres de votre navigateur et réessayer."
+                    cameraDenied: "L'accès à la caméra a été refusé. Veuillez autoriser la caméra dans les paramètres de votre navigateur et réessayer.",
+                    noCamera: "Aucune caméra trouvée sur cet appareil."
                 }
             };
 
@@ -465,7 +467,7 @@
                     const cached = isbnCache[cleanIsbn];
                     document.getElementById('listing-title').value = cached.title;
                     document.getElementById('listing-description').value = cached.description;
-                    document.getElementById('listing-isbn').value = cleanIsbn; // SAVES THE ISBN
+                    document.getElementById('listing-isbn').value = cleanIsbn;
                     document.getElementById('isbn-section').style.display = 'none';
                     document.getElementById('main-form-section').style.display = 'block';
                     if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
@@ -478,10 +480,7 @@
                 scanBtn.disabled = true; manualBtn.disabled = true;
 
                 let bookData = null;
-                const userLang = localStorage.getItem('preferred_language') || 'en';
-                const isFrench = userLang === 'fr';
 
-                // Try OpenLibrary work endpoint
                 try {
                     const workUrl = `https://openlibrary.org/isbn/${cleanIsbn}.json`;
                     const workRes = await fetch(workUrl);
@@ -511,7 +510,7 @@
                     saveCache();
                     document.getElementById('listing-title').value = bookData.title;
                     document.getElementById('listing-description').value = bookData.description;
-                    document.getElementById('listing-isbn').value = cleanIsbn; // SAVES THE ISBN
+                    document.getElementById('listing-isbn').value = cleanIsbn;
                     document.getElementById('isbn-section').style.display = 'none';
                     document.getElementById('main-form-section').style.display = 'block';
                     if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
@@ -523,12 +522,26 @@
                 scanBtn.disabled = false; manualBtn.disabled = false;
             }
 
-            document.getElementById('start-scan-btn').onclick = async () => {
-                if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-                document.getElementById('reader').style.display = 'block';
-                
-                // 🔥 Use ideal facingMode to gracefully fallback if environment camera isn't available
+            // 🔥 NEW: Explicit camera permission request before scanning
+            async function requestCameraAndScan() {
                 try {
+                    // Check if device has any video input
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const hasCamera = devices.some(device => device.kind === 'videoinput');
+                    if (!hasCamera) {
+                        alert(ui[lang].noCamera);
+                        return;
+                    }
+
+                    // Request camera permission explicitly
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } });
+                    // Permission granted – stop the stream immediately (we only needed the permission)
+                    stream.getTracks().forEach(track => track.stop());
+
+                    // Now start the QR scanner
+                    if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+                    document.getElementById('reader').style.display = 'block';
+                    
                     await html5QrCode.start(
                         { facingMode: { ideal: "environment" } }, 
                         { fps: 10, qrbox: { width: 250, height: 150 } }, 
@@ -542,14 +555,15 @@
                 } catch (err) {
                     document.getElementById('reader').style.display = 'none';
                     console.error("Camera error:", err);
-                    // Show a friendly message if camera access was denied
-                    if (err.message && err.message.includes("Permission denied")) {
+                    if (err.name === 'NotAllowedError' || err.message.includes("Permission denied")) {
                         alert(ui[lang].cameraDenied);
                     } else {
                         alert("Unable to start camera. Please make sure your device has a camera and try again.");
                     }
                 }
-            };
+            }
+
+            document.getElementById('start-scan-btn').onclick = requestCameraAndScan;
 
             document.getElementById('manual-isbn-btn').onclick = () => {
                 const val = document.getElementById('manual-isbn-input').value.trim();
@@ -630,7 +644,6 @@
             }
 
             imageInput.onchange = async (e) => {
-                // TRIGGER BOT SHIELD
                 const isHuman = await window.checkBotLimits();
                 if (!isHuman) { e.target.value = ''; return; }
 
@@ -647,7 +660,6 @@
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
 
-                // TRIGGER BOT SHIELD
                 const isHuman = await window.checkBotLimits();
                 if (!isHuman) return;
 
@@ -666,7 +678,6 @@
                 postBtnText.textContent = "AI Safety Check... (Please wait)";
 
                 try {
-                    // 1. Upload images to Cloudinary
                     const imageUrls =[];
                     for (const file of selectedFiles) {
                         const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
@@ -678,25 +689,22 @@
                         if (res.secure_url) imageUrls.push(res.secure_url);
                     }
 
-                    // 2. Fetch ISBN safely
                     const rawIsbn = document.getElementById('listing-isbn').value.trim();
                     const cleanIsbn = rawIsbn ? rawIsbn.replace(/[^0-9]/g, '') : null;
 
-                    // 3. Create listing with status "pending"
                     const listingRef = await addDoc(collection(db, 'listings'), {
                         title, description: desc, price, 
                         condition: document.getElementById('listing-condition').value,
                         digitalCode: document.getElementById('listing-digital-code').value,
                         location: document.getElementById('listing-location').value,
                         tags, imageUrls,
-                        isbn: cleanIsbn, // <--- THE ISBN FIX IS APPLIED HERE
+                        isbn: cleanIsbn,
                         posterUid: currentUser.uid,
                         posterDisplayName: currentUser.displayName || "User",
                         status: 'pending',
                         timestamp: serverTimestamp() 
                     });
 
-                    // 4. Wait for Moderation BEFORE redirecting
                     try {
                         const aiRes = await fetch('/.netlify/functions/moderate-listing', {
                             method: 'POST',
@@ -713,7 +721,6 @@
                                 status: 'rejected',
                                 rejectionReason: aiData.reason || "Violates community guidelines."
                             });
-                            // If user is stuck here because of a block, show alert
                             alert("Your listing was rejected by safety checks: " + (aiData.reason || "Inappropriate content."));
                             submitBtn.disabled = false;
                             postBtnText.textContent = ui[lang].btnPost;
@@ -723,7 +730,6 @@
                                 status: 'active',
                                 approvedAt: serverTimestamp()
                             });
-                            // Redirect to My Listings
                             window.location.href = `/my-listings.html`;
                         }
                     } catch (err) {
