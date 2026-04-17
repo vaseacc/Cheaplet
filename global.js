@@ -34,13 +34,11 @@ if ('serviceWorker' in navigator) {
 }
 
 // Track index visits for PWA prompt logic
-if (window.location.pathname === '/' || window.location.pathname.includes('index.html')) {
-    // Use sessionStorage so we only count 1 visit per active browser session
-    if (!sessionStorage.getItem('index_visited_this_session')) {
-        let visits = parseInt(localStorage.getItem('pwa_index_visits') || '0');
-        localStorage.setItem('pwa_index_visits', (visits + 1).toString());
-        sessionStorage.setItem('index_visited_this_session', 'true');
-    }
+const isIndexPage = window.location.pathname === '/' || window.location.pathname.endsWith('index.html');
+if (isIndexPage) {
+    let visits = parseInt(localStorage.getItem('pwa_index_visits') || '0');
+    visits++;
+    localStorage.setItem('pwa_index_visits', visits.toString());
 }
 
 let deferredPrompt;
@@ -58,14 +56,16 @@ window.addEventListener('beforeinstallprompt', (e) => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
     if (isStandalone) return;
 
-    // 3. Check dismissal logic (Reminders)
+    // 3. Only show on the index page to not interrupt user flow
+    if (!isIndexPage) return;
+
+    // 4. Check dismissal logic (Reminders)
     let dismissCount = parseInt(localStorage.getItem('pwa_dismiss_count') || '0');
     let indexVisits = parseInt(localStorage.getItem('pwa_index_visits') || '0');
     
     let threshold = 0;
-    if (dismissCount === 1) threshold = 3;         // Wait 3 visits if dismissed once
-    else if (dismissCount === 2) threshold = 10;   // Wait 10 visits if dismissed twice
-    else if (dismissCount >= 3) threshold = 14;    // Wait 14 visits for all subsequent dismissals
+    if (dismissCount === 1) threshold = 4;         // Wait 4 visits if dismissed once
+    else if (dismissCount >= 2) threshold = 10;    // Wait 10 visits for all subsequent dismissals
 
     if (indexVisits >= threshold) {
         showInstallPromotion();
@@ -73,36 +73,34 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 
 function showInstallPromotion() {
-    if (document.getElementById('pwa-install-banner')) return;
+    if (document.getElementById('pwa-install-modal')) return;
 
     const lang = localStorage.getItem('preferred_language') || 'en';
-    const textTitle = lang === 'fr' ? 'Installer Scoralia' : 'Install Scoralia';
-    const textSub = lang === 'fr' ? "Ajouter à l'écran d'accueil" : 'Add to home screen for quick access';
-    const btnText = lang === 'fr' ? 'Installer' : 'Install';
+    const textTitle = lang === 'fr' ? "Ajouter à l'écran d'accueil" : 'Add to Home Screen';
+    const textSub = lang === 'fr' ? "Installez Scoralia pour un accès rapide et une meilleure expérience." : 'Install Scoralia for quick access and a better experience.';
+    const btnInstall = lang === 'fr' ? 'Installer' : 'Install';
+    const btnLater = lang === 'fr' ? 'Plus tard' : 'Later';
 
-    const banner = document.createElement('div');
-    banner.id = 'pwa-install-banner';
-    banner.className = 'terms-banner';
-    banner.style.zIndex = '100000';
-    banner.style.bottom = '80px'; // Sits slightly higher so it doesn't overlap terms banner
+    const modal = document.createElement('div');
+    modal.id = 'pwa-install-modal';
+    modal.className = 'lang-modal-overlay';
+    modal.style.zIndex = '100000';
     
-    banner.innerHTML = `
-        <div style="display:flex; align-items:center; gap:15px; flex-grow:1;">
-            <div style="width:40px; height:40px; background:var(--gold); border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:var(--ink); font-size:1.2rem;">S</div>
-            <div style="text-align:left;">
-                <div style="font-weight: bold; font-size: 0.95rem; font-family:'Playfair Display', serif;">${textTitle}</div>
-                <div style="font-size: 0.8rem; opacity: 0.9;">${textSub}</div>
+    modal.innerHTML = `
+        <div class="lang-modal" style="padding: 30px 25px;">
+            <i class="fas fa-mobile-alt fa-3x" style="color:var(--gold); margin-bottom:20px;"></i>
+            <h2 style="color:var(--ink); margin-bottom:12px; font-family:'Playfair Display', serif;">${textTitle}</h2>
+            <p style="color:var(--text-muted); margin-bottom:25px; line-height:1.6; font-size:0.95rem;">${textSub}</p>
+            <div style="display: flex; gap: 10px;">
+                <button id="btn-pwa-install" style="flex: 2; background: var(--gold); color: var(--ink); border: none; padding: 12px; border-radius: 30px; font-weight: bold; cursor: pointer; font-size: 1rem;">${btnInstall}</button>
+                <button id="btn-pwa-dismiss" style="flex: 1; background: var(--surface); color: var(--deep); border: none; padding: 12px; border-radius: 30px; font-weight: bold; cursor: pointer; font-size: 1rem;">${btnLater}</button>
             </div>
         </div>
-        <div style="display:flex; gap:15px; align-items:center;">
-            <button class="btn-accept-terms" id="btn-pwa-install">${btnText}</button>
-            <button id="btn-pwa-dismiss" style="background:none; border:none; color:#fff; font-size:1.5rem; cursor:pointer; opacity:0.7;">&times;</button>
-        </div>
     `;
-    document.body.appendChild(banner);
+    document.body.appendChild(modal);
 
     document.getElementById('btn-pwa-install').addEventListener('click', async () => {
-        banner.style.display = 'none';
+        modal.style.display = 'none';
         if (deferredPrompt) {
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
@@ -111,7 +109,7 @@ function showInstallPromotion() {
     });
 
     document.getElementById('btn-pwa-dismiss').addEventListener('click', () => {
-        banner.style.display = 'none';
+        modal.style.display = 'none';
         // Increment dismiss count and reset index visits back to 0
         let currentCount = parseInt(localStorage.getItem('pwa_dismiss_count') || '0');
         localStorage.setItem('pwa_dismiss_count', (currentCount + 1).toString());
@@ -120,8 +118,8 @@ function showInstallPromotion() {
 }
 
 window.addEventListener('appinstalled', () => {
-    const banner = document.getElementById('pwa-install-banner');
-    if (banner) banner.style.display = 'none';
+    const modal = document.getElementById('pwa-install-modal');
+    if (modal) modal.style.display = 'none';
     deferredPrompt = null;
 });
 
@@ -1009,7 +1007,7 @@ function refreshUI() {
     else updateHeaderToLoggedOut();
     
     const langSelected = localStorage.getItem('preferred_language');
-    if (!langSelected) showLanguageBanner();
+    if (!langSelected) showLanguageModal();
     else { window.applyLanguage(langSelected); showTermsBanner(); }
 }
 
@@ -1114,40 +1112,40 @@ function updateHeaderToLoggedOut() {
     container.innerHTML = `<button class="btn" onclick="window.location.href='/login.html'">${t.btn_login}</button>`;
 }
 
-function showLanguageBanner() {
-    if (document.getElementById('lang-banner-global')) return;
-    const banner = document.createElement('div');
-    banner.id = 'lang-banner-global'; 
-    banner.className = 'terms-banner';
-    banner.style.zIndex = '100000';
-    banner.innerHTML = `
-        <div style="font-weight: bold; font-family: 'Playfair Display', serif; font-size: 1.1rem;">Welcome / Bienvenue</div>
-        <div style="font-size: 0.9rem; opacity: 0.9;">Choose your language / Choisissez votre langue :</div>
-        <div style="display: flex; gap: 15px;">
-            <button class="btn-accept-terms" id="btn-en">English</button>
-            <button class="btn-accept-terms" id="btn-fr">Français</button>
+function showLanguageModal() {
+    if (document.getElementById('lang-modal-global')) return;
+    const modal = document.createElement('div');
+    modal.id = 'lang-modal-global'; 
+    modal.className = 'lang-modal-overlay';
+    modal.style.zIndex = '100000';
+    modal.innerHTML = `
+        <div class="lang-modal">
+            <i class="fas fa-globe fa-3x" style="color:var(--gold); margin-bottom:15px;"></i>
+            <h2 style="font-family: 'Playfair Display', serif; color: var(--ink); margin-bottom: 10px;">Welcome / Bienvenue</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 20px;">Choose your language / Choisissez votre langue :</p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="lang-btn" id="btn-en">English</button>
+                <button class="lang-btn" id="btn-fr">Français</button>
+            </div>
         </div>
     `;
-    document.body.appendChild(banner);
+    document.body.appendChild(modal);
 
     const setLang = async (l) => {
         localStorage.setItem('preferred_language', l);
-        window.applyLanguage(l);
-        banner.remove();
-        showTermsBanner();
         if (auth.currentUser) {
             try {
                 await updateDoc(doc(db, "users", auth.currentUser.uid), { language: l });
-                if (currentUserData) currentUserData.language = l;
             } catch (e) { console.warn("Could not save language to user document", e); }
         }
+        window.location.reload();
     };
     document.getElementById('btn-en').onclick = () => setLang('en');
     document.getElementById('btn-fr').onclick = () => setLang('fr');
 }
 
 function showTermsBanner() {
-    if (localStorage.getItem('scoralia_terms_accepted') === 'true' || document.getElementById('terms-banner-global') || document.getElementById('lang-banner-global')) return;
+    if (localStorage.getItem('scoralia_terms_accepted') === 'true' || document.getElementById('terms-banner-global') || document.getElementById('lang-modal-global')) return;
     const lang = localStorage.getItem('preferred_language') || 'en';
     const banner = document.createElement('div');
     banner.id = 'terms-banner-global'; banner.className = 'terms-banner';
@@ -1157,7 +1155,7 @@ function showTermsBanner() {
     document.getElementById('accept-terms-btn').onclick = () => { localStorage.setItem('scoralia_terms_accepted', 'true'); banner.remove(); };
 }
 
-// Ensure the forced modal doesn't trigger anymore since we have the banner
+// Ensure the old forced modal doesn't trigger anymore since we have the new one
 if (document.getElementById('lang-modal-overlay')) {
     document.getElementById('lang-modal-overlay').remove();
 }
