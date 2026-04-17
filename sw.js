@@ -1,8 +1,8 @@
-// sw.js - Service Worker for Scoralia PWA
-const CACHE_NAME = 'scoralia-v6';
+// sw.js - Service Worker for Scoralia PWA (Network-First Strategy)
+const CACHE_NAME = 'scoralia-v9';
 
 // Files to cache for offline access
-const urlsToCache = [
+const urlsToCache =[
   '/',
   '/index.html',
   '/global.js',
@@ -13,96 +13,78 @@ const urlsToCache = [
   '/messages.html',
   '/profile.html',
   '/login.html',
-  '/favicon.svg',
-  '/full.css'
+  '/favicon.svg'
 ];
 
-// Install event – cache core files
+// Install event – force SW to take over immediately
 self.addEventListener('install', event => {
-  console.log('Service Worker installing...');
+  console.log('[SW] Installing new version...');
+  self.skipWaiting(); // Forces the waiting service worker to become the active service worker
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Caching app shell');
-        return cache.addAll(urlsToCache);
-      })
-      .catch(err => console.error('Cache addAll failed:', err))
+    caches.open(CACHE_NAME).then(cache => {
+      return cache.addAll(urlsToCache);
+    })
   );
-  self.skipWaiting();
 });
 
-// Activate event – clean up old caches
+// Activate event – clean up old caches instantly
 self.addEventListener('activate', event => {
-  console.log('Service Worker activating...');
+  console.log('[SW] Activating new version & clearing old caches...');
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cache => {
           if (cache !== CACHE_NAME) {
-            console.log('Deleting old cache:', cache);
+            console.log('[SW] Deleting old cache:', cache);
             return caches.delete(cache);
           }
         })
       );
     })
   );
-  self.clients.claim();
+  self.clients.claim(); // Take control of all open pages immediately
 });
 
-// Helper to check if a request should bypass the service worker entirely
+// Helper to check if a request should be completely ignored by the cache
 function shouldBypass(url) {
-  // Never intercept Firestore / Firebase / Google APIs
-  return url.includes('firestore.googleapis.com') ||
-         url.includes('googleapis.com') ||
-         url.includes('firebaseapp.com') ||
-         url.includes('/Listen') ||
-         url.includes('firebase') ||
-         url.includes('google.firestore.v1.Firestore');
+  if (url.includes('firestore.googleapis.com') ||
+      url.includes('googleapis.com') ||
+      url.includes('firebaseapp.com') ||
+      url.includes('/listen') ||
+      url.includes('api.cloudinary.com') ||
+      url.includes('challenges.cloudflare.com')) {
+    return true;
+  }
+  return false;
 }
 
-// Fetch event – bypass Firebase and Firestore requests, cache static assets
+// Fetch event – NETWORK-FIRST STRATEGY
 self.addEventListener('fetch', event => {
-  const url = event.request.url;
-  const request = event.request;
+  const req = event.request;
+  const url = req.url;
 
-  // Special case: favicon.ico – return a transparent pixel
-  if (url.endsWith('/favicon.ico')) {
-    event.respondWith(
-      fetch('/favicon.svg').catch(() => {
-        return new Response(
-          'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
-          { headers: { 'Content-Type': 'image/gif' } }
-        );
-      })
-    );
-    return;
+  // 1. Always bypass API calls and POST requests
+  if (req.method !== 'GET' || shouldBypass(url)) {
+    return; // Let the browser handle it normally
   }
 
-  // 🔥 CRITICAL: For Firestore / API requests, DO NOT intercept.
-  // Let the browser handle them normally.
-  if (shouldBypass(url) || request.method !== 'GET') {
-    return; // Service worker does nothing, browser fetches directly
-  }
-
-  // For static assets (HTML, JS, CSS, images), use cache-first strategy
+  // 2. NETWORK-FIRST STRATEGY for everything else (HTML, JS, CSS, Images)
   event.respondWith(
-    caches.match(request)
-      .then(cachedResponse => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
-        // Not in cache, fetch from network and add to cache
-        return fetch(request).then(networkResponse => {
-          if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-            return networkResponse;
-          }
+    fetch(req)
+      .then(networkResponse => {
+        // If we get a valid response from the internet, save it to the cache and return it
+        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME)
-            .then(cache => {
-              cache.put(request, responseToCache);
-            });
-          return networkResponse;
-        });
+          caches.open(CACHE_NAME).then(cache => {
+            cache.put(req, responseToCache);
+          });
+        }
+        return networkResponse;
+      })
+      .catch(() => {
+        // If the network fails (user is offline), check the cache
+        console.log('[SW] Network failed, serving from cache:', url);
+        return caches.match(req);
       })
   );
 });
