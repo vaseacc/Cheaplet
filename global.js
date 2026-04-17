@@ -26,10 +26,33 @@ if (!document.querySelector('link[rel="icon"]')) {
     document.head.appendChild(favicon);
 }
 
-// --- 0.5 PWA REGISTRATION & "ADD TO HOME SCREEN" LOGIC ---
+// --- 0.5 PWA REGISTRATION & AUTO-UPDATE LOGIC ---
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW reg failed:', err));
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+            // Force the browser to check for updates in the background
+            reg.update();
+
+            // Listen for new versions of the app being installed
+            reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        console.log('New update available! Refreshing to apply...');
+                        window.location.reload(); // Auto-refresh to show the new files
+                    }
+                });
+            });
+        }).catch(err => console.log('SW reg failed:', err));
+    });
+
+    // Ensure the page reloads when the service worker takes over
+    let refreshing = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!refreshing) {
+            window.location.reload();
+            refreshing = true;
+        }
     });
 }
 
@@ -416,13 +439,10 @@ globalStyle.innerHTML = `
     .dropdown-header .username { font-size: 0.75rem; color: #666; font-family: monospace; }
     .dropdown-item { padding: 12px 15px; text-decoration: none; color: #333; display: flex; align-items: center; gap: 10px; font-weight: 500; font-size: 0.9rem; transition: background 0.2s; }
     .dropdown-item:hover { background-color: #f4f7fc; color: #2B5C92; }
-    
-    /* 🔴 MOBILE UNREAD BADGE & ICON CSS HERE */
     .msg-btn-mobile { background: #C8A96E; color: #0C1446; width: 36px; height: 36px; border-radius: 50%; display: none; align-items: center; justify-content: center; text-decoration: none; margin-right: 12px; font-size: 1rem; position: relative; }
     .badge-container { position: relative; display: inline-block; }
     .unread-badge { position: absolute; top: -6px; right: -12px; background-color: #C0392B; color: white; font-size: 0.65rem; font-weight: bold; padding: 2px 5px; border-radius: 10px; display: none; align-items: center; justify-content: center; z-index: 10; min-width: 18px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
     .msg-btn-mobile .unread-badge { top: -2px; right: -4px; border: 2px solid #C8A96E; }
-
     .lang-modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(12,20,70,0.85); z-index: 10000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
     .lang-modal { background: white; padding: 40px; border-radius: 20px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
     .lang-btn { display: block; width: 100%; padding: 16px; margin: 12px 0; border: 2px solid #EBF2FA; border-radius: 12px; background: white; font-weight: bold; cursor: pointer; font-size: 1.1rem; transition: all 0.2s; color: #0C1446; }
@@ -1157,7 +1177,6 @@ function showTermsBanner() {
     document.getElementById('accept-terms-btn').onclick = () => { localStorage.setItem('scoralia_terms_accepted', 'true'); banner.remove(); };
 }
 
-// Ensure the forced modal doesn't trigger anymore since we have the banner
 if (document.getElementById('lang-modal-overlay')) {
     document.getElementById('lang-modal-overlay').remove();
 }
