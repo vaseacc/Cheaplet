@@ -2,13 +2,7 @@ import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebase
 import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, onSnapshot, updateDoc, setDoc, collection, query, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
-// --- Helper for non-critical tasks ---
-const runWhenIdle = (cb) => {
-    if (window.requestIdleCallback) requestIdleCallback(cb);
-    else setTimeout(cb, 1);
-};
-
-// --- 0. AUTO-IMPORT ICONS & FAVICON (Performance: Only if not present) ---
+// --- 0. AUTO-IMPORT ICONS & FAVICON ---
 if (!document.querySelector('link[href*="font-awesome"]')) {
     const faLink = document.createElement('link');
     faLink.rel = 'stylesheet';
@@ -26,16 +20,72 @@ if (!document.querySelector('link[rel="icon"]')) {
     document.head.appendChild(favicon);
 }
 
-// --- 0.5 KILL PWA CACHING (Fixes the "ghost page" and hard-refresh issue) ---
-runWhenIdle(() => {
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-            for (let reg of registrations) reg.unregister();
-        });
-    }
-    if ('caches' in window) {
-        caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k))));
-    }
+// --- 0.5 PWA REGISTRATION & "ADD TO HOME SCREEN" LOGIC ---
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW reg failed:', err));
+    });
+}
+
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent the mini-infobar from appearing on mobile
+    e.preventDefault();
+    // Stash the event so it can be triggered later.
+    deferredPrompt = e;
+    // Show our custom install UI
+    showInstallPromotion();
+});
+
+function showInstallPromotion() {
+    if (localStorage.getItem('scoralia_pwa_dismissed') === 'true') return;
+    if (document.getElementById('pwa-install-banner')) return;
+
+    const lang = localStorage.getItem('preferred_language') || 'en';
+    const textTitle = lang === 'fr' ? 'Installer Scoralia' : 'Install Scoralia';
+    const textSub = lang === 'fr' ? 'Ajouter à l\'écran d\'accueil' : 'Add to home screen for quick access';
+    const btnText = lang === 'fr' ? 'Installer' : 'Install';
+
+    const banner = document.createElement('div');
+    banner.id = 'pwa-install-banner';
+    banner.className = 'terms-banner';
+    banner.style.zIndex = '100000';
+    banner.style.bottom = '80px'; // Sits slightly higher so it doesn't overlap terms banner
+    
+    banner.innerHTML = `
+        <div style="display:flex; align-items:center; gap:15px; flex-grow:1;">
+            <div style="width:40px; height:40px; background:var(--gold); border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:var(--ink); font-size:1.2rem;">S</div>
+            <div style="text-align:left;">
+                <div style="font-weight: bold; font-size: 0.95rem; font-family:'Playfair Display', serif;">${textTitle}</div>
+                <div style="font-size: 0.8rem; opacity: 0.9;">${textSub}</div>
+            </div>
+        </div>
+        <div style="display:flex; gap:15px; align-items:center;">
+            <button class="btn-accept-terms" id="btn-pwa-install">${btnText}</button>
+            <button id="btn-pwa-dismiss" style="background:none; border:none; color:#fff; font-size:1.5rem; cursor:pointer; opacity:0.7;">&times;</button>
+        </div>
+    `;
+    document.body.appendChild(banner);
+
+    document.getElementById('btn-pwa-install').addEventListener('click', async () => {
+        banner.style.display = 'none';
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            deferredPrompt = null;
+        }
+    });
+
+    document.getElementById('btn-pwa-dismiss').addEventListener('click', () => {
+        banner.style.display = 'none';
+        localStorage.setItem('scoralia_pwa_dismissed', 'true');
+    });
+}
+
+window.addEventListener('appinstalled', () => {
+    const banner = document.getElementById('pwa-install-banner');
+    if (banner) banner.style.display = 'none';
+    deferredPrompt = null;
 });
 
 // --- 1. INITIALIZE CONFIG (With caching for speed) ---
@@ -93,7 +143,7 @@ if (document.readyState === 'loading') {
 }
 
 // =========================================================================
-// --- NEW: CLOUDFLARE TURNSTILE BOT SHIELD LOGIC ---
+// --- CLOUDFLARE TURNSTILE BOT SHIELD LOGIC ---
 // =========================================================================
 
 window.checkBotLimits = async () => {
@@ -188,7 +238,7 @@ async function triggerBotChallenge() {
         // Render the widget once script is loaded
         script.onload = () => {
             turnstile.render('#turnstile-container', {
-                sitekey: '0x4AAAAAAC8mKfhLYButTzAM', // <--- Your Site Key
+                sitekey: '0x4AAAAAAC8mKfhLYButTzAM', 
                 callback: window.onTurnstileSuccess,
             });
         };
@@ -339,12 +389,12 @@ globalStyle.innerHTML = `
     .lang-btn:hover { border-color: #C8A96E; background: #fdfaf4; }
     .tour-dot { width: 8px; height: 8px; border-radius: 50%; background: #e0e0e0; transition: 0.3s; }
     .tour-dot.active { background: #C8A96E; width: 24px; border-radius: 10px; }
-    .tour-input { width: 100%; padding: 10px 12px; border: 2px solid #eee; border-radius: 8px; margin-bottom: 12px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; text-align: left; font-weight: bold; color: #0C1446; }
+    .tour-input { width: 100%; padding: 10px 35px 10px 12px; border: 2px solid #eee; border-radius: 8px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; text-align: left; font-weight: bold; color: #0C1446; }
     .tour-input:focus { border-color: #C8A96E; }
     .tour-pfp-preview { width: 80px; height: 80px; border-radius: 50%; background: #eee; margin: 0 auto 15px; border: 3px solid #C8A96E; object-fit: cover; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #aaa; overflow: hidden; }
     .tour-pfp-preview img { width: 100%; height: 100%; object-fit: cover; }
     
-    /* Tour form classes (ported from login) */
+    /* Tour form classes */
     .field-wrap { margin-bottom: 12px; text-align: left; }
     .field-label { display: block; font-size: 10px; font-weight: 600; letter-spacing: 0.10em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
     .input-status { position: relative; }
@@ -610,7 +660,7 @@ function showWelcomeTour() {
                 <h2 style="color:#0C1446; margin-bottom:10px; font-family:'Playfair Display', serif;">${t.tour_title_4}</h2>
                 <p style="color:#6b84a3; margin-bottom:15px; line-height:1.4; font-size:0.85rem;">${t.tour_desc_4}</p>
                 
-                <div class="field-wrap">
+                <div class="field-wrap" style="text-align: left;">
                     <label class="field-label">${t.tour_full_name_lbl}</label>
                     <div class="input-status">
                         <input type="text" id="tour-fullname" class="tour-input" value="${existingFullName}" placeholder="Alex" maxlength="15" autocomplete="name">
@@ -621,7 +671,7 @@ function showWelcomeTour() {
                     </div>
                 </div>
 
-                <div class="field-wrap">
+                <div class="field-wrap" style="text-align: left;">
                     <label class="field-label">${t.tour_username_lbl}</label>
                     <div class="input-status">
                         <input type="text" id="tour-username" class="tour-input" value="${existingUsername}" placeholder="alex_123" maxlength="30" autocomplete="off">
@@ -1067,7 +1117,6 @@ function showTermsBanner() {
     document.getElementById('accept-terms-btn').onclick = () => { localStorage.setItem('scoralia_terms_accepted', 'true'); banner.remove(); };
 }
 
-// Ensure the forced modal doesn't trigger anymore since we have the banner
 if (document.getElementById('lang-modal-overlay')) {
     document.getElementById('lang-modal-overlay').remove();
 }
