@@ -605,7 +605,17 @@
             document.getElementById('startBrowsingBtn').onclick = () => document.querySelector('.main-wrap').scrollIntoView({ behavior: 'smooth' });
             document.getElementById('heroListBtn').onclick = () => window.location.href = '/listanitem.html';
             document.getElementById('search-btn').onclick = () => { if (searchInput.value.trim()) window.location.href = `/search.html?q=${encodeURIComponent(searchInput.value.trim())}`; };
-            searchInput.onkeydown = (e) => { if (e.key === 'Enter') { searchInput.blur(); if (searchInput.value.trim()) window.location.href = `/search.html?q=${encodeURIComponent(searchInput.value.trim())}`; } };
+            
+            // 🔥 FIX: Mobile "Enter" / "Next" key now triggers search and prevents newline
+            searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); // Stops the "next" behavior on mobile
+                    const query = searchInput.value.trim();
+                    if (query) {
+                        window.location.href = `/search.html?q=${encodeURIComponent(query)}`;
+                    }
+                }
+            });
 
             async function loadGlobalTags() {
                 try {
@@ -766,9 +776,8 @@
             const DISMISS_KEY = 'pwa_prompt_dismissed';
             const INSTALLED_KEY = 'pwa_installed';
 
-            // If already installed or permanently dismissed, do nothing
+            // If already installed, do nothing
             if (localStorage.getItem(INSTALLED_KEY) === 'true') return;
-            if (localStorage.getItem(DISMISS_KEY) === 'forever') return;
 
             // Get current visit count
             let visits = parseInt(localStorage.getItem(VISIT_KEY) || '0');
@@ -776,11 +785,14 @@
             localStorage.setItem(VISIT_KEY, visits);
 
             // Determine the next threshold based on previous dismissals
-            const dismissedThreshold = localStorage.getItem(DISMISS_KEY); // e.g., "3", "10", "19"
-            let nextThreshold = 3;
-            if (dismissedThreshold === '3') nextThreshold = 10;
-            else if (dismissedThreshold === '10') nextThreshold = 19;
-            else if (dismissedThreshold === '19') nextThreshold = 19; // repeat forever
+            const dismissedThreshold = localStorage.getItem(DISMISS_KEY); // e.g., "4", "10", "20"
+            let nextThreshold = 4;
+            if (dismissedThreshold === '4') nextThreshold = 10;
+            else if (dismissedThreshold === '10') nextThreshold = 20;
+            else if (dismissedThreshold && parseInt(dismissedThreshold) >= 20) {
+                // After 20, it's every 10 visits (30, 40, 50...)
+                nextThreshold = parseInt(dismissedThreshold) + 10;
+            }
 
             // Check if we should prompt now
             if (visits < nextThreshold) return;
@@ -799,21 +811,14 @@
             });
 
             function showInstallPrompt() {
-                // Create a simple modal
                 const overlay = document.createElement('div');
-                overlay.style.cssText = `
-                    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                    background: rgba(0,0,0,0.7); z-index: 100000;
-                    display: flex; align-items: flex-end; justify-content: center;
-                `;
+                overlay.className = 'lang-modal-overlay';
+                overlay.style.zIndex = '100000';
                 overlay.innerHTML = `
-                    <div style="background: white; width: 100%; max-width: 450px; margin: 20px;
-                                border-radius: 20px; padding: 24px; text-align: center;
-                                animation: slideUp 0.3s ease; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
-                        <h3 style="font-family: 'Playfair Display', serif; color: #0C1446; margin-bottom: 8px;">
-                            <i class="fas fa-mobile-alt" style="color: #C8A96E;"></i> Add to Home Screen
-                        </h3>
-                        <p style="color: #6b84a3; margin-bottom: 20px; font-size: 0.95rem;">
+                    <div class="lang-modal" style="padding: 30px 25px;">
+                        <i class="fas fa-mobile-alt fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
+                        <h2 style="color:#0C1446; margin-bottom:12px; font-family:'Playfair Display', serif;">Add to Home Screen</h2>
+                        <p style="color:#6b84a3; margin-bottom:25px; line-height:1.6; font-size:0.95rem;">
                             Install Scoralia for quick access and a better experience.
                         </p>
                         <div style="display: flex; gap: 10px;">
@@ -829,11 +834,6 @@
                     </div>
                 `;
                 document.body.appendChild(overlay);
-
-                // Add slide-up animation
-                const style = document.createElement('style');
-                style.textContent = `@keyframes slideUp { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`;
-                document.head.appendChild(style);
 
                 const installBtn = overlay.querySelector('#pwa-install-btn');
                 const laterBtn = overlay.querySelector('#pwa-later-btn');
