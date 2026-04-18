@@ -1,28 +1,31 @@
-// netlify/functions/verify-bot.js
-const fetch = require('node-fetch');
+// Cloudflare Pages Function: /functions/verify-bot.js
+export async function onRequest(context) {
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+  };
 
-exports.handler = async (event) => {
-    const { token } = JSON.parse(event.body);
-    const secretKey = process.env.TURNSTILE_SECRET_KEY;
+  if (context.request.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
 
-    // Call Cloudflare API to verify the token
-    const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `secret=${secretKey}&response=${token}`
-    });
+  const env = context.env;
+  const { token } = await context.request.json();
+  const secretKey = env.TURNSTILE_SECRET_KEY;
 
-    const outcome = await response.json();
+  const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `secret=${secretKey}&response=${token}`
+  });
 
-    if (outcome.success) {
-        return {
-            statusCode: 200,
-            body: JSON.stringify({ success: true, message: "Human confirmed!" })
-        };
-    } else {
-        return {
-            statusCode: 403,
-            body: JSON.stringify({ success: false, message: "Bot detected!" })
-        };
-    }
-};
+  const outcome = await response.json();
+
+  return new Response(JSON.stringify({
+    success: outcome.success,
+    message: outcome.success ? "Human confirmed!" : "Bot detected!"
+  }), {
+    headers: { ...corsHeaders, "Content-Type": "application/json" }
+  });
+}
