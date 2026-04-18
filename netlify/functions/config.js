@@ -1,41 +1,39 @@
-exports.handler = async function(event, context) {
-  // 1. SMART SECURITY SHIELD
-  // Gets the origin of the request.
-  const referer = event.headers.referer || event.headers.origin || "";
-  
-  // Checks if the request is actually coming from a Netlify website or your local computer.
-  // This prevents hackers from pasting the link in their browser to steal keys, 
-  // but won't break your site if you change your Netlify URL name!
-  const isAllowed = referer.includes("netlify.app") || referer.includes("localhost") || referer.includes("127.0.0.1");
+// Cloudflare Pages Function: /functions/config.js
+export async function onRequest(context) {
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type",
+    "Access-Control-Allow-Methods": "GET, OPTIONS",
+  };
 
-  if (!isAllowed) {
-    return {
-      statusCode: 403,
-      body: JSON.stringify({ error: "Access Denied. Nice try! 😉" })
-    };
+  // Handle CORS preflight
+  if (context.request.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
   }
 
-  // 2. SEND CONFIGURATION
-  return {
-    statusCode: 200,
+  // Cloudflare environment variables are in context.env
+  const env = context.env;
+
+  // You must add these variables in Cloudflare Dashboard > Pages > Settings > Environment variables
+  const firebaseConfig = {
+    apiKey: env.VITE_FIREBASE_API_KEY,
+    authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId: env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: env.VITE_FIREBASE_APP_ID,
+    measurementId: env.VITE_FIREBASE_MEASUREMENT_ID
+  };
+
+  const cloudinary = {
+    cloudName: env.VITE_CLOUDINARY_CLOUD_NAME,
+    uploadPreset: env.VITE_CLOUDINARY_UPLOAD_PRESET
+  };
+
+  return new Response(JSON.stringify({ firebaseConfig, cloudinary }), {
     headers: {
       "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*", // Crucial: Allows your frontend to read the data
-    },
-    body: JSON.stringify({
-      firebaseConfig: {
-        apiKey: process.env.VITE_FIREBASE_API_KEY,
-        authDomain: process.env.VITE_FIREBASE_AUTH_DOMAIN,
-        projectId: process.env.VITE_FIREBASE_PROJECT_ID,
-        storageBucket: process.env.VITE_FIREBASE_STORAGE_BUCKET,
-        messagingSenderId: process.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-        appId: process.env.VITE_FIREBASE_APP_ID,
-        measurementId: process.env.VITE_FIREBASE_MEASUREMENT_ID
-      },
-      cloudinary: {
-        cloudName: process.env.VITE_CLOUDINARY_CLOUD_NAME,
-        uploadPreset: process.env.VITE_CLOUDINARY_UPLOAD_PRESET
-      }
-    })
-  };
-};
+      ...corsHeaders
+    }
+  });
+}
