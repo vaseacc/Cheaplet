@@ -273,7 +273,7 @@ async function triggerBotChallenge() {
         // Render the widget once script is loaded
         script.onload = () => {
             turnstile.render('#turnstile-container', {
-                sitekey: '0x4AAAAAAC8mKfhLYButTzAM', 
+                sitekey: '0x4AAAAAAC8mKfhLYButTzAM', // Public site key - OK to be here
                 callback: window.onTurnstileSuccess,
             });
         };
