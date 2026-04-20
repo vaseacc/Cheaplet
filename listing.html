@@ -207,6 +207,49 @@
         .btn-submit-red { background: var(--red); color: var(--white); }
         .btn-cancel-gray { background: var(--surface); color: var(--text-body); }
 
+        /* ── CUSTOM TOAST NOTIFICATION ── */
+        .toast-message {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--ink);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 100000;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: toastSlideUp 0.3s ease, toastFadeOut 0.5s ease 3.5s forwards;
+            pointer-events: none;
+            border-left: 6px solid var(--gold);
+        }
+        .toast-message i {
+            color: var(--gold);
+            font-size: 1.3rem;
+        }
+        .toast-message a {
+            color: var(--gold);
+            text-decoration: underline;
+            font-weight: 800;
+            margin-left: 8px;
+            pointer-events: auto;
+        }
+        .toast-message a:hover {
+            color: white;
+        }
+        @keyframes toastSlideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        @keyframes toastFadeOut {
+            to { opacity: 0; transform: translateX(-50%) translateY(-10px); visibility: hidden; }
+        }
+
         /* ── MOBILE ── */
         @media (max-width: 900px) {
             body { height: auto; overflow-y: auto; overflow-x: hidden; display: block; }
@@ -215,6 +258,7 @@
             .main-image-container { padding: 10px; }
             .details-panel { width: 100%; border-left: none; height: auto; padding: 20px 16px 50px; overflow-y: visible; }
             nav { display: none; }
+            .toast-message { bottom: 20px; width: 90%; white-space: normal; text-align: center; }
         }
     </style>
 </head>
@@ -366,7 +410,10 @@
                     location_label: "Location", label_meeting_point: "Meeting Point", label_writing: "Writing inside", 
                     label_water: "Water damage", label_missing: "Missing pages", description_title: "Description", 
                     seller_title: "Seller Information", quick_msg_label: "Send a quick message", btn_send: "Send", related_title: "Related Items",
-                    unavailable: "Listing is currently under review or unavailable.", no: "No", yes: "Yes"
+                    unavailable: "Listing is currently under review or unavailable.", no: "No", yes: "Yes",
+                    savedToast: "Item saved! View it in your",
+                    profileLink: "Profile",
+                    copyToast: "Link copied to clipboard!"
                 },
                 fr: { 
                     reportTitle: "Signaler l'annonce", reportDesc: "Pourquoi signalez-vous cela ?", reportPlaceholder: "Détails...", reportSuccess: "Signalé.", 
@@ -376,7 +423,10 @@
                     location_label: "Emplacement", label_meeting_point: "Point de rencontre", label_writing: "Écritures à l'intérieur", 
                     label_water: "Dommages causés par l'eau", label_missing: "Pages manquantes", description_title: "Description", 
                     seller_title: "Informations sur le vendeur", quick_msg_label: "Envoyer un message rapide", btn_send: "Envoyer", related_title: "Articles similaires",
-                    unavailable: "L'annonce est en cours de révision ou indisponible.", no: "Non", yes: "Oui"
+                    unavailable: "L'annonce est en cours de révision ou indisponible.", no: "Non", yes: "Oui",
+                    savedToast: "Article enregistré ! Consultez-le dans votre",
+                    profileLink: "Profil",
+                    copyToast: "Lien copié dans le presse-papier !"
                 }
             };
 
@@ -394,6 +444,35 @@
                 if (value === false || value === undefined || value === null || value === "") return strings[lang].no;
                 if (lang === 'fr' && dataTranslations.fr[value]) return dataTranslations.fr[value];
                 return value;
+            }
+
+            // Custom toast notification system
+            function showToast(message, isSaveToast = false) {
+                // Remove any existing toast
+                const existingToast = document.querySelector('.toast-message');
+                if (existingToast) existingToast.remove();
+
+                const toast = document.createElement('div');
+                toast.className = 'toast-message';
+                
+                if (isSaveToast) {
+                    toast.innerHTML = `
+                        <i class="fas fa-bookmark"></i>
+                        <span>${message} <a href="/profile.html">${strings[lang].profileLink} →</a></span>
+                    `;
+                } else {
+                    toast.innerHTML = `
+                        <i class="fas fa-check-circle"></i>
+                        <span>${message}</span>
+                    `;
+                }
+                
+                document.body.appendChild(toast);
+                
+                // Auto-remove after animation ends (4 seconds total)
+                setTimeout(() => {
+                    if (toast.parentNode) toast.remove();
+                }, 4000);
             }
 
             onAuthStateChanged(auth, user => {
@@ -579,7 +658,8 @@
                 const reason = document.getElementById('report-reason').value;
                 const details = document.getElementById('report-details').value.trim();
                 await addDoc(collection(db, "reports"), { reporterUid: currentUser.uid, reporterName: currentUser.displayName, targetUid: currentListingData.posterUid, targetUserName: currentListingData.posterDisplayName, reason: "Listing: " + reason, details: `Item: ${currentListingData.title} (${currentListingId})\n\n${details}`, timestamp: serverTimestamp() });
-                alert(strings[lang].reportSuccess); reportModal.style.display = 'none';
+                showToast(strings[lang].reportSuccess);
+                reportModal.style.display = 'none';
             };
 
             function updateMainImage(index) {
@@ -605,7 +685,7 @@
                     return;
                 }
                 if (currentUser.uid === posterUid) {
-                    alert("You cannot message yourself.");
+                    showToast("You cannot message yourself.");
                     return;
                 }
 
@@ -667,7 +747,7 @@
                     window.location.href = `/chat.html?id=${chatId}`;
                 } catch (error) {
                     console.error("Error creating chat:", error);
-                    alert("Could not start chat. Please try again.");
+                    showToast("Could not start chat. Please try again.");
                 }
             }
 
@@ -686,16 +766,30 @@
             saveBtn.onclick = async () => {
                 if (!currentUser) { window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`; return; }
                 const userRef = doc(db, "users", currentUser.uid);
-                if (isSaved) { await updateDoc(userRef, { savedListings: arrayRemove(currentListingId) }); isSaved = false; }
-                else { await updateDoc(userRef, { savedListings: arrayUnion(currentListingId) }); isSaved = true; alert(lang === 'fr' ? "Annonce enregistrée !" : "Listing saved!"); }
+                if (isSaved) { 
+                    await updateDoc(userRef, { savedListings: arrayRemove(currentListingId) }); 
+                    isSaved = false; 
+                } else { 
+                    await updateDoc(userRef, { savedListings: arrayUnion(currentListingId) }); 
+                    isSaved = true; 
+                    showToast(strings[lang].savedToast, true);
+                }
                 updateSaveIcon();
             };
 
             shareBtn.onclick = async () => {
                 const url = window.location.href;
-                const copyMsg = lang === 'fr' ? "Lien copié !" : "Link copied!";
-                if (navigator.share) { try { await navigator.share({ title: currentListingData.title, url }); } catch { await navigator.clipboard.writeText(url); alert(copyMsg); } }
-                else { await navigator.clipboard.writeText(url); alert(copyMsg); }
+                if (navigator.share) { 
+                    try { 
+                        await navigator.share({ title: currentListingData.title, url }); 
+                    } catch { 
+                        await navigator.clipboard.writeText(url); 
+                        showToast(strings[lang].copyToast);
+                    } 
+                } else { 
+                    await navigator.clipboard.writeText(url); 
+                    showToast(strings[lang].copyToast);
+                }
             };
 
             async function deleteListing(docId) { if (confirm("Delete listing?")) { await deleteDoc(doc(db, 'listings', docId)); window.location.href = '/index.html'; } }
