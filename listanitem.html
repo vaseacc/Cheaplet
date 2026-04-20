@@ -444,124 +444,103 @@
             }
 
             async function fetchBookData(isbn) {
-    // Clean the ISBN: keep only numbers
-    const cleanIsbn = isbn.replace(/[^0-9]/g, '');
-    if (cleanIsbn.length < 10) {
-        alert("Invalid ISBN format. Please enter a valid 10 or 13 digit ISBN.");
-        return;
-    }
+                const cleanIsbn = isbn.replace(/[^0-9]/g, '');
+                if (cleanIsbn.length < 10) {
+                    alert("Invalid ISBN format. Please enter a valid 10 or 13 digit ISBN.");
+                    return;
+                }
 
-    // 1. Check local cache first
-    if (isbnCache[cleanIsbn]) {
-        const cached = isbnCache[cleanIsbn];
-        document.getElementById('listing-title').value = cached.title;
-        document.getElementById('listing-description').value = cached.description;
-        document.getElementById('listing-isbn').value = cleanIsbn;
-        document.getElementById('isbn-section').style.display = 'none';
-        document.getElementById('main-form-section').style.display = 'block';
-        if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
-        return;
-    }
+                if (isbnCache[cleanIsbn]) {
+                    const cached = isbnCache[cleanIsbn];
+                    document.getElementById('listing-title').value = cached.title;
+                    document.getElementById('listing-description').value = cached.description || "";
+                    document.getElementById('listing-isbn').value = cleanIsbn;
+                    document.getElementById('isbn-section').style.display = 'none';
+                    document.getElementById('main-form-section').style.display = 'block';
+                    if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
+                    return;
+                }
 
-    const scanBtn = document.getElementById('start-scan-btn');
-    const manualBtn = document.getElementById('manual-isbn-btn');
-    scanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${ui[lang].fetching}</span>`;
-    scanBtn.disabled = true;
-    manualBtn.disabled = true;
+                const scanBtn = document.getElementById('start-scan-btn');
+                const manualBtn = document.getElementById('manual-isbn-btn');
+                scanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${ui[lang].fetching}</span>`;
+                scanBtn.disabled = true;
+                manualBtn.disabled = true;
 
-    let bookData = null;
+                let bookData = { title: "", description: "" };
 
-    // Helper to parse Google Books API response
-    const parseGoogleBooksResponse = (data) => {
-        if (data.items && data.items.length > 0) {
-            const book = data.items[0].volumeInfo;
-            let fullTitle = book.title || "Unknown Title";
-            if (book.authors && book.authors.length) {
-                fullTitle += ` by ${book.authors.join(', ')}`;
+                // Helper for Google Books
+                const parseGoogleBooks = (data) => {
+                    if (data.items && data.items.length > 0) {
+                        const book = data.items[0].volumeInfo;
+                        let title = book.title || "";
+                        if (book.authors && book.authors.length) title += ` by ${book.authors.join(', ')}`;
+                        const description = book.description ? book.description.replace(/<[^>]*>?/gm, '') : "";
+                        return { title, description };
+                    }
+                    return null;
+                };
+
+                // 1. Google Books by ISBN
+                try {
+                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        const result = parseGoogleBooks(data);
+                        if (result) bookData = result;
+                    }
+                } catch (e) { console.warn("Google ISBN fetch error:", e); }
+
+                // 2. OpenLibrary fallback
+                if (!bookData.title) {
+                    try {
+                        const res = await fetch(`https://openlibrary.org/isbn/${cleanIsbn}.json`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            let title = data.title || "";
+                            if (data.authors && data.authors.length) {
+                                const authorNames = data.authors.map(a => a.name).join(', ');
+                                title += ` by ${authorNames}`;
+                            }
+                            let description = "";
+                            if (data.description) {
+                                description = typeof data.description === 'string' ? data.description : (data.description.value || "");
+                            }
+                            if (title) bookData = { title, description };
+                        }
+                    } catch (e) { console.warn("OpenLibrary error:", e); }
+                }
+
+                // 3. If still no title, try Google Books search by the raw ISBN string
+                if (!bookData.title) {
+                    try {
+                        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(isbn)}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            const result = parseGoogleBooks(data);
+                            if (result) bookData = result;
+                        }
+                    } catch (e) { console.warn("Google title search error:", e); }
+                }
+
+                // 4. Apply result
+                if (bookData.title) {
+                    isbnCache[cleanIsbn] = bookData;
+                    saveCache();
+                    document.getElementById('listing-title').value = bookData.title;
+                    document.getElementById('listing-description').value = bookData.description || "";
+                    document.getElementById('listing-isbn').value = cleanIsbn;
+                    document.getElementById('isbn-section').style.display = 'none';
+                    document.getElementById('main-form-section').style.display = 'block';
+                    if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
+                } else {
+                    alert(ui[lang].notFound);
+                }
+
+                scanBtn.innerHTML = `<i class="fas fa-camera"></i> <span id="ui-btn-scan">${ui[lang].btnScan}</span>`;
+                scanBtn.disabled = false;
+                manualBtn.disabled = false;
             }
-            // Strip HTML tags from description
-            let description = book.description ? book.description.replace(/<[^>]*>?/gm, '') : "";
-            return { title: fullTitle, description: description };
-        }
-        return null;
-    };
-
-    // 2. Try Google Books API first (using isbn: filter)
-    try {
-        const googleUrl = `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`;
-        const googleRes = await fetch(googleUrl);
-        if (googleRes.ok) {
-            const googleData = await googleRes.json();
-            bookData = parseGoogleBooksResponse(googleData);
-        }
-    } catch (err) {
-        console.warn("Google Books API failed:", err);
-    }
-
-    // 3. Fallback 1: OpenLibrary API
-    if (!bookData) {
-        try {
-            const workUrl = `https://openlibrary.org/isbn/${cleanIsbn}.json`;
-            const workRes = await fetch(workUrl);
-            if (workRes.ok) {
-                const workData = await workRes.json();
-                let fullTitle = workData.title || "Unknown Title";
-                if (workData.authors && workData.authors.length) {
-                    const authorNames = workData.authors.map(a => a.name).join(', ');
-                    fullTitle += ` by ${authorNames}`;
-                }
-                let description = "";
-                if (workData.description) {
-                    description = typeof workData.description === 'string' ? workData.description : (workData.description.value || "");
-                }
-                if (!description && workData.excerpts && workData.excerpts.length) {
-                    description = workData.excerpts[0].text;
-                }
-                if (!description && workData.subtitle) description = workData.subtitle;
-                if (description) {
-                    bookData = { title: fullTitle, description: description };
-                }
-            }
-        } catch (err) {
-            console.warn("OpenLibrary fetch failed:", err);
-        }
-    }
-
-    // 4. Fallback 2: If both APIs failed by ISBN, search Google Books by title from the ISBN
-    if (!bookData) {
-        try {
-            // Use the raw ISBN as a search term for title
-            const titleSearchUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(isbn)}`;
-            const titleRes = await fetch(titleSearchUrl);
-            if (titleRes.ok) {
-                const titleData = await titleRes.json();
-                bookData = parseGoogleBooksResponse(titleData);
-            }
-        } catch (err) {
-            console.warn("Google Books title search failed:", err);
-        }
-    }
-
-    // 5. Process the result
-    if (bookData && bookData.title) {
-        // Use the description if available, otherwise provide a default
-        const finalDescription = bookData.description || `Book found with ISBN ${cleanIsbn}.`;
-        isbnCache[cleanIsbn] = { title: bookData.title, description: finalDescription };
-        saveCache();
-        document.getElementById('listing-title').value = bookData.title;
-        document.getElementById('listing-description').value = finalDescription;
-        document.getElementById('listing-isbn').value = cleanIsbn;
-        document.getElementById('isbn-section').style.display = 'none';
-        document.getElementById('main-form-section').style.display = 'block';
-        if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
-    } else {
-        alert(ui[lang].notFound);
-    }
-
-    scanBtn.innerHTML = `<i class="fas fa-camera"></i> <span id="ui-btn-scan">${ui[lang].btnScan}</span>`;
-    scanBtn.disabled = false;
-    manualBtn.disabled = false;
-}
 
             document.getElementById('start-scan-btn').onclick = async () => {
                 // Request camera permission before attempting to start the scanner
