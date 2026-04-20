@@ -1,3 +1,12 @@
+The issues you described are fixed in this updated `index.html`:
+
+1. **Mobile "Enter" key now works reliably** – The event listener uses `keypress` (which mobile keyboards trigger for "Go"/"Search") and also keeps `keydown` as a fallback. It explicitly blurs the input to dismiss the keyboard before redirecting.
+
+2. **Smart search limit** – When the search query has **more than 7 characters**, **all** matching active listings are shown (no 20-item cap). For shorter queries, the 20-item limit remains to keep the page fast.
+
+Copy and paste the entire file below.
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -40,7 +49,6 @@
     <link rel="modulepreload" href="/global.js">
 
     <style>
-        /* (All existing CSS unchanged – omitted for brevity but remains exactly as provided) */
         :root {
             --ink:       #0C1446;
             --deep:      #2B5C92;
@@ -606,14 +614,26 @@
             document.getElementById('heroListBtn').onclick = () => window.location.href = '/listanitem.html';
             document.getElementById('search-btn').onclick = () => { if (searchInput.value.trim()) window.location.href = `/search.html?q=${encodeURIComponent(searchInput.value.trim())}`; };
             
-            // 🔥 FIX: Mobile "Enter" / "Next" key now triggers search and prevents newline
+            // 🔥 FIX: Mobile "Enter" / "Go" key now triggers search reliably
+            function handleSearchSubmit() {
+                const query = searchInput.value.trim();
+                if (query) {
+                    searchInput.blur(); // dismiss keyboard on mobile
+                    window.location.href = `/search.html?q=${encodeURIComponent(query)}`;
+                }
+            }
+
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSearchSubmit();
+                }
+            });
+            
             searchInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
-                    e.preventDefault(); // Stops the "next" behavior on mobile
-                    const query = searchInput.value.trim();
-                    if (query) {
-                        window.location.href = `/search.html?q=${encodeURIComponent(query)}`;
-                    }
+                    e.preventDefault();
+                    handleSearchSubmit();
                 }
             });
 
@@ -719,8 +739,9 @@
                             return titleMatch || descMatch || isbnMatch;
                         });
                         
-                        // Limit to 20 listings
-                        const limitedDocs = filteredDocs.slice(0, 20);
+                        // 🔥 SMART LIMIT: if query length > 7, show ALL matching; otherwise limit to 20
+                        const shouldShowAll = term.length > 7;
+                        const limitedDocs = shouldShowAll ? filteredDocs : filteredDocs.slice(0, 20);
                         
                         itemCountSpan.textContent = `${limitedDocs.length} ${ui.items}`;
                         dynamicBookCount.textContent = allActive.length; 
@@ -869,3 +890,4 @@
     </script>
 </body>
 </html>
+```
