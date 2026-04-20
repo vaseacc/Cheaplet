@@ -241,7 +241,7 @@
         .post-dropdown-item.danger:hover { background: #fef2f2; color: #b91c1c; }
 
         .post-body { font-size: 1.05rem; line-height: 1.6; color: #334155; white-space: pre-wrap; word-wrap: break-word; width: 100%; margin-bottom: 15px; }
-        .post-image-attachment { width: 100%; max-height: 400px; object-fit: cover; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 15px; }
+        .post-image-attachment { width: 100%; max-height: 400px; object-fit: cover; border-radius: 12px; border: 1px solid #e2e8f0; margin-bottom: 15px; cursor: default; }
         .post-listing-attachment { display: flex; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; text-decoration: none; color: inherit; transition: 0.2s; margin-bottom: 15px; background: var(--off-white); }
         .post-listing-attachment:hover { border-color: var(--gold); box-shadow: 0 4px 12px rgba(0,0,0,0.05); transform: translateY(-2px); }
         .pla-img { width: 100px; height: 100px; background-size: cover; background-position: center; background-color: #cbd5e1; flex-shrink: 0; }
@@ -300,7 +300,7 @@
         .comment-author { font-weight: 700; font-size: 0.85rem; color: var(--ink); margin-bottom: 2px; transition: color 0.2s; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
         .comment-author-link:hover .comment-author { color: var(--deep); text-decoration: underline; }
         .comment-text { font-size: 0.9rem; color: #334155; word-wrap: break-word; line-height: 1.4; }
-        .comment-image-attachment { max-width: 200px; max-height: 200px; border-radius: 8px; margin-top: 8px; display: block; border: 1px solid #e2e8f0; }
+        .comment-image-attachment { max-width: 200px; max-height: 200px; border-radius: 8px; margin-top: 8px; display: block; cursor: default; border: 1px solid #e2e8f0; }
         .comment-time { font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; }
         
         .comment-composer-area { display: flex; flex-direction: column; gap: 8px; background: var(--off-white); border: 1px solid #cbd5e1; border-radius: 18px; padding: 5px; transition: border-color 0.2s; }
@@ -454,7 +454,7 @@
             <h2 id="restricted-title">Verified Student Required</h2>
             <p id="restricted-desc">To create custom topics or post in a specific school's feed, you need a verified student account with a school email address.</p>
             <div class="modal-buttons" style="justify-content: center;">
-                <a href="/login.html?redirect=/social.html" class="btn btn-login">Create School Account</a>
+                <a href="/verify.html" class="btn btn-login">Create School Account</a>
                 <button class="btn btn-ghost" id="close-restricted-btn">Cancel</button>
             </div>
         </div>
@@ -505,7 +505,7 @@
             <!-- VERIFICATION BANNER (only for non‑verified) -->
             <div id="verify-banner" class="verify-banner" style="display: none;">
                 <p><i class="fas fa-graduation-cap"></i> <span id="verify-banner-text">Get the Verified Student badge and filter posts by your school – create an account with your school email address.</span></p>
-                <a href="/login.html?redirect=/social.html"><button>Create School Account</button></a>
+                <a href="/verify.html"><button>Create School Account</button></a>
                 <button class="banner-close" id="close-banner-btn">&times;</button>
             </div>
 
@@ -799,7 +799,7 @@
             let unsubscribePosts = null;
             let commentUnsubscribes = {}; 
             let listings = []; 
-            let allTopicsData = [];
+            let allTopicsData =[];
 
             // --- COMPOSER STATE ---
             let postImageFile = null;
@@ -866,7 +866,7 @@
                     listings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                 } catch (e) {
                     console.error("Failed to fetch market listings", e);
-                    listings = [];
+                    listings =[];
                 }
             }
 
@@ -1018,7 +1018,7 @@
                         authorName: currentUser.displayName || "User",
                         authorPhoto: photoToSave,
                         authorIsStudent: isStudent,
-                        likes: 0, likedBy: [], commentCount: 0,
+                        likes: 0, likedBy:[], commentCount: 0,
                         status: requiresReview ? 'pending' : 'active',
                         timestamp: serverTimestamp()
                     };
@@ -1341,8 +1341,8 @@
                     mobileWaysList.appendChild(mGeneral);
                 }
 
-                const myT = [], pinT = [], discT = [];
-                const pinnedArr = (currentUser && currentUser.pinnedTopics) || [];
+                const myT = [], pinT = [], discT =[];
+                const pinnedArr = (currentUser && currentUser.pinnedTopics) ||[];
 
                 allTopicsData.forEach(d => {
                     const isPrivate = d.visibility === 'private';
@@ -1475,7 +1475,7 @@
                                         <i class="fas fa-lock" style="font-size: 3.5rem; color: var(--deep); margin-bottom: 20px;"></i>
                                         <h3 style="font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--ink); margin-bottom: 12px;">${ui.private_feed_locked}</h3>
                                         <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; line-height: 1.6;">${ui.private_feed_desc} <strong>${targetSchool}</strong> can view or participate in this channel.</p>
-                                        <button class="btn-action" style="width: 100%;" onclick="document.getElementById('restricted-modal').style.display='flex'">Verify Student Email</button>
+                                        <button class="btn-action" style="width: 100%;" onclick="window.location.href='/verify.html'">Verify Student Email</button>
                                     </div>
                                 </div>
                                 
