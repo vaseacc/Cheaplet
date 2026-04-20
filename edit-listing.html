@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Listing - Scoralia</title>
     <script type="module" src="global.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -270,21 +271,12 @@
                             <div>
                                 <label class="field-label" id="ui-label-location">Campus Location</label>
                                 <select id="listing-location" required>
-                                    <option value="Collège de Rosemont">Collège de Rosemont</option>
-                                    <option value="Cégep de Jonquière">Cégep de Jonquière</option>
-                                    <option value="Cégep de Lanaudière">Cégep de Lanaudière</option>
-                                    <option value="Cégep Maisonneuve">Cégep Maisonneuve</option>
-                                    <option value="Cégep Marie-Victorin">Cégep Marie-Victorin</option>
-                                    <option value="Collège Ahuntsic">Collège Ahuntsic</option>
-                                    <option value="Dawson College">Dawson College</option>
-                                    <option value="Université de Sherbrooke">Université de Sherbrooke</option>
-                                    <option value="Université Laval">Université Laval</option>
-                                    <option value="Global Campus">Other / Global Campus</option>
+                                    <option value="Collège de Rosemont" selected>Collège de Rosemont</option>
                                 </select>
                             </div>
                             <div>
                                 <label class="field-label" id="ui-label-meet">Meeting Point</label>
-                                <input type="text" id="listing-meeting-point" maxlength="60">
+                                <input type="text" id="listing-meeting-point" maxlength="60" placeholder="e.g., Near Library">
                             </div>
                         </div>
                     </div>
@@ -426,7 +418,7 @@
             let currentListingId = new URLSearchParams(window.location.search).get('id');
             let currentUser = null;
 
-            // --- ISBN LOGIC FOR EDIT ---
+            // --- ISBN LOGIC FOR EDIT (improved) ---
             let html5QrCode;
             const isbnCache = {};
             try {
@@ -453,8 +445,8 @@
                 if (isbnCache[cleanIsbn]) {
                     const cached = isbnCache[cleanIsbn];
                     document.getElementById('listing-title').value = cached.title;
-                    document.getElementById('listing-description').value = cached.description;
-                    document.getElementById('listing-isbn').value = cleanIsbn; // SAVE ISBN
+                    document.getElementById('listing-description').value = cached.description || "";
+                    document.getElementById('listing-isbn').value = cleanIsbn;
                     document.getElementById('isbn-section').style.display = 'none';
                     document.getElementById('main-form-section').style.display = 'block';
                     if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
@@ -466,47 +458,69 @@
                 scanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${ui[lang].fetching}</span>`;
                 scanBtn.disabled = true; manualBtn.disabled = true;
 
-                let bookData = null;
-                const isFrench = lang === 'fr';
+                let bookData = { title: "", description: "" };
 
+                // Helper for Google Books
+                const parseGoogleBooks = (data) => {
+                    if (data.items && data.items.length > 0) {
+                        const book = data.items[0].volumeInfo;
+                        let title = book.title || "";
+                        if (book.authors && book.authors.length) title += ` by ${book.authors.join(', ')}`;
+                        const description = book.description ? book.description.replace(/<[^>]*>?/gm, '') : "";
+                        return { title, description };
+                    }
+                    return null;
+                };
+
+                // 1. Google Books by ISBN
                 try {
-                    const workUrl = `https://openlibrary.org/isbn/${cleanIsbn}.json`;
-                    const workRes = await fetch(workUrl);
-                    if (workRes.ok) {
-                        const workData = await workRes.json();
-                        let fullTitle = workData.title || "Unknown Title";
-                        if (workData.authors && workData.authors.length) fullTitle += ` by ${workData.authors.map(a=>a.name).join(', ')}`;
-                        let description = typeof workData.description === 'string' ? workData.description : (workData.description?.value || "");
-                        if (!description && workData.excerpts && workData.excerpts.length) description = workData.excerpts[0].text;
-                        if (!description && workData.subtitle) description = workData.subtitle;
-                        if (description) bookData = { title: fullTitle, description: description };
+                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        const result = parseGoogleBooks(data);
+                        if (result) bookData = result;
                     }
-                } catch (err) {}
+                } catch (e) { console.warn("Google ISBN fetch error:", e); }
 
-                if (!bookData) {
-                    for (let attempt = 1; attempt <= 2; attempt++) {
-                        try {
-                            const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}&maxResults=1${isFrench ? '&lang=fr' : ''}`;
-                            const res = await fetch(url);
-                            if (res.ok) {
-                                const data = await res.json();
-                                if (data.items && data.items.length > 0) {
-                                    const book = data.items[0].volumeInfo;
-                                    let fullTitle = book.title || "Unknown Title";
-                                    if (book.authors && book.authors.length) fullTitle += ` by ${book.authors.join(', ')}`;
-                                    let originalDesc = book.description ? book.description.replace(/<[^>]*>?/gm, '') : "";
-                                    if (originalDesc) { bookData = { title: fullTitle, description: originalDesc }; break; }
-                                }
+                // 2. OpenLibrary fallback
+                if (!bookData.title) {
+                    try {
+                        const res = await fetch(`https://openlibrary.org/isbn/${cleanIsbn}.json`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            let title = data.title || "";
+                            if (data.authors && data.authors.length) {
+                                const authorNames = data.authors.map(a => a.name).join(', ');
+                                title += ` by ${authorNames}`;
                             }
-                        } catch (err) {}
-                    }
+                            let description = "";
+                            if (data.description) {
+                                description = typeof data.description === 'string' ? data.description : (data.description.value || "");
+                            }
+                            if (title) bookData = { title, description };
+                        }
+                    } catch (e) { console.warn("OpenLibrary error:", e); }
                 }
 
-                if (bookData && bookData.title && bookData.description) {
-                    isbnCache[cleanIsbn] = bookData; saveCache();
+                // 3. If still no title, try Google Books search by the raw ISBN string
+                if (!bookData.title) {
+                    try {
+                        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(isbn)}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            const result = parseGoogleBooks(data);
+                            if (result) bookData = result;
+                        }
+                    } catch (e) { console.warn("Google title search error:", e); }
+                }
+
+                // 4. Apply result
+                if (bookData.title) {
+                    isbnCache[cleanIsbn] = bookData;
+                    saveCache();
                     document.getElementById('listing-title').value = bookData.title;
-                    document.getElementById('listing-description').value = bookData.description;
-                    document.getElementById('listing-isbn').value = cleanIsbn; // SAVE ISBN
+                    document.getElementById('listing-description').value = bookData.description || "";
+                    document.getElementById('listing-isbn').value = cleanIsbn;
                     document.getElementById('isbn-section').style.display = 'none';
                     document.getElementById('main-form-section').style.display = 'block';
                     if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
@@ -639,8 +653,8 @@
 
                         const locSelect = document.getElementById('listing-location');
                         if (d.location) {
-                            let optionExists = Array.from(locSelect.options).some(opt => opt.value === d.location);
-                            if (optionExists) locSelect.value = d.location;
+                            // Since location dropdown only has one option now, just set it
+                            locSelect.value = "Collège de Rosemont";
                         }
 
                         document.getElementById('listing-meeting-point').value = d.meetingPoint || "";
