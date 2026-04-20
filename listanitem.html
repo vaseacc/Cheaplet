@@ -450,11 +450,12 @@
                     return;
                 }
 
+                // 1. Check local cache first
                 if (isbnCache[cleanIsbn]) {
                     const cached = isbnCache[cleanIsbn];
                     document.getElementById('listing-title').value = cached.title;
                     document.getElementById('listing-description').value = cached.description;
-                    document.getElementById('listing-isbn').value = cleanIsbn; 
+                    document.getElementById('listing-isbn').value = cleanIsbn;
                     document.getElementById('isbn-section').style.display = 'none';
                     document.getElementById('main-form-section').style.display = 'block';
                     if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
@@ -464,52 +465,69 @@
                 const scanBtn = document.getElementById('start-scan-btn');
                 const manualBtn = document.getElementById('manual-isbn-btn');
                 scanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${ui[lang].fetching}</span>`;
-                scanBtn.disabled = true; manualBtn.disabled = true;
-
-                // Added request camera permission on button click
-                navigator.mediaDevices.getUserMedia({ video: true })
-                    .then(function (stream) {
-                        console.log("Camera permission granted");
-                        stream.getTracks().forEach(track => track.stop());
-                    })
-                    .catch(function (error) {
-                        console.warn("Camera permission denied", error);
-                    });
+                scanBtn.disabled = true;
+                manualBtn.disabled = true;
 
                 let bookData = null;
-                const userLang = localStorage.getItem('preferred_language') || 'en';
-                const isFrench = userLang === 'fr';
 
+                // 2. Try Google Books API first (more comprehensive)
                 try {
-                    const workUrl = `https://openlibrary.org/isbn/${cleanIsbn}.json`;
-                    const workRes = await fetch(workUrl);
-                    if (workRes.ok) {
-                        const workData = await workRes.json();
-                        let fullTitle = workData.title || "Unknown Title";
-                        if (workData.authors && workData.authors.length) {
-                            const authorNames = workData.authors.map(a => a.name).join(', ');
-                            fullTitle += ` by ${authorNames}`;
-                        }
-                        let description = "";
-                        if (workData.description) {
-                            description = typeof workData.description === 'string' ? workData.description : (workData.description.value || "");
-                        }
-                        if (!description && workData.excerpts && workData.excerpts.length) {
-                            description = workData.excerpts[0].text;
-                        }
-                        if (!description && workData.subtitle) description = workData.subtitle;
-                        if (description) {
-                            bookData = { title: fullTitle, description: description };
+                    const googleUrl = `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`;
+                    const googleRes = await fetch(googleUrl);
+                    if (googleRes.ok) {
+                        const googleData = await googleRes.json();
+                        if (googleData.items && googleData.items.length > 0) {
+                            const book = googleData.items[0].volumeInfo;
+                            let fullTitle = book.title || "Unknown Title";
+                            if (book.authors && book.authors.length) {
+                                fullTitle += ` by ${book.authors.join(', ')}`;
+                            }
+                            let description = book.description ? book.description.replace(/<[^>]*>?/gm, '') : "";
+                            if (description) {
+                                bookData = { title: fullTitle, description: description };
+                            }
                         }
                     }
-                } catch (err) { console.warn("OpenLibrary fetch failed:", err); }
+                } catch (err) {
+                    console.warn("Google Books API failed, falling back to OpenLibrary:", err);
+                }
 
+                // 3. Fallback to OpenLibrary API if Google Books fails
+                if (!bookData) {
+                    try {
+                        const workUrl = `https://openlibrary.org/isbn/${cleanIsbn}.json`;
+                        const workRes = await fetch(workUrl);
+                        if (workRes.ok) {
+                            const workData = await workRes.json();
+                            let fullTitle = workData.title || "Unknown Title";
+                            if (workData.authors && workData.authors.length) {
+                                const authorNames = workData.authors.map(a => a.name).join(', ');
+                                fullTitle += ` by ${authorNames}`;
+                            }
+                            let description = "";
+                            if (workData.description) {
+                                description = typeof workData.description === 'string' ? workData.description : (workData.description.value || "");
+                            }
+                            if (!description && workData.excerpts && workData.excerpts.length) {
+                                description = workData.excerpts[0].text;
+                            }
+                            if (!description && workData.subtitle) description = workData.subtitle;
+                            if (description) {
+                                bookData = { title: fullTitle, description: description };
+                            }
+                        }
+                    } catch (err) {
+                        console.warn("OpenLibrary fetch failed:", err);
+                    }
+                }
+
+                // 4. Process the result
                 if (bookData && bookData.title && bookData.description) {
                     isbnCache[cleanIsbn] = bookData;
                     saveCache();
                     document.getElementById('listing-title').value = bookData.title;
                     document.getElementById('listing-description').value = bookData.description;
-                    document.getElementById('listing-isbn').value = cleanIsbn; 
+                    document.getElementById('listing-isbn').value = cleanIsbn;
                     document.getElementById('isbn-section').style.display = 'none';
                     document.getElementById('main-form-section').style.display = 'block';
                     if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
@@ -518,7 +536,8 @@
                 }
 
                 scanBtn.innerHTML = `<i class="fas fa-camera"></i> <span id="ui-btn-scan">${ui[lang].btnScan}</span>`;
-                scanBtn.disabled = false; manualBtn.disabled = false;
+                scanBtn.disabled = false;
+                manualBtn.disabled = false;
             }
 
             document.getElementById('start-scan-btn').onclick = async () => {
