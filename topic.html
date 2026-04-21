@@ -531,7 +531,7 @@
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 
         async function main() {
-            const response = await fetch('/.netlify/functions/config');
+            const response = await fetch(getFunctionUrl('config'));
             const config = await response.json();
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
@@ -810,7 +810,7 @@
             document.getElementById('close-listing-modal').onclick = () => attachListingModal.style.display = 'none';
 
             async function uploadImageToCloudinary(file) {
-                const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
+                const signRes = await fetch(getFunctionUrl('sign-upload')).then(r => r.json());
                 const formData = new FormData();
                 formData.append('file', file); formData.append('api_key', signRes.apiKey); formData.append('timestamp', signRes.timestamp); formData.append('signature', signRes.signature); formData.append('upload_preset', signRes.uploadPreset);
                 const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { method: 'POST', body: formData }).then(r => r.json());
@@ -847,7 +847,7 @@
                     const postRef = await addDoc(collection(db, "social_posts"), postData);
                     await updateDoc(doc(db, "social_channels", topicId), { postCount: increment(1), members: arrayUnion(currentUser.uid) });
                     if (requiresReview) {
-                        fetch('/.netlify/functions/moderate-listing', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ imageUrls: [uploadedImgUrl], title: "Topic Post", description: text }) })
+                        fetch(getFunctionUrl('moderate-listing'), { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ imageUrls: [uploadedImgUrl], title: "Topic Post", description: text }) })
                             .then(r => r.json()).then(aiData => { if (aiData.verdict === "UNSAFE") updateDoc(postRef, { status: 'rejected', rejectionReason: aiData.reason || "Inappropriate content" }); else updateDoc(postRef, { status: 'active' }); })
                             .catch(e => console.error(e));
                     }
@@ -908,7 +908,7 @@
                     const commentRef = await addDoc(collection(db, "social_posts", postId, "comments"), commentData);
                     await updateDoc(doc(db, "social_posts", postId), { commentCount: increment(1) });
                     if (requiresReview) {
-                        fetch('/.netlify/functions/moderate-listing', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ imageUrls: [uploadedImgUrl], title: "Topic Comment", description: text }) })
+                        fetch(getFunctionUrl('moderate-listing'), { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ imageUrls: [uploadedImgUrl], title: "Topic Comment", description: text }) })
                             .then(r => r.json()).then(aiData => { if (aiData.verdict === "UNSAFE") updateDoc(commentRef, { status: 'rejected', rejectionReason: aiData.reason || "Inappropriate content" }); else updateDoc(commentRef, { status: 'active' }); });
                     }
                     inputEl.value = ''; window.removeCommentImg(postId);

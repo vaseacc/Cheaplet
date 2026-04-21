@@ -620,7 +620,7 @@
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 
         async function main() {
-            const response = await fetch('/.netlify/functions/config');
+            const response = await fetch(getFunctionUrl('config'));
             const config = await response.json();
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
@@ -973,7 +973,7 @@
             if (closeListingModalBtn && attachListingModal) closeListingModalBtn.onclick = () => { attachListingModal.style.display = 'none'; };
 
             async function uploadImageToCloudinary(file) {
-                const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
+                const signRes = await fetch(getFunctionUrl('sign-upload')).then(r => r.json());
                 const formData = new FormData();
                 formData.append('file', file);
                 formData.append('api_key', signRes.apiKey);
@@ -1029,7 +1029,7 @@
                     const postRef = await addDoc(collection(db, collectionName), postData);
 
                     if (requiresReview) {
-                        fetch('/.netlify/functions/moderate-listing', {
+                        fetch(getFunctionUrl('moderate-listing'), {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ 
@@ -1149,7 +1149,7 @@
                     await updateDoc(doc(db, coll, postId), { commentCount: increment(1) });
 
                     if (requiresReview) {
-                        fetch('/.netlify/functions/moderate-listing', {
+                        fetch(getFunctionUrl('moderate-listing'), {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ 
