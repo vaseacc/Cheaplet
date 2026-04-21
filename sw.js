@@ -1,8 +1,8 @@
 // sw.js - Service Worker for Scoralia PWA (Network-First Strategy)
-const CACHE_NAME = 'scoralia-v9';
+const CACHE_NAME = 'scoralia-v10';
 
 // Files to cache for offline access
-const urlsToCache =[
+const urlsToCache = [
   '/',
   '/index.html',
   '/global.js',
@@ -47,6 +47,11 @@ self.addEventListener('activate', event => {
 
 // Helper to check if a request should be completely ignored by the cache
 function shouldBypass(url) {
+  // Ignore non-http/https requests (chrome-extension://, etc.)
+  if (!url.startsWith('http')) {
+    return true;
+  }
+
   if (url.includes('firestore.googleapis.com') ||
       url.includes('googleapis.com') ||
       url.includes('firebaseapp.com') ||
@@ -63,7 +68,7 @@ self.addEventListener('fetch', event => {
   const req = event.request;
   const url = req.url;
 
-  // 1. Always bypass API calls and POST requests
+  // 1. Always bypass API calls and non-GET requests
   if (req.method !== 'GET' || shouldBypass(url)) {
     return; // Let the browser handle it normally
   }
