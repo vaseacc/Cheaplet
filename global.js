@@ -8,6 +8,16 @@ const runWhenIdle = (cb) => {
     else setTimeout(cb, 1);
 };
 
+// --- Helper: Get the correct function URL for current environment ---
+function getFunctionUrl(name) {
+    // Cloudflare Pages uses /functions/ path
+    if (window.location.hostname.includes('pages.dev')) {
+        return `/functions/${name}`;
+    }
+    // Netlify uses /.netlify/functions/ path (default for localhost and netlify.app)
+    return `/.netlify/functions/${name}`;
+}
+
 // --- 0. AUTO-IMPORT ICONS & FAVICON (Performance: Only if not present) ---
 if (!document.querySelector('link[href*="font-awesome"]')) {
     const faLink = document.createElement('link');
@@ -34,38 +44,32 @@ if ('serviceWorker' in navigator) {
 }
 
 // Track index visits for PWA prompt logic
-const isIndexPage = window.location.pathname === '/' || window.location.pathname.endsWith('index.html');
-if (isIndexPage) {
-    let visits = parseInt(localStorage.getItem('pwa_index_visits') || '0');
-    visits++;
-    localStorage.setItem('pwa_index_visits', visits.toString());
+if (window.location.pathname === '/' || window.location.pathname.includes('index.html')) {
+    if (!sessionStorage.getItem('index_visited_this_session')) {
+        let visits = parseInt(localStorage.getItem('pwa_index_visits') || '0');
+        localStorage.setItem('pwa_index_visits', (visits + 1).toString());
+        sessionStorage.setItem('index_visited_this_session', 'true');
+    }
 }
 
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
-    // Prevent the mini-infobar from appearing on mobile
     e.preventDefault();
-    // Stash the event so it can be triggered later.
     deferredPrompt = e;
     
-    // 1. Only show on mobile devices
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     if (!isMobile) return;
 
-    // 2. Do not prompt if already installed (standalone mode)
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
     if (isStandalone) return;
 
-    // 3. Only show on the index page to not interrupt user flow
-    if (!isIndexPage) return;
-
-    // 4. Check dismissal logic (Reminders)
     let dismissCount = parseInt(localStorage.getItem('pwa_dismiss_count') || '0');
     let indexVisits = parseInt(localStorage.getItem('pwa_index_visits') || '0');
     
     let threshold = 0;
-    if (dismissCount === 1) threshold = 4;         // Wait 4 visits if dismissed once
-    else if (dismissCount >= 2) threshold = 10;    // Wait 10 visits for all subsequent dismissals
+    if (dismissCount === 1) threshold = 3;
+    else if (dismissCount === 2) threshold = 10;
+    else if (dismissCount >= 3) threshold = 14;
 
     if (indexVisits >= threshold) {
         showInstallPromotion();
@@ -73,34 +77,36 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 
 function showInstallPromotion() {
-    if (document.getElementById('pwa-install-modal')) return;
+    if (document.getElementById('pwa-install-banner')) return;
 
     const lang = localStorage.getItem('preferred_language') || 'en';
-    const textTitle = lang === 'fr' ? "Ajouter à l'écran d'accueil" : 'Add to Home Screen';
-    const textSub = lang === 'fr' ? "Installez Scoralia pour un accès rapide et une meilleure expérience." : 'Install Scoralia for quick access and a better experience.';
-    const btnInstall = lang === 'fr' ? 'Installer' : 'Install';
-    const btnLater = lang === 'fr' ? 'Plus tard' : 'Later';
+    const textTitle = lang === 'fr' ? 'Installer Scoralia' : 'Install Scoralia';
+    const textSub = lang === 'fr' ? "Ajouter à l'écran d'accueil" : 'Add to home screen for quick access';
+    const btnText = lang === 'fr' ? 'Installer' : 'Install';
 
-    const modal = document.createElement('div');
-    modal.id = 'pwa-install-modal';
-    modal.className = 'lang-modal-overlay';
-    modal.style.zIndex = '100000';
+    const banner = document.createElement('div');
+    banner.id = 'pwa-install-banner';
+    banner.className = 'terms-banner';
+    banner.style.zIndex = '100000';
+    banner.style.bottom = '80px';
     
-    modal.innerHTML = `
-        <div class="lang-modal" style="padding: 30px 25px;">
-            <i class="fas fa-mobile-alt fa-3x" style="color:var(--gold); margin-bottom:20px;"></i>
-            <h2 style="color:var(--ink); margin-bottom:12px; font-family:'Playfair Display', serif;">${textTitle}</h2>
-            <p style="color:var(--text-muted); margin-bottom:25px; line-height:1.6; font-size:0.95rem;">${textSub}</p>
-            <div style="display: flex; gap: 10px;">
-                <button id="btn-pwa-install" style="flex: 2; background: var(--gold); color: var(--ink); border: none; padding: 12px; border-radius: 30px; font-weight: bold; cursor: pointer; font-size: 1rem;">${btnInstall}</button>
-                <button id="btn-pwa-dismiss" style="flex: 1; background: var(--surface); color: var(--deep); border: none; padding: 12px; border-radius: 30px; font-weight: bold; cursor: pointer; font-size: 1rem;">${btnLater}</button>
+    banner.innerHTML = `
+        <div style="display:flex; align-items:center; gap:15px; flex-grow:1;">
+            <div style="width:40px; height:40px; background:var(--gold); border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:var(--ink); font-size:1.2rem;">S</div>
+            <div style="text-align:left;">
+                <div style="font-weight: bold; font-size: 0.95rem; font-family:'Playfair Display', serif;">${textTitle}</div>
+                <div style="font-size: 0.8rem; opacity: 0.9;">${textSub}</div>
             </div>
         </div>
+        <div style="display:flex; gap:15px; align-items:center;">
+            <button class="btn-accept-terms" id="btn-pwa-install">${btnText}</button>
+            <button id="btn-pwa-dismiss" style="background:none; border:none; color:#fff; font-size:1.5rem; cursor:pointer; opacity:0.7;">&times;</button>
+        </div>
     `;
-    document.body.appendChild(modal);
+    document.body.appendChild(banner);
 
     document.getElementById('btn-pwa-install').addEventListener('click', async () => {
-        modal.style.display = 'none';
+        banner.style.display = 'none';
         if (deferredPrompt) {
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
@@ -109,8 +115,7 @@ function showInstallPromotion() {
     });
 
     document.getElementById('btn-pwa-dismiss').addEventListener('click', () => {
-        modal.style.display = 'none';
-        // Increment dismiss count and reset index visits back to 0
+        banner.style.display = 'none';
         let currentCount = parseInt(localStorage.getItem('pwa_dismiss_count') || '0');
         localStorage.setItem('pwa_dismiss_count', (currentCount + 1).toString());
         localStorage.setItem('pwa_index_visits', '0');
@@ -118,8 +123,8 @@ function showInstallPromotion() {
 }
 
 window.addEventListener('appinstalled', () => {
-    const modal = document.getElementById('pwa-install-modal');
-    if (modal) modal.style.display = 'none';
+    const banner = document.getElementById('pwa-install-banner');
+    if (banner) banner.style.display = 'none';
     deferredPrompt = null;
 });
 
@@ -130,7 +135,7 @@ const savedConfig = sessionStorage.getItem('scoralia_config');
 if (savedConfig) {
     config = JSON.parse(savedConfig);
 } else {
-    const res = await fetch('/.netlify/functions/config');
+    const res = await fetch(getFunctionUrl('config'));
     config = await res.json();
     sessionStorage.setItem('scoralia_config', JSON.stringify(config));
 }
@@ -182,42 +187,32 @@ if (document.readyState === 'loading') {
 // =========================================================================
 
 window.checkBotLimits = async () => {
-    // 1. Define Limits
     const MAX_LISTINGS = 1; 
     const MAX_IMAGES = 20;
 
-    // 2. Get current usage from localStorage (resetting every 24h)
     let stats = JSON.parse(localStorage.getItem('scoralia_usage_stats') || '{"listings":0, "images":0, "lastReset":0}');
     const now = Date.now();
 
-    // Reset stats if 24 hours passed
     if (now - stats.lastReset > 86400000) {
         stats = { listings: 0, images: 0, lastReset: now };
         localStorage.setItem('scoralia_usage_stats', JSON.stringify(stats));
     }
 
-    // 3. Check if they cross the "Bot Threshold"
     if (stats.listings >= MAX_LISTINGS || stats.images >= MAX_IMAGES) {
         return await triggerBotChallenge();
     }
-    return true; // Safe, human limits not reached
+    return true;
 };
 
-// Function to increment usage
 window.recordActivity = (type) => {
     let stats = JSON.parse(localStorage.getItem('scoralia_usage_stats') || '{"listings":0, "images":0, "lastReset":0}');
-    
-    // Ensure lastReset exists
     if (!stats.lastReset) stats.lastReset = Date.now();
-    
     if (stats[type] !== undefined) stats[type]++;
     localStorage.setItem('scoralia_usage_stats', JSON.stringify(stats));
 };
 
-// The Visual Challenge
 async function triggerBotChallenge() {
     return new Promise((resolve) => {
-        // Create modal overlay
         const overlay = document.createElement('div');
         overlay.className = 'lang-modal-overlay';
         overlay.style.zIndex = '20000';
@@ -232,7 +227,6 @@ async function triggerBotChallenge() {
         `;
         document.body.appendChild(overlay);
 
-        // Load Cloudflare Turnstile explicitly
         const script = document.createElement('script');
         script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
         script.async = true;
@@ -241,16 +235,12 @@ async function triggerBotChallenge() {
 
         window.onTurnstileSuccess = async (token) => {
             try {
-                // 1. Send the token to your Netlify Function for verification
-                const res = await fetch('/.netlify/functions/verify-bot', {
+                const res = await fetch(getFunctionUrl('verify-bot'), {
                     method: 'POST',
                     body: JSON.stringify({ token: token })
                 });
-
                 const data = await res.json();
-
                 if (data.success) {
-                    // 2. If backend confirms it's a human, close the modal and reset stats
                     document.getElementById('bot-shield-overlay').remove();
                     localStorage.setItem('scoralia_usage_stats', JSON.stringify({
                         listings: 0, 
@@ -258,7 +248,7 @@ async function triggerBotChallenge() {
                         lastReset: Date.now()
                     }));
                     console.log("Verification successful!");
-                    resolve(true); // Let the code continue!
+                    resolve(true);
                 } else {
                     alert("Verification failed. Please try again.");
                     window.location.reload();
@@ -270,10 +260,9 @@ async function triggerBotChallenge() {
             }
         };
 
-        // Render the widget once script is loaded
         script.onload = () => {
             turnstile.render('#turnstile-container', {
-                sitekey: '0x4AAAAAAC8mKfhLYButTzAM', // Public site key - OK to be here
+                sitekey: '0x4AAAAAAC8mKfhLYButTzAM', 
                 callback: window.onTurnstileSuccess,
             });
         };
@@ -647,7 +636,6 @@ function triggerHardLockdown(expireTimestamp) {
 }
 
 function showWelcomeTour() {
-    // 🔥 NEVER show the tour on the login page
     if (window.location.pathname.includes('/login.html')) return;
 
     const user = auth.currentUser;
@@ -663,9 +651,7 @@ function showWelcomeTour() {
     const existingFullName = currentUserData?.displayName || '';
     const existingUsername = currentUserData?.username || '';
 
-    // Check if user is OAuth (Google/Microsoft) – they may need profile setup
     const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
-    // Email/password users already provided full name and username during registration
     const hasProfileData = existingFullName && existingUsername;
     const skipProfileStep = !isOAuth && hasProfileData;
 
@@ -739,14 +725,12 @@ function showWelcomeTour() {
     `;
     document.body.appendChild(overlay);
 
-    // Function to finish the tour
     const finishTour = async () => {
         await updateDoc(doc(db, "users", user.uid), { hasSeenTour: true });
         localStorage.setItem(tourKey, 'true');
         overlay.remove();
     };
 
-    // Button handlers
     document.getElementById('tour-btn-1').onclick = () => {
         document.getElementById('tour-step-1').style.display = 'none'; 
         document.getElementById('tour-step-2').style.display = 'block';
@@ -770,7 +754,6 @@ function showWelcomeTour() {
             document.getElementById('dot-3').classList.remove('active'); 
             document.getElementById('dot-4').classList.add('active');
             
-            // Trigger UI update if values exist (e.g. pulled from OAuth)
             const nameInput = overlay.querySelector('#tour-fullname');
             const usernameInput = overlay.querySelector('#tour-username');
             if (nameInput.value) nameInput.dispatchEvent(new Event('input'));
@@ -894,7 +877,6 @@ function showWelcomeTour() {
             const fullname = nameInput.value.trim();
             const username = usernameInput.value.trim().toLowerCase();
             
-            // Double check validity before processing
             if (!isFullnameValid || !isUsernameValid) {
                 finalError.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Please fix errors before continuing.`;
                 finalError.style.display = 'block';
@@ -906,7 +888,7 @@ function showWelcomeTour() {
             let finalPhoto = defaultPfpUrl;
             if (selectedFile) {
                 try {
-                    const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
+                    const signRes = await fetch(getFunctionUrl('sign-upload')).then(r => r.json());
                     const formData = new FormData();
                     formData.append('file', selectedFile); formData.append('api_key', signRes.apiKey);
                     formData.append('timestamp', signRes.timestamp); formData.append('signature', signRes.signature);
@@ -1007,7 +989,7 @@ function refreshUI() {
     else updateHeaderToLoggedOut();
     
     const langSelected = localStorage.getItem('preferred_language');
-    if (!langSelected) showLanguageModal();
+    if (!langSelected) showLanguageBanner();
     else { window.applyLanguage(langSelected); showTermsBanner(); }
 }
 
@@ -1112,40 +1094,40 @@ function updateHeaderToLoggedOut() {
     container.innerHTML = `<button class="btn" onclick="window.location.href='/login.html'">${t.btn_login}</button>`;
 }
 
-function showLanguageModal() {
-    if (document.getElementById('lang-modal-global')) return;
-    const modal = document.createElement('div');
-    modal.id = 'lang-modal-global'; 
-    modal.className = 'lang-modal-overlay';
-    modal.style.zIndex = '100000';
-    modal.innerHTML = `
-        <div class="lang-modal">
-            <i class="fas fa-globe fa-3x" style="color:var(--gold); margin-bottom:15px;"></i>
-            <h2 style="font-family: 'Playfair Display', serif; color: var(--ink); margin-bottom: 10px;">Welcome / Bienvenue</h2>
-            <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 20px;">Choose your language / Choisissez votre langue :</p>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button class="lang-btn" id="btn-en">English</button>
-                <button class="lang-btn" id="btn-fr">Français</button>
-            </div>
+function showLanguageBanner() {
+    if (document.getElementById('lang-banner-global')) return;
+    const banner = document.createElement('div');
+    banner.id = 'lang-banner-global'; 
+    banner.className = 'terms-banner';
+    banner.style.zIndex = '100000';
+    banner.innerHTML = `
+        <div style="font-weight: bold; font-family: 'Playfair Display', serif; font-size: 1.1rem;">Welcome / Bienvenue</div>
+        <div style="font-size: 0.9rem; opacity: 0.9;">Choose your language / Choisissez votre langue :</div>
+        <div style="display: flex; gap: 15px;">
+            <button class="btn-accept-terms" id="btn-en">English</button>
+            <button class="btn-accept-terms" id="btn-fr">Français</button>
         </div>
     `;
-    document.body.appendChild(modal);
+    document.body.appendChild(banner);
 
     const setLang = async (l) => {
         localStorage.setItem('preferred_language', l);
+        window.applyLanguage(l);
+        banner.remove();
+        showTermsBanner();
         if (auth.currentUser) {
             try {
                 await updateDoc(doc(db, "users", auth.currentUser.uid), { language: l });
+                if (currentUserData) currentUserData.language = l;
             } catch (e) { console.warn("Could not save language to user document", e); }
         }
-        window.location.reload();
     };
     document.getElementById('btn-en').onclick = () => setLang('en');
     document.getElementById('btn-fr').onclick = () => setLang('fr');
 }
 
 function showTermsBanner() {
-    if (localStorage.getItem('scoralia_terms_accepted') === 'true' || document.getElementById('terms-banner-global') || document.getElementById('lang-modal-global')) return;
+    if (localStorage.getItem('scoralia_terms_accepted') === 'true' || document.getElementById('terms-banner-global') || document.getElementById('lang-banner-global')) return;
     const lang = localStorage.getItem('preferred_language') || 'en';
     const banner = document.createElement('div');
     banner.id = 'terms-banner-global'; banner.className = 'terms-banner';
@@ -1153,11 +1135,6 @@ function showTermsBanner() {
     banner.innerHTML = `<div>${text}</div><button class="btn-accept-terms" id="accept-terms-btn">ok</button>`;
     document.body.appendChild(banner);
     document.getElementById('accept-terms-btn').onclick = () => { localStorage.setItem('scoralia_terms_accepted', 'true'); banner.remove(); };
-}
-
-// Ensure the old forced modal doesn't trigger anymore since we have the new one
-if (document.getElementById('lang-modal-overlay')) {
-    document.getElementById('lang-modal-overlay').remove();
 }
 
 document.addEventListener('DOMContentLoaded', () => {
