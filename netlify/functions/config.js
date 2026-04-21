@@ -1,6 +1,6 @@
-// Hybrid function for Netlify & Cloudflare Pages
-async function coreHandler(requestBody, headers, env) {
-  // Your existing config logic
+// Hybrid for Netlify (CommonJS) and Cloudflare Pages (ESM onRequest)
+
+async function handleRequest(request, env) {
   const firebaseConfig = {
     apiKey: env.VITE_FIREBASE_API_KEY,
     authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -16,36 +16,26 @@ async function coreHandler(requestBody, headers, env) {
     uploadPreset: env.VITE_CLOUDINARY_UPLOAD_PRESET
   };
 
-  return {
-    statusCode: 200,
+  return new Response(JSON.stringify({ firebaseConfig, cloudinary }), {
     headers: {
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*"
-    },
-    body: JSON.stringify({ firebaseConfig, cloudinary })
-  };
+    }
+  });
 }
 
-// =============================================
-// RUNTIME DETECTION & ADAPTER
-// =============================================
-export default {
-  async fetch(request, env, ctx) {
-    // Cloudflare Pages Functions entry point (must be default export)
-    if (request.method === "OPTIONS") {
-      return new Response(null, {
-        headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type" }
-      });
-    }
-    const result = await coreHandler(null, request.headers, env);
-    return new Response(result.body, {
-      status: result.statusCode,
-      headers: result.headers
+// Cloudflare Pages entry point
+export async function onRequest(context) {
+  const { request, env } = context;
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type" }
     });
   }
-};
+  return handleRequest(request, env);
+}
 
-// Netlify Functions entry point
+// Netlify Functions entry point (CommonJS)
 exports.handler = async (event, context) => {
   if (event.httpMethod === "OPTIONS") {
     return {
@@ -54,5 +44,11 @@ exports.handler = async (event, context) => {
       body: ""
     };
   }
-  return coreHandler(event.body, event.headers, process.env);
+  const response = await handleRequest({ method: event.httpMethod }, process.env);
+  const body = await response.text();
+  return {
+    statusCode: response.status,
+    headers: Object.fromEntries(response.headers),
+    body
+  };
 };
