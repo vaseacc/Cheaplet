@@ -1,6 +1,5 @@
-// Hybrid function for Netlify & Cloudflare Pages
-async function coreHandler(requestBody, headers, env) {
-  const { token } = JSON.parse(requestBody);
+async function handleRequest(request, env) {
+  const { token } = await request.json();
   const secretKey = env.TURNSTILE_SECRET_KEY;
 
   const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
@@ -10,31 +9,24 @@ async function coreHandler(requestBody, headers, env) {
   });
 
   const outcome = await response.json();
-
-  return {
-    statusCode: outcome.success ? 200 : 403,
-    body: JSON.stringify({
-      success: outcome.success,
-      message: outcome.success ? "Human confirmed!" : "Bot detected!"
-    })
-  };
+  return new Response(JSON.stringify({
+    success: outcome.success,
+    message: outcome.success ? "Human confirmed!" : "Bot detected!"
+  }), {
+    status: outcome.success ? 200 : 403,
+    headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+  });
 }
 
-export default {
-  async fetch(request, env, ctx) {
-    if (request.method === "OPTIONS") {
-      return new Response(null, {
-        headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type" }
-      });
-    }
-    const body = await request.text();
-    const result = await coreHandler(body, request.headers, env);
-    return new Response(result.body, {
-      status: result.statusCode,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+export async function onRequest(context) {
+  const { request, env } = context;
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "Content-Type" }
     });
   }
-};
+  return handleRequest(request, env);
+}
 
 exports.handler = async (event, context) => {
   if (event.httpMethod === "OPTIONS") {
@@ -44,5 +36,15 @@ exports.handler = async (event, context) => {
       body: ""
     };
   }
-  return coreHandler(event.body, event.headers, process.env);
+  const request = {
+    method: event.httpMethod,
+    json: async () => JSON.parse(event.body || "{}")
+  };
+  const response = await handleRequest(request, process.env);
+  const body = await response.text();
+  return {
+    statusCode: response.status,
+    headers: Object.fromEntries(response.headers),
+    body
+  };
 };
