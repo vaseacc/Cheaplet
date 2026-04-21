@@ -227,8 +227,16 @@
         import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, getDocs, collection, query, orderBy, deleteDoc, where, updateDoc, limit, setDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
+        // Helper function for platform-agnostic function URLs
+        function getFunctionUrl(name) {
+            if (window.location.hostname.includes('pages.dev')) {
+                return `/functions/${name}`;
+            }
+            return `/.netlify/functions/${name}`;
+        }
+
         async function main() {
-            const response = await fetch('/.netlify/functions/config');
+            const response = await fetch(getFunctionUrl('config'));
             const config = await response.json();
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);

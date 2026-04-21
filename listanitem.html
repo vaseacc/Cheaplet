@@ -312,7 +312,7 @@
         import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, setDoc, increment, limit, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
-            const response = await fetch('/.netlify/functions/config');
+            const response = await fetch(getFunctionUrl('config'));
             const config = await response.json();
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
@@ -681,7 +681,7 @@
                 try {
                     const imageUrls = [];
                     for (const file of selectedFiles) {
-                        const signRes = await fetch('/.netlify/functions/sign-upload').then(r => r.json());
+                        const signRes = await fetch(getFunctionUrl('sign-upload')).then(r => r.json());
                         const formData = new FormData();
                         formData.append('file', file); 
                         formData.append('api_key', signRes.apiKey);
@@ -717,7 +717,7 @@
                     const listingRef = await addDoc(collection(db, 'listings'), listingData);
 
                     try {
-                        const aiRes = await fetch('/.netlify/functions/moderate-listing', {
+                        const aiRes = await fetch(getFunctionUrl('moderate-listing'), {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ imageUrls, title, description: desc })

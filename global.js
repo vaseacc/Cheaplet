@@ -18,6 +18,9 @@ function getFunctionUrl(name) {
     return `/.netlify/functions/${name}`;
 }
 
+// Expose to window for use in inline scripts
+window.getFunctionUrl = getFunctionUrl;
+
 // --- 0. AUTO-IMPORT ICONS & FAVICON (Performance: Only if not present) ---
 if (!document.querySelector('link[href*="font-awesome"]')) {
     const faLink = document.createElement('link');
