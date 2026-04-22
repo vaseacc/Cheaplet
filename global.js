@@ -10,13 +10,8 @@ const runWhenIdle = (cb) => {
 
 // --- Helper: Get the correct function URL for current environment ---
 function getFunctionUrl(name) {
-    if (window.location.hostname.includes('pages.dev')) {
-        return `/api/${name}`;  // Cloudflare Pages with /api prefix
-    }
-    return `/.netlify/functions/${name}`; // Netlify
-}
-    // Netlify uses /.netlify/functions/ path (default for localhost and netlify.app)
-    return `/.netlify/functions/${name}`;
+    // Cloudflare Pages Functions use /api/ prefix
+    return `/api/${name}`;
 }
 
 // Expose to window for use in inline scripts
