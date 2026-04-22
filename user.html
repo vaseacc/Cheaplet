@@ -73,7 +73,7 @@
             background: var(--surface); object-fit: cover; box-shadow: 0 6px 16px rgba(0,0,0,0.12); display: block;
         }
 
-        .profile-name { font-family: var(--font-display); font-size: 2.2rem; font-weight: 900; color: var(--ink); line-height: 1.1; margin-bottom: 4px; display: flex; align-items: center; gap: 12px; }
+        .profile-name { font-family: var(--font-display); font-size: 2.2rem; font-weight: 900; color: var(--ink); line-height: 1.1; margin-bottom: 4px; display: flex; align-items: center; gap: 12px; justify-content: center; }
         .profile-username { font-size: 1.05rem; color: var(--text-muted); font-weight: 500; margin-bottom: 16px; }
         .profile-bio { color: var(--text-body); font-size: 1rem; max-width: 600px; line-height: 1.6; margin-bottom: 20px; }
         
@@ -98,6 +98,8 @@
         /* ── ACTIONS ── */
         .btn-report-flag { background: var(--off-white); border: 1px solid #fee2e2; color: var(--red); width: 40px; height: 40px; border-radius: 50%; cursor: pointer; transition: 0.2s; display: none; align-items: center; justify-content: center; font-size: 1rem; }
         .btn-report-flag:hover { background: #fee2e2; transform: scale(1.1); }
+        .btn-message-flag { background: var(--surface); border: 1px solid var(--mist); color: var(--deep); width: 40px; height: 40px; border-radius: 50%; cursor: pointer; transition: 0.2s; display: none; align-items: center; justify-content: center; font-size: 1rem; margin-right: 8px; }
+        .btn-message-flag:hover { background: var(--deep); color: white; transform: scale(1.1); }
 
         /* ── ADMIN ZONE ── */
         .admin-zone { margin: 30px auto 0; padding: 20px; border: 2px dashed var(--red); border-radius: 12px; background: #fff5f5; display: none; width: 100%; max-width: 500px; text-align: center; }
@@ -149,6 +151,7 @@
                 
                 <h1 class="profile-name">
                     <span id="user-display-name"></span>
+                    <button id="message-user-btn" class="btn-message-flag" title="Message"><i class="fas fa-comment-dots"></i></button>
                     <button id="report-user-btn" class="btn-report-flag" title="Report User"><i class="fas fa-flag"></i></button>
                 </h1>
                 
@@ -202,7 +205,7 @@
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, collection, query, where, onSnapshot, orderBy, getDocs, deleteDoc, updateDoc, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, collection, query, where, onSnapshot, orderBy, getDocs, deleteDoc, updateDoc, addDoc, serverTimestamp, arrayUnion, arrayRemove } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch(getFunctionUrl('config'));
@@ -213,8 +216,8 @@
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = {
-                en: { confirmBan: "Are you sure? This will delete all listings and block the user forever.", banned: "BANNED", notFound: "User not found.", reportSuccess: "User has been reported.", reportTitle: "Report User", reportDesc: "Help us keep Scoralia safe.", reportPlaceholder: "Describe the issue...", joinPrefix: "Joined ", noRatings: "No ratings yet", reviews: "reviews", unspecified: "Unspecified campus" },
-                fr: { confirmBan: "Êtes-vous sûr ? Cela supprimera toutes les annonces et bloquera l'utilisateur définitivement.", banned: "BANNI", notFound: "Utilisateur non trouvé.", reportSuccess: "L'utilisateur a été signalé.", reportTitle: "Signaler l'utilisateur", reportDesc: "Aidez-nous à protéger Scoralia.", reportPlaceholder: "Décrivez le problème...", joinPrefix: "Membre depuis ", noRatings: "Aucune évaluation", reviews: "avis", unspecified: "Campus non spécifié" }
+                en: { confirmBan: "Are you sure? This will delete all listings and block the user forever.", banned: "BANNED", notFound: "User not found.", reportSuccess: "User has been reported.", reportTitle: "Report User", reportDesc: "Help us keep Scoralia safe.", reportPlaceholder: "Describe the issue...", joinPrefix: "Joined ", noRatings: "No ratings yet", reviews: "reviews", unspecified: "Unspecified campus", messageSelf: "You cannot message yourself." },
+                fr: { confirmBan: "Êtes-vous sûr ? Cela supprimera toutes les annonces et bloquera l'utilisateur définitivement.", banned: "BANNI", notFound: "Utilisateur non trouvé.", reportSuccess: "L'utilisateur a été signalé.", reportTitle: "Signaler l'utilisateur", reportDesc: "Aidez-nous à protéger Scoralia.", reportPlaceholder: "Décrivez le problème...", joinPrefix: "Membre depuis ", noRatings: "Aucune évaluation", reviews: "avis", unspecified: "Campus non spécifié", messageSelf: "Vous ne pouvez pas vous envoyer un message." }
             }[lang];
 
             const loader = document.getElementById('loader');
@@ -231,10 +234,12 @@
             const adminZone = document.getElementById('admin-zone');
             const adminBanBtn = document.getElementById('admin-ban-user-btn');
             const reportBtn = document.getElementById('report-user-btn');
+            const messageBtn = document.getElementById('message-user-btn');
             const reportModal = document.getElementById('report-modal');
 
             let currentUser = null;
             let targetUserData = null;
+            let targetUserId = null;
 
             // Helper to generate unique banner gradient based on user ID
             function generateBannerGradient(uid) {
@@ -247,15 +252,81 @@
                 return `linear-gradient(135deg, hsl(${hue1}, ${sat}%, ${light}%), hsl(${hue2}, ${sat}%, ${light - 15}%))`;
             }
 
+            // --- CREATE PERSONAL CHAT FUNCTION ---
+            async function createPersonalChat(otherUserId, otherUserName) {
+                try {
+                    // Check if a personal chat already exists between these two users
+                    const chatsQuery = query(
+                        collection(db, "chats"),
+                        where("participants", "array-contains", currentUser.uid)
+                    );
+                    const chatsSnap = await getDocs(chatsQuery);
+                    let existingChatId = null;
+                    
+                    for (const docSnap of chatsSnap.docs) {
+                        const data = docSnap.data();
+                        // Personal chat: no listingId and contains the other user
+                        if (!data.listingId && data.participants.includes(otherUserId)) {
+                            existingChatId = docSnap.id;
+                            break;
+                        }
+                    }
+
+                    if (existingChatId) {
+                        window.location.href = `/chat.html?id=${existingChatId}`;
+                        return;
+                    }
+
+                    // Create new personal chat
+                    const participants = [currentUser.uid, otherUserId];
+                    const chatRef = await addDoc(collection(db, "chats"), {
+                        participants: participants,
+                        listingId: null,
+                        listingTitle: null,
+                        participantInfo: {
+                            [currentUser.uid]: currentUser.displayName || "You",
+                            [otherUserId]: otherUserName
+                        },
+                        lastMessage: "",
+                        lastUpdate: serverTimestamp(),
+                        createdAt: serverTimestamp(),
+                        unreadBy: []
+                    });
+
+                    window.location.href = `/chat.html?id=${chatRef.id}`;
+                } catch (error) {
+                    console.error("Error creating personal chat:", error);
+                    alert("Could not start chat. Please try again.");
+                }
+            }
+
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     currentUser = user;
                     const userDoc = await getDoc(doc(db, "users", user.uid));
                     if (userDoc.exists() && userDoc.data().role === 'admin') adminZone.style.display = 'block';
-                    const userId = new URLSearchParams(window.location.search).get('id');
-                    if (userId && userId !== user.uid) reportBtn.style.display = 'flex';
+                    
+                    targetUserId = new URLSearchParams(window.location.search).get('id');
+                    
+                    if (targetUserId && targetUserId !== user.uid) {
+                        reportBtn.style.display = 'flex';
+                        messageBtn.style.display = 'flex';
+                    }
                 }
             });
+
+            // Message button handler
+            messageBtn.onclick = async () => {
+                if (!currentUser) {
+                    window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+                    return;
+                }
+                if (currentUser.uid === targetUserId) {
+                    alert(strings.messageSelf);
+                    return;
+                }
+                await createPersonalChat(targetUserId, targetUserData?.displayName || 'User');
+            };
 
             // Report logic
             reportBtn.onclick = () => { reportModal.style.display = 'flex'; };
@@ -263,10 +334,9 @@
             document.getElementById('submit-report-btn').onclick = async () => {
                 const reason = document.getElementById('report-reason').value;
                 const details = document.getElementById('report-details').value.trim();
-                const targetId = new URLSearchParams(window.location.search).get('id');
                 if (!reason) return;
                 try {
-                    await addDoc(collection(db, "reports"), { reporterUid: currentUser.uid, reporterName: currentUser.displayName, targetUid: targetId, targetUserName: targetUserData ? targetUserData.displayName : "User", reason: reason, details: details, timestamp: serverTimestamp() });
+                    await addDoc(collection(db, "reports"), { reporterUid: currentUser.uid, reporterName: currentUser.displayName, targetUid: targetUserId, targetUserName: targetUserData ? targetUserData.displayName : "User", reason: reason, details: details, timestamp: serverTimestamp() });
                     alert(strings.reportSuccess); reportModal.style.display = 'none';
                 } catch (e) { alert("Error."); }
             };
@@ -283,30 +353,27 @@
             }
 
             async function loadProfile() {
-                const userId = new URLSearchParams(window.location.search).get('id');
-                if (!userId) { loader.innerHTML = `<p class="info-message">${strings.notFound}</p>`; return; }
-                adminBanBtn.onclick = () => banUser(userId);
+                if (!targetUserId) { loader.innerHTML = `<p class="info-message">${strings.notFound}</p>`; return; }
+                adminBanBtn.onclick = () => banUser(targetUserId);
 
                 try {
-                    const userSnap = await getDoc(doc(db, "users", userId));
+                    const userSnap = await getDoc(doc(db, "users", targetUserId));
                     if (userSnap.exists()) {
                         targetUserData = userSnap.data();
                         
-                        // Display Data
                         userDisplayName.textContent = targetUserData.displayName || "User";
                         if (targetUserData.role === 'banned') userDisplayName.innerHTML += ` <span style="color:red; font-size:1rem;">(${strings.banned})</span>`;
                         userHandle.textContent = targetUserData.username ? `@${targetUserData.username}` : '';
                         userBio.textContent = targetUserData.bio || '';
                         userSchoolName.textContent = targetUserData.schoolName || strings.unspecified;
-                        userBanner.style.background = generateBannerGradient(userId);
+                        userBanner.style.background = generateBannerGradient(targetUserId);
 
                         let photoURL = targetUserData.photoURL;
                         if (!photoURL || photoURL.includes("googleusercontent") || photoURL.includes("live.com")) {
-                            photoURL = `https://api.dicebear.com/7.x/identicon/svg?seed=${userId}&backgroundColor=EBF2FA`;
+                            photoURL = `https://api.dicebear.com/7.x/identicon/svg?seed=${targetUserId}&backgroundColor=EBF2FA`;
                         }
                         userAvatar.src = photoURL;
 
-                        // Ratings
                         if (targetUserData.ratingCount && targetUserData.ratingCount > 0) {
                             const avg = (targetUserData.ratingSum / targetUserData.ratingCount).toFixed(1);
                             let starsHtml = '';
@@ -332,7 +399,7 @@
                 } catch (e) { console.error(e); }
 
                 // Fetch Listings
-                const q = query(collection(db, "listings"), where("posterUid", "==", userId), where("status", "==", "active"), orderBy("timestamp", "desc"));
+                const q = query(collection(db, "listings"), where("posterUid", "==", targetUserId), where("status", "==", "active"), orderBy("timestamp", "desc"));
                 onSnapshot(q, (snapshot) => {
                     userListingsGrid.innerHTML = '';
                     if (snapshot.empty) userListingsGrid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; color:#94a3b8; font-weight:500;">No active listings.</p>';
