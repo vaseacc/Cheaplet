@@ -10,8 +10,7 @@ const runWhenIdle = (cb) => {
 
 // --- Helper: Get the correct function URL for current environment ---
 function getFunctionUrl(name) {
-    // Cloudflare Pages Functions use /api/ prefix
-    return `/api/${name}`;
+  return `/api/${name}`;
 }
 
 // Expose to window for use in inline scripts
