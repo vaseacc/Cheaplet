@@ -34,15 +34,16 @@ if (!document.querySelector('link[rel="icon"]')) {
     document.head.appendChild(favicon);
 }
 
-// --- 0.5 PWA REGISTRATION & "ADD TO HOME SCREEN" LOGIC ---
+// --- 0.5 PWA REGISTRATION & "ADD TO HOME SCREEN" LOGIC (Index Page Only) ---
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW reg failed:', err));
     });
 }
 
-// Track index visits for PWA prompt logic
-if (window.location.pathname === '/' || window.location.pathname.includes('index.html')) {
+// Track index visits for PWA prompt logic – only increment on index page
+const isIndexPage = window.location.pathname === '/' || window.location.pathname.includes('index.html');
+if (isIndexPage) {
     if (!sessionStorage.getItem('index_visited_this_session')) {
         let visits = parseInt(localStorage.getItem('pwa_index_visits') || '0');
         localStorage.setItem('pwa_index_visits', (visits + 1).toString());
@@ -52,6 +53,10 @@ if (window.location.pathname === '/' || window.location.pathname.includes('index
 
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
+    // Only show on the index page
+    const isIndex = window.location.pathname === '/' || window.location.pathname.includes('index.html');
+    if (!isIndex) return;
+
     e.preventDefault();
     deferredPrompt = e;
     
