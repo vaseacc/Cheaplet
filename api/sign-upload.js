@@ -1,4 +1,4 @@
-const cloudinary = require('cloudinary').v2;
+import { v2 as cloudinary } from 'cloudinary';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
