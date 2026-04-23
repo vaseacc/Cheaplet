@@ -238,6 +238,36 @@
         .listing-location { font-size: 0.8rem; color: var(--text-muted); margin-top: auto; }
         .listing-location i { margin-right: 4px; color: var(--deep); }
 
+        /* ── LOAD MORE BUTTON ── */
+        .load-more-container {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .btn-load-more {
+            background: var(--surface);
+            border: 2px solid var(--mist);
+            color: var(--deep);
+            padding: 14px 36px;
+            border-radius: 40px;
+            font-family: var(--font-body);
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .btn-load-more:hover {
+            background: var(--deep);
+            color: white;
+            border-color: var(--deep);
+            transform: translateY(-2px);
+        }
+        .btn-load-more i {
+            font-size: 1.1rem;
+        }
+
         /* ── ACTIVE TOPICS SECTION ── */
         .topics-section {
             padding: 60px 28px;
@@ -438,6 +468,11 @@
                     </div>
                 </div>
             </div>
+            <div class="load-more-container" id="load-more-container" style="display: none;">
+                <button class="btn-load-more" id="load-more-btn">
+                    <i class="fas fa-chevron-down"></i> Load More
+                </button>
+            </div>
         </section>
     </div>
 
@@ -536,7 +571,8 @@
                     s1n: "Step 01", s1t: "Create an Account", s1d: "Sign up free with your student email. No fees, no subscriptions.",
                     s2n: "Step 02", s2t: "Post Your Book", s2d: "Snap a photo, set your price, add the course code — done in 60 seconds.",
                     s3n: "Step 03", s3t: "Connect & Sell", s3d: "Chat with buyers on campus and arrange a quick, safe handoff.",
-                    terms: "Terms of Service", priv: "Privacy Policy", safe: "Safety Guidelines", cityFallback: "Montreal"
+                    terms: "Terms of Service", priv: "Privacy Policy", safe: "Safety Guidelines", cityFallback: "Montreal",
+                    loadMore: "Load More"
                 },
                 fr: {
                     badge: "<i class='fas fa-graduation-cap'></i> Conçu pour les étudiants",
@@ -552,7 +588,8 @@
                     s1n: "Étape 01", s1t: "Créer un compte", s1d: "Inscrivez-vous gratuitement avec votre courriel étudiant. Aucun frais.",
                     s2n: "Étape 02", s2t: "Publier votre livre", s2d: "Prenez une photo, fixez votre prix et ajoutez le sigle du cours — en 60 secondes.",
                     s3n: "Étape 03", s3t: "Connecter & Vendre", s3d: "Discutez avec des acheteurs sur le campus pour une transaction rapide et sécuritaire.",
-                    terms: "Conditions d'utilisation", priv: "Confidentialité", safe: "Sécurité", cityFallback: "Montréal"
+                    terms: "Conditions d'utilisation", priv: "Confidentialité", safe: "Sécurité", cityFallback: "Montréal",
+                    loadMore: "Charger plus"
                 }
             };
 
@@ -598,8 +635,13 @@
             const searchInput       = document.getElementById('search-input');
             const tagsGridContainer = document.getElementById('tags-grid-container');
             const topicsContainer   = document.getElementById('topics-container');
+            const loadMoreContainer = document.getElementById('load-more-container');
+            const loadMoreBtn       = document.getElementById('load-more-btn');
 
             let unsubscribeListings = null;
+            let allFilteredDocs = [];        // All matching active listings (after filtering)
+            let displayLimit = 20;           // Number of items currently shown
+            let currentTerm = '';            // Keep track of search term
 
             document.getElementById('startBrowsingBtn').onclick = () => document.querySelector('.main-wrap').scrollIntoView({ behavior: 'smooth' });
             document.getElementById('heroListBtn').onclick = () => window.location.href = '/listanitem.html';
@@ -709,6 +751,42 @@
                 return card;
             }
 
+            // Renders the current slice of listings based on displayLimit
+            function renderListings() {
+                const itemsToShow = allFilteredDocs.slice(0, displayLimit);
+                itemCountSpan.textContent = `${itemsToShow.length} ${ui.items} (${allFilteredDocs.length} total)`;
+                dynamicBookCount.textContent = allFilteredDocs.length;
+
+                if (itemsToShow.length === 0) {
+                    listingsContainer.innerHTML = `<div class="empty-state" style="grid-column:1/-1; padding: 40px; text-align: center; color: var(--text-muted);"><i class="fas fa-book" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i><p>${currentTerm ? (lang === 'fr' ? 'Aucun résultat pour cette recherche.' : 'No results for this search.') : (lang === 'fr' ? 'Aucune annonce pour le moment.' : 'No listings yet.')}</p></div>`;
+                    loadMoreContainer.style.display = 'none';
+                    return;
+                }
+
+                const frag = document.createDocumentFragment();
+                itemsToShow.forEach((doc, i) => {
+                    const card = renderListing(doc);
+                    card.style.animationDelay = `${i * 0.05}s`;
+                    frag.appendChild(card);
+                });
+                listingsContainer.innerHTML = '';
+                listingsContainer.appendChild(frag);
+
+                // Show/Hide Load More button
+                if (displayLimit < allFilteredDocs.length) {
+                    loadMoreContainer.style.display = 'block';
+                    loadMoreBtn.innerHTML = `<i class="fas fa-chevron-down"></i> ${ui.loadMore} (${allFilteredDocs.length - displayLimit} more)`;
+                } else {
+                    loadMoreContainer.style.display = 'none';
+                }
+            }
+
+            // Load More click handler
+            loadMoreBtn.addEventListener('click', () => {
+                displayLimit = Math.min(displayLimit + 20, allFilteredDocs.length);
+                renderListings();
+            });
+
             function fetchListings() {
                 if (unsubscribeListings) unsubscribeListings();
                 const constraints = [];
@@ -718,40 +796,21 @@
 
                 try {
                     unsubscribeListings = onSnapshot(query(collection(db, 'listings'), ...constraints), snapshot => {
-                        const term = searchInput.value.toLowerCase().trim();
+                        currentTerm = searchInput.value.toLowerCase().trim();
                         const allActive = snapshot.docs.filter(d => d.data().status === 'active');
                         
                         // Filter by search term (title, description, ISBN)
-                        const filteredDocs = term === '' ? allActive : allActive.filter(doc => {
+                        allFilteredDocs = currentTerm === '' ? allActive : allActive.filter(doc => {
                             const data = doc.data();
-                            const titleMatch = (data.title || '').toLowerCase().includes(term);
-                            const descMatch = (data.description || '').toLowerCase().includes(term);
-                            const isbnMatch = (data.isbn || '').toLowerCase().includes(term);
+                            const titleMatch = (data.title || '').toLowerCase().includes(currentTerm);
+                            const descMatch = (data.description || '').toLowerCase().includes(currentTerm);
+                            const isbnMatch = (data.isbn || '').toLowerCase().includes(currentTerm);
                             return titleMatch || descMatch || isbnMatch;
                         });
                         
-                        // 🔥 SMART LIMIT: if query length > 7, show ALL matching; otherwise limit to 20
-                        const shouldShowAll = term.length > 7;
-                        const limitedDocs = shouldShowAll ? filteredDocs : filteredDocs.slice(0, 20);
-                        
-                        itemCountSpan.textContent = `${limitedDocs.length} ${ui.items}`;
-                        dynamicBookCount.textContent = allActive.length; 
-
-                        if (!limitedDocs.length) {
-                            listingsContainer.innerHTML = `<div class="empty-state" style="grid-column:1/-1; padding: 40px; text-align: center; color: var(--text-muted);"><i class="fas fa-book" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i><p>${term ? (lang === 'fr' ? 'Aucun résultat pour cette recherche.' : 'No results for this search.') : (lang === 'fr' ? 'Aucune annonce pour le moment.' : 'No listings yet.')}</p></div>`;
-                            return;
-                        }
-                        
-                        const frag = document.createDocumentFragment();
-                        limitedDocs.forEach((doc, i) => {
-                            const card = renderListing(doc);
-                            card.style.animationDelay = `${i * 0.05}s`;
-                            frag.appendChild(card);
-                        });
-                        
-                        listingsContainer.innerHTML = '';
-                        listingsContainer.appendChild(frag);
-                        
+                        // Reset display limit when search changes
+                        displayLimit = 20;
+                        renderListings();
                     });
                 } catch (err) {
                     console.error("Firestore initialization error:", err);
@@ -759,7 +818,12 @@
             }
 
             sortFilter.onchange = fetchListings;
-            searchInput.addEventListener('input', fetchListings); // Live filtering
+            searchInput.addEventListener('input', () => {
+                // Reset display limit when typing
+                displayLimit = 20;
+                fetchListings();
+            });
+            
             loadGlobalTags();
             loadActiveTopics();
             fetchListings();
