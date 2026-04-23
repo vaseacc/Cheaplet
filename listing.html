@@ -266,12 +266,12 @@
 
     <header>
         <div class="header-inner">
-            <a href="/index.html" class="logo">Scor<em>alia</em></a>
+            <a href="/" class="logo">Scor<em>alia</em></a>
             <nav>
                 <ul>
-                    <li><a href="/search.html">Browse</a></li>
-                    <li><a href="/my-listings.html">My Listings</a></li>
-                    <li><a href="/messages.html">Messages</a></li>
+                    <li><a href="/search">Browse</a></li>
+                    <li><a href="/my-listings">My Listings</a></li>
+                    <li><a href="/messages">Messages</a></li>
                 </ul>
             </nav>
             <div class="header-right"></div>
@@ -458,7 +458,7 @@
                 if (isSaveToast) {
                     toast.innerHTML = `
                         <i class="fas fa-bookmark"></i>
-                        <span>${message} <a href="/profile.html">${strings[lang].profileLink} →</a></span>
+                        <span>${message} <a href="/profile">${strings[lang].profileLink} →</a></span>
                     `;
                 } else {
                     toast.innerHTML = `
@@ -485,7 +485,7 @@
             async function fetchAndDisplayListing() {
                 const params = new URLSearchParams(window.location.search);
                 currentListingId = params.get('id');
-                if (!currentListingId) { window.location.href = '/index.html'; return; }
+                if (!currentListingId) { window.location.href = '/'; return; }
 
                 try {
                     const listingRef = doc(db, 'listings', currentListingId);
@@ -557,7 +557,7 @@
                     
                     document.getElementById('listing-description').textContent = data.description;
                     
-                    document.getElementById('seller-section-wrapper').href = `/user.html?id=${data.posterUid}`;
+                    document.getElementById('seller-section-wrapper').href = `/user?id=${data.posterUid}`;
                     document.getElementById('seller-name-text').textContent = data.posterDisplayName || "User";
 
                     if (data.posterUid) {
@@ -636,7 +636,7 @@
                     related.forEach(rdoc => {
                         const rd = rdoc.data();
                         const rLink = document.createElement('a');
-                        rLink.className = 'related-card'; rLink.href = `/listing.html?id=${rdoc.id}`;
+                        rLink.className = 'related-card'; rLink.href = `/listing?id=${rdoc.id}`;
                         rLink.innerHTML = `<div class="related-img" style="background-image:url('${rd.imageUrls?.[0] || ''}')"></div><div class="related-info"><div class="related-title">${rd.title}</div><div class="related-price">$${rd.price.toFixed(2)}</div></div>`;
                         grid.appendChild(rLink);
                     });
@@ -681,7 +681,7 @@
             // 🔥 FIXED: Robust chat creation that queries first and uses addDoc to avoid update permission issues
             async function createChat(posterUid, posterName, initialMessage = null) {
                 if (!currentUser) {
-                    window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+                    window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
                     return;
                 }
                 if (currentUser.uid === posterUid) {
@@ -708,7 +708,7 @@
 
                     if (chatId) {
                         // Chat exists, just redirect
-                        window.location.href = `/chat.html?id=${chatId}`;
+                        window.location.href = `/chat?id=${chatId}`;
                         return;
                     }
 
@@ -744,7 +744,7 @@
                         });
                     }
 
-                    window.location.href = `/chat.html?id=${chatId}`;
+                    window.location.href = `/chat?id=${chatId}`;
                 } catch (error) {
                     console.error("Error creating chat:", error);
                     showToast("Could not start chat. Please try again.");
@@ -764,7 +764,7 @@
             }
 
             saveBtn.onclick = async () => {
-                if (!currentUser) { window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`; return; }
+                if (!currentUser) { window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`; return; }
                 const userRef = doc(db, "users", currentUser.uid);
                 if (isSaved) { 
                     await updateDoc(userRef, { savedListings: arrayRemove(currentListingId) }); 
@@ -792,7 +792,7 @@
                 }
             };
 
-            async function deleteListing(docId) { if (confirm("Delete listing?")) { await deleteDoc(doc(db, 'listings', docId)); window.location.href = '/index.html'; } }
+            async function deleteListing(docId) { if (confirm("Delete listing?")) { await deleteDoc(doc(db, 'listings', docId)); window.location.href = '/'; } }
         }
         main();
     </script>
