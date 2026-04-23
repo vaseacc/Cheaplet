@@ -4,15 +4,14 @@ const CACHE_NAME = 'scoralia-v10';
 // Files to cache for offline access
 const urlsToCache = [
   '/',
-  '/index.html',
   '/global.js',
-  '/social.html',
-  '/topic.html',
-  '/search.html',
-  '/listanitem.html',
-  '/messages.html',
-  '/profile.html',
-  '/login.html',
+  '/social',
+  '/topic',
+  '/search',
+  '/listanitem',
+  '/messages',
+  '/profile',
+  '/login',
   '/favicon.svg'
 ];
 

@@ -42,7 +42,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // Track index visits for PWA prompt logic – only increment on index page
-const isIndexPage = window.location.pathname === '/' || window.location.pathname.includes('index.html');
+const isIndexPage = window.location.pathname === '/' || window.location.pathname.includes('/');
 if (isIndexPage) {
     if (!sessionStorage.getItem('index_visited_this_session')) {
         let visits = parseInt(localStorage.getItem('pwa_index_visits') || '0');
@@ -54,7 +54,7 @@ if (isIndexPage) {
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
     // Only show on the index page
-    const isIndex = window.location.pathname === '/' || window.location.pathname.includes('index.html');
+    const isIndex = window.location.pathname === '/' || window.location.pathname.includes('/');
     if (!isIndex) return;
 
     e.preventDefault();
@@ -568,7 +568,7 @@ onAuthStateChanged(auth, async (user) => {
                 const socialTourKey = `scoralia_social_tour_seen_${user.uid}`;
                 if (!currentUserData.hasSeenSocialTour && !localStorage.getItem(socialTourKey)) {
                     const path = window.location.pathname;
-                    if (path.includes('/social.html') || path.includes('/topic.html')) {
+                    if (path.includes('/social') || path.includes('/topic')) {
                         showSocialTour();
                     }
                 }
@@ -637,11 +637,11 @@ function triggerHardLockdown(expireTimestamp) {
         ${expiryText}
     </div>`;
 
-    setTimeout(() => { signOut(auth).then(() => { window.location.href = '/login.html'; }); }, 5000);
+    setTimeout(() => { signOut(auth).then(() => { window.location.href = '/login'; }); }, 5000);
 }
 
 function showWelcomeTour() {
-    if (window.location.pathname.includes('/login.html')) return;
+    if (window.location.pathname.includes('/login')) return;
 
     const user = auth.currentUser;
     if (!user) return;
@@ -922,7 +922,7 @@ function showWelcomeTour() {
 
 // --- SOCIAL TOUR ---
 window.showSocialTour = () => {
-    if (window.location.pathname.includes('/login.html')) return;
+    if (window.location.pathname.includes('/login')) return;
     const user = auth.currentUser;
     if (!user) return;
     const socialTourKey = `scoralia_social_tour_seen_${user.uid}`;
@@ -1021,17 +1021,17 @@ function listenToUnreadMessages(uid) {
 }
 
 function updateHeaderToLoggedIn(userData) {
-    if (window.location.pathname.includes('/login.html')) return;
+    if (window.location.pathname.includes('/login')) return;
     const lang = localStorage.getItem('preferred_language') || 'en';
     const t = translations[lang];
     const navUl = document.querySelector('nav ul');
     if (navUl) {
         navUl.innerHTML = `
-            <li><a href="/search.html">${t.nav_browse}</a></li>
-            <li><a href="/my-listings.html">${t.nav_listings}</a></li>
-            <li><a href="/social.html">${t.nav_hub}</a></li>
-            <li><a href="/activity.html">${t.nav_activity}</a></li>
-            <li><a href="/messages.html" class="badge-container">${t.nav_messages}<span class="unread-badge" id="desktop-unread-badge"></span></a></li>
+            <li><a href="/search">${t.nav_browse}</a></li>
+            <li><a href="/my-listings">${t.nav_listings}</a></li>
+            <li><a href="/social">${t.nav_hub}</a></li>
+            <li><a href="/activity">${t.nav_activity}</a></li>
+            <li><a href="/messages" class="badge-container">${t.nav_messages}<span class="unread-badge" id="desktop-unread-badge"></span></a></li>
         `;
     }
 
@@ -1047,7 +1047,7 @@ function updateHeaderToLoggedIn(userData) {
 
     container.innerHTML = `
         <button class="btn desktop-only" id="globalListBtn" style="margin-right: 15px;">${t.btn_list}</button>
-        <a href="/messages.html" class="msg-btn-mobile"><i class="fas fa-comment-dots"></i><span class="unread-badge" id="mobile-unread-badge"></span></a>
+        <a href="/messages" class="msg-btn-mobile"><i class="fas fa-comment-dots"></i><span class="unread-badge" id="mobile-unread-badge"></span></a>
         <div class="profile-menu-container">
             <div class="profile-avatar"><img src="${window.optimizeImageUrl ? window.optimizeImageUrl(finalPhotoURL) : finalPhotoURL}" alt="Profile"></div>
             <div class="dropdown-menu" id="globalDropdown">
@@ -1055,19 +1055,19 @@ function updateHeaderToLoggedIn(userData) {
                     <div class="display-name">${name}</div>
                     ${username ? `<div class="username">${username}</div>` : ''}
                 </div>
-                <a href="/listanitem.html" class="dropdown-item mobile-link" style="color:#2B5C92; font-weight:bold;"><i class="fas fa-plus-circle"></i> ${t.btn_list}</a>
-                <a href="/search.html" class="dropdown-item mobile-link"><i class="fas fa-search"></i> ${t.nav_browse}</a>
-                <a href="/my-listings.html" class="dropdown-item mobile-link"><i class="fas fa-book"></i> ${t.nav_listings}</a>
-                <a href="/social.html" class="dropdown-item mobile-link"><i class="fas fa-users"></i> ${t.nav_hub}</a>
-                <a href="/profile.html" class="dropdown-item"><i class="fas fa-user-circle"></i> ${t.nav_profile}</a>
-                <a href="/activity.html" class="dropdown-item"><i class="fas fa-history"></i> ${t.nav_activity}</a>
+                <a href="/listanitem" class="dropdown-item mobile-link" style="color:#2B5C92; font-weight:bold;"><i class="fas fa-plus-circle"></i> ${t.btn_list}</a>
+                <a href="/search" class="dropdown-item mobile-link"><i class="fas fa-search"></i> ${t.nav_browse}</a>
+                <a href="/my-listings" class="dropdown-item mobile-link"><i class="fas fa-book"></i> ${t.nav_listings}</a>
+                <a href="/social" class="dropdown-item mobile-link"><i class="fas fa-users"></i> ${t.nav_hub}</a>
+                <a href="/profile" class="dropdown-item"><i class="fas fa-user-circle"></i> ${t.nav_profile}</a>
+                <a href="/activity" class="dropdown-item"><i class="fas fa-history"></i> ${t.nav_activity}</a>
                 <a href="#" class="dropdown-item" id="globalLogout" style="color:#ff4d4d; border-top:1px solid #eee;"><i class="fas fa-sign-out-alt"></i> ${t.btn_signout}</a>
             </div>
         </div>
     `;
 
     const listBtn = document.getElementById('globalListBtn');
-    if (listBtn) listBtn.onclick = () => window.location.href = '/listanitem.html';
+    if (listBtn) listBtn.onclick = () => window.location.href = '/listanitem';
 
     const avatar = container.querySelector('.profile-avatar');
     const menu = document.getElementById('globalDropdown');
@@ -1077,7 +1077,7 @@ function updateHeaderToLoggedIn(userData) {
     const logoutBtn = document.getElementById('globalLogout');
     if (logoutBtn) logoutBtn.onclick = (e) => {
         e.preventDefault();
-        signOut(auth).then(() => { localStorage.removeItem('scoralia_tour_seen_' + userData.uid); window.location.href = '/index.html'; });
+        signOut(auth).then(() => { localStorage.removeItem('scoralia_tour_seen_' + userData.uid); window.location.href = '/'; });
     };
 
     listenToUnreadMessages(userData.uid);
@@ -1089,14 +1089,14 @@ function updateHeaderToLoggedOut() {
     const navUl = document.querySelector('nav ul');
     if (navUl) {
         navUl.innerHTML = `
-            <li><a href="/search.html">${t.nav_browse}</a></li>
-            <li><a href="/social.html">${t.nav_hub}</a></li>
+            <li><a href="/search">${t.nav_browse}</a></li>
+            <li><a href="/social">${t.nav_hub}</a></li>
         `;
     }
 
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
     if (!container) return;
-    container.innerHTML = `<button class="btn" onclick="window.location.href='/login.html'">${t.btn_login}</button>`;
+    container.innerHTML = `<button class="btn" onclick="window.location.href='/login'">${t.btn_login}</button>`;
 }
 
 function showLanguageBanner() {
@@ -1144,5 +1144,5 @@ function showTermsBanner() {
 
 document.addEventListener('DOMContentLoaded', () => {
     const logo = document.querySelector('.logo');
-    if (logo) logo.onclick = () => window.location.href = '/index.html';
+    if (logo) logo.onclick = () => window.location.href = '/';
 });

@@ -300,13 +300,13 @@
 
     <header>
         <div class="header-inner">
-            <a href="/index.html" class="logo">Scor<em>alia</em></a>
+            <a href="/" class="logo">Scor<em>alia</em></a>
             <nav>
                 <ul>
-                    <li><a href="/search.html" data-i18n="nav_browse">Browse</a></li>
-                    <li><a href="/my-listings.html" data-i18n="nav_listings">My Listings</a></li>
-                    <li><a href="/social.html" data-i18n="nav_hub">Campus Hub</a></li>
-                    <li><a href="/messages.html" data-i18n="nav_messages">Messages</a></li>
+                    <li><a href="/search" data-i18n="nav_browse">Browse</a></li>
+                    <li><a href="/my-listings" data-i18n="nav_listings">My Listings</a></li>
+                    <li><a href="/social" data-i18n="nav_hub">Campus Hub</a></li>
+                    <li><a href="/messages" data-i18n="nav_messages">Messages</a></li>
                 </ul>
             </nav>
             <div class="header-right"></div>
@@ -325,14 +325,14 @@
                 <p id="request-status" class="request-status" style="display: none;"></p>
             </div>
             
-            <a href="/social.html" class="btn-locked" style="margin-top: 20px; background: transparent; border: 1px solid var(--gold);" id="ui-locked-btn">Back to Campus Hub</a>
+            <a href="/social" class="btn-locked" style="margin-top: 20px; background: transparent; border: 1px solid var(--gold);" id="ui-locked-btn">Back to Campus Hub</a>
         </div>
     </div>
 
     <!-- MOBILE TOPICS BAR -->
     <div class="mobile-topics-wrapper" id="mobile-topics-wrapper">
         <div class="mobile-ways-bar" id="mobile-ways-list">
-            <a href="/social.html" class="m-way-pill">
+            <a href="/social" class="m-way-pill">
                 <i class="fas fa-globe-americas"></i> <span data-i18n="topics_campus">Campus Public</span>
             </a>
         </div>
@@ -381,7 +381,7 @@
             <div class="topics-menu">
                 <div class="topic-section-title" data-i18n="topics_public">Public Channels</div>
                 <div id="desktop-general-list">
-                    <a href="/social.html" class="way-item">
+                    <a href="/social" class="way-item">
                         <i class="fas fa-globe-americas"></i> <span data-i18n="topics_campus">Campus Public</span>
                     </a>
                 </div>
@@ -462,7 +462,7 @@
             <h2 id="restricted-title">Verified Student Required</h2>
             <p id="restricted-desc">To create custom topics or post in a specific school's feed, you need a verified student account with a school email address.</p>
             <div class="modal-buttons" style="justify-content: center;">
-                <a href="/verify.html" class="btn btn-login">Create School Account</a>
+                <a href="/verify" class="btn btn-login">Create School Account</a>
                 <button class="btn btn-ghost" id="close-restricted-btn">Cancel</button>
             </div>
         </div>
@@ -539,7 +539,7 @@
 
             const urlParams = new URLSearchParams(window.location.search);
             const topicId = urlParams.get('id');
-            if (!topicId) { window.location.href = '/social.html'; return; }
+            if (!topicId) { window.location.href = '/social'; return; }
 
             // --- UI STRINGS ---
             const lang = localStorage.getItem('preferred_language') || 'en';
@@ -644,7 +644,7 @@
             setElemText('ui-locked-title', ui.private_topic_title);
             setElemText('ui-locked-desc', ui.private_topic_desc);
             const elLockedBtn = document.getElementById('ui-locked-btn');
-            if (elLockedBtn) { elLockedBtn.textContent = ui.back_to_hub; elLockedBtn.href = `/social.html`; }
+            if (elLockedBtn) { elLockedBtn.textContent = ui.back_to_hub; elLockedBtn.href = `/social`; }
             
             const btnRequestJoin = document.getElementById('btn-request-join');
             if (btnRequestJoin) btnRequestJoin.innerHTML = `<i class="fas fa-paper-plane"></i> ${ui.request_join}`;
@@ -682,7 +682,7 @@
             // --- Search ---
             const socialSearchInput = document.getElementById('social-search-input');
             const btnSocialSearch = document.getElementById('btn-social-search');
-            const executeSocialSearch = () => { const q = socialSearchInput.value.trim(); if(q) window.location.href = `/searchsocial.html?q=${encodeURIComponent(q)}`; };
+            const executeSocialSearch = () => { const q = socialSearchInput.value.trim(); if(q) window.location.href = `/searchsocial?q=${encodeURIComponent(q)}`; };
             if (btnSocialSearch) btnSocialSearch.onclick = executeSocialSearch;
             if (socialSearchInput) socialSearchInput.addEventListener('keydown', e => { if(e.key === 'Enter') { e.preventDefault(); executeSocialSearch(); } });
 
@@ -703,12 +703,12 @@
             // Fetch topic data
             try {
                 const tDoc = await getDoc(doc(db, "social_channels", topicId));
-                if (!tDoc.exists()) { window.location.href = '/social.html'; return; }
+                if (!tDoc.exists()) { window.location.href = '/social'; return; }
                 currentTopicData = tDoc.data();
                 currentTopicName = currentTopicData.name;
                 setElemText('ui-topic-name', currentTopicName);
                 setElemPlaceholder('post-input', `${ui.post_in}${currentTopicName}...`);
-            } catch(e) { window.location.href = '/social.html'; return; }
+            } catch(e) { window.location.href = '/social'; return; }
 
             async function checkExistingRequest(uid) {
                 if (!uid) return;
@@ -940,7 +940,7 @@
                             
                             document.getElementById('btn-create-way').style.display = 'flex';
                             document.getElementById('m-sheet-create-way').style.display = 'flex';
-                            const handleCreateTopic = (e) => { e.preventDefault(); window.location.href = '/createtopic.html'; };
+                            const handleCreateTopic = (e) => { e.preventDefault(); window.location.href = '/createtopic'; };
                             document.getElementById('btn-create-way').onclick = handleCreateTopic;
                             document.getElementById('m-sheet-create-way').onclick = handleCreateTopic;
 
@@ -964,14 +964,14 @@
                                     };
                                 }
                             }
-                            if (settingsBtn && currentTopicData && currentTopicData.createdBy === currentUser.uid) { settingsBtn.style.display = 'flex'; settingsBtn.href = `/edittopic.html?id=${topicId}`; }
+                            if (settingsBtn && currentTopicData && currentTopicData.createdBy === currentUser.uid) { settingsBtn.style.display = 'flex'; settingsBtn.href = `/edittopic?id=${topicId}`; }
 
                             showHubLayout();
                             loadTopics(); 
                             loadFeed();
-                        } else window.location.href = '/login.html?redirect=/social.html';
+                        } else window.location.href = '/login?redirect=/social';
                     });
-                } else window.location.href = '/login.html?redirect=/social.html';
+                } else window.location.href = '/login?redirect=/social';
             });
 
             function showLockedScreenWithRequest() {
@@ -1084,7 +1084,7 @@
                 
                 if (mobileWaysList) {
                     mobileWaysList.innerHTML = '';
-                    const mGeneral = document.createElement('a'); mGeneral.className = 'm-way-pill'; mGeneral.href = '/social.html';
+                    const mGeneral = document.createElement('a'); mGeneral.className = 'm-way-pill'; mGeneral.href = '/social';
                     mGeneral.innerHTML = `<i class="fas fa-globe-americas"></i> ${ui.topics_campus}`;
                     mobileWaysList.appendChild(mGeneral);
                 }
@@ -1114,9 +1114,9 @@
                 const createItemHtml = (t, isDesktop, isMyTopic) => {
                     const count = formatCount(t.postCount);
                     const lock = t.visibility === 'private' ? ' <i class="fas fa-lock" style="font-size:0.65rem; margin-left:4px;"></i>' : '';
-                    const editBtn = isMyTopic ? `<a href="/edittopic.html?id=${t.id}" class="edit-way-btn" onclick="event.stopPropagation()"><i class="fas fa-cog"></i></a>` : '';
+                    const editBtn = isMyTopic ? `<a href="/edittopic?id=${t.id}" class="edit-way-btn" onclick="event.stopPropagation()"><i class="fas fa-cog"></i></a>` : '';
                     const isActive = topicId === t.id;
-                    const item = document.createElement('a'); item.className = `way-item ${isActive ? 'active' : ''}`; item.href = `/topic.html?id=${t.id}`;
+                    const item = document.createElement('a'); item.className = `way-item ${isActive ? 'active' : ''}`; item.href = `/topic?id=${t.id}`;
                     item.innerHTML = `<i class="fas fa-hashtag"></i> <span style="flex-grow:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${t.name}${lock}</span> <span class="way-count">${count}</span>${editBtn}`;
                     return item;
                 };
@@ -1124,7 +1124,7 @@
                     const count = formatCount(t.postCount);
                     const lock = t.visibility === 'private' ? ' <i class="fas fa-lock" style="font-size:0.65rem; margin-left:4px;"></i>' : '';
                     const isActive = topicId === t.id;
-                    const item = document.createElement('a'); item.className = `m-way-pill ${isActive ? 'active' : ''}`; item.href = `/topic.html?id=${t.id}`;
+                    const item = document.createElement('a'); item.className = `m-way-pill ${isActive ? 'active' : ''}`; item.href = `/topic?id=${t.id}`;
                     item.innerHTML = `<i class="fas fa-hashtag"></i> ${t.name}${lock} <span class="m-way-count">${count}</span>`;
                     return item;
                 };
@@ -1182,12 +1182,12 @@
                 let attachedImgHtml = d.imageUrl ? `<img src="${window.optimizeImageUrl ? window.optimizeImageUrl(d.imageUrl) : d.imageUrl}" class="post-image-attachment">` : '';
                 let attachedListHtml = '';
                 if (d.attachedListing) {
-                    attachedListHtml = `<a href="/listing.html?id=${d.attachedListing.id}" class="post-listing-attachment"><div class="pla-img" style="background-image:url('${window.optimizeImageUrl ? window.optimizeImageUrl(d.attachedListing.img) : d.attachedListing.img}')"></div><div class="pla-info"><div class="pla-title">${d.attachedListing.title}</div><div class="pla-price">$${d.attachedListing.price}</div></div></a>`;
+                    attachedListHtml = `<a href="/listing?id=${d.attachedListing.id}" class="post-listing-attachment"><div class="pla-img" style="background-image:url('${window.optimizeImageUrl ? window.optimizeImageUrl(d.attachedListing.img) : d.attachedListing.img}')"></div><div class="pla-info"><div class="pla-title">${d.attachedListing.title}</div><div class="pla-price">$${d.attachedListing.price}</div></div></a>`;
                 }
                 const card = document.createElement('div'); card.className = 'post-card';
                 card.innerHTML = `
                     <div class="post-header-top">
-                        <a href="/user.html?id=${d.authorUid}" class="post-author-link">
+                        <a href="/user?id=${d.authorUid}" class="post-author-link">
                             ${avatarHtml}
                             <div class="post-meta">
                                 <span class="post-author" style="display:flex; align-items:center; flex-wrap:wrap;">${d.authorName} ${ownerBadge} ${pendingBadgeHtml}</span>
@@ -1312,7 +1312,7 @@
                         const pfp = c.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${c.authorUid}&backgroundColor=EBF2FA`;
                         const imgHtml = c.imageUrl ? `<img src="${window.optimizeImageUrl ? window.optimizeImageUrl(c.imageUrl) : c.imageUrl}" class="comment-image-attachment">` : '';
                         const commentVerifiedAvatar = c.authorIsStudent ? '<div class="comment-avatar-badge"><i class="fas fa-check-circle"></i></div>' : '';
-                        const commentAvatarHtml = `<a href="/user.html?id=${c.authorUid}"><div class="comment-avatar-wrap"><img src="${pfp}" class="comment-avatar" alt="Avatar">${commentVerifiedAvatar}</div></a>`;
+                        const commentAvatarHtml = `<a href="/user?id=${c.authorUid}"><div class="comment-avatar-wrap"><img src="${pfp}" class="comment-avatar" alt="Avatar">${commentVerifiedAvatar}</div></a>`;
                         const commentOwnerBadge = (currentTopicData && c.authorUid === currentTopicData.createdBy) ? '<i class="fas fa-crown" style="color: var(--gold); font-size: 0.7rem; margin-left: 2px;"></i>' : '';
                         const pendingBadgeHtml = c.status === 'pending' ? `<span style="font-size:0.65rem; color:#d97706; background:#fef3c7; padding:2px 6px; border-radius:10px; margin-left:6px;">⏳ In Review</span>` : '';
                         const isCommentAuthor = currentUser && currentUser.uid === c.authorUid;
@@ -1320,7 +1320,7 @@
                         const isTopicOwner = currentUser && currentTopicData && currentUser.uid === currentTopicData.createdBy;
                         const deleteBtnHtml = (isCommentAuthor || isAdmin || isTopicOwner) ? `<button onclick="window.deleteComment('${postId}', '${commentId}')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:0.75rem; margin-left:10px;"><i class="fas fa-trash-alt"></i></button>` : '';
                         const div = document.createElement('div'); div.className = 'comment-item';
-                        div.innerHTML = `${commentAvatarHtml}<div class="comment-content"><div style="display:flex; justify-content:space-between; align-items:start;"><a href="/user.html?id=${c.authorUid}" class="comment-author-link"><div class="comment-author">${c.authorName} ${commentOwnerBadge} ${pendingBadgeHtml}</div></a>${deleteBtnHtml}</div><div class="comment-text">${c.text}</div>${imgHtml}<div class="comment-time">${timeStr}</div></div>`;
+                        div.innerHTML = `${commentAvatarHtml}<div class="comment-content"><div style="display:flex; justify-content:space-between; align-items:start;"><a href="/user?id=${c.authorUid}" class="comment-author-link"><div class="comment-author">${c.authorName} ${commentOwnerBadge} ${pendingBadgeHtml}</div></a>${deleteBtnHtml}</div><div class="comment-text">${c.text}</div>${imgHtml}<div class="comment-time">${timeStr}</div></div>`;
                         list.appendChild(div);
                     });
                     list.scrollTop = list.scrollHeight;
