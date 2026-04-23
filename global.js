@@ -238,10 +238,12 @@ async function triggerBotChallenge() {
 
         window.onTurnstileSuccess = async (token) => {
             try {
-                const res = await fetch(getFunctionUrl('verify-bot'), {
-                    method: 'POST',
-                    body: JSON.stringify({ token: token })
-                });
+                // In global.js, inside window.onTurnstileSuccess
+const res = await fetch(getFunctionUrl('verify-bot'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },   // <--- ADD THIS LINE
+    body: JSON.stringify({ token: token })
+});
                 const data = await res.json();
                 if (data.success) {
                     document.getElementById('bot-shield-overlay').remove();
