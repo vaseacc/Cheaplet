@@ -450,7 +450,34 @@ globalStyle.innerHTML = `
     .warning-btn { background: #ef4444; color: white; border: none; padding: 12px 30px; border-radius: 30px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; }
     .warning-btn:hover { background: #dc2626; transform: translateY(-2px); }
 
+    /* Bottom Navigation Bar (Mobile Only) */
+    .bottom-nav {
+        position: fixed; bottom: 0; left: 0; width: 100%; height: 60px;
+        background: rgba(12, 20, 70, 0.98); backdrop-filter: blur(10px);
+        border-top: 1px solid rgba(200,169,110,0.3);
+        display: flex; justify-content: space-around; align-items: center;
+        z-index: 9999;
+    }
+    .bottom-nav-item {
+        color: rgba(255,255,255,0.7); text-decoration: none;
+        display: flex; flex-direction: column; align-items: center; gap: 4px;
+        font-size: 0.7rem; font-weight: 600; transition: color 0.2s;
+        position: relative;
+    }
+    .bottom-nav-item i { font-size: 1.4rem; }
+    .bottom-nav-item.active { color: var(--gold); }
+    .bottom-nav-badge {
+        position: absolute; top: -4px; right: -8px;
+        background: #C0392B; color: white; font-size: 0.6rem; font-weight: bold;
+        padding: 2px 5px; border-radius: 10px; min-width: 16px; text-align: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2); display: none;
+    }
+    @media (min-width: 768px) {
+        .bottom-nav { display: none; }
+    }
     @media (max-width: 767px) {
+        body { padding-bottom: 70px; }
+        .dropdown-item.profile-link { display: none; }
         nav { display: none !important; }
         .msg-btn-mobile { display: flex; }
         .desktop-only { display: none !important; }
@@ -1010,12 +1037,15 @@ function listenToUnreadMessages(uid) {
         });
         const deskBadge = document.getElementById('desktop-unread-badge');
         const mobBadge = document.getElementById('mobile-unread-badge');
+        const bottomBadge = document.getElementById('bottom-nav-badge');
         if (unreadCount > 0) {
             if (deskBadge) { deskBadge.textContent = unreadCount; deskBadge.style.display = 'flex'; }
             if (mobBadge) { mobBadge.textContent = unreadCount; mobBadge.style.display = 'flex'; }
+            if (bottomBadge) { bottomBadge.textContent = unreadCount; bottomBadge.style.display = 'block'; }
         } else {
             if (deskBadge) deskBadge.style.display = 'none';
             if (mobBadge) mobBadge.style.display = 'none';
+            if (bottomBadge) bottomBadge.style.display = 'none';
         }
     });
 }
@@ -1059,7 +1089,7 @@ function updateHeaderToLoggedIn(userData) {
                 <a href="/search" class="dropdown-item mobile-link"><i class="fas fa-search"></i> ${t.nav_browse}</a>
                 <a href="/my-listings" class="dropdown-item mobile-link"><i class="fas fa-book"></i> ${t.nav_listings}</a>
                 <a href="/social" class="dropdown-item mobile-link"><i class="fas fa-users"></i> ${t.nav_hub}</a>
-                <a href="/profile" class="dropdown-item"><i class="fas fa-user-circle"></i> ${t.nav_profile}</a>
+                <a href="/profile" class="dropdown-item profile-link"><i class="fas fa-user-circle"></i> ${t.nav_profile}</a>
                 <a href="/activity" class="dropdown-item"><i class="fas fa-history"></i> ${t.nav_activity}</a>
                 <a href="#" class="dropdown-item" id="globalLogout" style="color:#ff4d4d; border-top:1px solid #eee;"><i class="fas fa-sign-out-alt"></i> ${t.btn_signout}</a>
             </div>
@@ -1145,4 +1175,39 @@ function showTermsBanner() {
 document.addEventListener('DOMContentLoaded', () => {
     const logo = document.querySelector('.logo');
     if (logo) logo.onclick = () => window.location.href = '/';
+    
+    // Create bottom navigation bar for mobile
+    createBottomNav();
 });
+
+// Function to create bottom navigation bar (mobile only)
+function createBottomNav() {
+    const nav = document.createElement('nav');
+    nav.className = 'bottom-nav';
+    nav.id = 'bottom-nav';
+    nav.innerHTML = `
+        <a href="/" class="bottom-nav-item"><i class="fas fa-home"></i><span>Home</span></a>
+        <a href="/search" class="bottom-nav-item"><i class="fas fa-search"></i><span>Browse</span></a>
+        <a href="/social" class="bottom-nav-item"><i class="fas fa-comment-dots"></i><span>Social</span></a>
+        <a href="/profile" class="bottom-nav-item" id="bottom-nav-profile">
+            <i class="fas fa-user-circle"></i><span>Profile</span>
+            <span class="bottom-nav-badge" id="bottom-nav-badge" style="display:none;"></span>
+        </a>
+    `;
+    document.body.appendChild(nav);
+    
+    // Set active tab based on current URL
+    setActiveNav();
+}
+
+// Function to highlight active tab in bottom nav
+function setActiveNav() {
+    const path = window.location.pathname;
+    const items = document.querySelectorAll('.bottom-nav-item');
+    items.forEach(item => {
+        const linkPath = new URL(item.href, window.location.origin).pathname;
+        if (path === linkPath || (path === '/' && linkPath === '/')) {
+            item.classList.add('active');
+        }
+    });
+}
