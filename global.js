@@ -1089,7 +1089,11 @@ function updateHeaderToLoggedIn(userData) {
                 <a href="/search" class="dropdown-item mobile-link"><i class="fas fa-search"></i> ${t.nav_browse}</a>
                 <a href="/my-listings" class="dropdown-item mobile-link"><i class="fas fa-book"></i> ${t.nav_listings}</a>
                 <a href="/social" class="dropdown-item mobile-link"><i class="fas fa-users"></i> ${t.nav_hub}</a>
+website-clean-url-migration-4b170
                 <a href="/profile" class="dropdown-item profile-link"><i class="fas fa-user-circle"></i> ${t.nav_profile}</a>
+
+                <a href="/profile" class="dropdown-item"><i class="fas fa-user-circle"></i> ${t.nav_profile}</a>
+ main
                 <a href="/activity" class="dropdown-item"><i class="fas fa-history"></i> ${t.nav_activity}</a>
                 <a href="#" class="dropdown-item" id="globalLogout" style="color:#ff4d4d; border-top:1px solid #eee;"><i class="fas fa-sign-out-alt"></i> ${t.btn_signout}</a>
             </div>
@@ -1175,9 +1179,12 @@ function showTermsBanner() {
 document.addEventListener('DOMContentLoaded', () => {
     const logo = document.querySelector('.logo');
     if (logo) logo.onclick = () => window.location.href = '/';
+website-clean-url-migration-4b170
     
     // Create bottom navigation bar for mobile
     createBottomNav();
+
+main
 });
 
 // Function to create bottom navigation bar (mobile only)
