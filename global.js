@@ -66,15 +66,9 @@ window.addEventListener('beforeinstallprompt', (e) => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
     if (isStandalone) return;
 
-    let dismissCount = parseInt(localStorage.getItem('pwa_dismiss_count') || '0');
+    // Show every 5 visits
     let indexVisits = parseInt(localStorage.getItem('pwa_index_visits') || '0');
-    
-    let threshold = 0;
-    if (dismissCount === 1) threshold = 3;
-    else if (dismissCount === 2) threshold = 10;
-    else if (dismissCount >= 3) threshold = 14;
-
-    if (indexVisits >= threshold) {
+    if (indexVisits > 0 && indexVisits % 5 === 0) {
         showInstallPromotion();
     }
 });
@@ -113,15 +107,15 @@ function showInstallPromotion() {
         if (deferredPrompt) {
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                localStorage.setItem('pwa_installed', 'true');
+            }
             deferredPrompt = null;
         }
     });
 
     document.getElementById('btn-pwa-dismiss').addEventListener('click', () => {
         banner.style.display = 'none';
-        let currentCount = parseInt(localStorage.getItem('pwa_dismiss_count') || '0');
-        localStorage.setItem('pwa_dismiss_count', (currentCount + 1).toString());
-        localStorage.setItem('pwa_index_visits', '0');
     });
 }
 
@@ -238,10 +232,9 @@ async function triggerBotChallenge() {
 
         window.onTurnstileSuccess = async (token) => {
             try {
-                // In global.js, inside window.onTurnstileSuccess
                 const res = await fetch(getFunctionUrl('verify-bot'), {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },   // <--- ADD THIS LINE
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ token: token })
                 });
                 const data = await res.json();
@@ -1121,7 +1114,7 @@ function setBottomNavActive() {
     const path = window.location.pathname;
     links.forEach(link => {
         const href = link.getAttribute('href');
-        // Treat /topic as Social, also /searchsocial as Browse? etc. Just handle the specific cases
+        // Treat /topic as Social
         if (href === '/social' && path.startsWith('/topic')) {
             link.classList.add('active');
         } else if (path === href || (href !== '/' && path.startsWith(href))) {
@@ -1241,13 +1234,13 @@ function showLanguageBanner() {
         localStorage.setItem('preferred_language', l);
         window.applyLanguage(l);
         banner.remove();
-        showTermsBanner();
         if (auth.currentUser) {
             try {
                 await updateDoc(doc(db, "users", auth.currentUser.uid), { language: l });
                 if (currentUserData) currentUserData.language = l;
             } catch (e) { console.warn("Could not save language to user document", e); }
         }
+        location.reload(); // Reload to apply language changes everywhere
     };
     document.getElementById('btn-en').onclick = () => setLang('en');
     document.getElementById('btn-fr').onclick = () => setLang('fr');
