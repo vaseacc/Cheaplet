@@ -386,7 +386,7 @@
 
     <header>
         <div class="header-inner">
-            <a href="/index.html" class="logo">Scor<em>alia</em></a>
+            <a href="/" class="logo">Scor<em>alia</em></a>
             <nav><ul></ul></nav>
             <div class="header-right"></div>
         </div>
@@ -429,7 +429,7 @@
 
     <section class="search-section">
         <div class="search-box">
-            <input type="text" id="search-input" placeholder="Search by title, author, ISBN, or course code…">
+            <input type="search" id="search-input" placeholder="Search by title, author, ISBN, or course code…" enterkeyhint="search">
             <select id="sort-filter">
                 <option value="newest" id="sort-newest">Newest First</option>
                 <option value="price-low" id="sort-low">Price: Low to High</option>
@@ -445,7 +445,7 @@
         <section class="tags-section">
             <div class="section-header">
                 <h2 class="section-title" id="tags-title">Browse by Subject</h2>
-                <a href="/tag.html" class="section-link" id="tags-view-all">View all →</a>
+                <a href="/tag" class="section-link" id="tags-view-all">View all →</a>
             </div>
             <div class="tags-grid" id="tags-grid-container">
                 <div class="tag-pill skeleton" style="width:90px; height:38px;"></div>
@@ -480,7 +480,7 @@
     <section class="topics-section">
         <div class="section-header" style="max-width: 1280px; margin: 0 auto 30px;">
             <h2 class="section-title" id="topics-title">Active Topics</h2>
-            <a href="/social.html" class="section-link" id="topics-view-all">Join the conversation →</a>
+            <a href="/social" class="section-link" id="topics-view-all">Join the conversation →</a>
         </div>
         <div id="topics-container" class="topics-grid">
             <div class="topic-card skeleton" style="height:70px;"></div>
@@ -520,9 +520,9 @@
     <footer>
         <div class="container">
             <div style="margin-bottom: 20px;">
-                <a href="/terms.html" id="link-terms" class="footer-link">Terms</a>
-                <a href="/privacy.html" id="link-privacy" class="footer-link">Privacy</a>
-                <a href="/safety.html" id="link-safety" class="footer-link">Safety</a>
+                <a href="/terms" id="link-terms" class="footer-link">Terms</a>
+                <a href="/privacy" id="link-privacy" class="footer-link">Privacy</a>
+                <a href="/safety" id="link-safety" class="footer-link">Safety</a>
             </div>
             <div style="color:rgba(255,255,255,0.4); font-size:0.8rem;">© 2026 Scoralia. All rights reserved.</div>
         </div>
@@ -644,15 +644,15 @@
             let currentTerm = '';            // Keep track of search term
 
             document.getElementById('startBrowsingBtn').onclick = () => document.querySelector('.main-wrap').scrollIntoView({ behavior: 'smooth' });
-            document.getElementById('heroListBtn').onclick = () => window.location.href = '/listanitem.html';
-            document.getElementById('search-btn').onclick = () => { if (searchInput.value.trim()) window.location.href = `/search.html?q=${encodeURIComponent(searchInput.value.trim())}`; };
+            document.getElementById('heroListBtn').onclick = () => window.location.href = '/listanitem';
+            document.getElementById('search-btn').onclick = () => { if (searchInput.value.trim()) window.location.href = `/search?q=${encodeURIComponent(searchInput.value.trim())}`; };
             
             // 🔥 FIX: Mobile "Enter" / "Go" key now triggers search reliably
             function handleSearchSubmit() {
                 const query = searchInput.value.trim();
                 if (query) {
                     searchInput.blur(); // dismiss keyboard on mobile
-                    window.location.href = `/search.html?q=${encodeURIComponent(query)}`;
+                    window.location.href = `/search?q=${encodeURIComponent(query)}`;
                 }
             }
 
@@ -680,7 +680,7 @@
                         const data = doc.data();
                         const pill = document.createElement('div'); pill.className = 'tag-pill';
                         pill.innerHTML = `${data.tag} <span class="tag-count">${data.count || 0}</span>`;
-                        pill.onclick = () => window.location.href = `/tag.html?tag=${encodeURIComponent(data.tag)}`;
+                        pill.onclick = () => window.location.href = `/tag?tag=${encodeURIComponent(data.tag)}`;
                         frag.appendChild(pill);
                     });
                     
@@ -705,7 +705,7 @@
                         const data = doc.data();
                         const card = document.createElement('a');
                         card.className = 'topic-card';
-                        card.href = '/social.html';
+                        card.href = '/social';
                         const postCount = data.postCount || 0;
                         const postWord = lang === 'fr' ? (postCount === 1 ? 'message' : 'messages') : (postCount === 1 ? 'post' : 'posts');
                         card.innerHTML = `
@@ -731,7 +731,7 @@
                 const firstImage = data.imageUrls?.[0] || '';
                 const card = document.createElement('a');
                 card.className = 'listing-card';
-                card.href = `/listing.html?id=${doc.id}`;
+                card.href = `/listing?id=${doc.id}`;
 
                 const origHTML = (data.originalPrice && data.originalPrice > data.price) ? `<span class="original-price">$${data.originalPrice.toFixed(2)}</span>` : '';
                 const badgeHTML = data.originalPrice && data.originalPrice > data.price ? `<div class="listing-badge">DEAL</div>` : '';
@@ -799,16 +799,10 @@
                         currentTerm = searchInput.value.toLowerCase().trim();
                         const allActive = snapshot.docs.filter(d => d.data().status === 'active');
                         
-                        // Filter by search term (title, description, ISBN)
-                        allFilteredDocs = currentTerm === '' ? allActive : allActive.filter(doc => {
-                            const data = doc.data();
-                            const titleMatch = (data.title || '').toLowerCase().includes(currentTerm);
-                            const descMatch = (data.description || '').toLowerCase().includes(currentTerm);
-                            const isbnMatch = (data.isbn || '').toLowerCase().includes(currentTerm);
-                            return titleMatch || descMatch || isbnMatch;
-                        });
+                        // No longer filter live – just keep all active listings for display, search is only via redirect
+                        allFilteredDocs = allActive;
                         
-                        // Reset display limit when search changes
+                        // Reset display limit when sort changes
                         displayLimit = 20;
                         renderListings();
                     });
@@ -818,11 +812,7 @@
             }
 
             sortFilter.onchange = fetchListings;
-            searchInput.addEventListener('input', () => {
-                // Reset display limit when typing
-                displayLimit = 20;
-                fetchListings();
-            });
+            // Removed live input listener – search now only via Enter
             
             loadGlobalTags();
             loadActiveTopics();
@@ -835,7 +825,7 @@
     <script>
         (function() {
             // Only run on the homepage
-            if (window.location.pathname !== '/' && !window.location.pathname.endsWith('/index.html')) return;
+            if (window.location.pathname !== '/' && !window.location.pathname.endsWith('/')) return;
 
             // Only on mobile (simple user-agent check)
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
@@ -860,85 +850,64 @@
             visits++;
             localStorage.setItem(VISIT_KEY, visits);
 
-            // Determine the next threshold based on previous dismissals
-            const dismissedThreshold = localStorage.getItem(DISMISS_KEY); // e.g., "4", "10", "20"
-            let nextThreshold = 4;
-            if (dismissedThreshold === '4') nextThreshold = 10;
-            else if (dismissedThreshold === '10') nextThreshold = 20;
-            else if (dismissedThreshold && parseInt(dismissedThreshold) >= 20) {
-                // After 20, it's every 10 visits (30, 40, 50...)
-                nextThreshold = parseInt(dismissedThreshold) + 10;
-            }
+            // Show every 5 visits (5th, 10th, 15th …)
+            if (visits > 0 && visits % 5 === 0) {
+                // We need the beforeinstallprompt event
+                let deferredPrompt;
 
-            // Check if we should prompt now
-            if (visits < nextThreshold) return;
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    // Prevent the mini-infobar from appearing
+                    e.preventDefault();
+                    // Save the event for later
+                    deferredPrompt = e;
 
-            // We need the beforeinstallprompt event
-            let deferredPrompt;
+                    // Show our custom modal
+                    showInstallPrompt();
+                });
 
-            window.addEventListener('beforeinstallprompt', (e) => {
-                // Prevent the mini-infobar from appearing
-                e.preventDefault();
-                // Save the event for later
-                deferredPrompt = e;
-
-                // Show our custom modal
-                showInstallPrompt();
-            });
-
-            function showInstallPrompt() {
-                const overlay = document.createElement('div');
-                overlay.className = 'lang-modal-overlay';
-                overlay.style.zIndex = '100000';
-                overlay.innerHTML = `
-                    <div class="lang-modal" style="padding: 30px 25px;">
-                        <i class="fas fa-mobile-alt fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
-                        <h2 style="color:#0C1446; margin-bottom:12px; font-family:'Playfair Display', serif;">Add to Home Screen</h2>
-                        <p style="color:#6b84a3; margin-bottom:25px; line-height:1.6; font-size:0.95rem;">
-                            Install Scoralia for quick access and a better experience.
-                        </p>
-                        <div style="display: flex; gap: 10px;">
-                            <button id="pwa-install-btn" style="flex: 2; background: #C8A96E; color: #0C1446;
-                                border: none; padding: 12px; border-radius: 30px; font-weight: bold; cursor: pointer;">
-                                Install
-                            </button>
-                            <button id="pwa-later-btn" style="flex: 1; background: #EBF2FA; color: #2B5C92;
-                                border: none; padding: 12px; border-radius: 30px; font-weight: bold; cursor: pointer;">
-                                Later
-                            </button>
+                function showInstallPrompt() {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'lang-modal-overlay';
+                    overlay.style.zIndex = '100000';
+                    overlay.innerHTML = `
+                        <div class="lang-modal" style="padding: 30px 25px;">
+                            <i class="fas fa-mobile-alt fa-3x" style="color:#C8A96E; margin-bottom:20px;"></i>
+                            <h2 style="color:#0C1446; margin-bottom:12px; font-family:'Playfair Display', serif;">Add to Home Screen</h2>
+                            <p style="color:#6b84a3; margin-bottom:25px; line-height:1.6; font-size:0.95rem;">
+                                Install Scoralia for quick access and a better experience.
+                            </p>
+                            <div style="display: flex; gap: 10px;">
+                                <button id="pwa-install-btn" style="flex: 2; background: #C8A96E; color: #0C1446;
+                                    border: none; padding: 12px; border-radius: 30px; font-weight: bold; cursor: pointer;">
+                                    Install
+                                </button>
+                                <button id="pwa-later-btn" style="flex: 1; background: #EBF2FA; color: #2B5C92;
+                                    border: none; padding: 12px; border-radius: 30px; font-weight: bold; cursor: pointer;">
+                                    Later
+                                </button>
+                            </div>
                         </div>
-                    </div>
-                `;
-                document.body.appendChild(overlay);
+                    `;
+                    document.body.appendChild(overlay);
 
-                const installBtn = overlay.querySelector('#pwa-install-btn');
-                const laterBtn = overlay.querySelector('#pwa-later-btn');
+                    const installBtn = overlay.querySelector('#pwa-install-btn');
+                    const laterBtn = overlay.querySelector('#pwa-later-btn');
 
-                installBtn.onclick = async () => {
-                    if (deferredPrompt) {
-                        deferredPrompt.prompt();
-                        const { outcome } = await deferredPrompt.userChoice;
-                        if (outcome === 'accepted') {
-                            localStorage.setItem(INSTALLED_KEY, 'true');
-                        } else {
-                            // User declined the native prompt, treat as "Later"
-                            handleDismiss();
+                    installBtn.onclick = async () => {
+                        if (deferredPrompt) {
+                            deferredPrompt.prompt();
+                            const { outcome } = await deferredPrompt.userChoice;
+                            if (outcome === 'accepted') {
+                                localStorage.setItem(INSTALLED_KEY, 'true');
+                            }
+                            deferredPrompt = null;
                         }
-                        deferredPrompt = null;
-                    }
-                    overlay.remove();
-                };
+                        overlay.remove();
+                    };
 
-                laterBtn.onclick = () => {
-                    handleDismiss();
-                    overlay.remove();
-                };
-
-                function handleDismiss() {
-                    // Save the threshold we just passed
-                    localStorage.setItem(DISMISS_KEY, nextThreshold.toString());
-                    // Reset visit count so we start counting toward the next threshold
-                    localStorage.setItem(VISIT_KEY, '0');
+                    laterBtn.onclick = () => {
+                        overlay.remove();
+                    };
                 }
             }
         })();
