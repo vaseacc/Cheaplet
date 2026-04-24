@@ -2,15 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Listing Details - Scoralia</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Login / Register - Scoralia</title>
     
     <!-- Preconnect to external origins -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="preconnect" href="https://www.gstatic.com">
-    <link rel="preconnect" href="https://firestore.googleapis.com">
     
     <!-- DNS Prefetch -->
     <link rel="dns-prefetch" href="https://firebaseapp.com">
@@ -25,774 +24,925 @@
     <link rel="modulepreload" href="/global.js">
     
     <!-- Preload critical fonts -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,700;0,900;1,700&family=Source+Sans+3:wght@300;400;500;600&display=swap">
-    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,700;0,900;1,700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
     
     <!-- Font Awesome with integrity -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
     
     <script type="module" src="global.js"></script>
     <style>
-        /* All existing CSS remains unchanged */
         :root {
-            --ink:       #0C1446;
-            --deep:      #2B5C92;
-            --mist:      #B3CDE0;
-            --white:     #FFFFFF;
-            --off-white: #F4F7FC;
-            --surface:   #EBF2FA;
-            --text-body: #1a2a4a;
-            --text-muted:#6b84a3;
-            --gold:      #C8A96E;
-            --deep:      #2B5C92;
-            --red:       #C0392B;
-            --radius-sm: 8px;
-            --radius-md: 16px;
-            --shadow-sm: 0 2px 12px rgba(12,20,70,0.08);
-            --shadow-md: 0 8px 32px rgba(12,20,70,0.13);
-            --font-display: 'Source Serif 4', Georgia, serif;
-            --font-body:    'Source Sans 3', sans-serif;
+            --gold:        #C8A96E;
+            --gold-light:  #e0c48f;
+            --gold-solid:  #C8A96E;
+            --navy:        #0C1446;
+            --navy-card:   rgba(12, 20, 70, 0.85);
+            --navy-input:  rgba(255,255,255,0.055);
+            --border:      rgba(200,169,110,0.26);
+            --border-dim:  rgba(255,255,255,0.09);
+            --text:        #f4eedd;
+            --muted:       rgba(244,238,221,0.55);
+            --success:     #2E7D32;
+            --error:       #e53e3e;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        html, body { height: 100%; overflow-x: hidden; }
+
         body {
-            font-family: var(--font-body);
-            background: var(--off-white);
-            color: var(--text-body);
-            height: 100vh; 
-            display: flex; 
-            flex-direction: column;
-            overflow: hidden; 
+            background: var(--navy);
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            min-height: 100vh;
         }
 
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes imagePop { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
-
-        /* ── HEADER ── */
-        header {
-            position: relative; z-index: 200;
-            background: rgba(12, 20, 70, 0.97);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(179,205,224,0.15);
-            animation: slideDown 0.4s ease both;
-            flex-shrink: 0;
-        }
-        .header-inner {
-            max-width: 1280px; margin: 0 auto;
-            padding: 0 28px; height: 68px;
-            display: flex; align-items: center; justify-content: space-between; gap: 20px;
-        }
-        .logo {
-            font-family: var(--font-display);
-            font-size: 1.6rem; font-weight: 900;
-            color: var(--white); text-decoration: none; letter-spacing: -0.5px;
-        }
-        .logo em { color: var(--gold); font-style: normal; }
-        nav ul { display: flex; list-style: none; gap: 28px; }
-        nav ul li a {
-            color: rgba(255,255,255,0.75);
-            text-decoration: none; font-size: 0.9rem; font-weight: 500;
-            transition: color 0.2s;
-        }
-        nav ul li a:hover { color: var(--white); }
-        .header-right { display: flex; align-items: center; gap: 10px; }
-
-        /* ── MAIN LAYOUT ── */
-        .main-wrapper { 
-            display: flex; 
-            flex: 1; 
-            overflow: hidden; 
-        }
-
-        /* ── IMAGE STAGE ── */
-        .image-stage { flex: 1; background-color: #000; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
-        .blurred-bg { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-size: cover; background-position: center; filter: blur(40px) brightness(0.5); z-index: 1; transition: background-image 0.3s ease-in-out; transform: scale(1.1); }
-        .main-image-container { position: relative; z-index: 2; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; padding: 20px; }
-        .main-image { display: block; width: 100%; height: 100%; object-fit: contain; box-shadow: 0 10px 30px rgba(0,0,0,0.6); border-radius: 4px; }
-        .nav-arrow { position: absolute; top: 50%; transform: translateY(-50%); width: 50px; height: 50px; border-radius: 50%; background-color: rgba(60, 60, 60, 0.6); color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; border: none; z-index: 10; }
-        .nav-arrow:hover { background-color: rgba(60, 60, 60, 0.9); }
-        .nav-prev { left: 20px; } .nav-next { right: 20px; }
-        .thumbnails-overlay { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 10; padding: 5px; }
-        .thumb { width: 50px; height: 50px; border-radius: 6px; object-fit: cover; cursor: pointer; opacity: 0.6; border: 2px solid white; transition: all 0.2s; }
-        .thumb.active { opacity: 1; border-color: var(--gold); transform: scale(1.15); }
-
-        /* ── DETAILS PANEL ── */
-        .details-panel {
-            width: 420px; flex-shrink: 0;
-            background: var(--white);
-            border-left: 1px solid rgba(179,205,224,0.4);
-            overflow-y: auto; display: flex; flex-direction: column;
-            padding: 28px 24px;
-            animation: fadeUp 0.5s 0.1s ease both;
-        }
-
-        h1 {
-            font-family: var(--font-display);
-            font-size: 1.6rem; font-weight: 900;
-            color: var(--ink); margin-bottom: 8px;
-            line-height: 1.2; overflow-wrap: break-word; word-break: break-word;
-            letter-spacing: -0.3px;
-        }
-        .price-container { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-        .price { font-size: 1.5rem; font-weight: 800; color: var(--deep); font-family: var(--font-display); }
-        .original-price { font-size: 1rem; color: var(--text-muted); text-decoration: line-through; }
-        .meta-info { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid rgba(179,205,224,0.4); }
-
-        /* ── ACTION BUTTONS ── */
-        .action-buttons { display: flex; gap: 10px; margin-bottom: 24px; }
-        .btn-primary { flex: 1; background: var(--ink); color: var(--white); border: none; border-radius: var(--radius-sm); font-family: var(--font-body); font-weight: 600; padding: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.95rem; transition: background 0.2s, transform 0.15s; }
-        .btn-primary:hover { background: var(--deep); transform: translateY(-1px); }
-        .btn-icon { width: 44px; height: 44px; background: var(--surface); border-radius: var(--radius-sm); border: 1.5px solid rgba(179,205,224,0.5); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: var(--text-muted); transition: background 0.18s, color 0.18s, transform 0.15s; }
-        .btn-icon:hover { background: var(--mist); color: var(--ink); transform: translateY(-1px); }
-        .btn-report:hover { color: var(--red) !important; background: #fdecea !important; }
-
-        /* ── SECTION HEADERS ── */
-        .section-header { font-family: var(--font-display); font-weight: 700; font-size: 1rem; color: var(--ink); margin-top: 18px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid var(--surface); }
-        .info-row { display: flex; justify-content: space-between; margin-bottom: 7px; font-size: 0.88rem; gap: 10px; }
-        .info-label { font-weight: 600; color: var(--text-muted); flex-shrink: 0; }
-        .info-value { color: var(--text-body); text-align: right; overflow-wrap: break-word; word-break: break-word; }
-        .description-text { font-size: 0.9rem; line-height: 1.65; color: var(--text-body); white-space: pre-wrap; margin-bottom: 20px; overflow-wrap: break-word; }
-
-        /* ── SELLER ── */
-        .seller-section-wrapper { display: block; text-decoration: none; color: inherit; transition: background 0.2s; border-radius: var(--radius-sm); margin-top: 10px; padding: 14px 10px; border-top: 1px solid rgba(179,205,224,0.4); border-bottom: 1px solid rgba(179,205,224,0.4); }
-        .seller-section-wrapper:hover { background: var(--surface); }
-        .seller-section { display: flex; align-items: center; gap: 14px; }
-        #seller-avatar-small { width: 46px; height: 46px; border-radius: 50%; background-color: var(--mist); background-size: cover; background-position: center; border: 2px solid var(--mist); flex-shrink: 0; }
-        .seller-name { font-weight: 700; color: var(--ink); font-size: 0.95rem; }
-        .seller-rating-display { color: var(--gold); font-size: 0.82rem; margin-top: 3px; }
-        .verified-student-badge { display: inline-flex; align-items: center; gap: 5px; background: rgba(43,92,146,0.1); color: var(--deep); font-size: 0.73rem; font-weight: 700; padding: 2px 9px; border-radius: 50px; border: 1px solid rgba(43,92,146,0.25); margin-top: 4px; }
-
-        /* ── QUICK MESSAGE ── */
-        .quick-message-container { margin-top: 24px; border-top: 1px solid rgba(179,205,224,0.4); padding-top: 18px; }
-        .quick-msg-label { font-size: 0.82rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-        .quick-msg-input { width: 100%; padding: 10px 14px; border: 1.5px solid rgba(179,205,224,0.5); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 0.9rem; color: var(--text-body); resize: none; height: 70px; background: var(--surface); margin-bottom: 8px; transition: border-color 0.2s; outline: none; }
-        .quick-msg-input:focus { border-color: var(--deep); background: var(--white); }
-        .btn-send { background: var(--deep); color: var(--white); width: 100%; border: none; border-radius: var(--radius-sm); height: 40px; font-family: var(--font-body); font-weight: 600; cursor: pointer; font-size: 0.9rem; transition: background 0.2s, transform 0.15s; }
-        .btn-send:hover { background: var(--ink); transform: translateY(-1px); }
-
-        /* ── RELATED ── */
-        .related-section { margin-top: 32px; padding-top: 18px; padding-bottom: 40px; border-top: 1px solid rgba(179,205,224,0.4); }
-        .related-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
-        .related-card { background: var(--off-white); text-decoration: none; color: inherit; display: block; overflow: hidden; border-radius: var(--radius-sm); border: 1px solid rgba(179,205,224,0.3); transition: transform 0.2s, box-shadow 0.2s; }
-        .related-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); border-color: var(--gold); }
-        .related-img { width: 100%; height: 110px; background-color: var(--surface); background-size: cover; background-position: center; border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
-        .related-info { padding: 8px 10px; }
-        .related-title { font-size: 0.82rem; font-weight: 600; height: 2.4em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.2; color: var(--text-body); }
-        .related-price { font-weight: 800; color: var(--deep); font-size: 0.9rem; margin-top: 4px; font-family: var(--font-display); }
-
-        /* ── STATUS BADGE ── */
-        .status-badge-container { display: inline-block; margin-bottom: 10px; }
-        .status-badge { color: white; padding: 4px 12px; border-radius: 4px; font-weight: bold; font-size: 0.8rem; }
-        .status-pending { background: rgba(255, 152, 0, 0.9); }
-        .status-rejected { background: rgba(0, 0, 0, 0.9); }
-
-        /* ── ADMIN ── */
-        .admin-controls { margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(179,205,224,0.4); }
-        .btn-delete { background: #fdecea; color: var(--red); border: 1px solid rgba(192,57,43,0.3); border-radius: var(--radius-sm); padding: 8px 18px; font-family: var(--font-body); font-weight: 600; font-size: 0.88rem; cursor: pointer; transition: background 0.2s; width: 100%; }
-        .btn-delete:hover { background: #f8c8c3; }
-
-        /* ── MODAL ── */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(12,20,70,0.6); backdrop-filter: blur(4px); z-index: 10000; display: none; justify-content: center; align-items: center; }
-        .modal-card { background: var(--white); padding: 28px; border-radius: var(--radius-md); width: 90%; max-width: 440px; box-shadow: var(--shadow-md); animation: fadeUp 0.3s ease both; }
-        .modal-card h2 { font-family: var(--font-display); color: var(--ink); margin-bottom: 6px; }
-        .modal-card p { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 16px; }
-        .modal-card select, .modal-card textarea { width: 100%; padding: 10px 14px; margin-bottom: 12px; border: 1.5px solid rgba(179,205,224,0.5); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 0.9rem; color: var(--text-body); background: var(--surface); outline: none; }
-        .modal-card textarea { height: 90px; resize: none; }
-        .modal-buttons { display: flex; gap: 10px; }
-        .modal-buttons button { flex: 1; padding: 11px; border-radius: var(--radius-sm); font-family: var(--font-body); font-weight: 700; cursor: pointer; border: none; transition: opacity 0.2s; }
-        .modal-buttons button:hover { opacity: 0.85; }
-        .btn-submit-red { background: var(--red); color: var(--white); }
-        .btn-cancel-gray { background: var(--surface); color: var(--text-body); }
-
-        /* ── CUSTOM TOAST NOTIFICATION ── */
-        .toast-message {
+        #bg-canvas {
             position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--ink);
-            color: white;
-            padding: 14px 28px;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 1rem;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            z-index: 100000;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            animation: toastSlideUp 0.3s ease, toastFadeOut 0.5s ease 3.5s forwards;
+            inset: 0;
+            z-index: 0;
             pointer-events: none;
-            border-left: 6px solid var(--gold);
-        }
-        .toast-message i {
-            color: var(--gold);
-            font-size: 1.3rem;
-        }
-        .toast-message a {
-            color: var(--gold);
-            text-decoration: underline;
-            font-weight: 800;
-            margin-left: 8px;
-            pointer-events: auto;
-        }
-        .toast-message a:hover {
-            color: white;
-        }
-        @keyframes toastSlideUp {
-            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-            to { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-        @keyframes toastFadeOut {
-            to { opacity: 0; transform: translateX(-50%) translateY(-10px); visibility: hidden; }
         }
 
-        /* ── MOBILE ── */
-        @media (max-width: 900px) {
-            body { height: auto; overflow-y: auto; overflow-x: hidden; display: block; }
-            .main-wrapper { flex-direction: column; overflow: visible; height: auto; }
-            .image-stage { height: 350px; flex: none; width: 100%; }
-            .main-image-container { padding: 10px; }
-            .details-panel { width: 100%; border-left: none; height: auto; padding: 20px 16px 50px; overflow-y: visible; }
-            nav { display: none; }
-            .toast-message { bottom: 20px; width: 90%; white-space: normal; text-align: center; }
+        header {
+            position: relative;
+            z-index: 20;
+            background: rgba(12, 20, 70, 0.78);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-dim);
+            padding: 15px 0;
         }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 28px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            font-family: 'Playfair Display', serif;
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text);
+            text-decoration: none;
+            letter-spacing: 0.01em;
+        }
+
+        .logo span { color: var(--gold); }
+
+        .back-btn-mobile {
+            display: none;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: var(--gold-light);
+            font-size: 14px;
+            padding: 8px 14px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-weight: 500;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .back-btn-mobile:hover {
+            background: rgba(200,169,110,0.15);
+            border-color: rgba(200,169,110,0.3);
+        }
+
+        @media (max-width: 767px) {
+            .back-btn-mobile { display: flex; }
+        }
+
+        .auth-wrapper {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: calc(100vh - 57px);
+            padding: 30px 16px;
+            perspective: 1200px;
+        }
+
+        .card-scene {
+            width: 100%;
+            max-width: 460px;
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out;
+            will-change: transform;
+        }
+
+        .auth-card {
+            position: relative;
+            background: var(--navy-card);
+            backdrop-filter: blur(40px);
+            -webkit-backdrop-filter: blur(40px);
+            border: 1px solid var(--border);
+            border-radius: 22px;
+            padding: 46px 42px 40px;
+            box-shadow:
+                0 0 0 1px rgba(255,255,255,0.05) inset,
+                0 2px 0 rgba(200,169,110,0.08) inset,
+                0 60px 120px rgba(0,0,0,0.60),
+                0 24px 48px rgba(0,0,0,0.35),
+                0 0 80px rgba(200,169,110,0.06);
+            transform-style: preserve-3d;
+            animation: cardIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(36px) rotateX(6deg) scale(0.96); }
+            to   { opacity: 1; transform: translateY(0)    rotateX(0deg) scale(1); }
+        }
+
+        .card-sheen {
+            position: absolute;
+            inset: 0;
+            border-radius: 22px;
+            background: radial-gradient(
+                600px circle at var(--mx, 50%) var(--my, 50%),
+                rgba(200,169,110,0.055),
+                transparent 50%
+            );
+            pointer-events: none;
+            z-index: 1;
+            transition: background 0.15s ease;
+        }
+
+        .auth-card::before {
+            content: '';
+            position: absolute;
+            top: -1px; left: -1px;
+            width: 90px; height: 90px;
+            border-top: 1.5px solid rgba(200,169,110,0.50);
+            border-left: 1.5px solid rgba(200,169,110,0.50);
+            border-radius: 22px 0 0 0;
+            pointer-events: none;
+        }
+
+        .card-inner { position: relative; z-index: 2; }
+
+        .card-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 6px;
+            letter-spacing: -0.01em;
+        }
+
+        .card-subtitle {
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 28px;
+            line-height: 1.6;
+        }
+
+        .error-message {
+            color: #ff8f8f;
+            background: rgba(255,80,80,0.07);
+            border: 1px solid rgba(255,80,80,0.18);
+            padding: 10px 14px;
+            border-radius: 9px;
+            margin-bottom: 18px;
+            display: none;
+            font-size: 12.5px;
+            animation: shake 0.35s ease;
+        }
+
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            25%      { transform: translateX(-5px); }
+            75%      { transform: translateX(5px); }
+        }
+
+        .student-tip {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            background: rgba(200,169,110,0.06);
+            border: 1px solid rgba(200,169,110,0.20);
+            color: rgba(240,233,214,0.65);
+            padding: 11px 14px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            line-height: 1.55;
+            animation: slideDown 0.3s cubic-bezier(0.22,1,0.36,1) both;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .student-tip i { color: var(--gold); font-size: 13px; flex-shrink: 0; margin-top: 2px; }
+        .student-tip strong { color: var(--gold-light); font-weight: 600; }
+
+        .field-wrap { margin-bottom: 12px; }
+
+        .field-label {
+            display: block;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.10em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="password"] {
+            display: block;
+            width: 100%;
+            height: 46px;
+            padding: 0 16px;
+            background: rgba(255,255,255,0.055);
+            border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+            box-sizing: border-box;
+        }
+
+        input::placeholder { color: rgba(244,238,221,0.22); }
+
+        input:focus {
+            border-color: rgba(200,169,110,0.50);
+            background: rgba(200,169,110,0.05);
+            box-shadow: 0 0 0 3px rgba(200,169,110,0.08);
+        }
+
+        input:-webkit-autofill,
+        input:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 1000px rgba(12,20,70,0.95) inset !important;
+            -webkit-text-fill-color: var(--text) !important;
+            border-color: rgba(200,169,110,0.35) !important;
+        }
+
+        .input-status { position: relative; }
+        .status-icon {
+            position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+            font-size: 14px; pointer-events: none;
+        }
+        .status-valid { color: var(--success); }
+        .status-invalid { color: var(--error); }
+        .status-checking { color: var(--gold); }
+
+        .field-hint {
+            font-size: 10px; margin-top: 4px; margin-bottom: 8px;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .hint-text { color: var(--muted); }
+        .hint-error { color: var(--error); }
+
+        #register-fields {
+            overflow: hidden; max-height: 0; opacity: 0;
+            transition: max-height 0.45s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease;
+        }
+
+        #register-fields.visible { max-height: 300px; opacity: 1; }
+
+        .forgot-pass-link {
+            display: block; text-align: right; font-size: 12px;
+            color: var(--gold-light); cursor: pointer;
+            margin-top: -4px; margin-bottom: 18px; font-weight: 500;
+            opacity: 0.80; transition: opacity 0.2s;
+        }
+
+        .forgot-pass-link:hover { opacity: 1; text-decoration: underline; }
+
+        .btn-submit {
+            width: 100%; height: 46px; padding: 0 20px;
+            border: none; border-radius: 10px;
+            background: var(--gold-solid); color: var(--navy);
+            font-family: 'DM Sans', sans-serif; font-size: 13.5px;
+            font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+            cursor: pointer; position: relative; overflow: hidden;
+            transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+            box-shadow: 0 4px 20px rgba(200,169,110,0.30), 0 1px 0 rgba(255,255,255,0.12) inset;
+            margin-top: 4px;
+        }
+
+        .btn-submit::before {
+            content: ''; position: absolute; top: 0; left: -100%;
+            width: 60%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.18), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn-submit:hover:not(:disabled) {
+            background: var(--gold-light); transform: translateY(-2px);
+            box-shadow: 0 8px 28px rgba(200,169,110,0.40), 0 1px 0 rgba(255,255,255,0.15) inset;
+        }
+        .btn-submit:hover::before { left: 160%; }
+        .btn-submit:active { transform: translateY(0); box-shadow: 0 2px 10px rgba(200,169,110,0.22); }
+        .btn-submit:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+
+        .separator {
+            display: flex; align-items: center; margin: 20px 0 16px;
+            color: rgba(240,233,214,0.25); font-size: 10px;
+            letter-spacing: 0.12em; text-transform: uppercase;
+        }
+        .separator::before, .separator::after { content: ''; flex: 1; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        .separator::before { margin-right: 14px; } .separator::after  { margin-left: 14px; }
+
+        .btn-google, .btn-microsoft {
+            background: rgba(255,255,255,0.04); color: rgba(244,238,221,0.80);
+            border: 1px solid rgba(255,255,255,0.09); padding: 0 16px;
+            height: 44px; width: 100%; border-radius: 10px;
+            font-family: 'DM Sans', sans-serif; font-weight: 500; font-size: 13.5px;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            cursor: pointer; margin-bottom: 10px;
+            transition: background 0.2s, border-color 0.2s, transform 0.15s, color 0.2s, box-shadow 0.2s;
+        }
+        .btn-google:hover, .btn-microsoft:hover {
+            background: rgba(200,169,110,0.07); border-color: rgba(200,169,110,0.30);
+            color: var(--text); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.20);
+        }
+        .btn-google img, .btn-microsoft img { width: 16px; flex-shrink: 0; }
+
+        .toggle-link {
+            display: block; margin-top: 22px; text-align: center;
+            color: var(--gold-light); font-weight: 500; font-size: 13px;
+            cursor: pointer; opacity: 0.75; transition: opacity 0.2s; text-decoration: none;
+        }
+        .toggle-link:hover { opacity: 1; text-decoration: underline; }
+
+        #loading-overlay {
+            position: fixed; inset: 0; background: rgba(12, 20, 70, 0.92);
+            display: none; justify-content: center; align-items: center;
+            flex-direction: column; gap: 18px; z-index: 9999;
+        }
+        .spinner {
+            width: 38px; height: 38px; border: 2px solid rgba(200,169,110,0.12);
+            border-top: 2px solid var(--gold); border-right: 2px solid rgba(200,169,110,0.40);
+            border-radius: 50%; animation: spin 0.75s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #loading-text { font-size: 12px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+
+        @media (max-width: 500px) { .auth-card { padding: 32px 22px 28px; border-radius: 16px; } .card-title { font-size: 24px; } }
     </style>
 </head>
 <body>
 
+    <canvas id="bg-canvas"></canvas>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div id="loading-text">Verifying...</div>
+    </div>
+
     <header>
-        <div class="header-inner">
-            <a href="/index.html" class="logo">Scor<em>alia</em></a>
-            <nav>
-                <ul>
-                    <li><a href="/search.html">Browse</a></li>
-                    <li><a href="/my-listings.html">My Listings</a></li>
-                    <li><a href="/messages.html">Messages</a></li>
-                </ul>
-            </nav>
-            <div class="header-right"></div>
+        <div class="header-content">
+            <button class="back-btn-mobile" id="mobile-back-btn" aria-label="Go back">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+            <a href="/index.html" class="logo">Scor<span>alia</span></a>
         </div>
     </header>
 
-    <div class="main-wrapper">
-        <div class="image-stage">
-            <div class="blurred-bg" id="blur-bg"></div>
-            <div class="main-image-container">
-                <button class="nav-arrow nav-prev" id="prev-img-btn" style="display:none;"><i class="fas fa-chevron-left"></i></button>
-                <img src="" alt="Listing Item" class="main-image" id="main-image">
-                <button class="nav-arrow nav-next" id="next-img-btn" style="display:none;"><i class="fas fa-chevron-right"></i></button>
-            </div>
-            <div class="thumbnails-overlay" id="thumbnail-container"></div>
-        </div>
+    <main class="auth-wrapper" id="auth-wrapper">
+        <div class="card-scene" id="card-scene">
+            <div class="auth-card" id="auth-card">
+                <div class="card-sheen" id="card-sheen"></div>
+                <div class="card-inner">
 
-        <div class="details-panel" id="details-container">
-            <div id="status-badge-area" class="status-badge-container"></div>
+                    <h2 class="card-title" id="form-title">Welcome Back</h2>
+                    <p class="card-subtitle" id="form-subtitle">Log in to continue shopping and selling.</p>
 
-            <h1 id="listing-title">Loading...</h1>
-            <div class="price-container">
-                <div class="price" id="listing-price"></div>
-                <div class="original-price" id="original-price-display"></div>
-            </div>
-            <div class="meta-info" id="listing-meta"></div>
+                    <div id="auth-error" class="error-message"></div>
 
-            <div class="action-buttons" id="main-action-buttons">
-                <button class="btn-primary" id="btn-message-seller">
-                    <i class="fas fa-paper-plane"></i><span data-i18n="btn_message">Message</span>
-                </button>
-                <button class="btn-icon" id="btn-save" title="Save"><i class="far fa-bookmark"></i></button>
-                <button class="btn-icon" id="btn-share" title="Share"><i class="fas fa-share-alt"></i></button>
-                <button class="btn-icon btn-report" id="btn-report-listing" title="Report" style="display:none;"><i class="fas fa-flag"></i></button>
-            </div>
-
-            <div class="section-header" data-i18n="details_title">Details</div>
-            <div class="info-row"><span class="info-label" data-i18n="condition_label">Condition</span><span class="info-value" id="listing-condition"></span></div>
-            <div class="info-row"><span class="info-label" data-i18n="access_code_label">Access Code</span><span class="info-value" id="listing-digital-code"></span></div>
-            <div class="info-row"><span class="info-label" data-i18n="location_label">Location</span><span class="info-value" id="location-text"></span></div>
-            <div class="info-row"><span class="info-label" data-i18n="label_meeting_point">Meeting Point</span><span class="info-value" id="listing-meeting-point"></span></div>
-            <div class="info-row"><span class="info-label" data-i18n="label_writing">Writing inside</span><span class="info-value" id="listing-writing"></span></div>
-            <div class="info-row"><span class="info-label" data-i18n="label_water">Water damage</span><span class="info-value" id="listing-water"></span></div>
-            <div class="info-row"><span class="info-label" data-i18n="label_missing">Missing pages</span><span class="info-value" id="listing-missing"></span></div>
-
-            <div class="section-header" data-i18n="description_title">Description</div>
-            <p class="description-text" id="listing-description"></p>
-
-            <div class="section-header" data-i18n="seller_title">Seller Information</div>
-            
-            <a href="#" id="seller-section-wrapper" class="seller-section-wrapper">
-                <div class="seller-section">
-                    <div id="seller-avatar-small"></div>
-                    <div>
-                        <div class="seller-name" id="seller-name-text">Loading...</div>
-                        <div id="seller-rating-container" class="seller-rating-display"></div>
-                        <div id="seller-badge-container" style="font-size:0.8rem; color:var(--text-muted);">Scoralia Member</div>
+                    <div class="student-tip" id="student-tip">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span id="student-tip-text">To get the <strong>Verified Student</strong> badge, sign in with your school's <strong>Microsoft</strong> account. School emails block verification links.</span>
                     </div>
+
+                    <form id="auth-form">
+                        <div id="register-fields">
+                            <div class="field-wrap">
+                                <label class="field-label" id="fullname-label">Full Name (max 15 letters)</label>
+                                <div class="input-status">
+                                    <input type="text" id="full-name" placeholder="Alex" maxlength="15" autocomplete="name">
+                                    <span class="status-icon" id="fullname-status"></span>
+                                </div>
+                                <div class="field-hint" id="fullname-hint">
+                                    <span class="hint-text">Letters only, no spaces</span>
+                                </div>
+                            </div>
+
+                            <div class="field-wrap">
+                                <label class="field-label" id="username-label">Username</label>
+                                <div class="input-status">
+                                    <input type="text" id="username" placeholder="alex_123" maxlength="30" autocomplete="off">
+                                    <span class="status-icon" id="username-status-icon"></span>
+                                </div>
+                                <div class="field-hint" id="username-hint">
+                                    <span class="hint-text" id="username-hint-text">Letters, numbers, _ and .</span>
+                                    <span id="username-availability"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="field-wrap">
+                            <label class="field-label" for="email">Email Address</label>
+                            <input type="email" id="email" placeholder="you@university.edu" required>
+                        </div>
+
+                        <div class="field-wrap">
+                            <label class="field-label" for="password">Password</label>
+                            <input type="password" id="password" placeholder="••••••••" required>
+                        </div>
+
+                        <a id="forgot-password-link" class="forgot-pass-link">Forgot Password?</a>
+
+                        <button type="submit" class="btn-submit" id="submit-btn" disabled>Log In</button>
+                    </form>
+
+                    <div class="separator" id="or-text">or</div>
+
+                    <button type="button" class="btn-google" id="google-btn">
+                        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
+                        <span id="google-btn-text">Continue with Google</span>
+                    </button>
+                    <button type="button" class="btn-microsoft" id="microsoft-btn">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="MS">
+                        <span id="microsoft-btn-text">Continue with Microsoft</span>
+                    </button>
+
+                    <a class="toggle-link" id="toggle-auth">New to Scoralia? Create an account.</a>
+
                 </div>
-            </a>
-
-            <div class="quick-message-container" id="quick-message-area">
-                <div class="quick-msg-label" data-i18n="quick_msg_label">Send a quick message</div>
-                <textarea class="quick-msg-input" id="quick-msg-text">Hi, is this available?</textarea>
-                <button class="btn-send" id="btn-quick-send" data-i18n="btn_send">Send</button>
-            </div>
-
-            <div class="related-section" id="related-section" style="display:none;">
-                <div class="section-header" data-i18n="related_title">Related Items</div>
-                <div class="related-grid" id="related-grid"></div>
-            </div>
-
-            <div class="admin-controls" id="admin-controls" style="display:none;">
-                <p style="color:var(--red); font-weight:bold; font-size:0.85rem; margin-bottom:8px; text-transform:uppercase;">Admin / Owner Zone</p>
-                <button class="btn-delete" id="delete-listing-btn">Delete Listing</button>
             </div>
         </div>
-    </div>
+    </main>
 
-    <div class="modal-overlay" id="report-modal">
-        <div class="modal-card">
-            <h2 id="modal-title">Report Listing</h2>
-            <p id="modal-desc">Why are you reporting this listing?</p>
-            <select id="report-reason">
-                <option value="Inappropriate Content">Inappropriate Content</option>
-                <option value="Scam or Fraud">Scam or Fraud</option>
-                <option value="Sold or Unavailable">Sold or Unavailable</option>
-                <option value="Other">Other</option>
-            </select>
-            <textarea id="report-details" placeholder="Provide more details..."></textarea>
-            <div class="modal-buttons">
-                <button class="btn-cancel-gray" id="close-report-btn">Cancel</button>
-                <button class="btn-submit-red" id="submit-report-btn">Submit</button>
-            </div>
-        </div>
-    </div>
+    <script>
+    (() => {
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let W, H, nodes =[];
+        const NODE_COUNT = 90;
+        const LINK_DIST  = 145;
+        const GOLD = { r:200, g:169, b:110 };
+
+        function resize() { W = canvas.width  = window.innerWidth; H = canvas.height = window.innerHeight; }
+        function mkNode() { return { x:  Math.random() * W, y:  Math.random() * H, vx: (Math.random() - 0.5) * 0.35, vy: (Math.random() - 0.5) * 0.35, r:  1 + Math.random() * 1.5, pulse: Math.random() * Math.PI * 2 }; }
+        function init() { resize(); nodes = Array.from({ length: NODE_COUNT }, mkNode); }
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+            const vignette = ctx.createRadialGradient(W/2, H/2, H*0.2, W/2, H/2, H*0.85);
+            vignette.addColorStop(0, 'rgba(12,20,70,0)'); vignette.addColorStop(1, 'rgba(6,10,35,0.35)');
+            ctx.fillStyle = vignette; ctx.fillRect(0, 0, W, H);
+
+            nodes.forEach(n => {
+                n.x += n.vx; n.y += n.vy;
+                if (n.x < 0 || n.x > W) n.vx *= -1;
+                if (n.y < 0 || n.y > H) n.vy *= -1;
+                n.pulse += 0.018;
+                const alpha = 0.30 + 0.20 * Math.sin(n.pulse);
+                ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2); ctx.fillStyle = `rgba(${GOLD.r},${GOLD.g},${GOLD.b},${alpha})`; ctx.fill();
+            });
+
+            for (let i = 0; i < nodes.length; i++) {
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const a = nodes[i], b = nodes[j]; const dx = a.x - b.x, dy = a.y - b.y; const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < LINK_DIST) {
+                        const alpha = (1 - dist / LINK_DIST) * 0.18;
+                        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.strokeStyle = `rgba(${GOLD.r},${GOLD.g},${GOLD.b},${alpha})`; ctx.lineWidth = 0.6; ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(draw);
+        }
+
+        window.addEventListener('resize', () => { resize(); });
+        init(); requestAnimationFrame(draw);
+
+        const scene = document.getElementById('card-scene'); const sheen = document.getElementById('card-sheen'); const wrapper = document.getElementById('auth-wrapper');
+        const MAX_TILT = 5;
+
+        wrapper.addEventListener('mousemove', e => {
+            const rect = scene.getBoundingClientRect(); const cx = rect.left + rect.width  / 2; const cy = rect.top  + rect.height / 2;
+            const dx = (e.clientX - cx) / (rect.width  / 2); const dy = (e.clientY - cy) / (rect.height / 2);
+            const rotY =  dx * MAX_TILT; const rotX = -dy * MAX_TILT * 0.6;
+            scene.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+            const mx = ((e.clientX - rect.left) / rect.width  * 100).toFixed(1); const my = ((e.clientY - rect.top)  / rect.height * 100).toFixed(1);
+            sheen.style.setProperty('--mx', `${mx}%`); sheen.style.setProperty('--my', `${my}%`);
+        });
+
+        wrapper.addEventListener('mouseleave', () => {
+            scene.style.transition = 'transform 0.6s cubic-bezier(0.22,1,0.36,1)'; scene.style.transform  = 'rotateX(0deg) rotateY(0deg)';
+            setTimeout(() => scene.style.transition = 'transform 0.1s ease-out', 620);
+        });
+
+        const backBtn = document.getElementById('mobile-back-btn');
+        if (backBtn) { backBtn.addEventListener('click', () => { if (document.referrer && document.referrer.includes(window.location.hostname)) { window.history.back(); } else { window.location.href = '/index.html'; } }); }
+    })();
+    </script>
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, serverTimestamp, deleteDoc, updateDoc, arrayUnion, arrayRemove, addDoc, collection, query, where, limit, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        // WE REVERTED TO signInWithPopup FOR BULLETPROOF OAUTH!
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendEmailVerification, sendPasswordResetEmail, onAuthStateChanged, GoogleAuthProvider, OAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
-            const response = await fetch(getFunctionUrl('config'));
+            const response = await fetch('/.netlify/functions/config');
             const config = await response.json();
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
+            const googleProvider = new GoogleAuthProvider();
+            const msProvider = new OAuthProvider('microsoft.com');
 
-            const mainImage = document.getElementById('main-image');
-            const blurBg = document.getElementById('blur-bg');
-            const thumbnailContainer = document.getElementById('thumbnail-container');
-            const saveBtn = document.getElementById('btn-save');
-            const shareBtn = document.getElementById('btn-share');
-            const reportBtn = document.getElementById('btn-report-listing');
-            const prevBtn = document.getElementById('prev-img-btn');
-            const nextBtn = document.getElementById('next-img-btn');
-            const sellerBadgeContainer = document.getElementById('seller-badge-container');
-            const sellerRatingContainer = document.getElementById('seller-rating-container');
+            const formTitle = document.getElementById('form-title');
+            const toggleLink = document.getElementById('toggle-auth');
+            const authForm = document.getElementById('auth-form');
+            const submitBtn = document.getElementById('submit-btn');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const forgotPasswordLink = document.getElementById('forgot-password-link');
 
-            let currentUser = null;
-            let currentListingData = null;
-            let currentListingId = null;
-            let currentImageIndex = 0;
-            let imageUrls = [];
-            let isSaved = false;
+            const registerFields = document.getElementById('register-fields');
+            const fullNameInput = document.getElementById('full-name');
+            const usernameInput = document.getElementById('username');
+            const fullnameStatus = document.getElementById('fullname-status');
+            const fullnameHint = document.getElementById('fullname-hint');
+            const usernameStatusIcon = document.getElementById('username-status-icon');
+            const usernameHintText = document.getElementById('username-hint-text');
+            const usernameAvailability = document.getElementById('username-availability');
+
+            let isLoginMode = true;
+            let isRegistering = false; 
+            let usernameCheckTimeout = null;
+            let isUsernameValid = false;
+            let isFullnameValid = false;
+            let isSubmitting = false;
 
             const lang = localStorage.getItem('preferred_language') || 'en';
-            
             const strings = {
-                en: { 
-                    reportTitle: "Report Listing", reportDesc: "Why are you reporting this?", reportPlaceholder: "Details...", reportSuccess: "Reported.", 
-                    opt1: "Inappropriate Content", opt2: "Scam or Fraud", opt3: "Sold or Unavailable", opt4: "Other", 
-                    sold: "SOLD", verifiedStudent: "Verified Student", member: "Scoralia Member", noRatings: "No ratings yet",
-                    btn_message: " Message", details_title: "Details", condition_label: "Condition", access_code_label: "Access Code", 
-                    location_label: "Location", label_meeting_point: "Meeting Point", label_writing: "Writing inside", 
-                    label_water: "Water damage", label_missing: "Missing pages", description_title: "Description", 
-                    seller_title: "Seller Information", quick_msg_label: "Send a quick message", btn_send: "Send", related_title: "Related Items",
-                    unavailable: "Listing is currently under review or unavailable.", no: "No", yes: "Yes",
-                    savedToast: "Item saved! View it in your",
-                    profileLink: "Profile",
-                    copyToast: "Link copied to clipboard!"
+                en: {
+                    loginTitle: "Welcome Back", loginSub: "Log in to continue shopping and selling.",
+                    regTitle: "Join Scoralia", regSub: "Create an account to start buying and selling.",
+                    socialMsg: "Log in or register to continue to the Campus Hub.",
+                    loginBtn: "Log In", regBtn: "Create Account",
+                    toggleToReg: "New to Scoralia? Create an account.", toggleToLogin: "Already have an account? Log in.",
+                    studentTip: "To get the <strong>Verified Student</strong> badge, you must sign in with your school's <strong>Microsoft</strong> account. School emails (like @crosemont.qc.ca) block our verification links, so Microsoft is the only reliable method.",
+                    fullNameLabel: "Full Name (max 15 letters)",
+                    fullNamePlaceholder: "Alex",
+                    fullNameHint: "Letters only, no spaces",
+                    fullNameValid: "✓ Looks good",
+                    fullNameInvalid: "Only letters, max 15 characters",
+                    usernameLabel: "Username",
+                    usernamePlaceholder: "alex_123",
+                    usernameHint: "Letters, numbers, _ and .",
+                    usernameAvailable: "✓ Available",
+                    usernameUnavailable: "✗ Already taken",
+                    usernameChecking: "Checking...",
+                    usernameInvalid: "Invalid characters",
+                    placeEmail: "Email Address", placePass: "Password",
+                    google: "Continue with Google", microsoft: "Continue with Microsoft", or: "or", verify: "Verifying...",
+                    errBanned: "Account banned.", errVerify: "Please verify your email first! A verification link was sent to your inbox.", 
+                    errSent: "Account created! Please check your email to verify your account before logging in.",
+                    forgotPass: "Forgot Password?", enterEmailFirst: "Please enter your email address to reset your password.", 
+                    resetSent: "Password reset email sent! Check your inbox.",
                 },
-                fr: { 
-                    reportTitle: "Signaler l'annonce", reportDesc: "Pourquoi signalez-vous cela ?", reportPlaceholder: "Détails...", reportSuccess: "Signalé.", 
-                    opt1: "Contenu inapproprié", opt2: "Arnaque ou Fraude", opt3: "Vendu ou Indisponible", opt4: "Autre", 
-                    sold: "VENDU", verifiedStudent: "Étudiant vérifié", member: "Membre Scoralia", noRatings: "Aucune évaluation",
-                    btn_message: " Message", details_title: "Détails", condition_label: "État", access_code_label: "Code d'accès", 
-                    location_label: "Emplacement", label_meeting_point: "Point de rencontre", label_writing: "Écritures à l'intérieur", 
-                    label_water: "Dommages causés par l'eau", label_missing: "Pages manquantes", description_title: "Description", 
-                    seller_title: "Informations sur le vendeur", quick_msg_label: "Envoyer un message rapide", btn_send: "Envoyer", related_title: "Articles similaires",
-                    unavailable: "L'annonce est en cours de révision ou indisponible.", no: "Non", yes: "Oui",
-                    savedToast: "Article enregistré ! Consultez-le dans votre",
-                    profileLink: "Profil",
-                    copyToast: "Lien copié dans le presse-papier !"
+                fr: {
+                    loginTitle: "Bon retour", loginSub: "Connectez-vous pour continuer vos achats et ventes.",
+                    regTitle: "Rejoindre Scoralia", regSub: "Créez un compte pour commencer à acheter et vendre.",
+                    socialMsg: "Connectez-vous ou inscrivez-vous pour continuer vers le Hub Campus.",
+                    loginBtn: "Connexion", regBtn: "Créer un compte",
+                    toggleToReg: "Nouveau sur Scoralia ? Créez un compte.", toggleToLogin: "Vous avez déjà un compte ? Connectez-vous.",
+                    studentTip: "Pour obtenir le badge <strong>Étudiant vérifié</strong>, vous devez vous connecter avec votre compte <strong>Microsoft</strong> scolaire. Les courriels scolaires (ex: @crosemont.qc.ca) bloquent nos liens de vérification ; Microsoft est la seule méthode fiable.",
+                    fullNameLabel: "Nom complet (max 15 lettres)",
+                    fullNamePlaceholder: "Alex",
+                    fullNameHint: "Lettres uniquement, sans espaces",
+                    fullNameValid: "✓ Parfait",
+                    fullNameInvalid: "Lettres seulement, max 15 caractères",
+                    usernameLabel: "Nom d'utilisateur",
+                    usernamePlaceholder: "alex_123",
+                    usernameHint: "Lettres, chiffres, _ et .",
+                    usernameAvailable: "✓ Disponible",
+                    usernameUnavailable: "✗ Déjà pris",
+                    usernameChecking: "Vérification...",
+                    usernameInvalid: "Caractères invalides",
+                    placeEmail: "Adresse e-mail", placePass: "Mot de passe",
+                    google: "Continuer avec Google", microsoft: "Continuer avec Microsoft", or: "ou", verify: "Vérification...",
+                    errBanned: "Compte banni.", errVerify: "Veuillez d'abord vérifier votre e-mail ! Un lien de vérification a été envoyé.",
+                    errSent: "Compte créé ! Veuillez vérifier votre boîte mail pour activer votre compte avant de vous connecter.",
+                    forgotPass: "Mot de passe oublié ?", enterEmailFirst: "Veuillez entrer votre adresse e-mail pour réinitialiser le mot de passe.", 
+                    resetSent: "E-mail de réinitialisation envoyé ! Vérifiez votre boîte de réception.",
                 }
             };
 
-            const dataTranslations = {
-                fr: { "New": "Neuf", "Like New": "Comme neuf", "Good": "Bon état", "Fair": "État correct", "Not applicable": "Non applicable", "Available / Unused": "Disponible / Inutilisé", "Already used": "Déjà utilisé", "N/A": "N/O", "To be discussed": "À discuter" }
-            };
+            const urlParams = new URLSearchParams(window.location.search);
+            const msgParam = urlParams.get('msg');
 
-            document.querySelectorAll('[data-i18n]').forEach(el => {
-                const key = el.getAttribute('data-i18n');
-                if (strings[lang] && strings[lang][key]) el.innerHTML = strings[lang][key]; 
-            });
-
-            function translateData(value) {
-                if (value === true) return strings[lang].yes;
-                if (value === false || value === undefined || value === null || value === "") return strings[lang].no;
-                if (lang === 'fr' && dataTranslations.fr[value]) return dataTranslations.fr[value];
-                return value;
-            }
-
-            // Custom toast notification system
-            function showToast(message, isSaveToast = false) {
-                // Remove any existing toast
-                const existingToast = document.querySelector('.toast-message');
-                if (existingToast) existingToast.remove();
-
-                const toast = document.createElement('div');
-                toast.className = 'toast-message';
-                
-                if (isSaveToast) {
-                    toast.innerHTML = `
-                        <i class="fas fa-bookmark"></i>
-                        <span>${message} <a href="/profile.html">${strings[lang].profileLink} →</a></span>
-                    `;
+            function applyUIText() {
+                formTitle.textContent = isLoginMode ? strings[lang].loginTitle : strings[lang].regTitle;
+                if (msgParam === 'social') {
+                    document.getElementById('form-subtitle').textContent = strings[lang].socialMsg;
                 } else {
-                    toast.innerHTML = `
-                        <i class="fas fa-check-circle"></i>
-                        <span>${message}</span>
-                    `;
+                    document.getElementById('form-subtitle').textContent = isLoginMode ? strings[lang].loginSub : strings[lang].regSub;
                 }
+                submitBtn.textContent = isLoginMode ? strings[lang].loginBtn : strings[lang].regBtn;
+                toggleLink.textContent = isLoginMode ? strings[lang].toggleToReg : strings[lang].toggleToLogin;
+                document.getElementById('student-tip-text').innerHTML = strings[lang].studentTip;
+                document.getElementById('fullname-label').textContent = strings[lang].fullNameLabel;
+                fullNameInput.placeholder = strings[lang].fullNamePlaceholder;
+                document.getElementById('username-label').textContent = strings[lang].usernameLabel;
+                usernameInput.placeholder = strings[lang].usernamePlaceholder;
+                document.getElementById('email').placeholder = strings[lang].placeEmail;
+                document.getElementById('password').placeholder = strings[lang].placePass;
+                document.getElementById('google-btn-text').textContent = strings[lang].google;
+                document.getElementById('microsoft-btn-text').textContent = strings[lang].microsoft;
+                document.getElementById('or-text').textContent = strings[lang].or;
+                document.getElementById('loading-text').textContent = strings[lang].verify;
+                forgotPasswordLink.textContent = strings[lang].forgotPass;
                 
-                document.body.appendChild(toast);
-                
-                // Auto-remove after animation ends (4 seconds total)
-                setTimeout(() => {
-                    if (toast.parentNode) toast.remove();
-                }, 4000);
+                updateFullnameUI();
+                updateUsernameUI();
             }
 
-            onAuthStateChanged(auth, user => {
-                currentUser = user;
-                if (lang === 'fr') document.getElementById('quick-msg-text').value = "Bonjour, est-ce disponible ?";
-                if (user) reportBtn.style.display = 'flex';
-                fetchAndDisplayListing();
+            function isValidFullName(name) { return /^[A-Za-z]{1,15}$/.test(name); }
+            function isValidUsernameFormat(username) { return /^[a-zA-Z0-9_.]{1,30}$/.test(username); }
+
+            async function checkUsernameAvailability(username) {
+                if (!username || username.length < 1) return false;
+                const q = query(collection(db, "users"), where("username", "==", username.toLowerCase()));
+                const snapshot = await getDocs(q);
+                return snapshot.empty;
+            }
+
+            function updateFullnameUI() {
+                const name = fullNameInput.value.trim();
+                if (!name) {
+                    fullnameStatus.innerHTML = '';
+                    fullnameHint.innerHTML = `<span class="hint-text">${strings[lang].fullNameHint}</span>`;
+                    isFullnameValid = false;
+                } else if (isValidFullName(name)) {
+                    fullnameStatus.innerHTML = '<i class="fas fa-check-circle status-valid"></i>';
+                    fullnameHint.innerHTML = `<span class="hint-text" style="color: var(--success);">${strings[lang].fullNameValid}</span>`;
+                    isFullnameValid = true;
+                } else {
+                    fullnameStatus.innerHTML = '<i class="fas fa-times-circle status-invalid"></i>';
+                    fullnameHint.innerHTML = `<span class="hint-error">${strings[lang].fullNameInvalid}</span>`;
+                    isFullnameValid = false;
+                }
+                updateSubmitButton();
+            }
+
+            async function updateUsernameUI() {
+                const username = usernameInput.value.trim();
+                if (!username) {
+                    usernameStatusIcon.innerHTML = '';
+                    usernameHintText.textContent = strings[lang].usernameHint;
+                    usernameAvailability.textContent = '';
+                    isUsernameValid = false;
+                    updateSubmitButton();
+                    return;
+                }
+
+                if (!isValidUsernameFormat(username)) {
+                    usernameStatusIcon.innerHTML = '<i class="fas fa-times-circle status-invalid"></i>';
+                    usernameHintText.textContent = strings[lang].usernameInvalid;
+                    usernameAvailability.textContent = '';
+                    isUsernameValid = false;
+                    updateSubmitButton();
+                    return;
+                }
+
+                usernameStatusIcon.innerHTML = '<i class="fas fa-spinner fa-spin status-checking"></i>';
+                usernameHintText.textContent = strings[lang].usernameHint;
+                usernameAvailability.textContent = strings[lang].usernameChecking;
+                isUsernameValid = false;
+                updateSubmitButton();
+
+                if (usernameCheckTimeout) clearTimeout(usernameCheckTimeout);
+                usernameCheckTimeout = setTimeout(async () => {
+                    const available = await checkUsernameAvailability(username);
+                    if (available) {
+                        usernameStatusIcon.innerHTML = '<i class="fas fa-check-circle status-valid"></i>';
+                        usernameAvailability.textContent = strings[lang].usernameAvailable;
+                        usernameAvailability.style.color = 'var(--success)';
+                        isUsernameValid = true;
+                    } else {
+                        usernameStatusIcon.innerHTML = '<i class="fas fa-times-circle status-invalid"></i>';
+                        usernameAvailability.textContent = strings[lang].usernameUnavailable;
+                        usernameAvailability.style.color = 'var(--error)';
+                        isUsernameValid = false;
+                    }
+                    updateSubmitButton();
+                }, 500);
+            }
+
+            function updateSubmitButton() {
+                if (isLoginMode) { submitBtn.disabled = false; return; }
+                const email = document.getElementById('email').value.trim();
+                const pass = document.getElementById('password').value;
+                submitBtn.disabled = !(isFullnameValid && isUsernameValid && email && pass);
+            }
+
+            fullNameInput.addEventListener('input', updateFullnameUI);
+            usernameInput.addEventListener('input', updateUsernameUI);
+            document.getElementById('email').addEventListener('input', updateSubmitButton);
+            document.getElementById('password').addEventListener('input', updateSubmitButton);
+
+            const schoolDomains = {
+                "@etu.cegepjonquiere.ca": "Cégep de Jonquière",
+                "@cegep-lanaudiere.qc.ca": "Cégep de Lanaudière",
+                "@etu.cegep-lanaudiere.qc.ca": "Cégep de Lanaudière",
+                "@crosemont.qc.ca": "Cégep de Rosemont",
+                "@cmaisonneuve.qc.ca": "Cégep Maisonneuve",
+                "@cegepmv.qc.ca": "Cégep Marie-Victorin",
+                "@collegeahuntsic.qc.ca": "Collège Ahuntsic",
+                "@dawsoncollege.qc.ca": "Dawson College",
+                "@usherbrooke.ca": "Université de Sherbrooke",
+                "@ulaval.ca": "Université Laval"
+            };
+
+            function getSchoolInfo(email) {
+                const domain = email.substring(email.lastIndexOf("@")).toLowerCase();
+                return schoolDomains[domain] ? { isStudent: true, schoolName: schoolDomains[domain] } : { isStudent: false, schoolName: null };
+            }
+
+            async function handleOAuth(provider) {
+                try {
+                    loadingOverlay.style.display = 'flex';
+                    const result = await signInWithPopup(auth, provider);
+                    const user = result.user;
+                    const userDocRef = doc(db, "users", user.uid);
+                    const userDoc = await getDoc(userDocRef);
+                    
+                    if (!userDoc.exists()) {
+                        const displayName = user.displayName || '';
+                        const email = user.email || '';
+                        const schoolInfo = getSchoolInfo(email);
+                        await setDoc(userDocRef, {
+                            uid: user.uid,
+                            displayName: displayName,
+                            username: '', // Settled during global tour
+                            email: email,
+                            role: 'user',
+                            isStudent: schoolInfo.isStudent,
+                            schoolName: schoolInfo.schoolName,
+                            createdAt: new Date().toISOString()
+                        });
+                    }
+                    // Let onAuthStateChanged handle the actual redirect
+                } catch (e) {
+                    loadingOverlay.style.display = 'none';
+                    if (e.code !== 'auth/popup-closed-by-user') {
+                        alert(e.message);
+                    }
+                }
+            }
+
+            document.getElementById('google-btn').onclick = () => handleOAuth(googleProvider);
+            document.getElementById('microsoft-btn').onclick = () => handleOAuth(msProvider);
+
+            // 2. The Single Source of Truth for Session State
+            onAuthStateChanged(auth, async (user) => {
+                if (isRegistering) return; // Ignore state changes during registration flow
+
+                if (user) {
+                    loadingOverlay.style.display = 'flex';
+                    
+                    const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
+                    
+                    // Enforce email verification for email/password users
+                    if (!isOAuth && !user.emailVerified) {
+                        await signOut(auth);
+                        loadingOverlay.style.display = 'none';
+                        alert(strings[lang].errVerify);
+                        return; 
+                    }
+
+                    try {
+                        const userDocRef = doc(db, "users", user.uid);
+                        const userDoc = await getDoc(userDocRef);
+                        if (userDoc.exists()) {
+                            const data = userDoc.data();
+                            if (data && data.role === 'banned') {
+                                await signOut(auth);
+                                loadingOverlay.style.display = 'none';
+                                alert(strings[lang].errBanned);
+                                return;
+                            }
+                        }
+                        
+                        // All clear -> Redirect
+                        window.location.href = new URLSearchParams(window.location.search).get('redirect') || '/index.html';
+                    } catch(e) {
+                        console.error(e);
+                        loadingOverlay.style.display = 'none';
+                    }
+                } else {
+                    loadingOverlay.style.display = 'none';
+                }
             });
 
-            async function fetchAndDisplayListing() {
-                const params = new URLSearchParams(window.location.search);
-                currentListingId = params.get('id');
-                if (!currentListingId) { window.location.href = '/index.html'; return; }
+            forgotPasswordLink.onclick = async () => {
+                const emailVal = document.getElementById('email').value.trim();
+                if (!emailVal) { alert(strings[lang].enterEmailFirst); return; }
+                try { await sendPasswordResetEmail(auth, emailVal); alert(strings[lang].resetSent); } 
+                catch (e) { alert(e.message); }
+            };
 
+            toggleLink.onclick = () => {
+                isLoginMode = !isLoginMode;
+                if (!isLoginMode) {
+                    registerFields.style.display = 'block';
+                    setTimeout(() => registerFields.classList.add('visible'), 10);
+                    isFullnameValid = false; isUsernameValid = false; updateSubmitButton();
+                } else {
+                    registerFields.classList.remove('visible');
+                    setTimeout(() => registerFields.style.display = '', 450);
+                    submitBtn.disabled = false;
+                }
+                forgotPasswordLink.style.display = isLoginMode ? 'block' : 'none';
+                applyUIText();
+            };
+
+            // 3. Form Submit
+            authForm.onsubmit = async (e) => {
+                e.preventDefault();
+                if (isSubmitting) return;
+                isSubmitting = true; submitBtn.disabled = true;
+                const email = document.getElementById('email').value.toLowerCase();
+                const pass = document.getElementById('password').value;
+                
                 try {
-                    const listingRef = doc(db, 'listings', currentListingId);
-                    const listingSnap = await getDoc(listingRef);
-                    if (!listingSnap.exists()) { document.getElementById('listing-title').textContent = "Listing not found."; return; }
-
-                    const data = listingSnap.data();
-                    currentListingData = data;
-
-                    // --- SECURITY: DIRECT LINK PROTECTION ---
-                    if (data.status === 'pending' || data.status === 'rejected') {
-                        const isOwner = currentUser && currentUser.uid === data.posterUid;
-                        const isAdmin = currentUser && currentUser.role === 'admin';
-                        if (!isOwner && !isAdmin) {
-                            document.getElementById('listing-title').textContent = strings[lang].unavailable;
-                            document.getElementById('listing-price').style.display = 'none';
-                            document.getElementById('original-price-display').style.display = 'none';
-                            document.getElementById('main-action-buttons').style.display = 'none';
-                            document.getElementById('seller-section-wrapper').style.display = 'none';
-                            document.getElementById('quick-message-area').style.display = 'none';
-                            return;
-                        }
-                    }
-
-                    let shortTitle = data.title;
-                    if(shortTitle) {
-                        const words = shortTitle.split(' ');
-                        shortTitle = words.length > 3 ? words.slice(0, 3).join(' ') + '...' : shortTitle;
-                    }
-                    document.title = `${shortTitle} — Scoralia`;
-
-                    if (currentUser && currentUser.uid === data.posterUid) {
-                        reportBtn.style.display = 'none';
-                        document.getElementById('btn-message-seller').style.display = 'none';
-                        document.getElementById('quick-message-area').style.display = 'none';
-                    }
-
-                    document.getElementById('listing-title').textContent = data.title;
-                    
-                    const statusArea = document.getElementById('status-badge-area');
-                    if (data.status === 'sold') {
-                        statusArea.innerHTML = `<span class="status-badge status-sold">${strings[lang].sold}</span>`;
-                        document.getElementById('btn-message-seller').style.display = 'none';
-                        document.getElementById('btn-save').style.display = 'none';
-                        document.getElementById('quick-message-area').style.display = 'none';
-                    } else if (data.status === 'pending') {
-                        statusArea.innerHTML = `<span class="status-badge status-pending">⏳ IN REVIEW</span>`;
-                    } else if (data.status === 'rejected') {
-                        statusArea.innerHTML = `<span class="status-badge status-rejected">❌ REJECTED</span>`;
-                    }
-
-                    document.getElementById('listing-price').textContent = `$${data.price.toFixed(2)}`;
-                    if (data.originalPrice) {
-                        document.getElementById('original-price-display').textContent = `$${data.originalPrice.toFixed(2)}`;
-                        document.getElementById('original-price-display').style.display = 'block';
-                    }
-
-                    const date = data.timestamp ? new Date(data.timestamp.toDate()).toLocaleDateString() : '';
-                    const metaPrefix = lang === 'fr' ? 'Publié le' : 'Listed';
-                    document.getElementById('listing-meta').textContent = `${metaPrefix} ${date} • ${translateData(data.location)}`;
-                    document.getElementById('location-text').textContent = translateData(data.location);
-                    document.getElementById('listing-condition').textContent = translateData(data.condition || "Used");
-                    document.getElementById('listing-digital-code').textContent = translateData(data.digitalCode || "N/A");
-                    document.getElementById('listing-meeting-point').textContent = data.meetingPoint || (lang === 'fr' ? "À discuter" : "To be discussed");
-                    
-                    document.getElementById('listing-writing').textContent = translateData(data.hasWriting === true);
-                    document.getElementById('listing-water').textContent = translateData(data.hasWaterDamage === true);
-                    document.getElementById('listing-missing').textContent = translateData(data.hasMissingPages === true);
-                    
-                    document.getElementById('listing-description').textContent = data.description;
-                    
-                    document.getElementById('seller-section-wrapper').href = `/user.html?id=${data.posterUid}`;
-                    document.getElementById('seller-name-text').textContent = data.posterDisplayName || "User";
-
-                    if (data.posterUid) {
-                        try {
-                            const sellerDoc = await getDoc(doc(db, "users", data.posterUid));
-                            if (sellerDoc.exists()) {
-                                const sellerData = sellerDoc.data();
-                                if (sellerData.photoURL) document.getElementById('seller-avatar-small').style.backgroundImage = `url('${sellerData.photoURL}')`;
-                                if (sellerData.ratingCount && sellerData.ratingCount > 0) {
-                                    const avg = (sellerData.ratingSum / sellerData.ratingCount).toFixed(1);
-                                    let starsHtml = '';
-                                    for (let i = 1; i <= 5; i++) {
-                                        if (avg >= i) starsHtml += '<i class="fas fa-star"></i>';
-                                        else if (avg >= i - 0.5) starsHtml += '<i class="fas fa-star-half-alt"></i>';
-                                        else starsHtml += '<i class="far fa-star"></i>';
-                                    }
-                                    sellerRatingContainer.innerHTML = `${starsHtml} <span style="color:var(--text-muted); font-size:0.8rem;">(${avg})</span>`;
-                                } else {
-                                    sellerRatingContainer.innerHTML = `<span style="color:var(--text-muted);">${strings[lang].noRatings}</span>`;
-                                }
-                                if (sellerData.isStudent) sellerBadgeContainer.innerHTML = `<span class="verified-student-badge"><i class="fas fa-graduation-cap"></i> ${strings[lang].verifiedStudent}</span>`;
-                                else sellerBadgeContainer.textContent = strings[lang].member;
-                            }
-                        } catch (e) { console.error(e); }
-                    }
-
-                    imageUrls = data.imageUrls || [];
-                    if (imageUrls.length > 0) {
-                        updateMainImage(0);
-                        thumbnailContainer.innerHTML = '';
-                        if (imageUrls.length > 1) {
-                            prevBtn.style.display = 'flex';
-                            nextBtn.style.display = 'flex';
-                            thumbnailContainer.style.display = 'flex';
-                            imageUrls.forEach((url, index) => {
-                                const img = document.createElement('img');
-                                img.src = url; img.className = `thumb ${index === 0 ? 'active' : ''}`;
-                                img.onclick = () => updateMainImage(index);
-                                thumbnailContainer.appendChild(img);
-                            });
+                    if (isLoginMode) {
+                        loadingOverlay.style.display = 'flex';
+                        const cred = await signInWithEmailAndPassword(auth, email, pass);
+                        
+                        const isOAuth = cred.user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
+                        if (!isOAuth && !cred.user.emailVerified) {
+                            await signOut(auth);
+                            throw new Error(strings[lang].errVerify);
                         }
                     } else {
-                        mainImage.style.display = 'none';
-                        document.querySelector('.main-image-container').innerHTML = '<i class="fas fa-image" style="font-size: 4rem; color: #cbd5e1;"></i><div style="color:var(--text-muted); margin-top:10px;">No Image Available</div>';
-                    }
-
-                    if (currentUser) {
-                        const userSnap = await getDoc(doc(db, "users", currentUser.uid));
-                        if (userSnap.exists()) {
-                            const ud = userSnap.data();
-                            if (ud.savedListings && ud.savedListings.includes(currentListingId)) { isSaved = true; updateSaveIcon(); }
-                            if (currentUser.uid === data.posterUid || ud.role === 'admin') {
-                                document.getElementById('admin-controls').style.display = 'block';
-                                document.getElementById('delete-listing-btn').onclick = () => deleteListing(currentListingId, ud.role === 'admin');
-                            }
+                        const fullName = fullNameInput.value.trim();
+                        const username = usernameInput.value.trim().toLowerCase();
+                        
+                        if (!isFullnameValid || !isUsernameValid) {
+                            throw new Error("Please fix the errors before submitting.");
                         }
-                    }
-
-                    if (data.tags && data.tags.length > 0) { fetchRelatedListings(data.tags, currentListingId); }
-
-                } catch (error) { console.error(error); }
-            }
-
-            async function fetchRelatedListings(tags, currentId) {
-                const grid = document.getElementById('related-grid');
-                const section = document.getElementById('related-section');
-                const searchTags = tags.slice(0, 10);
-                
-                const q = query(collection(db, "listings"), where("tags", "array-contains-any", searchTags), limit(6));
-                const snap = await getDocs(q);
-                
-                const related = snap.docs.filter(d => d.id !== currentId && d.data().status === 'active').slice(0, 4);
-                
-                if (related.length > 0) {
-                    section.style.display = 'block'; grid.innerHTML = '';
-                    related.forEach(rdoc => {
-                        const rd = rdoc.data();
-                        const rLink = document.createElement('a');
-                        rLink.className = 'related-card'; rLink.href = `/listing.html?id=${rdoc.id}`;
-                        rLink.innerHTML = `<div class="related-img" style="background-image:url('${rd.imageUrls?.[0] || ''}')"></div><div class="related-info"><div class="related-title">${rd.title}</div><div class="related-price">$${rd.price.toFixed(2)}</div></div>`;
-                        grid.appendChild(rLink);
-                    });
-                }
-            }
-
-            const reportModal = document.getElementById('report-modal');
-            document.getElementById('btn-report-listing').onclick = () => {
-                document.getElementById('modal-title').textContent = strings[lang].reportTitle;
-                document.getElementById('modal-desc').textContent = strings[lang].reportDesc;
-                document.getElementById('report-details').placeholder = strings[lang].reportPlaceholder;
-                const opts = document.getElementById('report-reason').options;
-                opts[0].text = strings[lang].opt1; opts[1].text = strings[lang].opt2;
-                opts[2].text = strings[lang].opt3; opts[3].text = strings[lang].opt4;
-                reportModal.style.display = 'flex';
-            };
-            document.getElementById('close-report-btn').onclick = () => reportModal.style.display = 'none';
-            document.getElementById('submit-report-btn').onclick = async () => {
-                const reason = document.getElementById('report-reason').value;
-                const details = document.getElementById('report-details').value.trim();
-                await addDoc(collection(db, "reports"), { reporterUid: currentUser.uid, reporterName: currentUser.displayName, targetUid: currentListingData.posterUid, targetUserName: currentListingData.posterDisplayName, reason: "Listing: " + reason, details: `Item: ${currentListingData.title} (${currentListingId})\n\n${details}`, timestamp: serverTimestamp() });
-                showToast(strings[lang].reportSuccess);
-                reportModal.style.display = 'none';
-            };
-
-            function updateMainImage(index) {
-                currentImageIndex = index;
-                const url = imageUrls[index];
-                if (url) {
-                    mainImage.style.animation = 'none';
-                    mainImage.offsetHeight;
-                    mainImage.style.animation = 'imagePop 0.3s ease both';
-                    mainImage.src = url;
-                    blurBg.style.backgroundImage = `url('${url}')`;
-                }
-                document.querySelectorAll('.thumb').forEach((thumb, i) => { thumb.classList.toggle('active', i === index); });
-            }
-
-            prevBtn.onclick = () => { if (imageUrls.length <= 1) return; let n = currentImageIndex - 1; if (n < 0) n = imageUrls.length - 1; updateMainImage(n); };
-            nextBtn.onclick = () => { if (imageUrls.length <= 1) return; let n = currentImageIndex + 1; if (n >= imageUrls.length) n = 0; updateMainImage(n); };
-
-            // 🔥 FIXED: Robust chat creation that queries first and uses addDoc to avoid update permission issues
-            async function createChat(posterUid, posterName, initialMessage = null) {
-                if (!currentUser) {
-                    window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
-                    return;
-                }
-                if (currentUser.uid === posterUid) {
-                    showToast("You cannot message yourself.");
-                    return;
-                }
-
-                try {
-                    // Check if a chat already exists for this listing between these two users
-                    const existingQuery = query(
-                        collection(db, "chats"),
-                        where("listingId", "==", currentListingId),
-                        where("participants", "array-contains", currentUser.uid)
-                    );
-                    const existingSnap = await getDocs(existingQuery);
-                    let chatId = null;
-                    for (const docSnap of existingSnap.docs) {
-                        const data = docSnap.data();
-                        if (data.participants.includes(posterUid)) {
-                            chatId = docSnap.id;
-                            break;
-                        }
-                    }
-
-                    if (chatId) {
-                        // Chat exists, just redirect
-                        window.location.href = `/chat.html?id=${chatId}`;
-                        return;
-                    }
-
-                    // Create a new chat with a random ID (addDoc)
-                    const participants = [currentUser.uid, posterUid];
-                    const chatRef = await addDoc(collection(db, "chats"), {
-                        participants: participants,
-                        listingId: currentListingId,
-                        listingTitle: currentListingData.title,
-                        participantInfo: {
-                            [currentUser.uid]: currentUser.displayName || "You",
-                            [posterUid]: posterName
-                        },
-                        lastMessage: initialMessage || "",
-                        lastUpdate: serverTimestamp(),
-                        createdAt: serverTimestamp(),
-                        unreadBy: [posterUid]  // seller gets the first notification
-                    });
-
-                    chatId = chatRef.id;
-
-                    // Send initial message if provided
-                    if (initialMessage) {
-                        await addDoc(collection(db, "chats", chatId, "messages"), {
-                            text: initialMessage,
-                            senderId: currentUser.uid,
-                            timestamp: serverTimestamp()
+                        
+                        isRegistering = true; // Lock onAuthStateChanged
+                        loadingOverlay.style.display = 'flex';
+                        
+                        // Creates the user inside Firebase Auth
+                        const cred = await createUserWithEmailAndPassword(auth, email, pass);
+                        
+                        // Save name to Auth and DB
+                        await updateProfile(cred.user, { displayName: fullName });
+                        
+                        const schoolInfo = getSchoolInfo(email);
+                        const userRef = doc(db, "users", cred.user.uid);
+                        await setDoc(userRef, {
+                            uid: cred.user.uid,
+                            displayName: fullName,
+                            username: username.toLowerCase(),
+                            email: email,
+                            role: 'user',
+                            isStudent: schoolInfo.isStudent,
+                            schoolName: schoolInfo.schoolName,
+                            createdAt: new Date().toISOString()
                         });
-                        await updateDoc(doc(db, "chats", chatId), {
-                            lastMessage: initialMessage,
-                            lastUpdate: serverTimestamp(),
-                            lastSenderId: currentUser.uid
-                        });
+                        
+                        // Send link and immediately sign them out
+                        await sendEmailVerification(cred.user);
+                        await signOut(auth);
+                        
+                        loadingOverlay.style.display = 'none';
+                        isRegistering = false; // Unlock
+                        
+                        alert(strings[lang].errSent);
+                        location.reload(); // Restarts the page in login mode
                     }
-
-                    window.location.href = `/chat.html?id=${chatId}`;
-                } catch (error) {
-                    console.error("Error creating chat:", error);
-                    showToast("Could not start chat. Please try again.");
-                }
-            }
-
-            document.getElementById('btn-message-seller').onclick = () => createChat(currentListingData.posterUid, currentListingData.posterDisplayName);
-            document.getElementById('btn-quick-send').onclick = () => {
-                const msg = document.getElementById('quick-msg-text').value.trim();
-                createChat(currentListingData.posterUid, currentListingData.posterDisplayName, msg !== "" ? msg : null);
-            };
-
-            function updateSaveIcon() {
-                const icon = saveBtn.querySelector('i');
-                if (isSaved) { icon.classList.replace('far', 'fas'); icon.style.color = 'var(--gold)'; }
-                else { icon.classList.replace('fas', 'far'); icon.style.color = ''; }
-            }
-
-            saveBtn.onclick = async () => {
-                if (!currentUser) { window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`; return; }
-                const userRef = doc(db, "users", currentUser.uid);
-                if (isSaved) { 
-                    await updateDoc(userRef, { savedListings: arrayRemove(currentListingId) }); 
-                    isSaved = false; 
-                } else { 
-                    await updateDoc(userRef, { savedListings: arrayUnion(currentListingId) }); 
-                    isSaved = true; 
-                    showToast(strings[lang].savedToast, true);
-                }
-                updateSaveIcon();
-            };
-
-            shareBtn.onclick = async () => {
-                const url = window.location.href;
-                if (navigator.share) { 
-                    try { 
-                        await navigator.share({ title: currentListingData.title, url }); 
-                    } catch { 
-                        await navigator.clipboard.writeText(url); 
-                        showToast(strings[lang].copyToast);
-                    } 
-                } else { 
-                    await navigator.clipboard.writeText(url); 
-                    showToast(strings[lang].copyToast);
+                } catch (err) {
+                    loadingOverlay.style.display = 'none';
+                    alert(err.message);
+                    isSubmitting = false; submitBtn.disabled = false; isRegistering = false;
                 }
             };
 
-            async function deleteListing(docId) { if (confirm("Delete listing?")) { await deleteDoc(doc(db, 'listings', docId)); window.location.href = '/index.html'; } }
+            applyUIText();
         }
         main();
     </script>
