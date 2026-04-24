@@ -42,7 +42,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // Track index visits for PWA prompt logic – only increment on index page
-const isIndexPage = window.location.pathname === '/' || window.location.pathname.includes('index.html');
+const isIndexPage = window.location.pathname === '/' || window.location.pathname.includes('/');
 if (isIndexPage) {
     if (!sessionStorage.getItem('index_visited_this_session')) {
         let visits = parseInt(localStorage.getItem('pwa_index_visits') || '0');
@@ -54,7 +54,7 @@ if (isIndexPage) {
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
     // Only show on the index page
-    const isIndex = window.location.pathname === '/' || window.location.pathname.includes('index.html');
+    const isIndex = window.location.pathname === '/' || window.location.pathname.includes('/');
     if (!isIndex) return;
 
     e.preventDefault();
@@ -66,15 +66,9 @@ window.addEventListener('beforeinstallprompt', (e) => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
     if (isStandalone) return;
 
-    let dismissCount = parseInt(localStorage.getItem('pwa_dismiss_count') || '0');
+    // Show every 5 visits
     let indexVisits = parseInt(localStorage.getItem('pwa_index_visits') || '0');
-    
-    let threshold = 0;
-    if (dismissCount === 1) threshold = 3;
-    else if (dismissCount === 2) threshold = 10;
-    else if (dismissCount >= 3) threshold = 14;
-
-    if (indexVisits >= threshold) {
+    if (indexVisits > 0 && indexVisits % 5 === 0) {
         showInstallPromotion();
     }
 });
@@ -113,15 +107,15 @@ function showInstallPromotion() {
         if (deferredPrompt) {
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+                localStorage.setItem('pwa_installed', 'true');
+            }
             deferredPrompt = null;
         }
     });
 
     document.getElementById('btn-pwa-dismiss').addEventListener('click', () => {
         banner.style.display = 'none';
-        let currentCount = parseInt(localStorage.getItem('pwa_dismiss_count') || '0');
-        localStorage.setItem('pwa_dismiss_count', (currentCount + 1).toString());
-        localStorage.setItem('pwa_index_visits', '0');
     });
 }
 
@@ -238,12 +232,11 @@ async function triggerBotChallenge() {
 
         window.onTurnstileSuccess = async (token) => {
             try {
-                // In global.js, inside window.onTurnstileSuccess
-const res = await fetch(getFunctionUrl('verify-bot'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },   // <--- ADD THIS LINE
-    body: JSON.stringify({ token: token })
-});
+                const res = await fetch(getFunctionUrl('verify-bot'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ token: token })
+                });
                 const data = await res.json();
                 if (data.success) {
                     document.getElementById('bot-shield-overlay').remove();
@@ -450,6 +443,73 @@ globalStyle.innerHTML = `
     .warning-btn { background: #ef4444; color: white; border: none; padding: 12px 30px; border-radius: 30px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; }
     .warning-btn:hover { background: #dc2626; transform: translateY(-2px); }
 
+    /* ── BOTTOM NAVIGATION BAR (mobile only) ── */
+    .bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background: var(--white, #FFFFFF);
+        border-top: 1px solid rgba(179,205,224,0.3);
+        display: none;
+        justify-content: space-around;
+        align-items: center;
+        padding: 10px 0;
+        padding-bottom: calc(10px + env(safe-area-inset-bottom));
+        z-index: 1000;
+        box-shadow: 0 -2px 12px rgba(12,20,70,0.08);
+    }
+
+    .bottom-nav a {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-decoration: none;
+        color: var(--text-muted, #64748b);
+        font-size: 0.65rem;
+        font-weight: 600;
+        position: relative;
+        padding: 4px 12px;
+        border-radius: 8px;
+        transition: color 0.2s, background 0.2s;
+    }
+
+    .bottom-nav a i {
+        font-size: 1.2rem;
+        margin-bottom: 2px;
+    }
+
+    .bottom-nav a.active {
+        color: var(--deep, #2B5C92);
+        background: var(--surface, #EBF2FA);
+    }
+
+    .bottom-nav a.active i {
+        color: var(--deep, #2B5C92);
+    }
+
+    .bottom-nav .unread-dot {
+        position: absolute;
+        top: 2px;
+        right: 4px;
+        width: 8px;
+        height: 8px;
+        background: var(--red, #e53e3e);
+        border-radius: 50%;
+        border: 1.5px solid var(--white, #FFFFFF);
+        display: none;
+    }
+
+    @media (max-width: 767px) {
+        .bottom-nav {
+            display: flex;
+        }
+        /* PROFILE CIRCLE KEPT VISIBLE – no hiding rule */
+        body {
+            padding-bottom: 70px;
+        }
+    }
+
     @media (max-width: 767px) {
         nav { display: none !important; }
         .msg-btn-mobile { display: flex; }
@@ -513,6 +573,7 @@ window.updateUserContent = updateUserContent;
 let globalSettings = {};
 let currentUserData = null;
 let unsubscribeChats = null;
+let bottomNavBar = null;
 
 onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
     if (docSnap.exists()) { globalSettings = docSnap.data(); refreshUI(); }
@@ -568,7 +629,7 @@ onAuthStateChanged(auth, async (user) => {
                 const socialTourKey = `scoralia_social_tour_seen_${user.uid}`;
                 if (!currentUserData.hasSeenSocialTour && !localStorage.getItem(socialTourKey)) {
                     const path = window.location.pathname;
-                    if (path.includes('/social.html') || path.includes('/topic.html')) {
+                    if (path.includes('/social') || path.includes('/topic')) {
                         showSocialTour();
                     }
                 }
@@ -637,11 +698,11 @@ function triggerHardLockdown(expireTimestamp) {
         ${expiryText}
     </div>`;
 
-    setTimeout(() => { signOut(auth).then(() => { window.location.href = '/login.html'; }); }, 5000);
+    setTimeout(() => { signOut(auth).then(() => { window.location.href = '/login'; }); }, 5000);
 }
 
 function showWelcomeTour() {
-    if (window.location.pathname.includes('/login.html')) return;
+    if (window.location.pathname.includes('/login')) return;
 
     const user = auth.currentUser;
     if (!user) return;
@@ -922,7 +983,7 @@ function showWelcomeTour() {
 
 // --- SOCIAL TOUR ---
 window.showSocialTour = () => {
-    if (window.location.pathname.includes('/login.html')) return;
+    if (window.location.pathname.includes('/login')) return;
     const user = auth.currentUser;
     if (!user) return;
     const socialTourKey = `scoralia_social_tour_seen_${user.uid}`;
@@ -1010,28 +1071,72 @@ function listenToUnreadMessages(uid) {
         });
         const deskBadge = document.getElementById('desktop-unread-badge');
         const mobBadge = document.getElementById('mobile-unread-badge');
-        if (unreadCount > 0) {
-            if (deskBadge) { deskBadge.textContent = unreadCount; deskBadge.style.display = 'flex'; }
-            if (mobBadge) { mobBadge.textContent = unreadCount; mobBadge.style.display = 'flex'; }
+        const bottomDot = document.getElementById('bottom-unread-dot');
+        
+        const display = unreadCount > 0 ? 'flex' : 'none';
+        if (deskBadge) { deskBadge.textContent = unreadCount; deskBadge.style.display = display; }
+        if (mobBadge) { mobBadge.textContent = unreadCount; mobBadge.style.display = display; }
+        if (bottomDot) bottomDot.style.display = unreadCount > 0 ? 'block' : 'none';
+    });
+}
+
+function injectBottomNav() {
+    if (bottomNavBar) return bottomNavBar;
+    const nav = document.createElement('div');
+    nav.className = 'bottom-nav';
+    nav.innerHTML = `
+        <a href="/">
+            <i class="fas fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="/social">
+            <i class="fas fa-users"></i>
+            <span>Social</span>
+        </a>
+        <a href="/search">
+            <i class="fas fa-search"></i>
+            <span>Browse</span>
+        </a>
+        <a href="/profile" id="bottom-nav-profile">
+            <i class="fas fa-user"></i>
+            <span>Profile</span>
+            <span class="unread-dot" id="bottom-unread-dot"></span>
+        </a>
+    `;
+    document.body.appendChild(nav);
+    bottomNavBar = nav;
+    return nav;
+}
+
+function setBottomNavActive() {
+    if (!bottomNavBar) return;
+    const links = bottomNavBar.querySelectorAll('a');
+    const path = window.location.pathname;
+    links.forEach(link => {
+        const href = link.getAttribute('href');
+        // Treat /topic as Social
+        if (href === '/social' && path.startsWith('/topic')) {
+            link.classList.add('active');
+        } else if (path === href || (href !== '/' && path.startsWith(href))) {
+            link.classList.add('active');
         } else {
-            if (deskBadge) deskBadge.style.display = 'none';
-            if (mobBadge) mobBadge.style.display = 'none';
+            link.classList.remove('active');
         }
     });
 }
 
 function updateHeaderToLoggedIn(userData) {
-    if (window.location.pathname.includes('/login.html')) return;
+    if (window.location.pathname.includes('/login')) return;
     const lang = localStorage.getItem('preferred_language') || 'en';
     const t = translations[lang];
     const navUl = document.querySelector('nav ul');
     if (navUl) {
         navUl.innerHTML = `
-            <li><a href="/search.html">${t.nav_browse}</a></li>
-            <li><a href="/my-listings.html">${t.nav_listings}</a></li>
-            <li><a href="/social.html">${t.nav_hub}</a></li>
-            <li><a href="/activity.html">${t.nav_activity}</a></li>
-            <li><a href="/messages.html" class="badge-container">${t.nav_messages}<span class="unread-badge" id="desktop-unread-badge"></span></a></li>
+            <li><a href="/search">${t.nav_browse}</a></li>
+            <li><a href="/my-listings">${t.nav_listings}</a></li>
+            <li><a href="/social">${t.nav_hub}</a></li>
+            <li><a href="/activity">${t.nav_activity}</a></li>
+            <li><a href="/messages" class="badge-container">${t.nav_messages}<span class="unread-badge" id="desktop-unread-badge"></span></a></li>
         `;
     }
 
@@ -1047,7 +1152,7 @@ function updateHeaderToLoggedIn(userData) {
 
     container.innerHTML = `
         <button class="btn desktop-only" id="globalListBtn" style="margin-right: 15px;">${t.btn_list}</button>
-        <a href="/messages.html" class="msg-btn-mobile"><i class="fas fa-comment-dots"></i><span class="unread-badge" id="mobile-unread-badge"></span></a>
+        <a href="/messages" class="msg-btn-mobile"><i class="fas fa-comment-dots"></i><span class="unread-badge" id="mobile-unread-badge"></span></a>
         <div class="profile-menu-container">
             <div class="profile-avatar"><img src="${window.optimizeImageUrl ? window.optimizeImageUrl(finalPhotoURL) : finalPhotoURL}" alt="Profile"></div>
             <div class="dropdown-menu" id="globalDropdown">
@@ -1055,19 +1160,19 @@ function updateHeaderToLoggedIn(userData) {
                     <div class="display-name">${name}</div>
                     ${username ? `<div class="username">${username}</div>` : ''}
                 </div>
-                <a href="/listanitem.html" class="dropdown-item mobile-link" style="color:#2B5C92; font-weight:bold;"><i class="fas fa-plus-circle"></i> ${t.btn_list}</a>
-                <a href="/search.html" class="dropdown-item mobile-link"><i class="fas fa-search"></i> ${t.nav_browse}</a>
-                <a href="/my-listings.html" class="dropdown-item mobile-link"><i class="fas fa-book"></i> ${t.nav_listings}</a>
-                <a href="/social.html" class="dropdown-item mobile-link"><i class="fas fa-users"></i> ${t.nav_hub}</a>
-                <a href="/profile.html" class="dropdown-item"><i class="fas fa-user-circle"></i> ${t.nav_profile}</a>
-                <a href="/activity.html" class="dropdown-item"><i class="fas fa-history"></i> ${t.nav_activity}</a>
+                <a href="/listanitem" class="dropdown-item mobile-link" style="color:#2B5C92; font-weight:bold;"><i class="fas fa-plus-circle"></i> ${t.btn_list}</a>
+                <a href="/search" class="dropdown-item mobile-link"><i class="fas fa-search"></i> ${t.nav_browse}</a>
+                <a href="/my-listings" class="dropdown-item mobile-link"><i class="fas fa-book"></i> ${t.nav_listings}</a>
+                <a href="/social" class="dropdown-item mobile-link"><i class="fas fa-users"></i> ${t.nav_hub}</a>
+                <a href="/profile" class="dropdown-item"><i class="fas fa-user-circle"></i> ${t.nav_profile}</a>
+                <a href="/activity" class="dropdown-item"><i class="fas fa-history"></i> ${t.nav_activity}</a>
                 <a href="#" class="dropdown-item" id="globalLogout" style="color:#ff4d4d; border-top:1px solid #eee;"><i class="fas fa-sign-out-alt"></i> ${t.btn_signout}</a>
             </div>
         </div>
     `;
 
     const listBtn = document.getElementById('globalListBtn');
-    if (listBtn) listBtn.onclick = () => window.location.href = '/listanitem.html';
+    if (listBtn) listBtn.onclick = () => window.location.href = '/listanitem';
 
     const avatar = container.querySelector('.profile-avatar');
     const menu = document.getElementById('globalDropdown');
@@ -1077,9 +1182,14 @@ function updateHeaderToLoggedIn(userData) {
     const logoutBtn = document.getElementById('globalLogout');
     if (logoutBtn) logoutBtn.onclick = (e) => {
         e.preventDefault();
-        signOut(auth).then(() => { localStorage.removeItem('scoralia_tour_seen_' + userData.uid); window.location.href = '/index.html'; });
+        signOut(auth).then(() => { localStorage.removeItem('scoralia_tour_seen_' + userData.uid); window.location.href = '/'; });
     };
 
+    // Skip bottom nav on chat page
+    if (!window.location.pathname.startsWith('/chat')) {
+        injectBottomNav();
+        setBottomNavActive();
+    }
     listenToUnreadMessages(userData.uid);
 }
 
@@ -1089,14 +1199,19 @@ function updateHeaderToLoggedOut() {
     const navUl = document.querySelector('nav ul');
     if (navUl) {
         navUl.innerHTML = `
-            <li><a href="/search.html">${t.nav_browse}</a></li>
-            <li><a href="/social.html">${t.nav_hub}</a></li>
+            <li><a href="/search">${t.nav_browse}</a></li>
+            <li><a href="/social">${t.nav_hub}</a></li>
         `;
     }
 
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
     if (!container) return;
-    container.innerHTML = `<button class="btn" onclick="window.location.href='/login.html'">${t.btn_login}</button>`;
+    container.innerHTML = `<button class="btn" onclick="window.location.href='/login'">${t.btn_login}</button>`;
+
+    if (bottomNavBar) {
+        bottomNavBar.remove();
+        bottomNavBar = null;
+    }
 }
 
 function showLanguageBanner() {
@@ -1119,13 +1234,13 @@ function showLanguageBanner() {
         localStorage.setItem('preferred_language', l);
         window.applyLanguage(l);
         banner.remove();
-        showTermsBanner();
         if (auth.currentUser) {
             try {
                 await updateDoc(doc(db, "users", auth.currentUser.uid), { language: l });
                 if (currentUserData) currentUserData.language = l;
             } catch (e) { console.warn("Could not save language to user document", e); }
         }
+        location.reload(); // Reload to apply language changes everywhere
     };
     document.getElementById('btn-en').onclick = () => setLang('en');
     document.getElementById('btn-fr').onclick = () => setLang('fr');
@@ -1144,5 +1259,5 @@ function showTermsBanner() {
 
 document.addEventListener('DOMContentLoaded', () => {
     const logo = document.querySelector('.logo');
-    if (logo) logo.onclick = () => window.location.href = '/index.html';
+    if (logo) logo.onclick = () => window.location.href = '/';
 });
