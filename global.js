@@ -66,7 +66,6 @@ window.addEventListener('beforeinstallprompt', (e) => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
     if (isStandalone) return;
 
-    // Show every 5 visits
     let indexVisits = parseInt(localStorage.getItem('pwa_index_visits') || '0');
     if (indexVisits > 0 && indexVisits % 5 === 0) {
         showInstallPromotion();
@@ -498,6 +497,11 @@ globalStyle.innerHTML = `
         border-radius: 50%;
         border: 1.5px solid var(--white, #FFFFFF);
         display: none;
+    }
+
+    /* Hide duplicated dropdown items on mobile */
+    @media (max-width: 767px) {
+        .bottom-nav-dup { display: none !important; }
     }
 
     @media (max-width: 767px) {
@@ -1161,10 +1165,10 @@ function updateHeaderToLoggedIn(userData) {
                     ${username ? `<div class="username">${username}</div>` : ''}
                 </div>
                 <a href="/listanitem" class="dropdown-item mobile-link" style="color:#2B5C92; font-weight:bold;"><i class="fas fa-plus-circle"></i> ${t.btn_list}</a>
-                <a href="/search" class="dropdown-item mobile-link"><i class="fas fa-search"></i> ${t.nav_browse}</a>
+                <a href="/search" class="dropdown-item mobile-link bottom-nav-dup"><i class="fas fa-search"></i> ${t.nav_browse}</a>
                 <a href="/my-listings" class="dropdown-item mobile-link"><i class="fas fa-book"></i> ${t.nav_listings}</a>
-                <a href="/social" class="dropdown-item mobile-link"><i class="fas fa-users"></i> ${t.nav_hub}</a>
-                <a href="/profile" class="dropdown-item"><i class="fas fa-user-circle"></i> ${t.nav_profile}</a>
+                <a href="/social" class="dropdown-item mobile-link bottom-nav-dup"><i class="fas fa-users"></i> ${t.nav_hub}</a>
+                <a href="/profile" class="dropdown-item bottom-nav-dup"><i class="fas fa-user-circle"></i> ${t.nav_profile}</a>
                 <a href="/activity" class="dropdown-item"><i class="fas fa-history"></i> ${t.nav_activity}</a>
                 <a href="#" class="dropdown-item" id="globalLogout" style="color:#ff4d4d; border-top:1px solid #eee;"><i class="fas fa-sign-out-alt"></i> ${t.btn_signout}</a>
             </div>
