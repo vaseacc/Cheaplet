@@ -731,30 +731,45 @@
                 } catch (e) { alert(e.message); }
             };
             
-            // 🌟 DELETE ACCOUNT — now properly handles re‑authentication
+            // 🌟 DELETE ACCOUNT — now also removes all user's listings
             deleteBtn.onclick = async () => {
                 if (!confirm(t.deleteConfirm)) return;
                 deleteBtn.disabled = true;
+                const uid = currentUser.uid;
 
                 try {
-                    // 1. Remove the Firestore user document
-                    await deleteDoc(doc(db, "users", currentUser.uid));
+                    // 1. Delete all listings created by this user
+                    const listingsQuery = query(collection(db, "listings"), where("posterUid", "==", uid));
+                    const listingSnap = await getDocs(listingsQuery);
+                    
+                    const deletionPromises = [];
+                    listingSnap.forEach((listingDoc) => {
+                        deletionPromises.push(deleteDoc(doc(db, "listings", listingDoc.id)));
+                    });
+                    await Promise.all(deletionPromises);
                 } catch (e) {
-                    console.error("Firestore deletion failed:", e);
-                    // even if Firestore deletion fails, we still try to delete the Auth account
+                    console.error("Could not delete all listings:", e);
+                    // continue even if some listing deletions fail
                 }
 
                 try {
-                    // 2. Delete the Firebase Authentication account
+                    // 2. Remove the Firestore user document
+                    await deleteDoc(doc(db, "users", uid));
+                } catch (e) {
+                    console.error("Firestore user doc deletion failed:", e);
+                }
+
+                try {
+                    // 3. Delete the Firebase Authentication account
                     await deleteUser(currentUser);
-                    // Success – the user is now signed out automatically
+                    // Success – user is signed out automatically
                     window.location.href = '/';
                 } catch (err) {
                     deleteBtn.disabled = false;
                     console.error("Auth deletion failed:", err);
                     if (err.code === 'auth/requires-recent-login') {
                         alert(t.reauthRequired);
-                        // Sign out and redirect to login so they can authenticate again
+                        // Sign out and redirect to login so they can re‑authenticate
                         await signOut(auth);
                         window.location.href = '/login';
                     } else {
