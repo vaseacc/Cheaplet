@@ -16,7 +16,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        /* ... keep all existing styles exactly as before ... */
         :root {
             --ink:       #0C1446;
             --deep:      #2B5C92;
@@ -80,8 +79,6 @@
         .meta-tag.verified { background: rgba(46,125,50,0.1); color: var(--deep); border-color: rgba(46,125,50,0.2); }
         .meta-tag.rating { background: rgba(200,169,110,0.1); color: #b8860b; border-color: rgba(200,169,110,0.3); }
         .meta-tag.rating i { color: #d4af37; }
-
-        .section-title { font-family: var(--font-display); font-size: 1.6rem; font-weight: 800; color: var(--ink); margin-bottom: 25px; border-left: 5px solid var(--gold); padding-left: 15px; }
 
         .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 20px; margin-bottom: 50px; }
         .listing-card { background: var(--white); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow-sm); text-decoration: none; color: inherit; transition: transform 0.3s; border: 1px solid rgba(179,205,224,0.3); }
@@ -166,7 +163,7 @@
 
     <header>
         <div class="header-inner">
-            <a href="/index.html" class="logo">Scor<em>alia</em></a>
+            <a href="/" class="logo">Scor<em>alia</em></a>
             <div class="header-right"></div> 
         </div>
     </header>
@@ -195,7 +192,7 @@
                     <div class="meta-tag verified" id="verified-badge" style="display: none;">
                         <i class="fas fa-graduation-cap"></i> <span data-i18n="verified_student">Verified Student</span>
                     </div>
-                    <div class="meta-tag">
+                    <div class="meta-tag" id="school-tag" style="display: none;">
                         <i class="fas fa-university"></i> <span id="user-school-name"></span>
                     </div>
                     <div class="meta-tag">
@@ -294,8 +291,6 @@
             const userAvatar = document.getElementById('user-avatar-img');
             const userBanner = document.getElementById('user-banner');
             const userRatingDisplay = document.getElementById('user-rating-display');
-            const userSchoolName = document.getElementById('user-school-name');
-            const userJoinDate = document.getElementById('user-join-date');
             const userListingsGrid = document.getElementById('user-listings-grid');
             const adminZone = document.getElementById('admin-zone');
             const adminBanBtn = document.getElementById('admin-ban-user-btn');
@@ -342,7 +337,7 @@
                     }
 
                     if (existingChatId) {
-                        window.location.href = `/chat.html?id=${existingChatId}`;
+                        window.location.href = `/chat?id=${existingChatId}`;
                         return;
                     }
 
@@ -361,7 +356,7 @@
                         unreadBy: []
                     });
 
-                    window.location.href = `/chat.html?id=${chatRef.id}`;
+                    window.location.href = `/chat?id=${chatRef.id}`;
                 } catch (error) {
                     console.error("Error creating personal chat:", error);
                     alert("Could not start chat. Please try again.");
@@ -393,7 +388,7 @@
             // Message button click
             messageBtn.addEventListener('click', async () => {
                 if (!currentUser) {
-                    window.location.href = `/login.html?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+                    window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
                     return;
                 }
                 if (currentUser.uid === targetUserId) {
@@ -434,7 +429,7 @@
                     const snap = await getDocs(query(collection(db, "listings"), where("posterUid", "==", targetUid)));
                     for (const d of snap.docs) { await deleteDoc(d.ref); }
                     await updateDoc(doc(db, "users", targetUid), { role: 'banned' });
-                    window.location.href = '/index.html';
+                    window.location.href = '/';
                 } catch (e) { alert(e.message); adminBanBtn.disabled = false; }
             }
 
@@ -453,7 +448,17 @@
                         if (targetUserData.role === 'banned') userDisplayName.innerHTML += ` <span style="color:red; font-size:1rem;">(${strings.banned})</span>`;
                         userHandle.textContent = targetUserData.username ? `@${targetUserData.username}` : '';
                         userBio.textContent = targetUserData.bio || '';
-                        userSchoolName.textContent = targetUserData.schoolName || strings.unspecified;
+                        
+                        // Only show school if the user has a school name
+                        const schoolTag = document.getElementById('school-tag');
+                        const userSchoolName = document.getElementById('user-school-name');
+                        if (targetUserData.schoolName) {
+                            userSchoolName.textContent = targetUserData.schoolName;
+                            schoolTag.style.display = 'inline-flex';
+                        } else {
+                            schoolTag.style.display = 'none';
+                        }
+
                         userBanner.style.background = generateBannerGradient(targetUserId);
 
                         let photoURL = targetUserData.photoURL;
@@ -479,7 +484,7 @@
 
                         if (targetUserData.createdAt) {
                             const date = new Date(targetUserData.createdAt);
-                            userJoinDate.textContent = `${strings.joinPrefix}${date.toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-US', { year: 'numeric', month: 'long' })}`;
+                            document.getElementById('user-join-date').textContent = `${strings.joinPrefix}${date.toLocaleDateString(lang === 'fr' ? 'fr-CA' : 'en-US', { year: 'numeric', month: 'long' })}`;
                         }
                     } else {
                         loader.innerHTML = `<p class="info-message">${strings.notFound}</p>`; 
@@ -496,7 +501,7 @@
                         const d = doc.data();
                         const card = document.createElement('a');
                         card.className = 'listing-card';
-                        card.href = `/listing.html?id=${doc.id}`;
+                        card.href = `/listing?id=${doc.id}`;
                         card.innerHTML = `
                             <div class="listing-image" style="background-image: url('${d.imageUrls?.[0] || ''}')"></div>
                             <div class="listing-details">
