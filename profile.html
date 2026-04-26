@@ -189,7 +189,7 @@
 <body>
     <header>
         <div class="header-inner">
-            <a href="/index.html" class="logo">Scor<em>alia</em></a>
+            <a href="/" class="logo">Scor<em>alia</em></a>
             <div class="header-right"></div> <!-- Injected by global.js -->
         </div>
     </header>
@@ -300,7 +300,7 @@
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, updateProfile, sendPasswordResetEmail, deleteUser } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, updateProfile, sendPasswordResetEmail, deleteUser, EmailAuthProvider, reauthenticateWithCredential } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
@@ -362,7 +362,10 @@
                     verified: "Verified Student", joinPrefix: "Joined ", noRating: "No ratings yet",
                     saveSuccess: "Profile updated successfully!", saveError: "Error saving profile.",
                     pwdResetSent: "Password reset email sent!", deleteConfirm: "Are you sure? This will permanently delete your account and all your data.",
-                    imgUploadFailed: "Failed to upload image. Please try again."
+                    imgUploadFailed: "Failed to upload image. Please try again.",
+                    reauthPrompt: "Please enter your password to confirm account deletion:",
+                    reauthFailed: "Re‑authentication failed. Please log out and log in again before deleting your account.",
+                    deleteSuccess: "Account deleted. Redirecting..."
                 },
                 fr: {
                     loading: "Chargement du profil...",
@@ -377,7 +380,10 @@
                     verified: "Étudiant vérifié", joinPrefix: "Membre depuis ", noRating: "Aucune évaluation",
                     saveSuccess: "Profil mis à jour avec succès !", saveError: "Erreur lors de la mise à jour.",
                     pwdResetSent: "E-mail de réinitialisation envoyé !", deleteConfirm: "Êtes-vous sûr ? Cela supprimera définitivement votre compte et toutes vos données.",
-                    imgUploadFailed: "Échec du téléchargement de l'image. Veuillez réessayer."
+                    imgUploadFailed: "Échec du téléchargement de l'image. Veuillez réessayer.",
+                    reauthPrompt: "Veuillez entrer votre mot de passe pour confirmer la suppression du compte :",
+                    reauthFailed: "La réauthentification a échoué. Veuillez vous déconnecter et vous reconnecter avant de supprimer votre compte.",
+                    deleteSuccess: "Compte supprimé. Redirection..."
                 }
             }[lang];
 
@@ -458,7 +464,6 @@
                     return;
                 }
 
-                // If it's unchanged from original, it's immediately valid
                 if (username === originalUsername) {
                     editUsernameStatusIcon.innerHTML = '<i class="fas fa-check-circle status-valid"></i>';
                     editUsernameHintText.textContent = t.usernameHint;
@@ -514,35 +519,25 @@
                 const file = e.target.files[0];
                 if (!file) return;
 
-                // 1. Show local preview instantly
                 const reader = new FileReader();
                 reader.onload = (ev) => { avatarImg.src = ev.target.result; };
                 reader.readAsDataURL(file);
 
-                // 2. Change icon to spinner & disable
                 const originalIcon = editAvatarBtn.innerHTML;
                 editAvatarBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
                 editAvatarBtn.disabled = true;
 
                 try {
-                    // Get signature
                     const signRes = await fetch(getFunctionUrl('sign-upload')).then(r => r.json());
-                    
-                    // Upload to Cloudinary
                     const formData = new FormData();
                     formData.append('file', file);
                     formData.append('api_key', signRes.apiKey);
                     formData.append('timestamp', signRes.timestamp);
                     formData.append('signature', signRes.signature);
                     formData.append('upload_preset', signRes.uploadPreset);
-                    
-                    const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, {
-                        method: 'POST', body: formData
-                    }).then(r => r.json());
-                    
+                    const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { method: 'POST', body: formData }).then(r => r.json());
                     if (res.secure_url) {
                         const finalPhotoURL = res.secure_url;
-                        // Update Firebase Auth & DB immediately
                         await updateProfile(currentUser, { photoURL: finalPhotoURL });
                         await updateDoc(doc(db, "users", currentUser.uid), { photoURL: finalPhotoURL });
                         currentUserData.photoURL = finalPhotoURL;
@@ -552,13 +547,11 @@
                 } catch (err) {
                     console.error(err);
                     alert(t.imgUploadFailed);
-                    // Revert to old image
                     avatarImg.src = currentUserData.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
                 } finally {
-                    // Restore button
                     editAvatarBtn.innerHTML = originalIcon;
                     editAvatarBtn.disabled = false;
-                    photoUploadInput.value = ''; // clear input
+                    photoUploadInput.value = '';
                 }
             };
 
@@ -575,7 +568,6 @@
                 
                 currentUserData = userDoc.data();
                 
-                // Populate DOM
                 document.getElementById('display-name-display').textContent = currentUserData.displayName || 'User';
                 document.getElementById('username-display').textContent = currentUserData.username ? `@${currentUserData.username}` : '';
                 document.getElementById('bio-display').textContent = currentUserData.bio || '';
@@ -596,7 +588,6 @@
                 avatarImg.src = photoURL;
                 bannerDiv.style.background = generateBannerGradient(user.uid);
                 
-                // Run initial validation UI to show green checks on load
                 if (editFullname.value) updateFullnameUI();
                 if (editUsername.value) updateUsernameUI();
 
@@ -644,7 +635,7 @@
                             const d = snap.data();
                             const card = document.createElement('a');
                             card.className = 'saved-card';
-                            card.href = `/listing.html?id=${snap.id}`;
+                            card.href = `/listing?id=${snap.id}`;
                             card.innerHTML = `
                                 <div class="saved-img" style="background-image: url('${d.imageUrls?.[0] || ''}')"></div>
                                 <div class="saved-info">
@@ -677,7 +668,7 @@
                 if (!isFullnameValid || !isUsernameValid) {
                     saveFeedback.textContent = 'Please fix the errors above.';
                     saveFeedback.style.color = 'var(--red)';
-                    return; // Button stays disabled
+                    return;
                 }
                 
                 saveFeedback.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
@@ -718,7 +709,6 @@
                 }
             }
             
-            // Text Save button
             saveBtn.onclick = saveProfile;
             
             // Password Reset
@@ -729,14 +719,52 @@
                 } catch (e) { alert(e.message); }
             };
             
-            // Delete Account
+            // Delete Account – now reauthenticates first
             deleteBtn.onclick = async () => {
-                if (confirm(t.deleteConfirm)) {
+                if (!confirm(t.deleteConfirm)) return;
+                
+                const user = auth.currentUser;
+                if (!user) {
+                    alert("No user logged in.");
+                    return;
+                }
+
+                // Detect if the user is email/password or OAuth
+                const isEmailPassword = user.providerData.some(
+                    p => p.providerId === 'password'
+                );
+
+                if (isEmailPassword) {
+                    // Re‑authenticate with password
+                    const password = prompt(t.reauthPrompt);
+                    if (!password) return; // cancelled
+
+                    const credential = EmailAuthProvider.credential(user.email, password);
                     try {
-                        await deleteDoc(doc(db, "users", currentUser.uid));
-                        await deleteUser(currentUser);
-                        window.location.href = '/index.html';
-                    } catch (err) { alert("Error deleting account: " + err.message); }
+                        await reauthenticateWithCredential(user, credential);
+                    } catch (reauthError) {
+                        console.error(reauthError);
+                        alert(t.reauthFailed);
+                        return;
+                    }
+                } else {
+                    // OAuth users: prompt them to log out and log in again, or we attempt reauth via popup?
+                    // Simpler: Tell them to log out/in because OAuth reauth is complex.
+                    alert("For security, please log out and log in again before deleting your account.");
+                    return;
+                }
+
+                // Now we can safely delete
+                try {
+                    // 1. Delete Firestore user doc
+                    await deleteDoc(doc(db, "users", user.uid));
+                    // 2. Delete Firebase Auth user
+                    await deleteUser(user);
+                    alert(t.deleteSuccess);
+                    window.location.href = '/';
+                } catch (err) {
+                    console.error(err);
+                    alert("Error deleting account: " + err.message);
                 }
             };
             
@@ -744,11 +772,11 @@
                 if (user) {
                     const isOAuth = user.providerData.some(p => p.providerId === 'microsoft.com' || p.providerId === 'google.com');
                     if (user.emailVerified || isOAuth) { loadProfile(); } 
-                    else { window.location.href = '/login.html'; }
-                } else { window.location.href = '/login.html'; }
+                    else { window.location.href = '/login'; }
+                } else { window.location.href = '/login'; }
             });
         }
         main();
     </script>
 </body>
-</html>
+    </html>
