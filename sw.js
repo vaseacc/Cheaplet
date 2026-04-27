@@ -1,28 +1,24 @@
-// sw.js - Service Worker for Scoralia PWA (Network-First Strategy)
-const CACHE_NAME = 'scoralia-v10';
+// sw.js - Service Worker for Scoralia PWA (Network-First, bypass HTML cache)
+const CACHE_NAME = 'scoralia-v11'; // bump version to force update
 
-// Files to cache for offline access
+// Files to cache for offline access (only static assets, no HTML pages)
 const urlsToCache = [
-  '/',
-  '/index.html',
   '/global.js',
-  '/social.html',
-  '/topic.html',
-  '/search.html',
-  '/listanitem.html',
-  '/messages.html',
-  '/profile.html',
-  '/login.html',
-  '/favicon.svg'
+  '/favicon.svg',
+  '/manifest.json',
+  // You can add other static assets like CSS files, images, etc.
+  // BUT DO NOT cache any .html file or clean URLs that rely on server rewrites
 ];
 
-// Install event – force SW to take over immediately
+// Install event
 self.addEventListener('install', event => {
   console.log('[SW] Installing new version...');
-  self.skipWaiting(); // Forces the waiting service worker to become the active service worker
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(urlsToCache);
+      return cache.addAll(urlsToCache).catch(err => {
+        console.warn('[SW] Failed to cache some assets:', err);
+      });
     })
   );
 });
@@ -42,16 +38,15 @@ self.addEventListener('activate', event => {
       );
     })
   );
-  self.clients.claim(); // Take control of all open pages immediately
+  self.clients.claim(); // take control of all open pages immediately
 });
 
-// Helper to check if a request should be completely ignored by the cache
+// Helper: should this request bypass the cache entirely?
 function shouldBypass(url) {
-  // Ignore non-http/https requests (chrome-extension://, etc.)
-  if (!url.startsWith('http')) {
-    return true;
-  }
+  // Ignore non-http/https requests
+  if (!url.startsWith('http')) return true;
 
+  // Always bypass API calls, Firebase, Cloudinary, Turnstile
   if (url.includes('firestore.googleapis.com') ||
       url.includes('googleapis.com') ||
       url.includes('firebaseapp.com') ||
@@ -60,25 +55,41 @@ function shouldBypass(url) {
       url.includes('challenges.cloudflare.com')) {
     return true;
   }
+
+  // Bypass all HTML navigation requests (so Vercel rewrites work)
+  // We detect navigation by looking at the request mode and destination.
+  // For simplicity, we'll just never cache requests that are not GET or are for HTML files.
   return false;
 }
 
-// Fetch event – NETWORK-FIRST STRATEGY
+// Fetch event – network-first for static assets, network-only for HTML
 self.addEventListener('fetch', event => {
   const req = event.request;
-  const url = req.url;
+  const url = new URL(req.url);
 
-  // 1. Always bypass API calls and non-GET requests
-  if (req.method !== 'GET' || shouldBypass(url)) {
-    return; // Let the browser handle it normally
+  // Only handle GET requests
+  if (req.method !== 'GET') return;
+
+  // Always bypass if it's an API call or similar
+  if (shouldBypass(url.href)) return;
+
+  // If the request is a navigation (i.e., the user is loading a page), ALWAYS network-first
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      fetch(req).catch(() => {
+        // If offline, you could return a fallback page, but for now just fail
+        return new Response('You are offline. Please check your connection.', { status: 503 });
+      })
+    );
+    return;
   }
 
-  // 2. NETWORK-FIRST STRATEGY for everything else (HTML, JS, CSS, Images)
+  // For other static assets (JS, CSS, images), use network-first with cache fallback
   event.respondWith(
     fetch(req)
       .then(networkResponse => {
-        // If we get a valid response from the internet, save it to the cache and return it
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+        // If we got a valid response, cache it for future offline use
+        if (networkResponse && networkResponse.status === 200) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then(cache => {
             cache.put(req, responseToCache);
@@ -87,8 +98,8 @@ self.addEventListener('fetch', event => {
         return networkResponse;
       })
       .catch(() => {
-        // If the network fails (user is offline), check the cache
-        console.log('[SW] Network failed, serving from cache:', url);
+        // Network failed – try to serve from cache
+        console.log('[SW] Network failed, serving from cache:', url.href);
         return caches.match(req);
       })
   );
