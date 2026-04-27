@@ -560,18 +560,36 @@
         import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
-            const response = await fetch(getFunctionUrl('config'));
-            const config = await response.json();
+            // --- Robust Firebase Config ---
+            let firebaseConfig;
+            try {
+                const response = await fetch(getFunctionUrl('config'));
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const config = await response.json();
+                firebaseConfig = config.firebaseConfig;
+            } catch (err) {
+                console.warn('⚠️ Config fetch failed, using fallback based on hostname. Error:', err.message);
+                // Fallback config – you must fill in your actual apiKey etc., OR rely on the env vars in the backend.
+                // The critical piece is authDomain, which we set below.
+                firebaseConfig = {
+                    apiKey: "AIzaSyDYl9fSWCnkX5iqiesmCm6TTsFW4SRKOtE", // same as in your original config
+                    authDomain: window.location.hostname,
+                    projectId: "chaeplet",
+                    storageBucket: "chaeplet.appspot.com",
+                    messagingSenderId: "725957082327",
+                    appId: "1:725957082327:web:2a76e4abb0a0c2f8a0b3c8"
+                };
+            }
+            // Always force authDomain to the actual hostname
+            firebaseConfig.authDomain = window.location.hostname;
 
-            // Ensure correct authDomain for the current hostname
-            config.firebaseConfig.authDomain = window.location.hostname;
-
-            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
+            const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
             const auth = getAuth(app);
             const db = getFirestore(app);
             const googleProvider = new GoogleAuthProvider();
             const msProvider = new OAuthProvider('microsoft.com');
 
+            // --- Rest of the login code (unchanged from last working version) ---
             const formTitle = document.getElementById('form-title');
             const toggleLink = document.getElementById('toggle-auth');
             const authForm = document.getElementById('auth-form');
@@ -818,7 +836,8 @@
                             const dest = sessionStorage.getItem('scoralia_redirect') || '/';
                             sessionStorage.removeItem('scoralia_redirect');
                             sessionStorage.removeItem('scoralia_oauth_pending');
-                            window.location.href = dest;
+                            // Use cache‑buster to avoid stale cache issues
+                            window.location.href = dest + (dest.includes('?') ? '&' : '?') + 't=' + Date.now();
                             return;
                         }
                     } catch (error) {
