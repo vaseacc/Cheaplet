@@ -204,8 +204,8 @@ if (document.readyState === 'loading') {
 // =========================================================================
 
 window.checkBotLimits = async () => {
-    const MAX_LISTINGS = 1; 
-    const MAX_IMAGES = 20;
+    const MAX_LISTINGS = 67; 
+    const MAX_IMAGES = 67;
 
     let stats = JSON.parse(localStorage.getItem('scoralia_usage_stats') || '{"listings":0, "images":0, "lastReset":0}');
     const now = Date.now();
