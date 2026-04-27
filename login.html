@@ -563,7 +563,7 @@
             const response = await fetch(getFunctionUrl('config'));
             const config = await response.json();
 
-            // Use correct authDomain from the hostname
+            // Ensure correct authDomain for the current hostname
             config.firebaseConfig.authDomain = window.location.hostname;
 
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
@@ -653,6 +653,7 @@
 
             const urlParams = new URLSearchParams(window.location.search);
             const msgParam = urlParams.get('msg');
+            const redirectTo = urlParams.get('redirect') || '/';
 
             function applyUIText() {
                 formTitle.textContent = isLoginMode ? strings[lang].loginTitle : strings[lang].regTitle;
@@ -786,7 +787,7 @@
             async function handleOAuth(provider) {
                 loadingOverlay.style.display = 'flex';
                 try {
-                    // Try popup first (most reliable, no sessionStorage issues)
+                    // Try popup first
                     const result = await signInWithPopup(auth, provider);
                     const user = result.user;
                     await ensureUserDoc(user);
@@ -794,9 +795,9 @@
                 } catch (error) {
                     loadingOverlay.style.display = 'none';
                     if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
-                        // Popup was blocked – fallback to redirect
-                        console.warn('Popup blocked, falling back to redirect');
+                        // Popup blocked – store desired destination and fallback to redirect
                         sessionStorage.setItem('scoralia_oauth_pending', 'true');
+                        sessionStorage.setItem('scoralia_redirect', redirectTo);
                         await signInWithRedirect(auth, provider);
                         // The page will be redirected, so nothing else needed
                     } else {
@@ -814,7 +815,10 @@
                         if (result) {
                             const user = result.user;
                             await ensureUserDoc(user);
-                            window.location.href = new URLSearchParams(window.location.search).get('redirect') || '/';
+                            const dest = sessionStorage.getItem('scoralia_redirect') || '/';
+                            sessionStorage.removeItem('scoralia_redirect');
+                            sessionStorage.removeItem('scoralia_oauth_pending');
+                            window.location.href = dest;
                             return;
                         }
                     } catch (error) {
@@ -826,6 +830,7 @@
                         }
                     } finally {
                         sessionStorage.removeItem('scoralia_oauth_pending');
+                        sessionStorage.removeItem('scoralia_redirect');
                         loadingOverlay.style.display = 'none';
                     }
                 }
@@ -881,7 +886,10 @@
                                 return;
                             }
                         }
-                        window.location.href = new URLSearchParams(window.location.search).get('redirect') || '/';
+                        // If already handled by quickRedirectIfOAuth, don't redirect again
+                        if (!sessionStorage.getItem('scoralia_oauth_pending')) {
+                            window.location.href = redirectTo;
+                        }
                     } catch(e) {
                         console.error(e);
                         loadingOverlay.style.display = 'none';
@@ -924,8 +932,8 @@
                 try {
                     if (isLoginMode) {
                         loadingOverlay.style.display = 'flex';
-                        const cred = await signInWithEmailAndPassword(auth, email, pass);
-                        // wait for auth state change to redirect
+                        await signInWithEmailAndPassword(auth, email, pass);
+                        // Redirect handled by onAuthStateChanged
                     } else {
                         const fullName = fullNameInput.value.trim();
                         const username = usernameInput.value.trim().toLowerCase();
