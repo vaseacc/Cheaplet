@@ -34,6 +34,27 @@ if (!document.querySelector('link[rel="icon"]')) {
     document.head.appendChild(favicon);
 }
 
+// --- 0.6 ENSURE ACCESSIBILITY & CONSISTENT META TAGS ---
+function ensureMetaTag(nameOrProperty, content, attribute = 'name') {
+    const selector = attribute === 'name' ? `meta[name="${nameOrProperty}"]` : `meta[property="${nameOrProperty}"]`;
+    if (!document.querySelector(selector)) {
+        const meta = document.createElement('meta');
+        meta.setAttribute(attribute, nameOrProperty);
+        meta.content = content;
+        document.head.appendChild(meta);
+    }
+}
+ensureMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=5.0');
+ensureMetaTag('theme-color', '#0C1446');
+ensureMetaTag('apple-mobile-web-app-capable', 'yes');
+ensureMetaTag('apple-mobile-web-app-status-bar-style', 'black-translucent');
+if (!document.querySelector('link[rel="apple-touch-icon"]')) {
+    const appleIcon = document.createElement('link');
+    appleIcon.rel = 'apple-touch-icon';
+    appleIcon.href = '/icons/icon-192.png';
+    document.head.appendChild(appleIcon);
+}
+
 // --- 0.5 PWA REGISTRATION & "ADD TO HOME SCREEN" LOGIC (Index Page Only) ---
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -1118,7 +1139,6 @@ function setBottomNavActive() {
     const path = window.location.pathname;
     links.forEach(link => {
         const href = link.getAttribute('href');
-        // Treat /topic as Social
         if (href === '/social' && path.startsWith('/topic')) {
             link.classList.add('active');
         } else if (path === href || (href !== '/' && path.startsWith(href))) {
@@ -1189,7 +1209,6 @@ function updateHeaderToLoggedIn(userData) {
         signOut(auth).then(() => { localStorage.removeItem('scoralia_tour_seen_' + userData.uid); window.location.href = '/'; });
     };
 
-    // Skip bottom nav on chat page
     if (!window.location.pathname.startsWith('/chat')) {
         injectBottomNav();
         setBottomNavActive();
@@ -1244,7 +1263,7 @@ function showLanguageBanner() {
                 if (currentUserData) currentUserData.language = l;
             } catch (e) { console.warn("Could not save language to user document", e); }
         }
-        location.reload(); // Reload to apply language changes everywhere
+        location.reload();
     };
     document.getElementById('btn-en').onclick = () => setLang('en');
     document.getElementById('btn-fr').onclick = () => setLang('fr');
