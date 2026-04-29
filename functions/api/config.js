@@ -9,9 +9,8 @@ export async function onRequest({ request, env }) {
   if (request.method === 'OPTIONS') return new Response(null, { headers });
 
   const hostname = new URL(request.url).hostname;
-  const firebase = getFirebaseConfig(env, hostname);
-  // 🔥 Force the correct Firebase Auth domain
-  firebase.authDomain = 'cheaplet.firebaseapp.com';
+  // Force the Firebase Auth domain to your project's default subdomain
+  const firebase = getFirebaseConfig(env, hostname, 'cheaplet.firebaseapp.com');
   const cloudinary = getCloudinaryConfig(env);
 
   return new Response(JSON.stringify({ firebaseConfig: firebase, cloudinary }), { headers });
