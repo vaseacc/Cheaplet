@@ -10,6 +10,9 @@ export async function onRequest({ request, env }) {
 
   const hostname = new URL(request.url).hostname;
   const firebase = getFirebaseConfig(env, hostname);
+  // 🔥 Force the correct Firebase Auth domain
+  firebase.authDomain = 'cheaplet.firebaseapp.com';
   const cloudinary = getCloudinaryConfig(env);
+
   return new Response(JSON.stringify({ firebaseConfig: firebase, cloudinary }), { headers });
 }
