@@ -7,6 +7,9 @@ export default async function handler(req, res) {
 
   const hostname = req.headers.host;
   const firebase = getFirebaseConfig(process.env, hostname);
+  // 🔥 Force the correct Firebase Auth domain
+  firebase.authDomain = 'cheaplet.firebaseapp.com';
   const cloudinary = getCloudinaryConfig(process.env);
+
   res.json({ firebaseConfig: firebase, cloudinary });
 }
