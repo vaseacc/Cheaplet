@@ -46,7 +46,7 @@ function ensureMetaTag(nameOrProperty, content, attribute = 'name') {
 }
 ensureMetaTag('viewport', 'width=device-width, initial-scale=1.0, maximum-scale=5.0');
 ensureMetaTag('theme-color', '#0C1446');
-ensureMetaTag('apple-mobile-web-app-capable', 'yes');
+ensureMetaTag('mobile-web-app-capable', 'yes');
 ensureMetaTag('apple-mobile-web-app-status-bar-style', 'black-translucent');
 if (!document.querySelector('link[rel="apple-touch-icon"]')) {
     const appleIcon = document.createElement('link');
