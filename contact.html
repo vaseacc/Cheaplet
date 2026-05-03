@@ -47,9 +47,11 @@
         h1 { font-family: var(--font-display); color: var(--ink); margin-bottom: 15px; font-size: 2.5rem; }
         p.subtitle { color: var(--text-muted); margin-bottom: 35px; font-size: 1.1rem; }
 
-        /* SUCCESS MESSAGE */
-        .success-banner { display: none; background: #dcfce7; color: #166534; padding: 15px; border-radius: 8px; margin-bottom: 25px; font-weight: 600; text-align: center; border: 1px solid #bbf7d0; position: relative; }
-        .success-banner .close-banner { position: absolute; top: 8px; right: 12px; cursor: pointer; color: #166534; }
+        /* SUCCESS / ERROR MESSAGE */
+        .notification-banner { display: none; padding: 15px; border-radius: 8px; margin-bottom: 25px; font-weight: 600; text-align: center; align-items: center; justify-content: center; gap: 10px; }
+        .notification-banner.success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .notification-banner.error { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
+        .notification-banner i { font-size: 1.2rem; }
 
         .form-group { margin-bottom: 20px; }
         .form-label { display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
@@ -87,18 +89,15 @@
     </header>
 
     <main class="main-wrapper">
-        <!-- SUCCESS NOTIFICATION -->
-        <div id="success-banner" class="success-banner">
-            <i class="fas fa-check-circle"></i> <span id="ui-success-msg">Message sent! We will contact you soon.</span>
-            <span class="close-banner" onclick="this.parentElement.style.display='none'">&times;</span>
-        </div>
+        <!-- NOTIFICATION BANNER (used for both success and error) -->
+        <div id="notification" class="notification-banner"></div>
 
         <div class="content-card">
             <div class="form-section">
                 <h1 id="ui-title">Get in Touch</h1>
                 <p class="subtitle" id="ui-subtitle">Have a question or need help? Send us a message and our team will get back to you shortly.</p>
 
-                <!-- Updated Contact Form - no Netlify attributes -->
+                <!-- Contact Form (no action/method – handled by JavaScript) -->
                 <form id="contact-form">
                     <div class="form-group">
                         <label class="form-label" id="ui-label-name">Your Name</label>
@@ -112,7 +111,7 @@
                         <label class="form-label" id="ui-label-message">Message</label>
                         <textarea name="message" class="form-input" placeholder="How can we help you?" required></textarea>
                     </div>
-                    <button type="submit" class="btn-submit">
+                    <button type="submit" class="btn-submit" id="submit-btn">
                         <span id="ui-btn">Send Message</span> <i class="fas fa-paper-plane"></i>
                     </button>
                 </form>
@@ -163,9 +162,11 @@
         document.addEventListener('DOMContentLoaded', () => {
             const lang = localStorage.getItem('preferred_language') || 'en';
             const form = document.getElementById('contact-form');
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const successBanner = document.getElementById('success-banner');
-            const successMsg = document.getElementById('ui-success-msg');
+            const submitBtn = document.getElementById('submit-btn');
+            const notification = document.getElementById('notification');
+            const uiSpan = document.getElementById('ui-btn');
+
+            // Bilingual strings
             const strings = {
                 en: {
                     title: "Get in Touch",
@@ -175,13 +176,16 @@
                     lblMsg: "Message",
                     btn: "Send Message",
                     success: "Message sent! We will contact you soon.",
+                    error: "Something went wrong. Please try again.",
                     infoEmail: "Email Us",
                     infoSafety: "Trust & Safety",
                     infoSafetyText: "Reported issues are reviewed by admins within 24 hours.",
                     infoPurpose: "Our Purpose",
                     infoPurposeText: "Scoralia is built to help students save money and connect safely.",
                     sending: "Sending...",
-                    error: "Something went wrong. Please try again."
+                    namePlace: "Enter your name",
+                    emailPlace: "example@email.com",
+                    msgPlace: "How can we help you?"
                 },
                 fr: {
                     title: "Contactez-nous",
@@ -191,38 +195,50 @@
                     lblMsg: "Message",
                     btn: "Envoyer le message",
                     success: "Message envoyé ! Nous vous contacterons bientôt.",
+                    error: "Une erreur s'est produite. Veuillez réessayer.",
                     infoEmail: "Écrivez-nous",
                     infoSafety: "Confiance et Sécurité",
                     infoSafetyText: "Les signalements sont examinés par les administrateurs sous 24h.",
                     infoPurpose: "Notre Mission",
                     infoPurposeText: "Scoralia est conçu pour aider les étudiants à économiser et à se connecter en toute sécurité.",
                     sending: "Envoi en cours...",
-                    error: "Une erreur s'est produite. Veuillez réessayer."
+                    namePlace: "Entrez votre nom",
+                    emailPlace: "exemple@courriel.com",
+                    msgPlace: "Comment pouvons-nous vous aider ?"
                 }
             }[lang];
 
-            // Update UI texts
+            // Apply language to UI
             document.getElementById('ui-title').textContent = strings.title;
             document.getElementById('ui-subtitle').textContent = strings.subtitle;
             document.getElementById('ui-label-name').textContent = strings.lblName;
             document.getElementById('ui-label-email').textContent = strings.lblEmail;
             document.getElementById('ui-label-message').textContent = strings.lblMsg;
-            document.getElementById('ui-btn').textContent = strings.btn;
-            successMsg.textContent = strings.success;
+            uiSpan.textContent = strings.btn;
             document.getElementById('ui-info-email').textContent = strings.infoEmail;
             document.getElementById('ui-info-safety').textContent = strings.infoSafety;
             document.getElementById('ui-info-safety-text').textContent = strings.infoSafetyText;
             document.getElementById('ui-info-purpose').textContent = strings.infoPurpose;
             document.getElementById('ui-info-purpose-text').textContent = strings.infoPurposeText;
 
-            // Form submission via Cloudflare Function
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const originalBtnText = document.getElementById('ui-btn').textContent;
-                document.getElementById('ui-btn').textContent = strings.sending;
-                submitBtn.disabled = true;
+            // Set placeholders
+            document.querySelector('input[name="name"]').placeholder = strings.namePlace;
+            document.querySelector('input[name="email"]').placeholder = strings.emailPlace;
+            document.querySelector('textarea[name="message"]').placeholder = strings.msgPlace;
 
-                const formData = {
+            // Form submission via fetch to Cloudflare Function
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();  // Prevent default page POST
+
+                // Disable button and show sending state
+                submitBtn.disabled = true;
+                uiSpan.textContent = strings.sending;
+
+                // Hide previous notification
+                notification.style.display = 'none';
+                notification.className = 'notification-banner';
+
+                const payload = {
                     name: form.name.value.trim(),
                     email: form.email.value.trim(),
                     message: form.message.value.trim()
@@ -232,21 +248,30 @@
                     const res = await fetch('/api/contact', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(formData)
+                        body: JSON.stringify(payload)
                     });
+
                     const data = await res.json();
-                    if (data.success) {
-                        successBanner.style.display = 'block';
+
+                    if (res.ok && data.success) {
+                        // Success
+                        notification.classList.add('success');
+                        notification.innerHTML = `<i class="fas fa-check-circle"></i> ${strings.success}`;
+                        notification.style.display = 'flex';
                         form.reset();
                     } else {
-                        alert(strings.error);
+                        // Error from server
+                        throw new Error(data.error || 'Server error');
                     }
-                } catch (err) {
-                    console.error(err);
-                    alert(strings.error);
+                } catch (error) {
+                    console.error('Contact form error:', error);
+                    notification.classList.add('error');
+                    notification.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${strings.error}`;
+                    notification.style.display = 'flex';
                 } finally {
-                    document.getElementById('ui-btn').textContent = originalBtnText;
+                    // Re-enable button and restore original text
                     submitBtn.disabled = false;
+                    uiSpan.textContent = strings.btn;
                 }
             });
         });
