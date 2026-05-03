@@ -47,12 +47,6 @@
         h1 { font-family: var(--font-display); color: var(--ink); margin-bottom: 15px; font-size: 2.5rem; }
         p.subtitle { color: var(--text-muted); margin-bottom: 35px; font-size: 1.1rem; }
 
-        /* SUCCESS / ERROR MESSAGE */
-        .notification-banner { display: none; padding: 15px; border-radius: 8px; margin-bottom: 25px; font-weight: 600; text-align: center; align-items: center; justify-content: center; gap: 10px; }
-        .notification-banner.success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
-        .notification-banner.error { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; }
-        .notification-banner i { font-size: 1.2rem; }
-
         .form-group { margin-bottom: 20px; }
         .form-label { display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
         .form-input { width: 100%; padding: 12px 16px; border: 1.5px solid var(--surface); border-radius: 8px; font-family: inherit; font-size: 1rem; color: var(--text-body); background: var(--off-white); outline: none; transition: 0.2s; }
@@ -61,7 +55,6 @@
 
         .btn-submit { background: var(--ink); color: white; border: none; padding: 14px 35px; border-radius: 50px; font-weight: 700; font-size: 1rem; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 10px; }
         .btn-submit:hover { background: var(--deep); transform: translateY(-2px); box-shadow: 0 5px 15px rgba(12,20,70,0.2); }
-        .btn-submit:disabled { opacity: 0.7; cursor: not-allowed; transform: none; }
 
         .info-panel { background: var(--off-white); padding: 30px; border-radius: 12px; border: 1px solid var(--surface); }
         .info-item { display: flex; gap: 15px; margin-bottom: 25px; }
@@ -89,22 +82,18 @@
     </header>
 
     <main class="main-wrapper">
-        <!-- NOTIFICATION BANNER (used for both success and error) -->
-        <div id="notification" class="notification-banner"></div>
-
         <div class="content-card">
             <div class="form-section">
                 <h1 id="ui-title">Get in Touch</h1>
-                <p class="subtitle" id="ui-subtitle">Have a question or need help? Send us a message and our team will get back to you shortly.</p>
+                <p class="subtitle" id="ui-subtitle">Fill out the form and we'll pre‑write the email for you.</p>
 
-                <!-- Contact Form (no action/method – handled by JavaScript) -->
                 <form id="contact-form">
                     <div class="form-group">
                         <label class="form-label" id="ui-label-name">Your Name</label>
                         <input type="text" name="name" class="form-input" placeholder="Enter your name" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" id="ui-label-email">Email Address</label>
+                        <label class="form-label" id="ui-label-email">Your Email</label>
                         <input type="email" name="email" class="form-input" placeholder="example@email.com" required>
                     </div>
                     <div class="form-group">
@@ -112,9 +101,13 @@
                         <textarea name="message" class="form-input" placeholder="How can we help you?" required></textarea>
                     </div>
                     <button type="submit" class="btn-submit" id="submit-btn">
-                        <span id="ui-btn">Send Message</span> <i class="fas fa-paper-plane"></i>
+                        <span id="ui-btn">Open Email</span> <i class="fas fa-envelope"></i>
                     </button>
                 </form>
+                <p style="margin-top: 20px; color: var(--text-muted); font-size: 0.9rem; text-align: center;">
+                    <i class="fas fa-info-circle"></i> 
+                    <span id="ui-info">This will open your email app. If nothing happens, you can also reach us directly at <strong>scoralia.web@gmail.com</strong>.</span>
+                </p>
             </div>
 
             <div class="info-section">
@@ -162,59 +155,53 @@
         document.addEventListener('DOMContentLoaded', () => {
             const lang = localStorage.getItem('preferred_language') || 'en';
             const form = document.getElementById('contact-form');
-            const submitBtn = document.getElementById('submit-btn');
-            const notification = document.getElementById('notification');
-            const uiSpan = document.getElementById('ui-btn');
-
-            // Bilingual strings
             const strings = {
                 en: {
                     title: "Get in Touch",
-                    subtitle: "Have a question or need help? Send us a message and our team will get back to you shortly.",
+                    subtitle: "Fill out the form and we'll pre‑write the email for you.",
                     lblName: "Your Name",
-                    lblEmail: "Email Address",
+                    lblEmail: "Your Email",
                     lblMsg: "Message",
-                    btn: "Send Message",
-                    success: "Message sent! We will contact you soon.",
-                    error: "Something went wrong. Please try again.",
+                    btn: "Open Email",
+                    info: "This will open your email app. If nothing happens, you can also reach us directly at <strong>scoralia.web@gmail.com</strong>.",
                     infoEmail: "Email Us",
                     infoSafety: "Trust & Safety",
                     infoSafetyText: "Reported issues are reviewed by admins within 24 hours.",
                     infoPurpose: "Our Purpose",
                     infoPurposeText: "Scoralia is built to help students save money and connect safely.",
-                    sending: "Sending...",
+                    subject: "Message from Scoralia contact form",
                     namePlace: "Enter your name",
                     emailPlace: "example@email.com",
                     msgPlace: "How can we help you?"
                 },
                 fr: {
                     title: "Contactez-nous",
-                    subtitle: "Une question ou besoin d'aide ? Envoyez-nous un message et notre équipe vous répondra rapidement.",
+                    subtitle: "Remplissez le formulaire et nous pré‑remplirons l'email pour vous.",
                     lblName: "Votre Nom",
-                    lblEmail: "Adresse E-mail",
+                    lblEmail: "Votre Email",
                     lblMsg: "Message",
-                    btn: "Envoyer le message",
-                    success: "Message envoyé ! Nous vous contacterons bientôt.",
-                    error: "Une erreur s'est produite. Veuillez réessayer.",
+                    btn: "Ouvrir l'email",
+                    info: "Cela ouvrira votre application de messagerie. Si rien ne se passe, vous pouvez aussi nous écrire directement à <strong>scoralia.web@gmail.com</strong>.",
                     infoEmail: "Écrivez-nous",
                     infoSafety: "Confiance et Sécurité",
                     infoSafetyText: "Les signalements sont examinés par les administrateurs sous 24h.",
                     infoPurpose: "Notre Mission",
                     infoPurposeText: "Scoralia est conçu pour aider les étudiants à économiser et à se connecter en toute sécurité.",
-                    sending: "Envoi en cours...",
+                    subject: "Message depuis le formulaire de contact Scoralia",
                     namePlace: "Entrez votre nom",
                     emailPlace: "exemple@courriel.com",
                     msgPlace: "Comment pouvons-nous vous aider ?"
                 }
             }[lang];
 
-            // Apply language to UI
+            // Apply UI text
             document.getElementById('ui-title').textContent = strings.title;
             document.getElementById('ui-subtitle').textContent = strings.subtitle;
             document.getElementById('ui-label-name').textContent = strings.lblName;
             document.getElementById('ui-label-email').textContent = strings.lblEmail;
             document.getElementById('ui-label-message').textContent = strings.lblMsg;
-            uiSpan.textContent = strings.btn;
+            document.getElementById('ui-btn').textContent = strings.btn;
+            document.getElementById('ui-info').innerHTML = strings.info;
             document.getElementById('ui-info-email').textContent = strings.infoEmail;
             document.getElementById('ui-info-safety').textContent = strings.infoSafety;
             document.getElementById('ui-info-safety-text').textContent = strings.infoSafetyText;
@@ -226,53 +213,21 @@
             document.querySelector('input[name="email"]').placeholder = strings.emailPlace;
             document.querySelector('textarea[name="message"]').placeholder = strings.msgPlace;
 
-            // Form submission via fetch to Cloudflare Function
-            form.addEventListener('submit', async (e) => {
-                e.preventDefault();  // Prevent default page POST
+            // Handle form → mailto:
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
 
-                // Disable button and show sending state
-                submitBtn.disabled = true;
-                uiSpan.textContent = strings.sending;
+                const name = form.name.value.trim();
+                const email = form.email.value.trim();
+                const message = form.message.value.trim();
 
-                // Hide previous notification
-                notification.style.display = 'none';
-                notification.className = 'notification-banner';
+                const subject = encodeURIComponent(strings.subject);
+                const body = encodeURIComponent(
+                    `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`
+                );
 
-                const payload = {
-                    name: form.name.value.trim(),
-                    email: form.email.value.trim(),
-                    message: form.message.value.trim()
-                };
-
-                try {
-                    const res = await fetch('/api/contact', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    const data = await res.json();
-
-                    if (res.ok && data.success) {
-                        // Success
-                        notification.classList.add('success');
-                        notification.innerHTML = `<i class="fas fa-check-circle"></i> ${strings.success}`;
-                        notification.style.display = 'flex';
-                        form.reset();
-                    } else {
-                        // Error from server
-                        throw new Error(data.error || 'Server error');
-                    }
-                } catch (error) {
-                    console.error('Contact form error:', error);
-                    notification.classList.add('error');
-                    notification.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${strings.error}`;
-                    notification.style.display = 'flex';
-                } finally {
-                    // Re-enable button and restore original text
-                    submitBtn.disabled = false;
-                    uiSpan.textContent = strings.btn;
-                }
+                // Open default email client
+                window.location.href = `mailto:scoralia.web@gmail.com?subject=${subject}&body=${body}`;
             });
         });
     </script>
