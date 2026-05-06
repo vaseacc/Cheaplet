@@ -32,6 +32,10 @@
     
     <script type="module" src="ui-utils.js"></script>
     <script type="module" src="global.js"></script>
+    
+    <!-- 🌙 DARK THEME -->
+    <link rel="stylesheet" href="/dark-theme.css">
+    
     <style>
         :root {
             --gold:        #C8A96E;
@@ -435,6 +439,33 @@
         #loading-text { font-size: 12px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
 
         @media (max-width: 500px) { .auth-card { padding: 32px 22px 28px; border-radius: 16px; } .card-title { font-size: 24px; } }
+
+        /* 🌙 DARK MODE OVERRIDES FOR LOGIN PAGE */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --gold: #C8A96E;
+                --gold-light: #ddb97a;
+                --navy: #0f1525;
+                --navy-card: rgba(15, 21, 37, 0.85);
+                --navy-input: rgba(255,255,255,0.08);
+                --border: rgba(200,169,110,0.2);
+                --border-dim: rgba(255,255,255,0.08);
+                --text: #f4eedd;
+                --muted: rgba(244,238,221,0.55);
+            }
+            body {
+                background-color: var(--navy);
+            }
+            .auth-card {
+                background: var(--navy-card);
+                border-color: var(--border);
+            }
+            input, select {
+                background: var(--navy-input);
+                border-color: rgba(255,255,255,0.1);
+                color: var(--text);
+            }
+        }
     </style>
 </head>
 <body>
@@ -616,7 +647,6 @@
         import { getFirestore, doc, setDoc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
-            // --- Robust Firebase Config ---
             let firebaseConfig;
             try {
                 const response = await fetch(getFunctionUrl('config'));
@@ -667,7 +697,6 @@
             let isFullnameValid = false;
             let isSubmitting = false;
 
-            // Expanded massive list of gender options
             const extendedGenders =[
                 "Abimegender", "Admasgender", "Aerogender", "Aesthetgender", "Affectugender", "Agender", "Agenderfluid", 
                 "Agenderflux", "Alexigender", "Aliagender", "Amaregender", "Ambigender", "Ambonec", "Androgyne", 
@@ -892,23 +921,19 @@
             document.getElementById('email').addEventListener('input', updateSubmitButton);
             document.getElementById('password').addEventListener('input', updateSubmitButton);
 
-            // Gender Select Logic
             genderSelect.addEventListener('change', (e) => {
                 if (e.target.value === 'show_more') {
-                    // Remove the "show_more" option
                     const showMoreOpt = e.target.querySelector('option[value="show_more"]');
                     if (showMoreOpt) showMoreOpt.remove();
                     
                     const fragment = document.createDocumentFragment();
 
-                    // Add a prompt option so they know to click again to view the huge list
                     const promptOpt = document.createElement('option');
                     promptOpt.value = 'prompt';
                     promptOpt.textContent = strings[lang].genderPrompt || "-- Select from expanded list --";
                     promptOpt.disabled = true;
                     fragment.appendChild(promptOpt);
 
-                    // Add extended list of genders
                     extendedGenders.forEach(g => {
                         const opt = document.createElement('option');
                         opt.value = g;
@@ -916,11 +941,9 @@
                         fragment.appendChild(opt);
                     });
                     
-                    // Insert them right before the "Custom..." option
                     const customOpt = e.target.querySelector('option[value="Custom"]');
                     e.target.insertBefore(fragment, customOpt);
                     
-                    // Select the prompt option to indicate they need to open the menu again
                     e.target.value = 'prompt';
                     genderCustom.style.display = 'none';
 
@@ -950,7 +973,6 @@
                 return schoolDomains[domain] ? { isStudent: true, schoolName: schoolDomains[domain] } : { isStudent: false, schoolName: null };
             }
 
-            // ---------- OAuth login ----------
             async function handleOAuth(provider) {
                 loadingOverlay.style.display = 'flex';
                 try {
@@ -1003,8 +1025,6 @@
                 if (!userDoc.exists()) {
                     const schoolInfo = getSchoolInfo(user.email || '');
                     
-                    // We also save the default gender for OAuth registrants, 
-                    // though they skip the manual form.
                     await setDoc(userDocRef, {
                         uid: user.uid,
                         displayName: user.displayName || '',
@@ -1082,7 +1102,6 @@
                 applyUIText();
             };
 
-            // Email/Password form submit
             authForm.onsubmit = async (e) => {
                 e.preventDefault();
                 if (isSubmitting) return;
@@ -1094,12 +1113,10 @@
                     if (isLoginMode) {
                         loadingOverlay.style.display = 'flex';
                         await signInWithEmailAndPassword(auth, email, pass);
-                        // Redirect handled by onAuthStateChanged
                     } else {
                         const fullName = fullNameInput.value.trim();
                         const username = usernameInput.value.trim().toLowerCase();
                         
-                        // Grab Gender value and handle fallbacks if left on prompts
                         let finalGender = genderSelect.value;
                         if (finalGender === 'show_more' || finalGender === 'prompt') {
                             finalGender = 'Prefer not to say';
