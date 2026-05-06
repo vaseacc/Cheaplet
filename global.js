@@ -1309,3 +1309,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const logo = document.querySelector('.logo');
     if (logo) logo.onclick = () => window.location.href = '/';
 });
+
+// ==========================================================================
+// PREMIUM UI ENHANCEMENTS - Scroll reveal, animations, toast notifications
+// ==========================================================================
+
+// Initialize scroll reveal animations when DOM is ready
+if (typeof ScrollReveal !== 'undefined') {
+    // Add reveal classes to key elements for scroll animations
+    document.addEventListener('DOMContentLoaded', () => {
+        // Add reveal animation to cards and sections
+        document.querySelectorAll('.listing-card, .topic-card, .tag-pill, .step-card').forEach((el, index) => {
+            el.classList.add('reveal');
+            el.style.transitionDelay = `${index * 0.05}s`;
+        });
+        
+        // Refresh scroll reveal on dynamic content
+        setTimeout(() => {
+            if (typeof ScrollReveal.refresh === 'function') {
+                ScrollReveal.refresh();
+            }
+        }, 500);
+    });
+}
+
+// Enhance buttons with ripple effect
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.btn, button, .btn-hero-primary, .btn-hero-ghost, .search-btn, .btn-load-more').forEach(btn => {
+        btn.classList.add('ripple');
+    });
+});
