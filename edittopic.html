@@ -93,7 +93,7 @@
 
     <header>
         <div class="header-inner">
-            <a href="/index.html" class="logo">Scor<em>alia</em></a>
+            <a href="/" class="logo">Scor<em>alia</em></a>
             <div class="header-right"></div>
         </div>
     </header>
@@ -172,7 +172,7 @@
 
             const urlParams = new URLSearchParams(window.location.search);
             const topicId = urlParams.get('id');
-            if (!topicId) { window.location.href = '/social.html'; return; }
+            if (!topicId) { window.location.href = '/social'; return; }
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             const ui = {
@@ -195,7 +195,7 @@
             document.getElementById('ui-danger-desc').textContent = ui.dangerDesc;
             document.getElementById('ui-btn-del').textContent = ui.btnDel;
 
-            document.getElementById('back-btn').href = `/topic.html?id=${topicId}`;
+            document.getElementById('back-btn').href = `/topic?id=${topicId}`;
 
             let currentUser = null;
             let topicData = null;
@@ -213,14 +213,14 @@
                     currentUser = user;
                     loadTopicData();
                 } else {
-                    window.location.href = `/login.html?redirect=${encodeURIComponent(`/edittopic.html?id=${topicId}`)}`;
+                    window.location.href = `/login?redirect=${encodeURIComponent(`/edittopic?id=${topicId}`)}`;
                 }
             });
 
             async function loadTopicData() {
                 try {
                     const tDoc = await getDoc(doc(db, "social_channels", topicId));
-                    if (!tDoc.exists()) { window.location.href = '/social.html'; return; }
+                    if (!tDoc.exists()) { window.location.href = '/social'; return; }
                     
                     topicData = tDoc.data();
                     
@@ -229,7 +229,7 @@
                     const isAdmin = uDoc.exists() && uDoc.data().role === 'admin';
                     
                     if (topicData.createdBy !== currentUser.uid && !isAdmin) {
-                        window.location.href = `/topic.html?id=${topicId}`;
+                        window.location.href = `/topic?id=${topicId}`;
                         return;
                     }
 
@@ -259,7 +259,7 @@
 
                 } catch(e) {
                     console.error(e);
-                    window.location.href = '/social.html';
+                    window.location.href = '/social';
                 }
             }
 
@@ -379,7 +379,7 @@
                     
                     // Redirect back to the topic page after a short delay
                     setTimeout(() => {
-                        window.location.href = `/topic.html?id=${topicId}`;
+                        window.location.href = `/topic?id=${topicId}`;
                     }, 1500);
                     
                 } catch (e) {
@@ -395,7 +395,7 @@
                     btnDelete.disabled = true;
                     try {
                         await deleteDoc(doc(db, "social_channels", topicId));
-                        window.location.href = '/social.html';
+                        window.location.href = '/social';
                     } catch(e) {
                         alert("Error deleting topic.");
                         btnDelete.disabled = false;
