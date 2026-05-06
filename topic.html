@@ -100,7 +100,7 @@
 
         .feed-column { display: flex; flex-direction: column; gap: 24px; padding-bottom: 60px; width: 100%; min-width: 0; overflow-x: hidden; }
 
-        .topic-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: -10px; padding: 10px; background: var(--white); border-radius: var(--radius); border: var(--border); box-shadow: var(--shadow); }
+        .topic-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: -10px; padding: 10px; background: var(--white); border-radius: var(--radius); border: var(--border); box-shadow: var(--shadow); flex-wrap: wrap; }
         .topic-title-area { display: flex; align-items: center; gap: 12px; font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: var(--ink); }
         .topic-title-area i { color: var(--gold); }
         .topic-controls { display: flex; gap: 10px; }
@@ -285,6 +285,13 @@
         /* Custom Dialog Modals */
         #custom-dialog-modal .modal-card { text-align: center; }
 
+        .topic-desc {
+            margin: 8px 0 0 0;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
         @media (max-width: 850px) {
             .hub-layout { display: flex; flex-direction: column; padding: 0; gap: 0; margin: 0; width: 100%; }
             .sidebar { display: none; }
@@ -298,7 +305,6 @@
     </style>
 </head>
 <body>
-
     <header>
         <div class="header-inner">
             <a href="/" class="logo">Scor<em>alia</em></a>
@@ -426,6 +432,7 @@
                     </button>
                     <a href="#" class="topic-settings-btn" id="topic-settings-btn" style="display: none;" title="Topic Settings"><i class="fas fa-cog"></i></a>
                 </div>
+                <p id="topic-description" class="topic-desc"></p>
             </div>
 
             <!-- COMPOSER -->
@@ -709,6 +716,9 @@
                 currentTopicName = currentTopicData.name;
                 setElemText('ui-topic-name', currentTopicName);
                 setElemPlaceholder('post-input', `${ui.post_in}${currentTopicName}...`);
+
+                // ✅ Add this line:
+                document.getElementById('topic-description').textContent = currentTopicData.description || '';
             } catch(e) { window.location.href = '/social'; return; }
 
             async function checkExistingRequest(uid) {
@@ -943,7 +953,9 @@
                     onSnapshot(doc(db, "users", user.uid), async (uSnap) => {
                         if (uSnap.exists()) {
                             const data = uSnap.data();
-                            currentUser = { ...user, ...data }; currentUserData = data; internalSchoolName = data.schoolName || "Global Campus";
+                            currentUser = { ...user, ...data };
+                            currentUserData = data;
+                            internalSchoolName = data.schoolName || "Global Campus";
                             await checkExistingRequest(currentUser.uid);
                             
                             if (currentTopicData && currentTopicData.visibility === 'private') {
@@ -990,18 +1002,18 @@
                             showHubLayout();
                             loadTopics(); 
                             loadFeed();
- site-web-live-review-03495
-                        } else window.location.href = '/login?redirect=/social';
-
 
                             // Mark unread notifications for this topic as read (if the current user is the topic owner)
                             if (currentTopicData && currentTopicData.createdBy === currentUser.uid) {
                                 markNotificationsAsRead(topicId, currentUser.uid);
                             }
-                        } else window.location.href = '/login.html?redirect=/social.html';
- main
+                        } else {
+                            window.location.href = '/login?redirect=/social';
+                        }
                     });
-                } else window.location.href = '/login?redirect=/social';
+                } else {
+                    window.location.href = '/login?redirect=/social';
+                }
             });
 
             function showLockedScreenWithRequest() {
