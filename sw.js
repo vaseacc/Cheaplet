@@ -1,106 +1,101 @@
-// sw.js - Service Worker for Scoralia PWA (Network-First, bypass HTML cache)
-const CACHE_NAME = 'scoralia-v11'; // bump version to force update
+// sw.js – Service Worker for Scoralia PWA (Network‑First, non‑blocking)
+const CACHE_NAME = 'scoralia-v12'; // bumped version to force update
 
-// Files to cache for offline access (only static assets, no HTML pages)
+// Only cache static assets that change rarely
 const urlsToCache = [
   '/global.js',
   '/favicon.svg',
-  '/manifest.json',
-  // You can add other static assets like CSS files, images, etc.
-  // BUT DO NOT cache any .html file or clean URLs that rely on server rewrites
+  '/manifest.json'
 ];
 
-// Install event
+// ---- Install ----
 self.addEventListener('install', event => {
-  console.log('[SW] Installing new version...');
+  console.log('[SW] Installing…');
   self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       return cache.addAll(urlsToCache).catch(err => {
-        console.warn('[SW] Failed to cache some assets:', err);
+        console.warn('[SW] Failed to pre‑cache some assets:', err);
       });
     })
   );
 });
 
-// Activate event – clean up old caches instantly
+// ---- Activate – clean old caches ----
 self.addEventListener('activate', event => {
-  console.log('[SW] Activating new version & clearing old caches...');
+  console.log('[SW] Activating…');
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
-        cacheNames.map(cache => {
-          if (cache !== CACHE_NAME) {
-            console.log('[SW] Deleting old cache:', cache);
-            return caches.delete(cache);
-          }
-        })
+        cacheNames
+          .filter(name => name !== CACHE_NAME)
+          .map(name => {
+            console.log('[SW] Deleting old cache:', name);
+            return caches.delete(name);
+          })
       );
     })
   );
-  self.clients.claim(); // take control of all open pages immediately
+  self.clients.claim();
 });
 
-// Helper: should this request bypass the cache entirely?
-function shouldBypass(url) {
-  // Ignore non-http/https requests
-  if (!url.startsWith('http')) return true;
-
-  // Always bypass API calls, Firebase, Cloudinary, Turnstile
-  if (url.includes('firestore.googleapis.com') ||
-      url.includes('googleapis.com') ||
-      url.includes('firebaseapp.com') ||
-      url.includes('/listen') ||
-      url.includes('api.cloudinary.com') ||
-      url.includes('challenges.cloudflare.com')) {
-    return true;
-  }
-
-  // Bypass all HTML navigation requests (so Vercel rewrites work)
-  // We detect navigation by looking at the request mode and destination.
-  // For simplicity, we'll just never cache requests that are not GET or are for HTML files.
-  return false;
+// ---- Helper – should we completely ignore this request? ----
+function isIgnored(url) {
+  // Firestore, Firebase Auth, Cloudinary, Turnstile, analytics
+  return (
+    url.includes('firestore.googleapis.com') ||
+    url.includes('googleapis.com') ||
+    url.includes('firebaseapp.com') ||
+    url.includes('api.cloudinary.com') ||
+    url.includes('challenges.cloudflare.com') ||
+    url.includes('/__/auth/') ||
+    url.includes('/listen') ||
+    url.includes('google-analytics.com')
+  );
 }
 
-// Fetch event – network-first for static assets, network-only for HTML
+// ---- Fetch ----
 self.addEventListener('fetch', event => {
-  const req = event.request;
-  const url = new URL(req.url);
+  const { request } = event;
+  const url = new URL(request.url);
 
-  // Only handle GET requests
-  if (req.method !== 'GET') return;
+  // 1. Only handle GET requests
+  if (request.method !== 'GET') return;
 
-  // Always bypass if it's an API call or similar
-  if (shouldBypass(url.href)) return;
+  // 2. Ignore Firebase, Cloudinary, etc.
+  if (isIgnored(url.href)) return;
 
-  // If the request is a navigation (i.e., the user is loading a page), ALWAYS network-first
-  if (req.mode === 'navigate') {
+  // 3. Navigation (HTML pages) → network‑only, no cache
+  if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(req).catch(() => {
-        // If offline, you could return a fallback page, but for now just fail
-        return new Response('You are offline. Please check your connection.', { status: 503 });
+      fetch(request).catch(() => {
+        return new Response(
+          'You are offline. Please check your connection.',
+          { status: 503, statusText: 'Offline' }
+        );
       })
     );
     return;
   }
 
-  // For other static assets (JS, CSS, images), use network-first with cache fallback
+  // 4. Static assets (JS, CSS, images, fonts) → network‑first, fallback to cache
   event.respondWith(
-    fetch(req)
+    fetch(request)
       .then(networkResponse => {
-        // If we got a valid response, cache it for future offline use
+        // Cache a fresh copy for future offline use
         if (networkResponse && networkResponse.status === 200) {
-          const responseToCache = networkResponse.clone();
+          const responseClone = networkResponse.clone();
           caches.open(CACHE_NAME).then(cache => {
-            cache.put(req, responseToCache);
+            cache.put(request, responseClone);
           });
         }
         return networkResponse;
       })
       .catch(() => {
-        // Network failed – try to serve from cache
-        console.log('[SW] Network failed, serving from cache:', url.href);
-        return caches.match(req);
+        // Network failed – serve from cache
+        return caches.match(request).then(cachedResponse => {
+          return cachedResponse || new Response(null, { status: 504 });
+        });
       })
   );
 });
