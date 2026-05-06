@@ -415,7 +415,7 @@ const Counter = {
                         const prefix = el.dataset.prefix || '';
                         const suffix = el.dataset.suffix || '';
                         
-                        this.animate(el, end, 2000, prefix, suffix);
+                        this.animate(el, end, 800, prefix, suffix);
                         observer.unobserve(el);
                     }
                 });
