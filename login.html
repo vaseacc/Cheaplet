@@ -278,7 +278,7 @@
 
         input::placeholder { color: rgba(244,238,221,0.22); }
 
-        input:focus {
+        input:focus, select.form-select:focus {
             border-color: rgba(200,169,110,0.50);
             background: rgba(200,169,110,0.05);
             box-shadow: 0 0 0 3px rgba(200,169,110,0.08);
@@ -289,6 +289,46 @@
             -webkit-box-shadow: 0 0 0 1000px rgba(12,20,70,0.95) inset !important;
             -webkit-text-fill-color: var(--text) !important;
             border-color: rgba(200,169,110,0.35) !important;
+        }
+
+        /* Select Styles */
+        select.form-select {
+            display: block;
+            width: 100%;
+            height: 46px;
+            padding: 0 16px;
+            background: rgba(255,255,255,0.055);
+            border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 10px;
+            color: var(--text);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+            box-sizing: border-box;
+            appearance: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+        select.form-select option {
+            background: var(--navy);
+            color: var(--text);
+        }
+        select.form-select option:disabled {
+            color: rgba(255,255,255,0.4);
+            font-style: italic;
+        }
+        .select-wrapper { position: relative; }
+        .select-wrapper::after {
+            content: '\f0d7';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            pointer-events: none;
         }
 
         .input-status { position: relative; }
@@ -312,7 +352,7 @@
             transition: max-height 0.45s cubic-bezier(0.22,1,0.36,1), opacity 0.3s ease;
         }
 
-        #register-fields.visible { max-height: 300px; opacity: 1; }
+        #register-fields.visible { max-height: 600px; opacity: 1; }
 
         .forgot-pass-link {
             display: block; text-align: right; font-size: 12px;
@@ -454,6 +494,21 @@
                                     <span id="username-availability"></span>
                                 </div>
                             </div>
+
+                            <!-- Gender Field Addition -->
+                            <div class="field-wrap">
+                                <label class="field-label" id="gender-label">Gender / Pronouns</label>
+                                <div class="select-wrapper">
+                                    <select id="gender-select" class="form-select">
+                                        <option value="Prefer not to say">Prefer not to say</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="show_more">Show more...</option>
+                                        <option value="Custom">Custom...</option>
+                                    </select>
+                                </div>
+                                <input type="text" id="gender-custom" placeholder="Please specify..." style="display:none; margin-top: 8px;">
+                            </div>
                         </div>
 
                         <div class="field-wrap">
@@ -569,10 +624,8 @@
                 firebaseConfig = config.firebaseConfig;
             } catch (err) {
                 console.warn('⚠️ Config fetch failed, using fallback based on hostname. Error:', err.message);
-                // Fallback config – you must fill in your actual apiKey etc., OR rely on the env vars in the backend.
-                // The critical piece is authDomain, which we set below.
                 firebaseConfig = {
-                    apiKey: "AIzaSyDYl9fSWCnkX5iqiesmCm6TTsFW4SRKOtE", // same as in your original config
+                    apiKey: "AIzaSyDYl9fSWCnkX5iqiesmCm6TTsFW4SRKOtE", 
                     authDomain: "chaeplet.firebaseapp.com",
                     projectId: "chaeplet",
                     storageBucket: "chaeplet.appspot.com",
@@ -580,9 +633,6 @@
                     appId: "1:725957082327:web:2a76e4abb0a0c2f8a0b3c8"
                 };
             }
-            // Always force authDomain to the actual hostname
-            // Keep the Firebase default – this is where the /__/auth/iframe lives
-
 
             const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
             const auth = getAuth(app);
@@ -590,7 +640,6 @@
             const googleProvider = new GoogleAuthProvider();
             const msProvider = new OAuthProvider('microsoft.com');
 
-            // --- Rest of the login code (unchanged from last working version) ---
             const formTitle = document.getElementById('form-title');
             const toggleLink = document.getElementById('toggle-auth');
             const authForm = document.getElementById('auth-form');
@@ -607,12 +656,42 @@
             const usernameHintText = document.getElementById('username-hint-text');
             const usernameAvailability = document.getElementById('username-availability');
 
+            const genderSelect = document.getElementById('gender-select');
+            const genderCustom = document.getElementById('gender-custom');
+
             let isLoginMode = true;
             let isRegistering = false; 
             let usernameCheckTimeout = null;
             let isUsernameValid = false;
             let isFullnameValid = false;
             let isSubmitting = false;
+
+            // Expanded massive list of gender options
+            const extendedGenders =[
+                "Abimegender", "Admasgender", "Aerogender", "Aesthetgender", "Affectugender", "Agender", "Agenderfluid", 
+                "Agenderflux", "Alexigender", "Aliagender", "Amaregender", "Ambigender", "Ambonec", "Androgyne", 
+                "Anisogender", "Apagender", "Apocaliptigender", "Aporagender", "Astergender", "Astralgender", "Autigender", 
+                "Bigender", "Bigenderfluid", "Bigenderflux", "Biogender", "Bipartgender", "Blurgender", "Boi", "Boyflux", 
+                "Butch", "Cadensgender", "Cassflux", "Cassgender", "Cavusgender", "Cendgender", "Ceterofluid", 
+                "Ceterogender", "Cisgender", "Cisgender Female", "Cisgender Male", "Cisgender Man", "Cisgender Woman", 
+                "Cloudgender", "Collgender", "Colorfluid", "Commogender", "Condigender", "Deliciagender", "Demiboy", 
+                "Demifluid", "Demiflux", "Demigender", "Demigirl", "Demi-nonbinary", "Domgender", "Dualgender", 
+                "Duragender", "Egogender", "Enby", "Endogender", "Entrogender", "Epicene", "Espigender", "Exgender", 
+                "Existigender", "Fa'afafine", "Fae/Faer Pronouns", "Fascinugender", "Female", "Female to Male (FTM)", 
+                "Femme", "Fluidflux", "Gemigender", "Gender Blank", "Gender Fluid", "Gender Neutral", 
+                "Gender Nonconforming", "Gender Questioning", "Gender Variant", "Genderblind", "Genderfluid", "Genderflux", 
+                "Genderqueer", "Gendervoid", "Genderwitched", "Girlflux", "He/Him Pronouns", "He/They Pronouns", "Hijra", 
+                "Illusogender", "Impigender", "Intergender", "Intersex", "It/Its Pronouns", "Juxera", "Libragender", 
+                "Magigender", "Male", "Male to Female (MTF)", "Masc", "Masculine of Center", "Maverique", "Mirrorgender", 
+                "Multigender", "Mutogender", "Muxe", "Necrogender", "Neutrois", "Non-binary", "Non-binary Boy", 
+                "Non-binary Girl", "Novigender", "Null", "Omnigender", "Pangender", "Paragender", "Perigender", 
+                "Polygender", "Polysexual", "Proxvir", "Quoigender", "She/Her Pronouns", "She/They Pronouns", "Stud", 
+                "Surgender", "Systemgender", "They/Them Pronouns", "Third Gender", "Trans Female", "Trans Male", "Trans Man", 
+                "Trans Person", "Trans Woman", "Transfeminine", "Transgender", "Transgender Female", "Transgender Male", 
+                "Transmasculine", "Transneutral", "Transsexual", "Transsexual Female", "Transsexual Male", "Trigender", 
+                "Two-Spirit", "Vapogender", "Venngender", "Verangender", "Vibragender", "Vocigender", "Xe/Xem/Xyr Pronouns", 
+                "Xe/Xer Pronouns", "Xenogender", "Ze/Hir/Hirs Pronouns", "Ze/Zir Pronouns"
+            ];
 
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = {
@@ -635,6 +714,14 @@
                     usernameUnavailable: "✗ Already taken",
                     usernameChecking: "Checking...",
                     usernameInvalid: "Invalid characters",
+                    genderLabel: "Gender / Pronouns",
+                    genderPreferNot: "Prefer not to say",
+                    genderMale: "Male",
+                    genderFemale: "Female",
+                    genderCustom: "Custom...",
+                    genderShowMore: "Show more...",
+                    genderPlaceholder: "Type your gender...",
+                    genderPrompt: "-- Select from expanded list --",
                     placeEmail: "Email Address", placePass: "Password",
                     google: "Continue with Google", microsoft: "Continue with Microsoft", or: "or", verify: "Verifying...",
                     errBanned: "Account banned.", errVerify: "Please verify your email first! A verification link was sent to your inbox.", 
@@ -661,6 +748,14 @@
                     usernameUnavailable: "✗ Déjà pris",
                     usernameChecking: "Vérification...",
                     usernameInvalid: "Caractères invalides",
+                    genderLabel: "Genre / Pronoms",
+                    genderPreferNot: "Préfère ne pas le dire",
+                    genderMale: "Homme",
+                    genderFemale: "Femme",
+                    genderCustom: "Personnalisé...",
+                    genderShowMore: "Afficher plus...",
+                    genderPlaceholder: "Saisissez votre genre...",
+                    genderPrompt: "-- Sélectionnez dans la liste élargie --",
                     placeEmail: "Adresse e-mail", placePass: "Mot de passe",
                     google: "Continuer avec Google", microsoft: "Continuer avec Microsoft", or: "ou", verify: "Vérification...",
                     errBanned: "Compte banni.", errVerify: "Veuillez d'abord vérifier votre e-mail ! Un lien de vérification a été envoyé.",
@@ -673,6 +768,17 @@
             const urlParams = new URLSearchParams(window.location.search);
             const msgParam = urlParams.get('msg');
             const redirectTo = urlParams.get('redirect') || '/';
+
+            function updateSelectTranslations() {
+                document.getElementById('gender-label').textContent = strings[lang].genderLabel;
+                const getOpt = val => genderSelect.querySelector(`option[value="${val}"]`);
+                if(getOpt("Prefer not to say")) getOpt("Prefer not to say").textContent = strings[lang].genderPreferNot;
+                if(getOpt("Male")) getOpt("Male").textContent = strings[lang].genderMale;
+                if(getOpt("Female")) getOpt("Female").textContent = strings[lang].genderFemale;
+                if(getOpt("Custom")) getOpt("Custom").textContent = strings[lang].genderCustom;
+                if(getOpt("show_more")) getOpt("show_more").textContent = strings[lang].genderShowMore;
+                genderCustom.placeholder = strings[lang].genderPlaceholder;
+            }
 
             function applyUIText() {
                 formTitle.textContent = isLoginMode ? strings[lang].loginTitle : strings[lang].regTitle;
@@ -696,6 +802,7 @@
                 document.getElementById('loading-text').textContent = strings[lang].verify;
                 forgotPasswordLink.textContent = strings[lang].forgotPass;
                 
+                updateSelectTranslations();
                 updateFullnameUI();
                 updateUsernameUI();
             }
@@ -784,6 +891,46 @@
             document.getElementById('email').addEventListener('input', updateSubmitButton);
             document.getElementById('password').addEventListener('input', updateSubmitButton);
 
+            // Gender Select Logic
+            genderSelect.addEventListener('change', (e) => {
+                if (e.target.value === 'show_more') {
+                    // Remove the "show_more" option
+                    const showMoreOpt = e.target.querySelector('option[value="show_more"]');
+                    if (showMoreOpt) showMoreOpt.remove();
+                    
+                    const fragment = document.createDocumentFragment();
+
+                    // Add a prompt option so they know to click again to view the huge list
+                    const promptOpt = document.createElement('option');
+                    promptOpt.value = 'prompt';
+                    promptOpt.textContent = strings[lang].genderPrompt || "-- Select from expanded list --";
+                    promptOpt.disabled = true;
+                    fragment.appendChild(promptOpt);
+
+                    // Add extended list of genders
+                    extendedGenders.forEach(g => {
+                        const opt = document.createElement('option');
+                        opt.value = g;
+                        opt.textContent = g;
+                        fragment.appendChild(opt);
+                    });
+                    
+                    // Insert them right before the "Custom..." option
+                    const customOpt = e.target.querySelector('option[value="Custom"]');
+                    e.target.insertBefore(fragment, customOpt);
+                    
+                    // Select the prompt option to indicate they need to open the menu again
+                    e.target.value = 'prompt';
+                    genderCustom.style.display = 'none';
+
+                } else if (e.target.value === 'Custom') {
+                    genderCustom.style.display = 'block';
+                    genderCustom.focus();
+                } else {
+                    genderCustom.style.display = 'none';
+                }
+            });
+
             const schoolDomains = {
                 "@etu.cegepjonquiere.ca": "Cégep de Jonquière",
                 "@cegep-lanaudiere.qc.ca": "Cégep de Lanaudière",
@@ -802,31 +949,25 @@
                 return schoolDomains[domain] ? { isStudent: true, schoolName: schoolDomains[domain] } : { isStudent: false, schoolName: null };
             }
 
-            // ---------- OAuth login (popup first, redirect fallback) ----------
+            // ---------- OAuth login ----------
             async function handleOAuth(provider) {
                 loadingOverlay.style.display = 'flex';
                 try {
-                    // Try popup first
                     const result = await signInWithPopup(auth, provider);
                     const user = result.user;
                     await ensureUserDoc(user);
-                    // Redirect handled by onAuthStateChanged
                 } catch (error) {
                     loadingOverlay.style.display = 'none';
                     if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
-                        // Popup blocked – store desired destination and fallback to redirect
                         sessionStorage.setItem('scoralia_oauth_pending', 'true');
                         sessionStorage.setItem('scoralia_redirect', redirectTo);
                         await signInWithRedirect(auth, provider);
-                        // The page will be redirected, so nothing else needed
                     } else {
-                        // Some other error – show it
                         alert(error.message);
                     }
                 }
             }
 
-            // Process redirect result when coming back from OAuth redirect
             async function quickRedirectIfOAuth() {
                 if (sessionStorage.getItem('scoralia_oauth_pending')) {
                     try {
@@ -837,7 +978,6 @@
                             const dest = sessionStorage.getItem('scoralia_redirect') || '/';
                             sessionStorage.removeItem('scoralia_redirect');
                             sessionStorage.removeItem('scoralia_oauth_pending');
-                            // Use cache‑buster to avoid stale cache issues
                             window.location.href = dest + (dest.includes('?') ? '&' : '?') + 't=' + Date.now();
                             return;
                         }
@@ -861,6 +1001,9 @@
                 const userDoc = await getDoc(userDocRef);
                 if (!userDoc.exists()) {
                     const schoolInfo = getSchoolInfo(user.email || '');
+                    
+                    // We also save the default gender for OAuth registrants, 
+                    // though they skip the manual form.
                     await setDoc(userDocRef, {
                         uid: user.uid,
                         displayName: user.displayName || '',
@@ -869,19 +1012,17 @@
                         role: 'user',
                         isStudent: schoolInfo.isStudent,
                         schoolName: schoolInfo.schoolName,
+                        gender: 'Prefer not to say', 
                         createdAt: new Date().toISOString()
                     });
                 }
             }
 
-            // Check if we're returning from a redirect on page load
             await quickRedirectIfOAuth();
 
-            // Button listeners
             document.getElementById('google-btn').onclick = () => handleOAuth(googleProvider);
             document.getElementById('microsoft-btn').onclick = () => handleOAuth(msProvider);
 
-            // Auth state listener (handles popup, redirect, and email/password)
             onAuthStateChanged(auth, async (user) => {
                 if (isRegistering) return;
 
@@ -906,7 +1047,6 @@
                                 return;
                             }
                         }
-                        // If already handled by quickRedirectIfOAuth, don't redirect again
                         if (!sessionStorage.getItem('scoralia_oauth_pending')) {
                             window.location.href = redirectTo;
                         }
@@ -957,15 +1097,27 @@
                     } else {
                         const fullName = fullNameInput.value.trim();
                         const username = usernameInput.value.trim().toLowerCase();
+                        
+                        // Grab Gender value and handle fallbacks if left on prompts
+                        let finalGender = genderSelect.value;
+                        if (finalGender === 'show_more' || finalGender === 'prompt') {
+                            finalGender = 'Prefer not to say';
+                        }
+                        if (finalGender === 'Custom') {
+                            finalGender = genderCustom.value.trim() || 'Prefer not to say';
+                        }
+
                         if (!isFullnameValid || !isUsernameValid) {
                             throw new Error("Please fix the errors before submitting.");
                         }
                         isRegistering = true;
                         loadingOverlay.style.display = 'flex';
+                        
                         const cred = await createUserWithEmailAndPassword(auth, email, pass);
                         await updateProfile(cred.user, { displayName: fullName });
                         const schoolInfo = getSchoolInfo(email);
                         const userRef = doc(db, "users", cred.user.uid);
+                        
                         await setDoc(userRef, {
                             uid: cred.user.uid,
                             displayName: fullName,
@@ -974,8 +1126,10 @@
                             role: 'user',
                             isStudent: schoolInfo.isStudent,
                             schoolName: schoolInfo.schoolName,
+                            gender: finalGender,
                             createdAt: new Date().toISOString()
                         });
+                        
                         await sendEmailVerification(cred.user);
                         await signOut(auth);
                         loadingOverlay.style.display = 'none';
