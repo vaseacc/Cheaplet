@@ -314,6 +314,10 @@
             background: var(--navy);
             color: var(--text);
         }
+        select.form-select option:disabled {
+            color: rgba(255,255,255,0.4);
+            font-style: italic;
+        }
         .select-wrapper { position: relative; }
         .select-wrapper::after {
             content: '\f0d7';
@@ -717,6 +721,7 @@
                     genderCustom: "Custom...",
                     genderShowMore: "Show more...",
                     genderPlaceholder: "Type your gender...",
+                    genderPrompt: "-- Select from expanded list --",
                     placeEmail: "Email Address", placePass: "Password",
                     google: "Continue with Google", microsoft: "Continue with Microsoft", or: "or", verify: "Verifying...",
                     errBanned: "Account banned.", errVerify: "Please verify your email first! A verification link was sent to your inbox.", 
@@ -750,6 +755,7 @@
                     genderCustom: "Personnalisé...",
                     genderShowMore: "Afficher plus...",
                     genderPlaceholder: "Saisissez votre genre...",
+                    genderPrompt: "-- Sélectionnez dans la liste élargie --",
                     placeEmail: "Adresse e-mail", placePass: "Mot de passe",
                     google: "Continuer avec Google", microsoft: "Continuer avec Microsoft", or: "ou", verify: "Vérification...",
                     errBanned: "Compte banni.", errVerify: "Veuillez d'abord vérifier votre e-mail ! Un lien de vérification a été envoyé.",
@@ -892,8 +898,16 @@
                     const showMoreOpt = e.target.querySelector('option[value="show_more"]');
                     if (showMoreOpt) showMoreOpt.remove();
                     
-                    // Add extended list of genders
                     const fragment = document.createDocumentFragment();
+
+                    // Add a prompt option so they know to click again to view the huge list
+                    const promptOpt = document.createElement('option');
+                    promptOpt.value = 'prompt';
+                    promptOpt.textContent = strings[lang].genderPrompt || "-- Select from expanded list --";
+                    promptOpt.disabled = true;
+                    fragment.appendChild(promptOpt);
+
+                    // Add extended list of genders
                     extendedGenders.forEach(g => {
                         const opt = document.createElement('option');
                         opt.value = g;
@@ -905,9 +919,10 @@
                     const customOpt = e.target.querySelector('option[value="Custom"]');
                     e.target.insertBefore(fragment, customOpt);
                     
-                    // Default to the first newly added option
-                    e.target.value = extendedGenders[0];
+                    // Select the prompt option to indicate they need to open the menu again
+                    e.target.value = 'prompt';
                     genderCustom.style.display = 'none';
+
                 } else if (e.target.value === 'Custom') {
                     genderCustom.style.display = 'block';
                     genderCustom.focus();
@@ -1083,10 +1098,14 @@
                         const fullName = fullNameInput.value.trim();
                         const username = usernameInput.value.trim().toLowerCase();
                         
-                        // Grab Gender value
+                        // Grab Gender value and handle fallbacks if left on prompts
                         let finalGender = genderSelect.value;
-                        if (finalGender === 'show_more') finalGender = 'Prefer not to say'; // Fallback
-                        if (finalGender === 'Custom') finalGender = genderCustom.value.trim() || 'Prefer not to say';
+                        if (finalGender === 'show_more' || finalGender === 'prompt') {
+                            finalGender = 'Prefer not to say';
+                        }
+                        if (finalGender === 'Custom') {
+                            finalGender = genderCustom.value.trim() || 'Prefer not to say';
+                        }
 
                         if (!isFullnameValid || !isUsernameValid) {
                             throw new Error("Please fix the errors before submitting.");
