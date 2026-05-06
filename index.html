@@ -13,6 +13,7 @@
     <link rel="canonical" href="https://scoralia.pages.dev/">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <!-- Link to dark theme CSS -->
     <link rel="stylesheet" href="dark-theme.css">
     <title>Scoralia — College Books Marketplace</title>
 
@@ -543,30 +544,47 @@
     </script>
 
     <!-- Main App Script (deferred) -->
+    <!-- Service Worker Registration for PWA -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('ServiceWorker registration successful');
+                }, function(err) {
+                    console.log('ServiceWorker registration failed: ', err);
+                });
+            });
+        }
+    </script>
+
+    <!-- Main App Script (deferred) -->
     <script type="module" src="global.js" defer></script>
 
     <script>
-        // Function to check and apply dark theme
+        // Function to check and apply dark theme based on system preference or local storage
         function applySystemTheme() {
+            const savedTheme = localStorage.getItem('theme');
             const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (prefersDark) {
+
+            if (savedTheme) {
+                if (savedTheme === 'dark') {
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                }
+            } else if (prefersDark) {
                 document.body.classList.add('dark-theme');
-                localStorage.setItem('theme', 'dark'); // Persist preference
+                localStorage.setItem('theme', 'dark'); // Persist system preference
             } else {
                 document.body.classList.remove('dark-theme');
-                localStorage.setItem('theme', 'light'); // Persist preference
+                localStorage.setItem('theme', 'light'); // Persist system preference
             }
         }
 
-        // Apply theme on load, checking local storage first
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme) {
-            document.body.classList.add(savedTheme === 'dark' ? 'dark-theme' : '');
-        } else {
-            applySystemTheme(); // Apply system preference if no saved theme
-        }
+        // Apply theme on load
+        applySystemTheme();
 
-        // Listen for changes in preference
+        // Listen for changes in system preference
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applySystemTheme);
     </script>
 
