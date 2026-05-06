@@ -190,12 +190,12 @@ const PageTransition = {
     
     fadeIn(callback) {
         document.body.style.opacity = '0';
-        document.body.style.transition = 'opacity 0.2s ease';
+        document.body.style.transition = 'opacity 0.3s ease';
         
         requestAnimationFrame(() => {
             document.body.style.opacity = '1';
             if (callback) {
-                setTimeout(callback, 200);
+                setTimeout(callback, 300);
             }
         });
     }
@@ -348,7 +348,7 @@ const Ripple = {
         button.style.overflow = 'hidden';
         button.appendChild(ripple);
         
-        setTimeout(() => ripple.remove(), 400);
+        setTimeout(() => ripple.remove(), 600);
     }
 };
 
@@ -373,9 +373,8 @@ window.Ripple = Ripple;
 // COUNTER ANIMATION
 // ==========================================================================
 
-
 const Counter = {
-    animate(element, end, duration = 1200, prefix = '', suffix = '') {
+    animate(element, end, duration = 2000, prefix = '', suffix = '') {
         const start = 0;
         const startTime = performance.now();
         
@@ -415,7 +414,7 @@ const Counter = {
                         const prefix = el.dataset.prefix || '';
                         const suffix = el.dataset.suffix || '';
                         
-                        this.animate(el, end, 800, prefix, suffix);
+                        this.animate(el, end, 2000, prefix, suffix);
                         observer.unobserve(el);
                     }
                 });
