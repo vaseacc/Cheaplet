@@ -38,7 +38,32 @@
         .header-inner { max-width: 1100px; margin: 0 auto; padding: 0 20px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
         .logo { font-family: var(--font-display); font-size: 1.6rem; font-weight: 900; color: var(--white); text-decoration: none; letter-spacing: -0.5px; }
         .logo em { color: var(--gold); font-style: normal; }
-        
+
+        /* Language Toggle – smaller & right‑aligned */
+        .lang-toggle {
+            display: flex;
+            gap: 3px;
+            background: rgba(255,255,255,0.08);
+            border-radius: 6px;
+            padding: 3px;
+            margin-left: auto;
+            margin-right: 12px;
+        }
+        .lang-btn {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.55);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+        }
+        .lang-btn.active { background: var(--gold); color: var(--ink); }
+        .lang-btn:not(.active):hover { background: rgba(255,255,255,0.12); color: white; }
+
         .main-wrapper { max-width: 900px; margin: 40px auto; padding: 0 20px; animation: fadeUp 0.5s ease both; }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -62,13 +87,18 @@
         .info-text h3 { font-size: 0.95rem; color: var(--ink); margin-bottom: 4px; font-weight: 700; }
         .info-text p, .info-text a { font-size: 0.95rem; color: var(--text-muted); text-decoration: none; }
 
+        .mailto-note { margin-top: 20px; color: var(--text-muted); font-size: 0.9rem; text-align: center; }
+        .mailto-note i { margin-right: 6px; }
+
         footer { background: var(--ink); color: white; padding: 40px 0 20px; margin-top: 60px; text-align: center; border-top: 1px solid rgba(179,205,224,0.15); }
         .footer-link { color: rgba(255,255,255,0.6); text-decoration: none; margin: 0 15px; font-size: 0.85rem; }
+        .footer-link:hover { color: var(--white); }
 
         @media (max-width: 800px) {
             .content-card { grid-template-columns: 1fr; padding: 30px 20px; }
             h1 { font-size: 2rem; }
             header nav { display: none; }
+            .lang-toggle { margin-right: 0; }
         }
     </style>
 </head>
@@ -77,6 +107,10 @@
     <header>
         <div class="header-inner">
             <a href="/" class="logo">Scor<em>alia</em></a>
+            <div class="lang-toggle">
+                <button class="lang-btn active" id="btn-en" onclick="setLang('en')">EN</button>
+                <button class="lang-btn" id="btn-fr" onclick="setLang('fr')">FR</button>
+            </div>
             <div class="header-right"></div>
         </div>
     </header>
@@ -87,14 +121,7 @@
                 <h1 id="ui-title">Get in Touch</h1>
                 <p class="subtitle" id="ui-subtitle">Fill out the form and we'll pre‑write the email for you.</p>
 
-
-                <!-- Contact Form -->
-                <form name="contact" method="POST" action="/contact?success=true">
-                    <input type="hidden" name="form-name" value="contact">
-                    
-
                 <form id="contact-form">
- main
                     <div class="form-group">
                         <label class="form-label" id="ui-label-name">Your Name</label>
                         <input type="text" name="name" class="form-input" placeholder="Enter your name" required>
@@ -111,9 +138,8 @@
                         <span id="ui-btn">Open Email</span> <i class="fas fa-envelope"></i>
                     </button>
                 </form>
-                <p style="margin-top: 20px; color: var(--text-muted); font-size: 0.9rem; text-align: center;">
-                    <i class="fas fa-info-circle"></i> 
-                    <span id="ui-info">This will open your email app. If nothing happens, you can also reach us directly at <strong>scoralia.web@gmail.com</strong>.</span>
+                <p class="mailto-note" id="ui-info">
+                    <i class="fas fa-info-circle"></i> This will open your email app. If nothing happens, you can also reach us directly at <strong>scoralia.web@gmail.com</strong>.
                 </p>
             </div>
 
@@ -150,93 +176,97 @@
     <footer>
         <div class="container">
             <div style="margin-bottom: 20px;">
-                <a href="/terms" id="link-terms" class="footer-link">Terms</a>
-                <a href="/privacy" id="link-privacy" class="footer-link">Privacy</a>
-                <a href="/safety" id="link-safety" class="footer-link">Safety</a>
+                <a href="/terms" class="footer-link">Terms</a>
+                <a href="/privacy" class="footer-link">Privacy</a>
+                <a href="/safety" class="footer-link">Safety</a>
+                <a href="/contact" class="footer-link">Contact</a>
             </div>
             <div style="font-size: 0.8rem; opacity: 0.6;">© 2026 Scoralia. All rights reserved.</div>
         </div>
     </footer>
 
-    <script type="module">
+    <script>
+        const translations = {
+            en: {
+                title: "Get in Touch",
+                subtitle: "Fill out the form and we'll pre‑write the email for you.",
+                lblName: "Your Name",
+                lblEmail: "Your Email",
+                lblMsg: "Message",
+                btn: "Open Email",
+                info: "This will open your email app. If nothing happens, you can also reach us directly at <strong>scoralia.web@gmail.com</strong>.",
+                infoEmail: "Email Us",
+                infoSafety: "Trust & Safety",
+                infoSafetyText: "Reported issues are reviewed by admins within 24 hours.",
+                infoPurpose: "Our Purpose",
+                infoPurposeText: "Scoralia is built to help students save money and connect safely.",
+                subject: "Message from Scoralia contact form",
+                namePlace: "Enter your name",
+                emailPlace: "example@email.com",
+                msgPlace: "How can we help you?"
+            },
+            fr: {
+                title: "Contactez-nous",
+                subtitle: "Remplissez le formulaire et nous pré‑remplirons l'email pour vous.",
+                lblName: "Votre Nom",
+                lblEmail: "Votre Email",
+                lblMsg: "Message",
+                btn: "Ouvrir l'email",
+                info: "Cela ouvrira votre application de messagerie. Si rien ne se passe, vous pouvez aussi nous écrire directement à <strong>scoralia.web@gmail.com</strong>.",
+                infoEmail: "Écrivez-nous",
+                infoSafety: "Confiance et Sécurité",
+                infoSafetyText: "Les signalements sont examinés par les administrateurs sous 24h.",
+                infoPurpose: "Notre Mission",
+                infoPurposeText: "Scoralia est conçu pour aider les étudiants à économiser et à se connecter en toute sécurité.",
+                subject: "Message depuis le formulaire de contact Scoralia",
+                namePlace: "Entrez votre nom",
+                emailPlace: "exemple@courriel.com",
+                msgPlace: "Comment pouvons-nous vous aider ?"
+            }
+        };
+
+        function setLang(lang) {
+            const t = translations[lang];
+            document.getElementById('ui-title').textContent = t.title;
+            document.getElementById('ui-subtitle').textContent = t.subtitle;
+            document.getElementById('ui-label-name').textContent = t.lblName;
+            document.getElementById('ui-label-email').textContent = t.lblEmail;
+            document.getElementById('ui-label-message').textContent = t.lblMsg;
+            document.getElementById('ui-btn').textContent = t.btn;
+            document.getElementById('ui-info').innerHTML = `<i class="fas fa-info-circle"></i> ${t.info}`;
+            document.getElementById('ui-info-email').textContent = t.infoEmail;
+            document.getElementById('ui-info-safety').textContent = t.infoSafety;
+            document.getElementById('ui-info-safety-text').textContent = t.infoSafetyText;
+            document.getElementById('ui-info-purpose').textContent = t.infoPurpose;
+            document.getElementById('ui-info-purpose-text').textContent = t.infoPurposeText;
+            document.querySelector('input[name="name"]').placeholder = t.namePlace;
+            document.querySelector('input[name="email"]').placeholder = t.emailPlace;
+            document.querySelector('textarea[name="message"]').placeholder = t.msgPlace;
+            document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+            document.getElementById('btn-fr').classList.toggle('active', lang === 'fr');
+            localStorage.setItem('preferred_language', lang);
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const lang = localStorage.getItem('preferred_language') || 'en';
+            setLang(lang);
+
             const form = document.getElementById('contact-form');
-            const strings = {
-                en: {
-                    title: "Get in Touch",
-                    subtitle: "Fill out the form and we'll pre‑write the email for you.",
-                    lblName: "Your Name",
-                    lblEmail: "Your Email",
-                    lblMsg: "Message",
-                    btn: "Open Email",
-                    info: "This will open your email app. If nothing happens, you can also reach us directly at <strong>scoralia.web@gmail.com</strong>.",
-                    infoEmail: "Email Us",
-                    infoSafety: "Trust & Safety",
-                    infoSafetyText: "Reported issues are reviewed by admins within 24 hours.",
-                    infoPurpose: "Our Purpose",
-                    infoPurposeText: "Scoralia is built to help students save money and connect safely.",
-                    subject: "Message from Scoralia contact form",
-                    namePlace: "Enter your name",
-                    emailPlace: "example@email.com",
-                    msgPlace: "How can we help you?"
-                },
-                fr: {
-                    title: "Contactez-nous",
-                    subtitle: "Remplissez le formulaire et nous pré‑remplirons l'email pour vous.",
-                    lblName: "Votre Nom",
-                    lblEmail: "Votre Email",
-                    lblMsg: "Message",
-                    btn: "Ouvrir l'email",
-                    info: "Cela ouvrira votre application de messagerie. Si rien ne se passe, vous pouvez aussi nous écrire directement à <strong>scoralia.web@gmail.com</strong>.",
-                    infoEmail: "Écrivez-nous",
-                    infoSafety: "Confiance et Sécurité",
-                    infoSafetyText: "Les signalements sont examinés par les administrateurs sous 24h.",
-                    infoPurpose: "Notre Mission",
-                    infoPurposeText: "Scoralia est conçu pour aider les étudiants à économiser et à se connecter en toute sécurité.",
-                    subject: "Message depuis le formulaire de contact Scoralia",
-                    namePlace: "Entrez votre nom",
-                    emailPlace: "exemple@courriel.com",
-                    msgPlace: "Comment pouvons-nous vous aider ?"
-                }
-            }[lang];
-
-            // Apply UI text
-            document.getElementById('ui-title').textContent = strings.title;
-            document.getElementById('ui-subtitle').textContent = strings.subtitle;
-            document.getElementById('ui-label-name').textContent = strings.lblName;
-            document.getElementById('ui-label-email').textContent = strings.lblEmail;
-            document.getElementById('ui-label-message').textContent = strings.lblMsg;
-            document.getElementById('ui-btn').textContent = strings.btn;
-            document.getElementById('ui-info').innerHTML = strings.info;
-            document.getElementById('ui-info-email').textContent = strings.infoEmail;
-            document.getElementById('ui-info-safety').textContent = strings.infoSafety;
-            document.getElementById('ui-info-safety-text').textContent = strings.infoSafetyText;
-            document.getElementById('ui-info-purpose').textContent = strings.infoPurpose;
-            document.getElementById('ui-info-purpose-text').textContent = strings.infoPurposeText;
-
-            // Set placeholders
-            document.querySelector('input[name="name"]').placeholder = strings.namePlace;
-            document.querySelector('input[name="email"]').placeholder = strings.emailPlace;
-            document.querySelector('textarea[name="message"]').placeholder = strings.msgPlace;
-
-            // Handle form → mailto:
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
-
+                const t = translations[lang];
                 const name = form.name.value.trim();
                 const email = form.email.value.trim();
                 const message = form.message.value.trim();
-
-                const subject = encodeURIComponent(strings.subject);
+                const subject = encodeURIComponent(t.subject);
                 const body = encodeURIComponent(
                     `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`
                 );
-
-                // Open default email client
                 window.location.href = `mailto:scoralia.web@gmail.com?subject=${subject}&body=${body}`;
             });
         });
     </script>
+
+    <script type="module" src="global.js"></script>
 </body>
 </html>
