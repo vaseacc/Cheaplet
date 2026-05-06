@@ -547,20 +547,27 @@
 
     <script>
         // Function to check and apply dark theme
-        function applyDarkTheme() {
+        function applySystemTheme() {
             const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
             if (prefersDark) {
                 document.body.classList.add('dark-theme');
+                localStorage.setItem('theme', 'dark'); // Persist preference
             } else {
                 document.body.classList.remove('dark-theme');
+                localStorage.setItem('theme', 'light'); // Persist preference
             }
         }
 
-        // Apply on load
-        applyDarkTheme();
+        // Apply theme on load, checking local storage first
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            document.body.classList.add(savedTheme === 'dark' ? 'dark-theme' : '');
+        } else {
+            applySystemTheme(); // Apply system preference if no saved theme
+        }
 
         // Listen for changes in preference
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyDarkTheme);
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applySystemTheme);
     </script>
 
     <script type="module">
