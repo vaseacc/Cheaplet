@@ -21,7 +21,7 @@ if (!document.querySelector('link[href*="font-awesome"]')) {
     const faLink = document.createElement('link');
     faLink.rel = 'stylesheet';
     faLink.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';
-    faLink.integrity = 'sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==';
+    faLink.integrity = 'sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=';
     faLink.crossOrigin = 'anonymous';
     faLink.referrerPolicy = 'no-referrer';
     document.head.appendChild(faLink);
@@ -312,7 +312,6 @@ const translations = {
         "tour_full_name_invalid": "Only letters, max 15 characters",
         "tour_username_lbl": "Username",
         "tour_username_hint": "Letters, numbers, _ and .",
-        "tour_username_invalid": "Invalid characters",
         "tour_username_unavailable": "✗ Already taken",
         "tour_username_available": "✓ Available",
         "tour_username_checking": "Checking...",
@@ -355,7 +354,6 @@ const translations = {
         "tour_full_name_invalid": "Lettres seulement, max 15 caractères",
         "tour_username_lbl": "Nom d'utilisateur",
         "tour_username_hint": "Lettres, chiffres, _ et .",
-        "tour_username_invalid": "Caractères invalides",
         "tour_username_unavailable": "✗ Déjà pris",
         "tour_username_available": "✓ Disponible",
         "tour_username_checking": "Vérification...",
@@ -598,6 +596,7 @@ window.updateUserContent = updateUserContent;
 let globalSettings = {};
 let currentUserData = null;
 let unsubscribeChats = null;
+let unsubscribeNotifications = null; // <-- NEW
 let bottomNavBar = null;
 
 onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
@@ -1105,10 +1104,32 @@ function listenToUnreadMessages(uid) {
     });
 }
 
+// ---- NEW: NOTIFICATION LISTENER FOR PRIVATE TOPIC EVENTS ----
+function listenToUnreadNotifications(uid) {
+    if (unsubscribeNotifications) unsubscribeNotifications();
+    const q = query(collection(db, 'users', uid, 'notifications'), where('read', '==', false));
+    unsubscribeNotifications = onSnapshot(q, (snap) => {
+        const count = snap.size;
+        // Update desktop badge in nav
+        const deskBadge = document.getElementById('desktop-notification-badge');
+        // Update bottom nav dot (mobile)
+        const bottomDot = document.getElementById('bottom-notification-dot');
+        
+        if (deskBadge) {
+            deskBadge.textContent = count;
+            deskBadge.style.display = count > 0 ? 'flex' : 'none';
+        }
+        if (bottomDot) {
+            bottomDot.style.display = count > 0 ? 'block' : 'none';
+        }
+    });
+}
+
 function injectBottomNav() {
     if (bottomNavBar) return bottomNavBar;
     const nav = document.createElement('div');
     nav.className = 'bottom-nav';
+    // Added notification dot on Social link
     nav.innerHTML = `
         <a href="/">
             <i class="fas fa-home"></i>
@@ -1117,6 +1138,7 @@ function injectBottomNav() {
         <a href="/social">
             <i class="fas fa-users"></i>
             <span>Social</span>
+            <span class="unread-dot" id="bottom-notification-dot"></span>
         </a>
         <a href="/search">
             <i class="fas fa-search"></i>
@@ -1155,10 +1177,11 @@ function updateHeaderToLoggedIn(userData) {
     const t = translations[lang];
     const navUl = document.querySelector('nav ul');
     if (navUl) {
+        // ✅ ADDED notification badge to Campus Hub link in desktop nav
         navUl.innerHTML = `
             <li><a href="/search">${t.nav_browse}</a></li>
             <li><a href="/my-listings">${t.nav_listings}</a></li>
-            <li><a href="/social">${t.nav_hub}</a></li>
+            <li><a href="/social" class="badge-container">${t.nav_hub}<span class="unread-badge" id="desktop-notification-badge"></span></a></li>
             <li><a href="/activity">${t.nav_activity}</a></li>
             <li><a href="/messages" class="badge-container">${t.nav_messages}<span class="unread-badge" id="desktop-unread-badge"></span></a></li>
         `;
@@ -1214,6 +1237,8 @@ function updateHeaderToLoggedIn(userData) {
         setBottomNavActive();
     }
     listenToUnreadMessages(userData.uid);
+    // ✅ Start listening for topic notifications
+    listenToUnreadNotifications(userData.uid);
 }
 
 function updateHeaderToLoggedOut() {

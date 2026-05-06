@@ -527,7 +527,7 @@
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, doc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, limit, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, doc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, limit, getDocs, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 
         async function main() {
@@ -845,12 +845,32 @@
                     if (uploadedImgUrl) postData.imageUrl = uploadedImgUrl;
                     if (postAttachedListing) postData.attachedListing = postAttachedListing;
                     const postRef = await addDoc(collection(db, "social_posts"), postData);
+                    
                     await updateDoc(doc(db, "social_channels", topicId), { postCount: increment(1), members: arrayUnion(currentUser.uid) });
                     if (requiresReview) {
                         fetch(getFunctionUrl('moderate-listing'), { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ imageUrls: [uploadedImgUrl], title: "Topic Post", description: text }) })
                             .then(r => r.json()).then(aiData => { if (aiData.verdict === "UNSAFE") updateDoc(postRef, { status: 'rejected', rejectionReason: aiData.reason || "Inappropriate content" }); else updateDoc(postRef, { status: 'active' }); })
                             .catch(e => console.error(e));
                     }
+
+                    // --- ADDED: If it's a private topic and the poster is NOT the owner, notify the owner ---
+                    if (currentTopicData && currentTopicData.visibility === 'private' && currentUser.uid !== currentTopicData.createdBy) {
+                        try {
+                            await addDoc(collection(db, 'users', currentTopicData.createdBy, 'notifications'), {
+                                type: 'new_post',
+                                topicId: topicId,
+                                topicName: currentTopicName,
+                                fromUid: currentUser.uid,
+                                fromName: currentUser.displayName,
+                                read: false,
+                                timestamp: serverTimestamp()
+                            });
+                        } catch (e) {
+                            console.error("Failed to create new post notification:", e);
+                        }
+                    }
+                    // --- END ADDED ---
+
                     postInput.value = ''; postInput.style.height = '40px'; postInput.blur(); postImageFile = null; postAttachedListing = null; renderComposerPreview();
                 } catch(e) { window.scoraliaAlert(ui.upload_fail); } finally { btnSendPost.innerHTML = origIcon; updateComposerSendButton(); }
             };
@@ -969,7 +989,16 @@
                             showHubLayout();
                             loadTopics(); 
                             loadFeed();
+ site-web-live-review-03495
                         } else window.location.href = '/login?redirect=/social';
+
+
+                            // Mark unread notifications for this topic as read (if the current user is the topic owner)
+                            if (currentTopicData && currentTopicData.createdBy === currentUser.uid) {
+                                markNotificationsAsRead(topicId, currentUser.uid);
+                            }
+                        } else window.location.href = '/login.html?redirect=/social.html';
+ main
                     });
                 } else window.location.href = '/login?redirect=/social';
             });
@@ -1041,6 +1070,23 @@
                             lastMessage: `${currentUser.displayName} requested to join ${currentTopicName}`, 
                             lastUpdate: serverTimestamp() 
                         });
+
+                        // --- ADDED: Create notification for topic owner ---
+                        try {
+                            const ownerUid = currentTopicData.createdBy;
+                            await addDoc(collection(db, 'users', ownerUid, 'notifications'), {
+                                type: 'join_request',
+                                topicId: topicId,
+                                topicName: currentTopicName,
+                                fromUid: currentUser.uid,
+                                fromName: currentUser.displayName,
+                                read: false,
+                                timestamp: serverTimestamp()
+                            });
+                        } catch (e) {
+                            console.error("Failed to create join request notification:", e);
+                        }
+                        // --- END ADDED ---
                         
                         existingRequestStatus = 'pending'; 
                         requestBtn.style.display = 'none'; 
@@ -1089,7 +1135,7 @@
                     mobileWaysList.appendChild(mGeneral);
                 }
 
-                const myT =[], pinT =[], discT = [];
+                const myT =[], pinT =[], discT =[];
                 const pinnedArr = (currentUser && currentUser.pinnedTopics) ||[];
 
                 allTopicsData.forEach(d => {
@@ -1333,6 +1379,27 @@
                     catch(e) { window.scoraliaAlert("Permission denied or error deleting."); }
                 }
             };
+            
+            async function markNotificationsAsRead(topicId, uid) {
+                try {
+                    const notifsQuery = query(
+                        collection(db, 'users', uid, 'notifications'),
+                        where('topicId', '==', topicId),
+                        where('read', '==', false)
+                    );
+                    const notifSnap = await getDocs(notifsQuery);
+                    if (!notifSnap.empty) {
+                        const batch = writeBatch(db);
+                        notifSnap.forEach(docSnap => {
+                            batch.update(docSnap.ref, { read: true });
+                        });
+                        await batch.commit();
+                    }
+                } catch (e) {
+                    console.error("Failed to mark notifications as read:", e);
+                }
+            }
+
             document.body.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.classList.contains('comment-input')) { e.preventDefault(); window.postComment(e.target.id.replace('comment-input-', '')); } });
         }
         main();

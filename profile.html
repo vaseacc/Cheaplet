@@ -301,7 +301,7 @@
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged, updateProfile, sendPasswordResetEmail, deleteUser, signOut } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, doc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, doc, getDoc, updateDoc, deleteDoc, collection, query, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch(getFunctionUrl('config'));
@@ -731,45 +731,76 @@
                 } catch (e) { alert(e.message); }
             };
             
-            // 🌟 DELETE ACCOUNT — now also removes all user's listings
+            // 🌟 COMPREHENSIVE DELETE ACCOUNT — removes all traces of the user
             deleteBtn.onclick = async () => {
                 if (!confirm(t.deleteConfirm)) return;
                 deleteBtn.disabled = true;
                 const uid = currentUser.uid;
 
                 try {
-                    // 1. Delete all listings created by this user
-                    const listingsQuery = query(collection(db, "listings"), where("posterUid", "==", uid));
-                    const listingSnap = await getDocs(listingsQuery);
-                    
-                    const deletionPromises = [];
-                    listingSnap.forEach((listingDoc) => {
-                        deletionPromises.push(deleteDoc(doc(db, "listings", listingDoc.id)));
-                    });
-                    await Promise.all(deletionPromises);
-                } catch (e) {
-                    console.error("Could not delete all listings:", e);
-                    // continue even if some listing deletions fail
-                }
+                    // 1. Delete all listings
+                    const listingsQ = query(collection(db, "listings"), where("posterUid", "==", uid));
+                    const listingSnap = await getDocs(listingsQ);
+                    let batch = writeBatch(db);
+                    listingSnap.forEach(docSnap => batch.delete(docSnap.ref));
+                    await batch.commit();
 
-                try {
-                    // 2. Remove the Firestore user document
+                    // 2. Delete all social posts (three possible collections)
+                    const postColls = ["social_posts", "social_posts_global", "social_posts_rosemont"];
+                    for (const coll of postColls) {
+                        const postsQ = query(collection(db, coll), where("authorUid", "==", uid));
+                        const postsSnap = await getDocs(postsQ);
+                        if (!postsSnap.empty) {
+                            batch = writeBatch(db);
+                            postsSnap.forEach(docSnap => batch.delete(docSnap.ref));
+                            await batch.commit();
+                        }
+                    }
+
+                    // 3. Delete all comments made by the user (scan every post's comments subcollection)
+                    for (const coll of postColls) {
+                        const allPostsSnap = await getDocs(collection(db, coll));
+                        for (const postDoc of allPostsSnap.docs) {
+                            const commentsQ = query(collection(db, coll, postDoc.id, "comments"), where("authorUid", "==", uid));
+                            const commentsSnap = await getDocs(commentsQ);
+                            if (!commentsSnap.empty) {
+                                batch = writeBatch(db);
+                                commentsSnap.forEach(docSnap => batch.delete(docSnap.ref));
+                                await batch.commit();
+                            }
+                        }
+                    }
+
+                    // 4. Delete topics (social_channels) created by user
+                    const topicsQ = query(collection(db, "social_channels"), where("createdBy", "==", uid));
+                    const topicsSnap = await getDocs(topicsQ);
+                    if (!topicsSnap.empty) {
+                        batch = writeBatch(db);
+                        topicsSnap.forEach(docSnap => batch.delete(docSnap.ref));
+                        await batch.commit();
+                    }
+
+                    // 5. Delete all chats where user is a participant
+                    const chatsQ = query(collection(db, "chats"), where("participants", "array-contains", uid));
+                    const chatsSnap = await getDocs(chatsQ);
+                    if (!chatsSnap.empty) {
+                        batch = writeBatch(db);
+                        chatsSnap.forEach(docSnap => batch.delete(docSnap.ref));
+                        await batch.commit();
+                    }
+
+                    // 6. Delete the Firestore user document
                     await deleteDoc(doc(db, "users", uid));
-                } catch (e) {
-                    console.error("Firestore user doc deletion failed:", e);
-                }
 
-                try {
-                    // 3. Delete the Firebase Authentication account
+                    // 7. Delete the Firebase Authentication account
                     await deleteUser(currentUser);
-                    // Success – user is signed out automatically
                     window.location.href = '/';
+
                 } catch (err) {
                     deleteBtn.disabled = false;
-                    console.error("Auth deletion failed:", err);
+                    console.error("Account deletion failed:", err);
                     if (err.code === 'auth/requires-recent-login') {
                         alert(t.reauthRequired);
-                        // Sign out and redirect to login so they can re‑authenticate
                         await signOut(auth);
                         window.location.href = '/login';
                     } else {
