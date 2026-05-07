@@ -13,8 +13,15 @@ permissions:
 
 jobs:
   aider-job:
-    if: contains(github.event.issue.body, '/fix') || contains(github.event.comment.body, '/fix')
+    if: |
+      github.actor != 'github-actions[bot]' &&
+      (
+        (github.event_name == 'issues' && contains(github.event.issue.body, '/fix')) ||
+        (github.event_name == 'issue_comment' && contains(github.event.comment.body, '/fix'))
+      )
+
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -39,6 +46,7 @@ jobs:
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
           COMMENT_BODY: ${{ github.event.comment.body }}
+
         run: |
           git config --global user.name "Gemini AI"
           git config --global user.email "ai@cheaplet.com"
@@ -52,18 +60,20 @@ jobs:
           for word in $CLEAN_MSG; do
             # Remove trailing punctuation, keep dots inside filenames
             clean_word=$(echo "$word" | sed 's/[.,!?]*$//')
-            
+
             # Try exact match first
             if [[ -f "$clean_word" ]]; then
               FILES_TO_LOAD="$FILES_TO_LOAD $clean_word"
               continue
             fi
-            
+
             # Fuzzy match: find files containing the word (case-insensitive)
             # Exclude .git, limit to first 3 matches to avoid overload
             matches=$(find . -type f -not -path "./.git/*" -iname "*${clean_word}*" 2>/dev/null | head -3)
+
             if [[ -n "$matches" ]]; then
               match_count=$(echo "$matches" | wc -l)
+
               if [[ $match_count -eq 1 ]]; then
                 # Strip leading './' and add to list
                 match_path=$(echo "$matches" | sed 's|^\./||')
@@ -92,8 +102,11 @@ jobs:
                 --no-stream \
                 --exit
 
-          # 4. Final commit and push with rebase
+          # 4. Final commit and push with safer rebase
           git add .
           git commit -m "AI surgical update: $CLEAN_MSG" || echo "No changes to commit"
-          git pull --rebase origin main
+
+          git fetch origin main
+          git rebase origin/main || git rebase --abort
+
           git push origin main
