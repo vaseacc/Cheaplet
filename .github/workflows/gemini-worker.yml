@@ -61,12 +61,11 @@ jobs:
 
           for word in $CLEAN_MSG; do
             clean_word=$(echo "$word" | sed 's/[.,!?]*$//')
+
             # Skip tiny/common words
             if [[ ${#clean_word} -lt 3 ]]; then
-            continue
-            if
-  
-
+              continue
+            fi
 
             # Exact file match
             if [[ -f "$clean_word" ]]; then
@@ -95,12 +94,14 @@ jobs:
             fi
           done
 
+          echo "Files loaded:$FILES_TO_LOAD"
+
           # 3. AI system prompt
           SYSTEM_PROMPT="You are an elite AI developer. You MUST read and strictly obey the rules in CONVENTIONS.md. Make precise, surgical edits using SEARCH/REPLACE blocks. DO NOT output entire files. Task: "
 
           FINAL_PROMPT="$SYSTEM_PROMPT $CLEAN_MSG"
 
-          # 4. Run Aider with Groq Qwen
+          # 4. Run Aider with Groq
           aider --model openai/qwen-qwq-32b \
                 --edit-format diff \
                 --read CONVENTIONS.md \
