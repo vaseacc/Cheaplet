@@ -12,8 +12,6 @@ const runWhenIdle = (cb) => {
 function getFunctionUrl(name) {
   return `/api/${name}`;
 }
-
-// Expose to window for use in inline scripts
 window.getFunctionUrl = getFunctionUrl;
 
 // --- 0. AUTO-IMPORT ICONS & FAVICON (Performance: Only if not present) ---
@@ -62,7 +60,6 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// Track index visits for PWA prompt logic – only increment on index page
 const isIndexPage = window.location.pathname === '/' || window.location.pathname.includes('/');
 if (isIndexPage) {
     if (!sessionStorage.getItem('index_visited_this_session')) {
@@ -74,7 +71,6 @@ if (isIndexPage) {
 
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
-    // Only show on the index page
     const isIndex = window.location.pathname === '/' || window.location.pathname.includes('/');
     if (!isIndex) return;
 
@@ -330,7 +326,11 @@ const translations = {
         "social_tour_desc_3": "Use the filter bar to switch between <strong>Global Campus</strong> (everyone) and <strong>My School</strong> (verified students only). To access your school feed, you need a verified email from your institution.",
         "social_tour_title_4": "Create Your Own Topic",
         "social_tour_desc_4": "Click the <strong>Create Topic</strong> button in the sidebar. Start a discussion about study groups, events, or anything relevant to your campus.",
-        "social_tour_gotit": "Got it!"
+        "social_tour_gotit": "Got it!",
+        // NEW: Feedback prompt
+        "feedback_prompt_title": "Help us improve Scoralia!",
+        "feedback_prompt_text": "Your feedback helps us make the platform better. Would you like to share a suggestion or report an issue?",
+        "feedback_prompt_btn": "Send Feedback"
     },
     "fr": {
         "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", "nav_hub": "Hub Campus", "nav_activity": "Mon Activité",
@@ -372,7 +372,11 @@ const translations = {
         "social_tour_desc_3": "Utilisez le filtre pour basculer entre <strong>Campus Global</strong> (tout le monde) et <strong>Mon école</strong> (étudiants vérifiés seulement). Pour accéder au fil de votre école, vous devez avoir un email scolaire vérifié.",
         "social_tour_title_4": "Créez votre propre sujet",
         "social_tour_desc_4": "Cliquez sur le bouton <strong>Créer un sujet</strong> dans la barre latérale. Lancez une discussion sur les groupes d'étude, les événements ou tout ce qui est pertinent pour votre campus.",
-        "social_tour_gotit": "Compris !"
+        "social_tour_gotit": "Compris !",
+        // NEW: Feedback prompt
+        "feedback_prompt_title": "Aidez-nous à améliorer Scoralia !",
+        "feedback_prompt_text": "Vos commentaires nous aident à améliorer la plateforme. Souhaitez-vous partager une suggestion ou signaler un problème ?",
+        "feedback_prompt_btn": "Envoyer un commentaire"
     }
 };
 
@@ -596,7 +600,7 @@ window.updateUserContent = updateUserContent;
 let globalSettings = {};
 let currentUserData = null;
 let unsubscribeChats = null;
-let unsubscribeNotifications = null; // <-- NEW
+let unsubscribeNotifications = null;
 let bottomNavBar = null;
 
 onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
@@ -657,6 +661,18 @@ onAuthStateChanged(auth, async (user) => {
                         showSocialTour();
                     }
                 }
+
+                // ── FEEDBACK PROMPT (NEW) ──
+                try {
+                    const accountAgeDays = currentUserData.createdAt 
+                        ? Math.floor((Date.now() - new Date(currentUserData.createdAt).getTime()) / (1000 * 60 * 60 * 24))
+                        : 0;
+                    if (accountAgeDays >= 3 && !sessionStorage.getItem('scoralia_feedback_prompt_shown')) {
+                        showFeedbackPrompt();
+                        sessionStorage.setItem('scoralia_feedback_prompt_shown', 'true');
+                    }
+                } catch (e) { console.warn('Feedback prompt error:', e); }
+
             } else {
                 const schoolInfo = getSchoolInfo(user.email);
                 const lang = localStorage.getItem('preferred_language');
@@ -677,6 +693,38 @@ onAuthStateChanged(auth, async (user) => {
         refreshUI();
     }
 });
+
+// ── FEEDBACK PROMPT FUNCTION ──
+function showFeedbackPrompt() {
+    if (document.getElementById('feedback-prompt-overlay')) return;
+    const lang = localStorage.getItem('preferred_language') || 'en';
+    const title = translations[lang]?.feedback_prompt_title || translations['en'].feedback_prompt_title;
+    const text = translations[lang]?.feedback_prompt_text || translations['en'].feedback_prompt_text;
+    const btnText = translations[lang]?.feedback_prompt_btn || translations['en'].feedback_prompt_btn;
+
+    const overlay = document.createElement('div');
+    overlay.id = 'feedback-prompt-overlay';
+    overlay.className = 'lang-modal-overlay';
+    overlay.style.zIndex = '10090';
+    overlay.innerHTML = `
+        <div class="lang-modal" style="max-width: 420px; padding: 35px 25px;">
+            <i class="fas fa-lightbulb" style="font-size: 2.5rem; color: var(--gold); margin-bottom: 15px;"></i>
+            <h2 style="font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--ink); margin-bottom: 10px;">${title}</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; margin-bottom: 25px;">${text}</p>
+            <button class="btn-accept-terms" id="feedback-prompt-btn" style="width: 100%; font-size: 1rem; padding: 12px;">${btnText}</button>
+            <button id="feedback-prompt-dismiss" style="background: none; border: none; color: #aaa; margin-top: 15px; font-size: 0.9rem; cursor: pointer;">Not now</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    document.getElementById('feedback-prompt-btn').addEventListener('click', () => {
+        overlay.remove();
+        window.location.href = '/contact';
+    });
+    document.getElementById('feedback-prompt-dismiss').addEventListener('click', () => {
+        overlay.remove();
+    });
+}
 
 function showWarningPopup(warningText, uid) {
     if (document.getElementById('admin-warning-modal')) return;
@@ -725,6 +773,7 @@ function triggerHardLockdown(expireTimestamp) {
     setTimeout(() => { signOut(auth).then(() => { window.location.href = '/login'; }); }, 5000);
 }
 
+// ── WELCOME TOUR ──
 function showWelcomeTour() {
     if (window.location.pathname.includes('/login')) return;
 
@@ -1005,7 +1054,7 @@ function showWelcomeTour() {
     }
 }
 
-// --- SOCIAL TOUR ---
+// ── SOCIAL TOUR ──
 window.showSocialTour = () => {
     if (window.location.pathname.includes('/login')) return;
     const user = auth.currentUser;
@@ -1110,9 +1159,7 @@ function listenToUnreadNotifications(uid) {
     const q = query(collection(db, 'users', uid, 'notifications'), where('read', '==', false));
     unsubscribeNotifications = onSnapshot(q, (snap) => {
         const count = snap.size;
-        // Update desktop badge in nav
         const deskBadge = document.getElementById('desktop-notification-badge');
-        // Update bottom nav dot (mobile)
         const bottomDot = document.getElementById('bottom-notification-dot');
         
         if (deskBadge) {
@@ -1129,7 +1176,6 @@ function injectBottomNav() {
     if (bottomNavBar) return bottomNavBar;
     const nav = document.createElement('div');
     nav.className = 'bottom-nav';
-    // Added notification dot on Social link
     nav.innerHTML = `
         <a href="/">
             <i class="fas fa-home"></i>
@@ -1177,7 +1223,6 @@ function updateHeaderToLoggedIn(userData) {
     const t = translations[lang];
     const navUl = document.querySelector('nav ul');
     if (navUl) {
-        // ✅ ADDED notification badge to Campus Hub link in desktop nav
         navUl.innerHTML = `
             <li><a href="/search">${t.nav_browse}</a></li>
             <li><a href="/my-listings">${t.nav_listings}</a></li>
@@ -1237,7 +1282,6 @@ function updateHeaderToLoggedIn(userData) {
         setBottomNavActive();
     }
     listenToUnreadMessages(userData.uid);
-    // ✅ Start listening for topic notifications
     listenToUnreadNotifications(userData.uid);
 }
 
@@ -1314,17 +1358,12 @@ document.addEventListener('DOMContentLoaded', () => {
 // PREMIUM UI ENHANCEMENTS - Scroll reveal, animations, toast notifications
 // ==========================================================================
 
-// Initialize scroll reveal animations when DOM is ready
 if (typeof ScrollReveal !== 'undefined') {
-    // Add reveal classes to key elements for scroll animations
     document.addEventListener('DOMContentLoaded', () => {
-        // Add reveal animation to cards and sections
         document.querySelectorAll('.listing-card, .topic-card, .tag-pill, .step-card').forEach((el, index) => {
             el.classList.add('reveal');
             el.style.transitionDelay = `${index * 0.05}s`;
         });
-        
-        // Refresh scroll reveal on dynamic content
         setTimeout(() => {
             if (typeof ScrollReveal.refresh === 'function') {
                 ScrollReveal.refresh();
@@ -1333,7 +1372,6 @@ if (typeof ScrollReveal !== 'undefined') {
     });
 }
 
-// Enhance buttons with ripple effect
 document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.btn, button, .btn-hero-primary, .btn-hero-ghost, .search-btn, .btn-load-more').forEach(btn => {
         btn.classList.add('ripple');
