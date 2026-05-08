@@ -52,18 +52,16 @@ jobs:
           export CLEAN_MSG
           
           # THE UPGRADE: Forcing the "Mental Simulation" phase
+          # 4. Run Aider with "Read Everything" capability
           aider --model groq/llama-3.3-70b-versatile \
                 --message "CRITICAL INSTRUCTION: You are a Senior UI/UX Engineer. 
-                BEFORE you write or edit any code, you MUST perform a 'Mental Browser Simulation':
-                1. Read the existing CSS/HTML structure.
-                2. Imagine how the browser parses the rules top-to-bottom.
-                3. Explicitly check for CSS variables (:root) or specific classes that might override your new code.
-                4. Verify in your 'mind' that your solution integrates flawlessly without being overwritten.
-                
-                Only after completing this mental check, perform the following task: $CLEAN_MSG" \
+                1. MENTAL SIMULATION: Read all provided files. Imagine the browser parsing the CSS variables (:root).
+                2. VERIFY: Ensure new styles aren't overridden by existing code.
+                3. TASK: $CLEAN_MSG" \
                 --yes-always \
                 --auto-commits \
-                --exit
+                --exit \
+                $(find . -maxdepth 2 -not -path '*/.*' -type f -name "*.html" -o -name "*.css" -o -name "*.js")
 
           if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
             echo "Changes detected, pushing to origin..."
