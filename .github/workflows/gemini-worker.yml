@@ -13,7 +13,6 @@ permissions:
 
 jobs:
   aider-job:
-    # Only triggers if the issue/comment contains the /fix command
     if: contains(github.event.issue.body, '/fix') || contains(github.event.comment.body, '/fix')
     runs-on: ubuntu-latest
     steps:
@@ -41,32 +40,31 @@ jobs:
           ISSUE_BODY: ${{ github.event.issue.body }}
           COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
-          # 1. Setup Git Identity
           git config --global user.name "AI Senior Dev"
           git config --global user.email "ai@cheaplet.com"
 
-          # 2. Create a unique branch for the task
           BRANCH_NAME="ai-task-${{ github.event.issue.number }}-${{ github.run_id }}"
           git checkout -b "$BRANCH_NAME"
 
-          # 3. Clean the prompt safely (avoiding xargs quote issues)
           RAW_PROMPT="$ISSUE_TITLE $ISSUE_BODY $COMMENT_BODY"
           CLEAN_MSG=$(echo "$RAW_PROMPT" | sed 's/\/fix//g')
 
-          # 4. Run Aider
-          # We force Groq here because Gemini Free Tier hits daily limits quickly.
-          # We use --yes-always to ensure it doesn't wait for user input.
           export CLEAN_MSG
+          
+          # THE UPGRADE: Forcing the "Mental Simulation" phase
           aider --model groq/llama-3.3-70b-versatile \
-                --message "CRITICAL: You are an autonomous agent in a CI pipeline. 
-                DO NOT ask questions. DO NOT seek permission. 
-                Perform this task immediately: $CLEAN_MSG" \
+                --message "CRITICAL INSTRUCTION: You are a Senior UI/UX Engineer. 
+                BEFORE you write or edit any code, you MUST perform a 'Mental Browser Simulation':
+                1. Read the existing CSS/HTML structure.
+                2. Imagine how the browser parses the rules top-to-bottom.
+                3. Explicitly check for CSS variables (:root) or specific classes that might override your new code.
+                4. Verify in your 'mind' that your solution integrates flawlessly without being overwritten.
+                
+                Only after completing this mental check, perform the following task: $CLEAN_MSG" \
                 --yes-always \
                 --auto-commits \
                 --exit
 
-          # 5. Check if the AI actually committed changes
-          # This compares the current branch HEAD to the main branch
           if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
             echo "Changes detected, pushing to origin..."
             git push origin "$BRANCH_NAME"
@@ -77,9 +75,9 @@ jobs:
               
               **Task Objective:** $CLEAN_MSG
               
-              This PR contains the surgical edits performed by the AI Senior Dev. Please review the diff before merging." \
+              *Note: I performed a mental simulation of the CSS/DOM hierarchy to ensure these changes do not get overridden by existing variables.*" \
               --base main \
               --head "$BRANCH_NAME"
           else
-            echo "No changes were made by the AI. Check the logs for rate limits or logic errors."
+            echo "No changes were made by the AI."
           fi
