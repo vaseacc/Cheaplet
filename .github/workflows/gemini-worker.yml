@@ -1,4 +1,4 @@
-name: AI Senior Dev (Groq)
+name: AI Senior Dev (Gemini Agent)
 
 on:
   issues:
@@ -13,16 +13,9 @@ permissions:
 
 jobs:
   aider-job:
-    if: |
-      github.actor != 'github-actions[bot]' &&
-      (
-        (github.event_name == 'issues' && contains(github.event.issue.body, '/fix')) ||
-        (github.event_name == 'issue_comment' && contains(github.event.comment.body, '/fix'))
-      )
-
+    # Only run if someone types /fix
+    if: contains(github.event.issue.body, '/fix') || contains(github.event.comment.body, '/fix')
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -32,153 +25,47 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: Install Aider
         run: |
           python -m pip install --upgrade pip
           pip install aider-chat
 
-      - name: Run Aider
+      - name: Run AI Agent
         env:
-          OPENAI_API_KEY: ${{ secrets.GROQ_API_KEY }}
-          OPENAI_API_BASE: https://api.groq.com/openai/v1
-
-          HOME: /home/runner
-          AIDER_ALLOW_RUN_COMMANDS: "true"
-
-          ISSUE_TITLE: ${{ github.event.issue.title }}
-          ISSUE_BODY: ${{ github.event.issue.body }}
-          COMMENT_BODY: ${{ github.event.comment.body }}
-
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config --global user.name "Groq AI"
+          git config --global user.name "Gemini AI"
           git config --global user.email "ai@cheaplet.com"
 
-          # ==========================================
-          # Combine prompt
-          # ==========================================
+          # 1. Create a unique branch for this task
+          BRANCH_NAME="ai-task-${{ github.event.issue.number }}-${{ github.run_id }}"
+          git checkout -b $BRANCH_NAME
 
-          RAW_MSG="$ISSUE_TITLE $ISSUE_BODY $COMMENT_BODY"
+          # 2. Extract the prompt
+          RAW_MSG="${{ github.event.issue.title }} ${{ github.event.issue.body }} ${{ github.event.comment.body }}"
+          CLEAN_MSG=$(echo "$RAW_MSG" | sed 's/\/fix//g' | xargs)
 
-          CLEAN_MSG=$(echo "$RAW_MSG" | \
-            sed 's/\/fix//g' | \
-            xargs)
+          # 3. Execution with "Chain of Thought" prompt
+          # We tell the AI to plan first, ensuring smarter output.
+          aider --message "PLAN FIRST: Briefly list the steps you will take. THEN: Execute the changes for: $CLEAN_MSG" \
+                --exit
 
-          echo "Prompt:"
-          echo "$CLEAN_MSG"
-
-          # ==========================================
-          # Smart file detection
-          # ==========================================
-
-          FILES_TO_LOAD=""
-          FILE_COUNT=0
-          MAX_FILES=5
-
-          for word in $CLEAN_MSG; do
-
-            clean_word=$(echo "$word" | \
-              tr '[:upper:]' '[:lower:]' | \
-              sed 's/[.,!?(){}]//g')
-
-            # Skip tiny words
-            if [[ ${#clean_word} -lt 4 ]]; then
-              continue
-            fi
-
-            # Stop if max files reached
-            if [[ $FILE_COUNT -ge $MAX_FILES ]]; then
-              break
-            fi
-
-            # Exact match
-            if [[ -f "$clean_word" ]]; then
-              FILES_TO_LOAD="$FILES_TO_LOAD $clean_word"
-              FILE_COUNT=$((FILE_COUNT + 1))
-              continue
-            fi
-
-            # Search for likely files
-            matches=$(find . -type f \
-              -not -path "./.git/*" \
-              -not -path "./node_modules/*" \
-              -not -path "./dist/*" \
-              -not -path "./build/*" \
-              -not -path "./.next/*" \
-              -not -path "./coverage/*" \
-              \( \
-                -iname "*${clean_word}*.html" -o \
-                -iname "*${clean_word}*.js" -o \
-                -iname "*${clean_word}*.css" -o \
-                -iname "*${clean_word}*.ts" -o \
-                -iname "*${clean_word}*.json" \
-              \) 2>/dev/null | head -1)
-
-            if [[ -n "$matches" ]]; then
-
-              match_path=$(echo "$matches" | sed 's|^\./||')
-
-              # Avoid duplicates
-              if [[ "$FILES_TO_LOAD" != *"$match_path"* ]]; then
-                FILES_TO_LOAD="$FILES_TO_LOAD $match_path"
-                FILE_COUNT=$((FILE_COUNT + 1))
-              fi
-            fi
-          done
-
-          echo "Files loaded:"
-          echo "$FILES_TO_LOAD"
-
-          # ==========================================
-          # AI system prompt
-          # ==========================================
-
-          SYSTEM_PROMPT="You are an elite senior software engineer.
-
-          STRICT RULES:
-          - Read CONVENTIONS.md carefully
-          - Make minimal precise edits
-          - Never rewrite unrelated code
-          - Never delete unrelated files
-          - Preserve project structure
-          - If creating files, isolate them cleanly
-          - Prefer surgical fixes over rewrites
-          - Keep styling consistent
-          - Avoid breaking existing functionality
-
-          TASK:
-          "
-
-          FINAL_PROMPT="$SYSTEM_PROMPT $CLEAN_MSG"
-
-          # ==========================================
-          # Run Aider
-          # ==========================================
-
-          aider \
-            --model openai/llama-3.3-70b-versatile \
-            --edit-format diff \
-            --read CONVENTIONS.md \
-            --message "$FINAL_PROMPT" \
-            $FILES_TO_LOAD \
-            --yes-always \
-            --auto-commits \
-            --map-tokens 512 \
-            --no-stream \
-            --no-show-model-warnings \
-            --exit
-
-          # ==========================================
-          # Commit and push
-          # ==========================================
-
-          git add .
-
-          git commit -m "AI update: $CLEAN_MSG" || echo "No changes to commit"
-
-          git fetch origin main
-
-          git rebase origin/main || git rebase --abort
-
-          git push origin main
+          # 4. Push and Open PR
+          if [ -n "$(git status --procelain)" ] || [ "$(git rev-parse HEAD)" != "$(git rev-parse main)" ]; then
+            git push origin $BRANCH_NAME
+            
+            gh pr create \
+              --title "🤖 AI Fix: ${{ github.event.issue.title }}" \
+              --body "This PR was generated by your AI Senior Dev.
+              
+              **Objective:** $CLEAN_MSG
+              
+              **Status:** Please review the diff for accuracy. This PR ignores root HTML files as requested." \
+              --base main \
+              --head $BRANCH_NAME
+          else
+            echo "No changes were made by the AI."
+          fi
