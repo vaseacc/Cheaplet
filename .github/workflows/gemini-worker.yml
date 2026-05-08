@@ -21,6 +21,7 @@ jobs:
       )
 
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Checkout Repository
@@ -42,8 +43,10 @@ jobs:
         env:
           OPENAI_API_KEY: ${{ secrets.GROQ_API_KEY }}
           OPENAI_API_BASE: https://api.groq.com/openai/v1
+
           HOME: /home/runner
           AIDER_ALLOW_RUN_COMMANDS: "true"
+
           ISSUE_TITLE: ${{ github.event.issue.title }}
           ISSUE_BODY: ${{ github.event.issue.body }}
           COMMENT_BODY: ${{ github.event.comment.body }}
@@ -52,73 +55,130 @@ jobs:
           git config --global user.name "Groq AI"
           git config --global user.email "ai@cheaplet.com"
 
-          # 1. Combine and clean the message
-          RAW_MSG="$ISSUE_TITLE $ISSUE_BODY $COMMENT_BODY"
-          CLEAN_MSG=$(echo "$RAW_MSG" | sed 's/\/fix//g' | xargs)
+          # ==========================================
+          # Combine prompt
+          # ==========================================
 
-          # 2. Smart file detection
+          RAW_MSG="$ISSUE_TITLE $ISSUE_BODY $COMMENT_BODY"
+
+          CLEAN_MSG=$(echo "$RAW_MSG" | \
+            sed 's/\/fix//g' | \
+            xargs)
+
+          echo "Prompt:"
+          echo "$CLEAN_MSG"
+
+          # ==========================================
+          # Smart file detection
+          # ==========================================
+
           FILES_TO_LOAD=""
+          FILE_COUNT=0
+          MAX_FILES=5
 
           for word in $CLEAN_MSG; do
-            clean_word=$(echo "$word" | sed 's/[.,!?]*$//')
 
-            # Skip tiny/common words
-            if [[ ${#clean_word} -lt 3 ]]; then
+            clean_word=$(echo "$word" | \
+              tr '[:upper:]' '[:lower:]' | \
+              sed 's/[.,!?(){}]//g')
+
+            # Skip tiny words
+            if [[ ${#clean_word} -lt 4 ]]; then
               continue
             fi
 
-            # Exact file match
+            # Stop if max files reached
+            if [[ $FILE_COUNT -ge $MAX_FILES ]]; then
+              break
+            fi
+
+            # Exact match
             if [[ -f "$clean_word" ]]; then
               FILES_TO_LOAD="$FILES_TO_LOAD $clean_word"
+              FILE_COUNT=$((FILE_COUNT + 1))
               continue
             fi
 
-            # Fuzzy search
+            # Search for likely files
             matches=$(find . -type f \
               -not -path "./.git/*" \
               -not -path "./node_modules/*" \
               -not -path "./dist/*" \
               -not -path "./build/*" \
               -not -path "./.next/*" \
-              -iname "*${clean_word}*" 2>/dev/null | head -3)
+              -not -path "./coverage/*" \
+              \( \
+                -iname "*${clean_word}*.html" -o \
+                -iname "*${clean_word}*.js" -o \
+                -iname "*${clean_word}*.css" -o \
+                -iname "*${clean_word}*.ts" -o \
+                -iname "*${clean_word}*.json" \
+              \) 2>/dev/null | head -1)
 
             if [[ -n "$matches" ]]; then
-              match_count=$(echo "$matches" | wc -l)
 
-              if [[ $match_count -eq 1 ]]; then
-                match_path=$(echo "$matches" | sed 's|^\./||')
+              match_path=$(echo "$matches" | sed 's|^\./||')
+
+              # Avoid duplicates
+              if [[ "$FILES_TO_LOAD" != *"$match_path"* ]]; then
                 FILES_TO_LOAD="$FILES_TO_LOAD $match_path"
-              else
-                echo "Multiple files match '$clean_word': $matches" >&2
+                FILE_COUNT=$((FILE_COUNT + 1))
               fi
             fi
           done
 
-          echo "Files loaded:$FILES_TO_LOAD"
+          echo "Files loaded:"
+          echo "$FILES_TO_LOAD"
 
-          # 3. AI system prompt
-          SYSTEM_PROMPT="You are an elite AI developer. You MUST read and strictly obey the rules in CONVENTIONS.md. Make precise, surgical edits using SEARCH/REPLACE blocks. DO NOT output entire files. Task: "
+          # ==========================================
+          # AI system prompt
+          # ==========================================
+
+          SYSTEM_PROMPT="You are an elite senior software engineer.
+
+          STRICT RULES:
+          - Read CONVENTIONS.md carefully
+          - Make minimal precise edits
+          - Never rewrite unrelated code
+          - Never delete unrelated files
+          - Preserve project structure
+          - If creating files, isolate them cleanly
+          - Prefer surgical fixes over rewrites
+          - Keep styling consistent
+          - Avoid breaking existing functionality
+
+          TASK:
+          "
 
           FINAL_PROMPT="$SYSTEM_PROMPT $CLEAN_MSG"
 
-          # 4. Run Aider with Groq
-          aider --model openai/qwen-qwq-32b \
-                --edit-format diff \
-                --read CONVENTIONS.md \
-                --message "$FINAL_PROMPT" \
-                $FILES_TO_LOAD \
-                --yes-always \
-                --auto-commits \
-                --map-tokens 512 \
-                --no-stream \
-                --exit
+          # ==========================================
+          # Run Aider
+          # ==========================================
 
-          # 5. Commit and push safely
+          aider \
+            --model openai/llama-3.3-70b-versatile \
+            --edit-format diff \
+            --read CONVENTIONS.md \
+            --message "$FINAL_PROMPT" \
+            $FILES_TO_LOAD \
+            --yes-always \
+            --auto-commits \
+            --map-tokens 512 \
+            --no-stream \
+            --no-show-model-warnings \
+            --exit
+
+          # ==========================================
+          # Commit and push
+          # ==========================================
+
           git add .
 
-          git commit -m "AI surgical update: $CLEAN_MSG" || echo "No changes to commit"
+          git commit -m "AI update: $CLEAN_MSG" || echo "No changes to commit"
 
           git fetch origin main
+
           git rebase origin/main || git rebase --abort
 
           git push origin main
