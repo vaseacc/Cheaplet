@@ -1,1 +1,19 @@
 
+import sys
+if sys.getdefaultencoding() == 'utf-8' and sys.platform == 'win32':
+    import ctypes
+    ctypes.windll.user32.SetProcessDPIAware()
+    dark_mode = ctypes.windll.dwmapi.DwmIsCompositionEnabled()
+    if dark_mode:
+        print("\033[40m" + "Dark mode is enabled" + "\033[0m")
+    else:
+        print("\033[47m" + "Light mode is enabled" + "\033[0m")
+elif sys.platform == 'darwin':
+    import subprocess
+    dark_mode = subprocess.run(['defaults', 'read', '-g', 'AppleInterfaceStyle'], stdout=subprocess.PIPE).stdout.decode('utf-8').strip()
+    if dark_mode == 'Dark':
+        print("\033[40m" + "Dark mode is enabled" + "\033[0m")
+    else:
+        print("\033[47m" + "Light mode is enabled" + "\033[0m")
+else:
+    print("Unable to determine system theme")
