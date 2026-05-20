@@ -563,7 +563,6 @@
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
             const db = getFirestore(app);
 
-            // 🔥 BILINGUAL TRANSLATION 
             const lang = localStorage.getItem('preferred_language') || 'en';
             const uiStrings = {
                 en: {
@@ -698,6 +697,7 @@
                 } catch (e) { console.error("Error loading tags:", e); }
             }
 
+            // ✅ FIXED: Active Topics now link to the correct topic page
             async function loadActiveTopics() {
                 try {
                     const q = query(collection(db, "social_channels"), orderBy("postCount", "desc"), limit(4));
@@ -713,7 +713,7 @@
                         const data = doc.data();
                         const card = document.createElement('a');
                         card.className = 'topic-card';
-                        card.href = '/social';
+                        card.href = `/topic?id=${doc.id}`;   // ← fix: link to the specific topic
                         const postCount = data.postCount || 0;
                         const postWord = lang === 'fr' ? (postCount === 1 ? 'message' : 'messages') : (postCount === 1 ? 'post' : 'posts');
                         card.innerHTML = `
