@@ -560,7 +560,6 @@ const schoolDomains = {
     "@dawsoncollege.qc.ca": "Dawson College",
     "@usherbrooke.ca": "Université de Sherbrooke",
     "@ulaval.ca": "Université Laval"
-    "@vaniercollege.qc.ca": "Vanier College"
 };
 
 function getSchoolInfo(email) {
