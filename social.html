@@ -832,7 +832,7 @@
             async function fetchMarketListings() {
                 if (!currentUser) return;
                 const isAdmin = currentUserData?.role === 'admin';
-                const userSchool = internalSchoolName || targetSchool || "Collège de Rosemont";
+                const userSchool = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Global Campus";
                 
                 let bookQuery = query(
                     collection(db, "listings"),
@@ -1215,7 +1215,7 @@
                             if (isStudent && internalSchoolName && internalSchoolName !== "Global Campus") {
                                 targetSchool = internalSchoolName;
                             } else {
-                                targetSchool = "Collège de Rosemont";
+                                targetSchool = "Your Campus"; // Safe generic default fallback
                             }
 
                             if (isStudent) {
@@ -1464,7 +1464,12 @@
 
                 const isAdmin = currentUserData && currentUserData.role === 'admin';
                 const isVerifiedStudent = currentUserData && currentUserData.isStudent === true;
-                const matchesSchool = currentUserData && (currentUserData.schoolName === targetSchool || currentUserData.schoolName === "Cégep de Rosemont");
+                
+                const isRosemont = (name) => name === "Cégep de Rosemont" || name === "Collège de Rosemont";
+                const matchesSchool = currentUserData && (
+                    currentUserData.schoolName === targetSchool || 
+                    (isRosemont(targetSchool) && isRosemont(currentUserData.schoolName))
+                );
 
                 if (currentSchoolFilter === 'my' && !isAdmin && (!isVerifiedStudent || !matchesSchool)) {
                     const composerCard = document.getElementById('composer-card');
