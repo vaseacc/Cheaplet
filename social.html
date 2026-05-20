@@ -773,11 +773,24 @@
             // ─── HELPER: generate a safe Firestore collection name from a school name ───
             function getSchoolCollection(schoolName) {
                 if (!schoolName || schoolName === 'Global Campus') return 'social_posts_global';
+                
+                // Explicit mappings to match your Firestore Security Rules exactly
+                if (schoolName === 'Cégep de Rosemont' || schoolName === 'Collège de Rosemont') {
+                    return 'social_posts_rosemont';
+                }
+                if (schoolName === 'Vanier College') {
+                    return 'social_posts_vanier';
+                }
+
+                // Fallback logic: Remove accents properly (é -> e) before converting to underscores
                 const key = schoolName
+                    .normalize("NFD")
+                    .replace(/[\u0300-\u036f]/g, "") // Strips accents
                     .toLowerCase()
                     .replace(/[^a-z0-9]+/g, '_')
                     .replace(/_+/g, '_')
                     .replace(/^_|_$/g, '');
+                    
                 return `social_posts_${key}`;
             }
 
@@ -1224,7 +1237,7 @@
 
                             if (filterBar) filterBar.style.display = 'flex';
                             if (myFilterBtn) myFilterBtn.textContent = targetSchool;
-                            if (allFilterBtn) allFilterBtn.textContent = ui.filter_all_posts;
+                            if (allFilterBtn) allFilterBtn.classList.add('active');
                             
                             if (currentSchoolFilter === 'my') {
                                 if (myFilterBtn) myFilterBtn.classList.add('active');
