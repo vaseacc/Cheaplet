@@ -36,7 +36,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
     
     <style>
-        /* (All existing CSS unchanged) */
         :root {
             --ink:       #0C1446;
             --deep:      #2B5C92;
@@ -503,17 +502,17 @@
 
         <main class="feed-column">
             
-            <!-- VERIFICATION BANNER (only for non‑verified) -->
+            <!-- VERIFICATION BANNER -->
             <div id="verify-banner" class="verify-banner" style="display: none;">
-                <p><i class="fas fa-graduation-cap"></i> <span id="verify-banner-text">Get the Verified Student badge and filter posts by your school – create an account with your school email address.</span></p>
+                <p><i class="fas fa-graduation-cap"></i> <span id="verify-banner-text">Get the Verified Student badge to filter posts by your school – create an account with your school email address.</span></p>
                 <a href="/verify"><button>Create School Account</button></a>
                 <button class="banner-close" id="close-banner-btn">&times;</button>
             </div>
 
-            <!-- SCHOOL FILTER BAR (always visible) -->
+            <!-- SCHOOL FILTER BAR -->
             <div id="filter-bar" class="filter-bar">
                 <span><i class="fas fa-filter"></i> Feed:</span>
-                <button class="school-filter active" data-filter="all">Global Campus</button>
+                <button class="school-filter active" data-filter="all">All Posts</button>
                 <button class="school-filter" data-filter="my" id="my-school-filter">My School</button>
             </div>
 
@@ -617,7 +616,7 @@
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, doc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, limit, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, doc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, limit, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 
         async function main() {
@@ -645,6 +644,7 @@
                     restricted_desc: "To post in a specific school's feed, you need a verified student account with a school email address.",
                     restricted_btn: "Create School Account",
                     filter_my_school: "My School",
+                    filter_all_posts: "All Posts",
                     safetyCheck: "Checking...", imgRejected: "Image rejected: ",
                     dialog_confirm: "Confirm", dialog_delete_post: "Are you sure you want to delete this post?", dialog_delete_comment: "Delete this comment?",
                     btn_yes: "Yes", btn_no: "No", btn_delete: "Delete", btn_ok: "OK", alert_title: "Notice",
@@ -657,7 +657,7 @@
                     noPosts: "Aucune publication. Soyez le premier à partager !", justNow: "À l'instant", suggest: "Marché du Campus", browse: "Voir tout →", 
                     guest: "Hub Campus", sell: "Vendre un livre", comment_placeholder: "Écrire un commentaire...", no_comments: "Aucun commentaire pour le moment.",
                     lock_title: "Accès Restreint", lock_desc: "Le Hub Campus est un espace exclusif pour les étudiants. Connectez-vous pour rejoindre la conversation.", lock_btn: "Se Connecter ou S'inscrire",
-                    rep_title: "Signaler le message", rep_desc: "Aidez-nous à protéger Scoralia.", rep_place: "Détails...", rep_cancel: "Annuler", rep_submit: "Envoyer", rep_success: "Signalement envoyé.",
+                    rep_title: "Signaler le message", rep_desc: "Aisez-nous à protéger Scoralia.", rep_place: "Détails...", rep_cancel: "Annuler", rep_submit: "Envoyer", rep_success: "Signalement envoyé.",
                     attach_title: "Joindre une annonce", attach_desc: "Sélectionnez l'une de vos annonces actives.", attach_empty: "Vous n'avez aucune annonce active.", upload_fail: "Échec du téléchargement.",
                     search_social_place: "Rechercher messages, sujets, personnes...", edit_post_title: "Modifier le message", save_changes: "Enregistrer", edited_label: " • Modifié",
                     my_topics: "Mes Sujets", saved_topics: "Sujets Enregistrés", discover_topics: "Découvrir", topics_directory: "Annuaire des Sujets",
@@ -666,6 +666,7 @@
                     restricted_desc: "Pour publier dans le fil d'une école spécifique, vous avez besoin d'un compte étudiant vérifié avec une adresse e-mail scolaire.",
                     restricted_btn: "Créer un compte scolaire",
                     filter_my_school: "Mon école",
+                    filter_all_posts: "Tous les messages",
                     safetyCheck: "Vérification...", imgRejected: "Image rejetée : ",
                     dialog_confirm: "Confirmer", dialog_delete_post: "Êtes-vous sûr de vouloir supprimer ce message ?", dialog_delete_comment: "Supprimer ce commentaire ?",
                     btn_yes: "Oui", btn_no: "Non", btn_delete: "Supprimer", btn_ok: "OK", alert_title: "Avis",
@@ -796,7 +797,7 @@
             let currentUser = null;
             let currentUserData = null;
             let internalSchoolName = "Global Campus"; 
-            let targetSchool = "Collège de Rosemont"; // Calculated globally
+            let targetSchool = "Collège de Rosemont"; 
             let unsubscribePosts = null;
             let commentUnsubscribes = {}; 
             let listings = []; 
@@ -827,13 +828,12 @@
             const myFilterBtn = document.getElementById('my-school-filter');
             let currentSchoolFilter = 'all'; 
 
-            // --- FETCH MARKET LISTINGS (RESTORED FUNCTION) ---
+            // --- FETCH MARKET LISTINGS ---
             async function fetchMarketListings() {
                 if (!currentUser) return;
                 const isAdmin = currentUserData?.role === 'admin';
                 const userSchool = internalSchoolName || targetSchool || "Collège de Rosemont";
                 
-                // Base query: global active books
                 let bookQuery = query(
                     collection(db, "listings"),
                     where("status", "==", "active"),
@@ -841,7 +841,6 @@
                     limit(6)
                 );
 
-                // If not admin, try to get school-specific books
                 if (!isAdmin && userSchool !== "Global Campus") {
                     try {
                         const schoolQuery = query(
@@ -861,7 +860,6 @@
                     }
                 }
 
-                // Fallback to global books
                 try {
                     const snap = await getDocs(bookQuery);
                     listings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -1234,6 +1232,7 @@
 
                             if (filterBar) filterBar.style.display = 'flex';
                             if (myFilterBtn) myFilterBtn.textContent = targetSchool;
+                            if (allFilterBtn) allFilterBtn.textContent = ui.filter_all_posts;
                             
                             if (currentSchoolFilter === 'my') {
                                 if (myFilterBtn) myFilterBtn.classList.add('active');
@@ -1266,7 +1265,6 @@
                                 }
                             }
                             
-                            // --- FETCH MARKET LISTINGS FIRST, THEN LOAD TOPICS AND FEED ---
                             await fetchMarketListings();
                             loadTopics(); 
                             loadFeed();
@@ -1352,9 +1350,6 @@
                     const isAdmin = currentUser && currentUser.role === 'admin';
                     const isPinned = pinnedArr.includes(d.id);
                     
-                    // ✅ FIX: Show ALL topics, including private ones, with a lock icon.
-                    // REMOVED the line that filtered out private topics.
-                    
                     if (isPinned) {
                         pinT.push(d);
                     } else if (isOwner) {
@@ -1400,6 +1395,8 @@
                     return item;
                 };
 
+                const hasCustomTopics = myT.length > 0 || pinT.length > 0;
+
                 myT.forEach(t => {
                     dListMy.appendChild(createItemHtml(t, true, true));
                     mListMy.appendChild(createItemHtml(t, false, true));
@@ -1412,13 +1409,19 @@
                     if (mobileWaysList) mobileWaysList.appendChild(createTopBarItem(t));
                 });
 
+                // If user has not created or saved any topics, show all discoverable topics in the horizontal top bar
+                if (!hasCustomTopics) {
+                    discT.forEach(t => {
+                        if (mobileWaysList) mobileWaysList.appendChild(createTopBarItem(t));
+                    });
+                }
+
                 discT.forEach(t => {
                     dListDiscover.appendChild(createItemHtml(t, true, false));
                     mListDiscover.appendChild(createItemHtml(t, false, false));
                 });
             }
 
-            // --- CREATE MARKET BREAK ELEMENT (RESTORED) ---
             function createMarketBreak() {
                 const breakSection = document.createElement('div');
                 breakSection.className = 'market-break';
@@ -1463,7 +1466,6 @@
                 const isVerifiedStudent = currentUserData && currentUserData.isStudent === true;
                 const matchesSchool = currentUserData && (currentUserData.schoolName === targetSchool || currentUserData.schoolName === "Cégep de Rosemont");
 
-                // If on "My School" feed and user is not allowed, show locked overlay
                 if (currentSchoolFilter === 'my' && !isAdmin && (!isVerifiedStudent || !matchesSchool)) {
                     const composerCard = document.getElementById('composer-card');
                     if (composerCard) composerCard.style.display = 'none';
@@ -1498,7 +1500,6 @@
                     return; 
                 }
 
-                // Allowed: show composer and load feed
                 const composerCard = document.getElementById('composer-card');
                 if (composerCard) composerCard.style.display = 'flex';
                 
@@ -1522,7 +1523,6 @@
                         
                         if (snapshot.empty) {
                             feedContainer.innerHTML = `<div class="loader-msg">${ui.noPosts || 'No posts yet.'}</div>`;
-                            // Still show market break even if no posts
                             feedContainer.appendChild(createMarketBreak());
                             return;
                         }
@@ -1599,7 +1599,6 @@
                     </div>
                 `;
 
-                // ✅ ADDED: Green checkmark next to author name if verified student
                 const verifiedNameBadge = d.authorIsStudent ? '<i class="fas fa-check-circle" style="color: #2E7D32; font-size: 0.9rem; margin-left: 4px;" title="Verified Student"></i>' : '';
 
                 const pendingBadgeHtml = d.status === 'pending' ? `<span style="font-size:0.7rem; color:#d97706; background:#fef3c7; padding:2px 6px; border-radius:10px; margin-left:6px; border: 1px solid #fde68a;">⏳ In Review</span>` : '';
