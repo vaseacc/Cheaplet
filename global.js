@@ -74,15 +74,15 @@ window.addEventListener('beforeinstallprompt', (e) => {
     const isIndex = window.location.pathname === '/' || window.location.pathname.includes('/');
     if (!isIndex) return;
 
-    e.preventDefault();
-    deferredPrompt = e;
-    
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (!isMobile) return;
+    if (!isMobile) return;   // don't call preventDefault on desktop
 
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
     if (isStandalone) return;
 
+    e.preventDefault();
+    deferredPrompt = e;
+    
     let indexVisits = parseInt(localStorage.getItem('pwa_index_visits') || '0');
     if (indexVisits > 0 && indexVisits % 5 === 0) {
         showInstallPromotion();
