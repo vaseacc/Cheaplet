@@ -13,7 +13,7 @@
     <link rel="canonical" href="https://scoralia.pages.dev/">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <!-- Link to dark theme CSS -->
+    <!-- Link to dark theme CSS (make sure this file exists in your project) -->
     <link rel="stylesheet" href="dark-theme.css">
     <title>Scoralia — College Books Marketplace</title>
 
@@ -545,26 +545,12 @@
     </script>
 
     <!-- Main App Script (deferred) -->
-    <!-- Service Worker Registration for PWA -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js').then(function(registration) {
-                    console.log('ServiceWorker registration successful');
-                }, function(err) {
-                    console.log('ServiceWorker registration failed: ', err);
-                });
-            });
-        }
-    </script>
-
-    <!-- Main App Script (deferred) -->
     <script type="module" src="global.js" defer></script>
 
+    <!-- Force dark theme -->
     <script>
-        // Force dark theme by adding the class directly
         document.body.classList.add('dark-theme');
-        localStorage.setItem('theme', 'dark'); // Persist forced theme
+        localStorage.setItem('theme', 'dark');
     </script>
 
     <script type="module">
@@ -663,19 +649,18 @@
             const loadMoreBtn       = document.getElementById('load-more-btn');
 
             let unsubscribeListings = null;
-            let allFilteredDocs = [];        // All matching active listings (after filtering)
-            let displayLimit = 20;           // Number of items currently shown
-            let currentTerm = '';            // Keep track of search term
+            let allFilteredDocs = [];
+            let displayLimit = 20;
+            let currentTerm = '';
 
             document.getElementById('startBrowsingBtn').onclick = () => document.querySelector('.main-wrap').scrollIntoView({ behavior: 'smooth' });
             document.getElementById('heroListBtn').onclick = () => window.location.href = '/listanitem';
             document.getElementById('search-btn').onclick = () => { if (searchInput.value.trim()) window.location.href = `/search?q=${encodeURIComponent(searchInput.value.trim())}`; };
             
-            // 🔥 FIX: Mobile "Enter" / "Go" key now triggers search reliably
             function handleSearchSubmit() {
                 const query = searchInput.value.trim();
                 if (query) {
-                    searchInput.blur(); // dismiss keyboard on mobile
+                    searchInput.blur();
                     window.location.href = `/search?q=${encodeURIComponent(query)}`;
                 }
             }
@@ -713,7 +698,6 @@
                 } catch (e) { console.error("Error loading tags:", e); }
             }
 
-            // Load top 4 active topics from social_channels
             async function loadActiveTopics() {
                 try {
                     const q = query(collection(db, "social_channels"), orderBy("postCount", "desc"), limit(4));
@@ -775,7 +759,6 @@
                 return card;
             }
 
-            // Renders the current slice of listings based on displayLimit
             function renderListings() {
                 const itemsToShow = allFilteredDocs.slice(0, displayLimit);
                 itemCountSpan.textContent = `${itemsToShow.length} ${ui.items} (${allFilteredDocs.length} total)`;
@@ -796,7 +779,6 @@
                 listingsContainer.innerHTML = '';
                 listingsContainer.appendChild(frag);
 
-                // Show/Hide Load More button
                 if (displayLimit < allFilteredDocs.length) {
                     loadMoreContainer.style.display = 'block';
                     loadMoreBtn.innerHTML = `<i class="fas fa-chevron-down"></i> ${ui.loadMore} (${allFilteredDocs.length - displayLimit} more)`;
@@ -805,7 +787,6 @@
                 }
             }
 
-            // Load More click handler
             loadMoreBtn.addEventListener('click', () => {
                 displayLimit = Math.min(displayLimit + 20, allFilteredDocs.length);
                 renderListings();
@@ -822,11 +803,7 @@
                     unsubscribeListings = onSnapshot(query(collection(db, 'listings'), ...constraints), snapshot => {
                         currentTerm = searchInput.value.toLowerCase().trim();
                         const allActive = snapshot.docs.filter(d => d.data().status === 'active');
-                        
-                        // No longer filter live – just keep all active listings for display, search is only via redirect
                         allFilteredDocs = allActive;
-                        
-                        // Reset display limit when sort changes
                         displayLimit = 20;
                         renderListings();
                     });
@@ -836,7 +813,6 @@
             }
 
             sortFilter.onchange = fetchListings;
-            // Removed live input listener – search now only via Enter
             
             loadGlobalTags();
             loadActiveTopics();
@@ -848,44 +824,31 @@
     <!-- SMART PWA INSTALL PROMPT (Homepage only, mobile only) -->
     <script>
         (function() {
-            // Only run on the homepage
             if (window.location.pathname !== '/' && !window.location.pathname.endsWith('/')) return;
 
-            // Only on mobile (simple user-agent check)
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             if (!isMobile) return;
 
-            // Check if already running as standalone PWA
             if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
                 localStorage.setItem('pwa_installed', 'true');
                 return;
             }
 
-            // Storage keys
             const VISIT_KEY = 'pwa_home_visits';
-            const DISMISS_KEY = 'pwa_prompt_dismissed';
             const INSTALLED_KEY = 'pwa_installed';
 
-            // If already installed, do nothing
             if (localStorage.getItem(INSTALLED_KEY) === 'true') return;
 
-            // Get current visit count
             let visits = parseInt(localStorage.getItem(VISIT_KEY) || '0');
             visits++;
             localStorage.setItem(VISIT_KEY, visits);
 
-            // Show every 5 visits (5th, 10th, 15th …)
             if (visits > 0 && visits % 5 === 0) {
-                // We need the beforeinstallprompt event
                 let deferredPrompt;
 
                 window.addEventListener('beforeinstallprompt', (e) => {
-                    // Prevent the mini-infobar from appearing
                     e.preventDefault();
-                    // Save the event for later
                     deferredPrompt = e;
-
-                    // Show our custom modal
                     showInstallPrompt();
                 });
 
