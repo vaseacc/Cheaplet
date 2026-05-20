@@ -14,7 +14,6 @@
 
     <link rel="preconnect" href="https://firestore.googleapis.com">
 
-    
     <!-- DNS Prefetch -->
     <link rel="dns-prefetch" href="https://firebaseapp.com">
     <link rel="dns-prefetch" href="https://googleapis.com">
@@ -26,7 +25,6 @@
     
     <!-- Modulepreload for critical JS -->
     <link rel="modulepreload" href="/global.js">
-    
  
     <!-- Preload critical fonts -->
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap">
@@ -505,7 +503,7 @@
             <!-- SCHOOL FILTER BAR -->
             <div id="filter-bar" class="filter-bar">
                 <span><i class="fas fa-filter"></i> Feed:</span>
-                <button class="school-filter active" data-filter="all">All Posts</button>
+                <button class="school-filter active" data-filter="all" id="all-posts-filter-btn">All Posts</button>
                 <button class="school-filter" data-filter="my" id="my-school-filter">My School</button>
             </div>
 
@@ -787,10 +785,25 @@
 
             function formatCount(num) { return !num ? 0 : (num > 999 ? (num / 1000).toFixed(1) + 'k' : num); }
 
+            /* ─── NEW: helper to get the Firestore collection for a school ─── */
+            function getSchoolCollection(schoolName) {
+                if (!schoolName || schoolName === 'Global Campus') return 'social_posts_global';
+                // Direct fallback for existing Collège de Rosemont database structure
+                if (schoolName.toLowerCase().includes('rosemont')) return 'social_posts_rosemont';
+                
+                const key = schoolName
+                    .toLowerCase()
+                    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // strip French accents safely
+                    .replace(/[^a-z0-9]+/g, '_')   // replace non-alphanumeric with underscore
+                    .replace(/_+/g, '_')           // collapse multiple underscores
+                    .replace(/^_|_$/g, '');        // trim leading/trailing underscores
+                return `social_posts_${key}`;
+            }
+
             let currentUser = null;
             let currentUserData = null;
             let internalSchoolName = "Global Campus"; 
-            let targetSchool = "Collège de Rosemont"; 
+            let targetSchool = "Global Campus"; 
             let unsubscribePosts = null;
             let commentUnsubscribes = {}; 
             let listings = []; 
@@ -817,7 +830,7 @@
 
             const filterBar = document.getElementById('filter-bar');
             const verifyBanner = document.getElementById('verify-banner');
-            const allFilterBtn = document.querySelector('.school-filter[data-filter="all"]');
+            const allFilterBtn = document.getElementById('all-posts-filter-btn');
             const myFilterBtn = document.getElementById('my-school-filter');
             let currentSchoolFilter = 'all'; 
 
@@ -998,8 +1011,8 @@
 
                     let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
                     
-                    const collectionName = currentSchoolFilter === 'my' ? "social_posts_rosemont" : "social_posts_global";
                     const postingToSchool = currentSchoolFilter === 'my' ? targetSchool : "Global Campus";
+                    const collectionName = getSchoolCollection(postingToSchool);
                     
                     const requiresReview = uploadedImgUrl !== null;
                     
@@ -1204,7 +1217,12 @@
                             if (btnCreateWay) btnCreateWay.onclick = handleCreateTopic;
                             if (mSheetCreateWay) mSheetCreateWay.onclick = handleCreateTopic;
                             
-                            targetSchool = (internalSchoolName && internalSchoolName !== "Global Campus") ? internalSchoolName : "Collège de Rosemont";
+                            // Determine the target school for the "My School" feed
+                            if (isStudent && internalSchoolName && internalSchoolName !== "Global Campus") {
+                                targetSchool = internalSchoolName;
+                            } else {
+                                targetSchool = "Collège de Rosemont"; // fallback for unverified users
+                            }
 
                             if (isStudent) {
                                 const verifyBanner = document.getElementById('verify-banner');
@@ -1221,7 +1239,7 @@
                             
                             const filterBar = document.getElementById('filter-bar');
                             const myFilterBtn = document.getElementById('my-school-filter');
-                            const allFilterBtn = document.querySelector('.school-filter[data-filter="all"]');
+                            const allFilterBtn = document.getElementById('all-posts-filter-btn');
 
                             if (filterBar) filterBar.style.display = 'flex';
                             if (myFilterBtn) myFilterBtn.textContent = targetSchool;
@@ -1450,9 +1468,9 @@
                 Object.values(commentUnsubscribes).forEach(unsub => unsub());
                 commentUnsubscribes = {};
 
-                const isAdmin = currentUserData && currentUserData.role === 'admin';
-                const isVerifiedStudent = currentUserData && currentUserData.isStudent === true;
-                const matchesSchool = currentUserData && (currentUserData.schoolName === targetSchool || currentUserData.schoolName === "Cégep de Rosemont");
+                const isAdmin = currentUserData?.role === 'admin';
+                const isVerifiedStudent = currentUserData?.isStudent === true;
+                const matchesSchool = currentUserData && (currentUserData.schoolName === targetSchool);
 
                 if (currentSchoolFilter === 'my' && !isAdmin && (!isVerifiedStudent || !matchesSchool)) {
                     const composerCard = document.getElementById('composer-card');
@@ -1501,7 +1519,10 @@
 
                 if (feedContainer) feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub || 'Loading campus hub...'}</span></div>`;
 
-                const collectionName = currentSchoolFilter === 'my' ? "social_posts_rosemont" : "social_posts_global";
+                const collectionName = currentSchoolFilter === 'my' 
+                    ? getSchoolCollection(targetSchool) 
+                    : "social_posts_global";
+
                 let q = query(collection(db, collectionName), orderBy("timestamp", "desc"), limit(100));
                 
                 try {
