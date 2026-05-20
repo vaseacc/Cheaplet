@@ -8,31 +8,18 @@
     <script type="module" src="global.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="preconnect" href="https://www.gstatic.com">
-
     <link rel="preconnect" href="https://firestore.googleapis.com">
-
-    <!-- DNS Prefetch -->
     <link rel="dns-prefetch" href="https://firebaseapp.com">
     <link rel="dns-prefetch" href="https://googleapis.com">
-    
-    <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icons/icon-192.png">
-    
-    <!-- Modulepreload for critical JS -->
     <link rel="modulepreload" href="/global.js">
- 
-    <!-- Preload critical fonts -->
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-    
-    <!-- Font Awesome with integrity -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
-    
     <style>
         :root {
             --ink:       #0C1446;
@@ -407,12 +394,10 @@
         </div>
     </div>
 
-    <!-- MOBILE TOPICS BAR WITH ☰ MENU BUTTON -->
+    <!-- MOBILE TOPICS BAR – NO HARDCODED GLOBAL CAMPUS PILL -->
     <div class="mobile-topics-wrapper" id="mobile-topics-wrapper">
         <div class="mobile-ways-bar" id="mobile-ways-list">
-            <a href="/social" class="m-way-pill active">
-                <i class="fas fa-globe-americas"></i> <span data-i18n="topics_campus">Global Campus</span>
-            </a>
+            <!-- pills added dynamically via renderTopics() -->
         </div>
         <div class="mobile-fade"></div>
         <button class="m-menu-btn" id="m-btn-open-menu"><i class="fas fa-bars"></i></button>
@@ -503,7 +488,7 @@
             <!-- SCHOOL FILTER BAR -->
             <div id="filter-bar" class="filter-bar">
                 <span><i class="fas fa-filter"></i> Feed:</span>
-                <button class="school-filter active" data-filter="all" id="all-posts-filter-btn">All Posts</button>
+                <button class="school-filter active" data-filter="all" id="all-filter-btn">All Posts</button>
                 <button class="school-filter" data-filter="my" id="my-school-filter">My School</button>
             </div>
 
@@ -648,7 +633,7 @@
                     noPosts: "Aucune publication. Soyez le premier à partager !", justNow: "À l'instant", suggest: "Marché du Campus", browse: "Voir tout →", 
                     guest: "Hub Campus", sell: "Vendre un livre", comment_placeholder: "Écrire un commentaire...", no_comments: "Aucun commentaire pour le moment.",
                     lock_title: "Accès Restreint", lock_desc: "Le Hub Campus est un espace exclusif pour les étudiants. Connectez-vous pour rejoindre la conversation.", lock_btn: "Se Connecter ou S'inscrire",
-                    rep_title: "Signaler le message", rep_desc: "Aisez-nous à protéger Scoralia.", rep_place: "Détails...", rep_cancel: "Annuler", rep_submit: "Envoyer", rep_success: "Signalement envoyé.",
+                    rep_title: "Signaler le message", rep_desc: "Aidez-nous à protéger Scoralia.", rep_place: "Détails...", rep_cancel: "Annuler", rep_submit: "Envoyer", rep_success: "Signalement envoyé.",
                     attach_title: "Joindre une annonce", attach_desc: "Sélectionnez l'une de vos annonces actives.", attach_empty: "Vous n'avez aucune annonce active.", upload_fail: "Échec du téléchargement.",
                     search_social_place: "Rechercher messages, sujets, personnes...", edit_post_title: "Modifier le message", save_changes: "Enregistrer", edited_label: " • Modifié",
                     my_topics: "Mes Sujets", saved_topics: "Sujets Enregistrés", discover_topics: "Découvrir", topics_directory: "Annuaire des Sujets",
@@ -785,18 +770,14 @@
 
             function formatCount(num) { return !num ? 0 : (num > 999 ? (num / 1000).toFixed(1) + 'k' : num); }
 
-            /* ─── NEW: helper to get the Firestore collection for a school ─── */
+            // ─── HELPER: generate a safe Firestore collection name from a school name ───
             function getSchoolCollection(schoolName) {
                 if (!schoolName || schoolName === 'Global Campus') return 'social_posts_global';
-                // Direct fallback for existing Collège de Rosemont database structure
-                if (schoolName.toLowerCase().includes('rosemont')) return 'social_posts_rosemont';
-                
                 const key = schoolName
                     .toLowerCase()
-                    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // strip French accents safely
-                    .replace(/[^a-z0-9]+/g, '_')   // replace non-alphanumeric with underscore
-                    .replace(/_+/g, '_')           // collapse multiple underscores
-                    .replace(/^_|_$/g, '');        // trim leading/trailing underscores
+                    .replace(/[^a-z0-9]+/g, '_')
+                    .replace(/_+/g, '_')
+                    .replace(/^_|_$/g, '');
                 return `social_posts_${key}`;
             }
 
@@ -830,7 +811,7 @@
 
             const filterBar = document.getElementById('filter-bar');
             const verifyBanner = document.getElementById('verify-banner');
-            const allFilterBtn = document.getElementById('all-posts-filter-btn');
+            const allFilterBtn = document.getElementById('all-filter-btn');
             const myFilterBtn = document.getElementById('my-school-filter');
             let currentSchoolFilter = 'all'; 
 
@@ -1221,7 +1202,7 @@
                             if (isStudent && internalSchoolName && internalSchoolName !== "Global Campus") {
                                 targetSchool = internalSchoolName;
                             } else {
-                                targetSchool = "Collège de Rosemont"; // fallback for unverified users
+                                targetSchool = "Collège de Rosemont";
                             }
 
                             if (isStudent) {
@@ -1239,7 +1220,7 @@
                             
                             const filterBar = document.getElementById('filter-bar');
                             const myFilterBtn = document.getElementById('my-school-filter');
-                            const allFilterBtn = document.getElementById('all-posts-filter-btn');
+                            const allFilterBtn = document.getElementById('all-filter-btn');
 
                             if (filterBar) filterBar.style.display = 'flex';
                             if (myFilterBtn) myFilterBtn.textContent = targetSchool;
@@ -1415,7 +1396,7 @@
                     if (mobileWaysList) mobileWaysList.appendChild(createTopBarItem(t));
                 });
 
-                // If user has not created or saved any topics, show all discoverable topics in the horizontal top bar
+                // If user has no custom topics, show all discoverable topics in the horizontal bar
                 if (!hasCustomTopics) {
                     discT.forEach(t => {
                         if (mobileWaysList) mobileWaysList.appendChild(createTopBarItem(t));
@@ -1468,9 +1449,9 @@
                 Object.values(commentUnsubscribes).forEach(unsub => unsub());
                 commentUnsubscribes = {};
 
-                const isAdmin = currentUserData?.role === 'admin';
-                const isVerifiedStudent = currentUserData?.isStudent === true;
-                const matchesSchool = currentUserData && (currentUserData.schoolName === targetSchool);
+                const isAdmin = currentUserData && currentUserData.role === 'admin';
+                const isVerifiedStudent = currentUserData && currentUserData.isStudent === true;
+                const matchesSchool = currentUserData && (currentUserData.schoolName === targetSchool || currentUserData.schoolName === "Cégep de Rosemont");
 
                 if (currentSchoolFilter === 'my' && !isAdmin && (!isVerifiedStudent || !matchesSchool)) {
                     const composerCard = document.getElementById('composer-card');
@@ -1519,10 +1500,9 @@
 
                 if (feedContainer) feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub || 'Loading campus hub...'}</span></div>`;
 
-                const collectionName = currentSchoolFilter === 'my' 
-                    ? getSchoolCollection(targetSchool) 
-                    : "social_posts_global";
-
+                const collectionName = currentSchoolFilter === 'my'
+                    ? getSchoolCollection(targetSchool)
+                    : 'social_posts_global';
                 let q = query(collection(db, collectionName), orderBy("timestamp", "desc"), limit(100));
                 
                 try {
