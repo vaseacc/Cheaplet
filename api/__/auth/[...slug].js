@@ -1,6 +1,6 @@
 export default async function handler(req, res) {
   const slug = req.query.slug; // array of path segments
-  const firebaseUrl = `https://cheaplet.firebaseapp.com/__/auth/${slug.join('/')}`;
+  const firebaseUrl = `https://auth.scoralia.ca/__/auth/${slug.join('/')}`;
   
   // Forward query string as well
   const targetUrl = new URL(firebaseUrl);

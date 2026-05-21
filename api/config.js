@@ -6,8 +6,8 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const hostname = req.headers.host;
-  // Force the Firebase Auth domain to your project's default subdomain
-  const firebase = getFirebaseConfig(process.env, hostname, 'cheaplet.firebaseapp.com');
+  // Force the Firebase Auth domain to your custom subdomain
+  const firebase = getFirebaseConfig(process.env, hostname, 'auth.scoralia.ca');
   const cloudinary = getCloudinaryConfig(process.env);
   res.json({ firebaseConfig: firebase, cloudinary });
 }

@@ -1,7 +1,7 @@
 // api/__/auth/catch-all.js (Vercel serverless function)
 export default async function handler(req, res) {
   // Forward the request to Firebase Hosting
-  const firebaseUrl = `https://cheaplet.firebaseapp.com/__/auth/${req.query.catchall.join('/')}?${new URLSearchParams(req.query).toString()}`;
+  const firebaseUrl = `https://auth.scoralia.ca/__/auth/${req.query.catchall.join('/')}?${new URLSearchParams(req.query).toString()}`;
   
   // Copy headers (especially origin/cookies)
   const headers = { ...req.headers };
