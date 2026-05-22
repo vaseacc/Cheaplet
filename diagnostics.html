@@ -143,18 +143,16 @@
                 const response = await fetch('/api/store-log');
                 const data = await response.json();
                 
-                if (data.logs && data.logs.length > 0) {
-                    // Merge server logs with session logs, avoiding duplicates
-                    const existingIds = new Set(sessionLogs.map(l => l.id));
-                    const newLogs = data.logs.filter(log => !existingIds.has(log.id));
-                    
-                    if (newLogs.length > 0) {
-                        sessionLogs = [...newLogs, ...sessionLogs].slice(0, 50);
-                        renderLogs();
-                    }
+                if (data.logs && Array.isArray(data.logs) && data.logs.length > 0) {
+                    // Use server logs directly
+                    sessionLogs = data.logs.slice(0, 50);
+                    renderLogs();
+                } else if (sessionLogs.length === 0) {
+                    document.getElementById('logs-container').innerHTML = '<p class="loading">No logs yet. Create a listing or run tests.</p>';
                 }
             } catch (error) {
                 console.error('Failed to fetch logs:', error);
+                document.getElementById('logs-container').innerHTML = `<p class="error">Error fetching logs: ${error.message}</p>`;
             }
         }
 
