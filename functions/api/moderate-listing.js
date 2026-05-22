@@ -119,7 +119,13 @@ export async function onRequestPost({ request, env }) {
       })
     }).catch(() => {});
     
-    return new Response(JSON.stringify({ verdict: 'SAFE' }), {
+    return new Response(JSON.stringify({ 
+      verdict: 'SAFE',
+      _debug: {
+        message: 'Listing approved as SAFE',
+        timestamp: new Date().toISOString()
+      }
+    }), {
       status: 200,
       headers: { ...headers, 'Content-Type': 'application/json' }
     });
