@@ -774,7 +774,6 @@
                     logs.push('');
 
                     logs.push('[7] Sending to AI moderation...');
-                    logs.push('    API URL: ' + getFunctionUrl('moderate-listing'));
                     try {
                         const aiRes = await fetch(getFunctionUrl('moderate-listing'), {
                             method: 'POST',
@@ -784,38 +783,19 @@
                         
                         logs.push('[7] Moderation API response status: ' + aiRes.status);
                         
+                        if (!aiRes.ok) throw new Error("Moderation server error");
+                        
                         if (!aiRes.ok) {
                             const errorText = await aiRes.text();
                             logs.push('    Error response: ' + errorText);
                             throw new Error("Moderation server error: " + aiRes.status);
                         }
                         
-                        const aiData = await aiRes.json();
-                        logs.push('[7] Moderation response parsed successfully');
+                        logs.push('[7] Moderation response received:');
                         logs.push('    Verdict: ' + (aiData.verdict || 'unknown'));
                         logs.push('    Reason: ' + (aiData.reason || 'none'));
-
-                        // Log to console immediately
-                        console.log('=== AI MODERATION RESPONSE ===');
-                        console.log(aiData);
-
-                        // Extract and display HuggingFace logs from _debug.logs
-                        if (aiData._debug && aiData._debug.logs && Array.isArray(aiData._debug.logs)) {
-                            logs.push('');
-                            logs.push('=== AI MODERATION LOGS (HuggingFace) ===');
-                            aiData._debug.logs.forEach((logLine) => {
-                                logs.push('  [AI] ' + logLine);
-                                console.log('  [AI] ' + logLine);
-                            });
-                            logs.push('=== END AI LOGS ===');
-                            logs.push('');
-                        } else {
-                            logs.push('    No detailed logs in response');
-                            logs.push('    Full _debug: ' + JSON.stringify(aiData._debug || 'none'));
-                        }
-
                         if (aiData._debug) {
-                            console.log('    Debug Info:', aiData._debug);
+                            logs.push('    Debug Info: ' + JSON.stringify(aiData._debug));
                         }
 
                         if (aiData.verdict === "UNSAFE") {
