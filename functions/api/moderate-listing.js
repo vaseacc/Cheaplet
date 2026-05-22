@@ -1,10 +1,9 @@
 import { moderateImage, containsForbiddenWords } from '../../lib/moderate-listing.js';
 
-export async function onRequest({ request, env }) {
+export async function onRequestPost({ request, env }) {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
-    'Content-Type': 'application/json'
   };
   if (request.method === 'OPTIONS') return new Response(null, { headers });
   if (request.method !== 'POST') return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers });
@@ -98,7 +97,10 @@ export async function onRequest({ request, env }) {
           verdict: 'UNSAFE',
           reason: 'Image flagged as inappropriate.',
           details: { score }
-        }), { headers });
+        }), {
+          status: 200,
+          headers: { ...headers, 'Content-Type': 'application/json' }
+        });
       }
     }
     

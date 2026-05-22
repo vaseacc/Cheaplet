@@ -1,5 +1,24 @@
 import { moderateImage, containsForbiddenWords } from '../lib/moderate-listing.js';
 
+// Helper to send logs synchronously (works on Vercel)
+async function sendLog(message, type) {
+  try {
+    // Use absolute URL for Vercel serverless functions
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : 'http://localhost:3000';
+      
+    await fetch(`${baseUrl}/api/store-log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, type })
+    });
+  } catch (e) {
+    // Silent fail - logging shouldn't break the main flow
+    console.log('Log send failed:', e.message);
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
