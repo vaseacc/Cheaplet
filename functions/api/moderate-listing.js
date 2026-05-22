@@ -8,6 +8,8 @@ export async function onRequestPost({ request, env }) {
   if (request.method === 'OPTIONS') return new Response(null, { headers });
   if (request.method !== 'POST') return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers });
   
+  const allLogs = [];
+  
   try {
     const { imageUrls = [], title = '', description = '' } = await request.json();
     
