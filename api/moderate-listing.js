@@ -1,32 +1,22 @@
 import { moderateImage, containsForbiddenWords } from '../lib/moderate-listing.js';
 
-// Helper to send logs synchronously (works on Vercel)
-async function sendLog(message, type) {
-  try {
-    // Use absolute URL for Vercel serverless functions
-    const baseUrl = process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : 'http://localhost:3000';
-      
-    await fetch(`${baseUrl}/api/store-log`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, type })
-    });
-  } catch (e) {
-    // Silent fail - logging shouldn't break the main flow
-    console.log('Log send failed:', e.message);
-  }
-}
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  const allLogs = [];
+  const log = (msg) => {
+    console.log(msg);
+    allLogs.push(msg);
+  };
+
   try {
     const { imageUrls = [], title = '', description = '' } = req.body;
+    
+    log('[moderate-listing] Starting moderation for listing: ' + title);
+    log('[moderate-listing] Image count: ' + imageUrls.length);
     
     // Log start (works on both Vercel and Cloudflare)
     fetch('/api/store-log', {
@@ -41,7 +31,11 @@ export default async function handler(req, res) {
     }).catch(() => {});
 
     const fullText = `${title} ${description}`;
+    log('[moderate-listing] Checking text content for forbidden words...');
+    
     if (containsForbiddenWords(fullText)) {
+      log('[moderate-listing] FORBIDDEN WORDS DETECTED!');
+      
       fetch('/api/store-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -53,12 +47,20 @@ export default async function handler(req, res) {
         })
       }).catch(() => {});
       
-      return res.status(200).json({ verdict: 'UNSAFE', reason: 'Inappropriate language detected.' });
+      return res.status(200).json({ 
+        verdict: 'UNSAFE', 
+        reason: 'Inappropriate language detected.',
+        _debug: { check: 'text', matched: true, logs: allLogs }
+      });
     }
+    
+    log('[moderate-listing] Text check passed - no forbidden words');
 
     const tokens = [process.env.HUGGINGFACE_TOKEN, process.env.HUGGINGFACE_TOKEN_2].filter(Boolean);
     
     if (tokens.length === 0) {
+      log('[moderate-listing] WARNING: No Hugging Face tokens configured');
+      
       fetch('/api/store-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -70,10 +72,20 @@ export default async function handler(req, res) {
         })
       }).catch(() => {});
       
-      return res.status(200).json({ verdict: 'SAFE', reason: 'No tokens configured, bypassing check' });
+      return res.status(200).json({ 
+        verdict: 'SAFE', 
+        reason: 'No tokens configured, bypassing check',
+        _debug: { tokensConfigured: false, logs: allLogs }
+      });
     }
+    
+    log('[moderate-listing] Starting image analysis for ' + imageUrls.length + ' images');
+    log('[moderate-listing] Using HuggingFace API for image moderation');
 
-    for (const url of imageUrls) {
+    for (let i = 0; i < imageUrls.length; i++) {
+      const url = imageUrls[i];
+      log(`[moderate-listing] Analyzing image ${i + 1}/${imageUrls.length}: ${url.substring(0, 60)}`);
+      
       fetch('/api/store-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -85,7 +97,17 @@ export default async function handler(req, res) {
         })
       }).catch(() => {});
       
-      const { score } = await moderateImage(url, tokens);
+      const result = await moderateImage(url, tokens);
+      const score = result.score;
+      
+      // Add HuggingFace logs to our logs
+      if (result.logs && Array.isArray(result.logs)) {
+        result.logs.forEach(hfLog => {
+          log(`[HuggingFace] ${hfLog}`);
+        });
+      }
+      
+      log(`[moderate-listing] Image ${i + 1} safety score: ${score}`);
       
       fetch('/api/store-log', {
         method: 'POST',
@@ -99,6 +121,8 @@ export default async function handler(req, res) {
       }).catch(() => {});
       
       if (score > 0.70) {
+        log('[moderate-listing] IMAGE FLAGGED AS UNSAFE! Score: ' + score);
+        
         fetch('/api/store-log', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -113,10 +137,13 @@ export default async function handler(req, res) {
         return res.status(200).json({
           verdict: 'UNSAFE',
           reason: 'Image flagged as inappropriate.',
-          details: { score }
+          details: { score },
+          _debug: { check: 'image', imageUrl: url.substring(0, 60), score, logs: allLogs }
         });
       }
     }
+    
+    log('[moderate-listing] All checks passed - listing is SAFE');
     
     fetch('/api/store-log', {
       method: 'POST',
@@ -129,8 +156,16 @@ export default async function handler(req, res) {
       })
     }).catch(() => {});
     
-    return res.status(200).json({ verdict: 'SAFE' });
+    return res.status(200).json({ 
+      verdict: 'SAFE',
+      _debug: { checksPassed: ['text', 'images'], imageCount: imageUrls.length, logs: allLogs }
+    });
   } catch (err) {
+    const errorMsg = '[moderate-listing] CRITICAL ERROR: ' + err.message;
+    console.error(errorMsg);
+    allLogs.push(errorMsg);
+    allLogs.push(err.stack || '');
+    
     fetch('/api/store-log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -143,6 +178,10 @@ export default async function handler(req, res) {
     }).catch(() => {});
     
     console.error(err);
-    return res.status(200).json({ verdict: 'SAFE', reason: 'System bypass (error).' });
+    return res.status(200).json({ 
+      verdict: 'SAFE', 
+      reason: 'System bypass (error).',
+      _debug: { error: err.message, stack: err.stack, logs: allLogs }
+    });
   }
 }
