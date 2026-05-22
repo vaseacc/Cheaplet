@@ -6,8 +6,8 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const hostname = req.headers.host;
-  // Always use chaeplet.firebaseapp.com as authDomain to match Firebase Console configuration
-  const firebase = getFirebaseConfig(process.env, hostname, "chaeplet.firebaseapp.com");
+  // Pass the hostname so authDomain is set to the actual domain (e.g., scoralia.ca)
+  const firebase = getFirebaseConfig(process.env, hostname, null);
   const cloudinary = getCloudinaryConfig(process.env);
   res.json({ firebaseConfig: firebase, cloudinary });
 }
