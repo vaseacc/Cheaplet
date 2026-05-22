@@ -17,8 +17,10 @@ export async function onRequest({ request, env }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        message: `[moderate-listing] Listing moderation started - Title: "${title}", Images: ${imageUrls.length}`,
-        type: 'info'
+        source: 'moderate-listing',
+        level: 'info',
+        message: 'Listing moderation started',
+        data: { title, imageCount: imageUrls.length }
       })
     }).catch(() => {});
 
@@ -28,8 +30,10 @@ export async function onRequest({ request, env }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: `[moderate-listing] Forbidden words detected in: "${fullText.substring(0, 50)}..."`,
-          type: 'warning'
+          source: 'moderate-listing',
+          level: 'warning',
+          message: 'Forbidden words detected',
+          data: { text: fullText.substring(0, 50) }
         })
       }).catch(() => {});
       
@@ -43,8 +47,10 @@ export async function onRequest({ request, env }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: '[moderate-listing] Missing Hugging Face tokens - bypassing check',
-          type: 'error'
+          source: 'moderate-listing',
+          level: 'error',
+          message: 'Missing Hugging Face tokens',
+          data: {}
         })
       }).catch(() => {});
       
@@ -56,8 +62,10 @@ export async function onRequest({ request, env }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: `[moderate-listing] Analyzing image: ${url.substring(0, 60)}...`,
-          type: 'info'
+          source: 'moderate-listing',
+          level: 'info',
+          message: `Analyzing image: ${url.substring(0, 40)}...`,
+          data: { url }
         })
       }).catch(() => {});
       
@@ -67,8 +75,10 @@ export async function onRequest({ request, env }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: `[moderate-listing] Image analysis complete - Score: ${score}`,
-          type: 'info'
+          source: 'moderate-listing',
+          level: 'info',
+          message: `Image analysis complete`,
+          data: { url: url.substring(0, 40), score }
         })
       }).catch(() => {});
       
@@ -77,8 +87,10 @@ export async function onRequest({ request, env }) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            message: `[moderate-listing] Image flagged as unsafe (score: ${score})`,
-            type: 'warning'
+            source: 'moderate-listing',
+            level: 'warning',
+            message: 'Image flagged as unsafe',
+            data: { score }
           })
         }).catch(() => {});
         
@@ -94,8 +106,10 @@ export async function onRequest({ request, env }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        message: '[moderate-listing] Listing approved as SAFE',
-        type: 'success'
+        source: 'moderate-listing',
+        level: 'success',
+        message: 'Listing approved as SAFE',
+        data: {}
       })
     }).catch(() => {});
     
@@ -105,8 +119,10 @@ export async function onRequest({ request, env }) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        message: `[moderate-listing] Critical error: ${err.message}`,
-        type: 'error'
+        source: 'moderate-listing',
+        level: 'error',
+        message: 'Critical error in moderation',
+        data: { error: err.message }
       })
     }).catch(() => {});
     
