@@ -658,9 +658,22 @@
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
 
+                // Initialize logs array to collect all function logs
+                const logs = [];
+                logs.push('=== LISTING SUBMISSION LOGS ===');
+                logs.push('Timestamp: ' + new Date().toISOString());
+                logs.push('');
+
                 // TRIGGER BOT SHIELD
+                logs.push('[1] Checking bot shield...');
                 const isHuman = await window.checkBotLimits();
-                if (!isHuman) return;
+                logs.push('[1] Bot shield result: ' + (isHuman ? 'PASSED (human)' : 'FAILED (bot detected)'));
+                if (!isHuman) {
+                    logs.push('ABORTED: Bot detected');
+                    alert('scoraliaa.vercel.app says:\n\n' + logs.join('\n'));
+                    return;
+                }
+                logs.push('');
 
                 const title = document.getElementById('listing-title').value.trim();
                 const desc = document.getElementById('listing-description').value.trim();
@@ -668,11 +681,38 @@
                 const originalPriceInput = document.getElementById('listing-original-price').value;
                 const originalPrice = originalPriceInput ? parseFloat(originalPriceInput) : null;
 
-                if (price > 1200) { alert(ui[lang].priceErr); return; }
-                if (originalPrice && originalPrice > 5000) { alert(ui[lang].origPriceErr); return; }
-                if (selectedFiles.length === 0) { alert(ui[lang].imgErr); return; }
+                logs.push('[2] Form validation...');
+                logs.push('    Title: ' + title);
+                logs.push('    Description length: ' + desc.length + ' chars');
+                logs.push('    Price: ' + price);
+                logs.push('    Original Price: ' + (originalPrice || 'not set'));
+                logs.push('    Images count: ' + selectedFiles.length);
 
+                if (price > 1200) {
+                    logs.push('VALIDATION FAILED: Price exceeds 1200');
+                    alert(ui[lang].priceErr);
+                    alert('scoraliaa.vercel.app says:\n\n' + logs.join('\n'));
+                    return;
+                }
+                if (originalPrice && originalPrice > 5000) {
+                    logs.push('VALIDATION FAILED: Original price exceeds 5000');
+                    alert(ui[lang].origPriceErr);
+                    alert('scoraliaa.vercel.app says:\n\n' + logs.join('\n'));
+                    return;
+                }
+                if (selectedFiles.length === 0) {
+                    logs.push('VALIDATION FAILED: No images selected');
+                    alert(ui[lang].imgErr);
+                    alert('scoraliaa.vercel.app says:\n\n' + logs.join('\n'));
+                    return;
+                }
+                logs.push('[2] Validation: PASSED');
+                logs.push('');
+
+                logs.push('[3] Recording activity...');
                 window.recordActivity('listings');
+                logs.push('[3] Activity recorded');
+                logs.push('');
 
                 const submitBtn = document.getElementById('postListingBtn');
                 const postBtnText = document.getElementById('post-btn-text');
@@ -680,9 +720,13 @@
                 postBtnText.textContent = "AI Safety Check... (Please wait)";
 
                 try {
+                    logs.push('[4] Uploading images to Cloudinary...');
                     const imageUrls = [];
-                    for (const file of selectedFiles) {
+                    for (let i = 0; i < selectedFiles.length; i++) {
+                        const file = selectedFiles[i];
+                        logs.push('    Uploading image ' + (i + 1) + '/' + selectedFiles.length + ': ' + file.name + ' (' + (file.size / 1024).toFixed(2) + ' KB)');
                         const signRes = await fetch(getFunctionUrl('sign-upload')).then(r => r.json());
+                        logs.push('    Got signature from sign-upload API');
                         const formData = new FormData();
                         formData.append('file', file); 
                         formData.append('api_key', signRes.apiKey);
@@ -690,13 +734,20 @@
                         formData.append('signature', signRes.signature);
                         formData.append('upload_preset', signRes.uploadPreset);
                         const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { method: 'POST', body: formData }).then(r => r.json());
-                        if (res.secure_url) imageUrls.push(res.secure_url);
-                        else throw new Error(res.error?.message || 'Upload failed');
+                        if (res.secure_url) {
+                            imageUrls.push(res.secure_url);
+                            logs.push('    Uploaded successfully: ' + res.secure_url);
+                        } else {
+                            throw new Error(res.error?.message || 'Upload failed');
+                        }
                     }
+                    logs.push('[4] All images uploaded: ' + imageUrls.length + ' URLs');
+                    logs.push('');
 
                     const rawIsbn = document.getElementById('listing-isbn').value.trim();
                     const cleanIsbn = rawIsbn ? rawIsbn.replace(/[^0-9]/g, '') : null;
 
+                    logs.push('[5] Preparing listing data...');
                     const listingData = {
                         title, description: desc, price, 
                         originalPrice: originalPrice,
@@ -714,9 +765,15 @@
                         status: 'pending',
                         timestamp: serverTimestamp() 
                     };
+                    logs.push('[5] Listing data prepared');
+                    logs.push('');
 
+                    logs.push('[6] Saving listing to Firestore...');
                     const listingRef = await addDoc(collection(db, 'listings'), listingData);
+                    logs.push('[6] Listing saved with ID: ' + listingRef.id);
+                    logs.push('');
 
+                    logs.push('[7] Sending to AI moderation...');
                     try {
                         const aiRes = await fetch(getFunctionUrl('moderate-listing'), {
                             method: 'POST',
@@ -724,39 +781,63 @@
                             body: JSON.stringify({ imageUrls, title, description: desc })
                         });
                         
+                        logs.push('[7] Moderation API response status: ' + aiRes.status);
+                        
                         if (!aiRes.ok) throw new Error("Moderation server error");
                         
                         const aiData = await aiRes.json();
                         
-                        // Log debug info to browser console
-                        console.log('[ListingItem] Moderation Response:', aiData);
+                        logs.push('[7] Moderation response received:');
+                        logs.push('    Verdict: ' + (aiData.verdict || 'unknown'));
+                        logs.push('    Reason: ' + (aiData.reason || 'none'));
                         if (aiData._debug) {
-                            console.log('[ListingItem] Debug Info:', aiData._debug);
+                            logs.push('    Debug Info: ' + JSON.stringify(aiData._debug));
                         }
 
                         if (aiData.verdict === "UNSAFE") {
+                            logs.push('[8] Listing REJECTED by AI moderation');
                             await updateDoc(doc(db, "listings", listingRef.id), {
                                 status: 'rejected',
                                 rejectionReason: aiData.reason || "Violates community guidelines."
                             });
+                            logs.push('[8] Status updated to rejected in Firestore');
                             alert("Your listing was rejected by safety checks: " + (aiData.reason || "Inappropriate content."));
                             submitBtn.disabled = false;
                             postBtnText.textContent = ui[lang].btnPost;
+                            logs.push('');
+                            logs.push('=== FINAL RESULT: REJECTED ===');
+                            alert('scoraliaa.vercel.app says:\n\n' + logs.join('\n'));
                             return; 
                         } else {
+                            logs.push('[8] Listing APPROVED by AI moderation');
                             await updateDoc(doc(db, "listings", listingRef.id), {
                                 status: 'active',
                                 approvedAt: serverTimestamp()
                             });
+                            logs.push('[8] Status updated to active in Firestore');
+                            logs.push('');
+                            logs.push('=== FINAL RESULT: APPROVED ===');
+                            logs.push('Redirecting to my-listings...');
+                            alert('scoraliaa.vercel.app says:\n\n' + logs.join('\n'));
                             window.location.href = `/my-listings`;
                         }
                     } catch (err) {
+                        logs.push('[7] Moderation error: ' + err.message);
                         console.error("Moderation failed or timed out:", err);
+                        logs.push('Proceeding with pending status...');
+                        logs.push('');
+                        logs.push('=== FINAL RESULT: PENDING (moderation error) ===');
+                        alert('scoraliaa.vercel.app says:\n\n' + logs.join('\n'));
                         window.location.href = `/my-listings?pending=true&id=${listingRef.id}`;
                     }
 
                 } catch (err) {
+                    logs.push('ERROR: ' + err.message);
+                    logs.push('Stack: ' + err.stack);
+                    logs.push('');
+                    logs.push('=== FINAL RESULT: ERROR ===');
                     alert("Error: " + err.message);
+                    alert('scoraliaa.vercel.app says:\n\n' + logs.join('\n'));
                     submitBtn.disabled = false;
                     postBtnText.textContent = ui[lang].btnPost;
                 }
