@@ -291,11 +291,6 @@
             }
         }
 
-        async function fetchLogs() {
-            addLog('Logs refreshed', 'info');
-            renderLogs();
-        }
-
         async function addTestLog() {
             const message = document.getElementById('log-message').value;
             if (!message) {
@@ -304,17 +299,19 @@
             }
             
             try {
-                const response = await fetch('/api/log-test', {
+                const response = await fetch('/api/store-log', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message })
+                    body: JSON.stringify({ message, type: 'manual' })
                 });
                 
                 const data = await response.json();
                 
-                if (response.ok) {
+                if (data.success) {
                     document.getElementById('manual-log-result').innerHTML = 
                         '<div class="status success">✅ Log sent to server</div>';
+                    // Immediately fetch updated logs
+                    await fetchLogsFromServer();
                     addLog(`Manual log: ${message} (Server confirmed)`, 'success');
                 } else {
                     document.getElementById('manual-log-result').innerHTML = 
@@ -328,6 +325,31 @@
             }
             
             document.getElementById('log-message').value = '';
+        }
+
+        async function fetchLogsFromServer() {
+            try {
+                const response = await fetch('/api/store-log');
+                const data = await response.json();
+                
+                if (data.logs && data.logs.length > 0) {
+                    // Merge server logs with session logs, avoiding duplicates
+                    const existingIds = new Set(sessionLogs.map(l => l.id));
+                    const newLogs = data.logs.filter(log => !existingIds.has(log.id));
+                    
+                    if (newLogs.length > 0) {
+                        sessionLogs = [...newLogs, ...sessionLogs].slice(0, 50);
+                        renderLogs();
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to fetch logs:', error);
+            }
+        }
+
+        async function fetchLogs() {
+            await fetchLogsFromServer();
+            addLog('Logs refreshed', 'info');
         }
 
         // Initialize
