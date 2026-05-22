@@ -1,5 +1,3 @@
-import { getFirebaseConfig, getCloudinaryConfig } from '../../lib/config.js';
-
 export async function onRequest({ request, env }) {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -8,10 +6,20 @@ export async function onRequest({ request, env }) {
   };
   if (request.method === 'OPTIONS') return new Response(null, { headers });
 
-  const hostname = new URL(request.url).hostname;
-  // Force the Firebase Auth domain to your project's default subdomain
-  const firebase = getFirebaseConfig(env, hostname, 'cheaplet.firebaseapp.com');
-  const cloudinary = getCloudinaryConfig(env);
+  const firebaseConfig = {
+    apiKey: env.VITE_FIREBASE_API_KEY,
+    authDomain: 'chaeplet.firebaseapp.com',
+    projectId: env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId: env.VITE_FIREBASE_APP_ID,
+    measurementId: env.VITE_FIREBASE_MEASUREMENT_ID
+  };
+  
+  const cloudinary = {
+    cloudName: env.VITE_CLOUDINARY_CLOUD_NAME,
+    uploadPreset: env.VITE_CLOUDINARY_UPLOAD_PRESET
+  };
 
-  return new Response(JSON.stringify({ firebaseConfig: firebase, cloudinary }), { headers });
+  return new Response(JSON.stringify({ firebaseConfig, cloudinary }), { headers });
 }
