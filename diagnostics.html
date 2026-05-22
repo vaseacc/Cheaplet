@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Diagnostics - Scoralia</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        h2 { color: #555; margin-top: 30px; }
+        .test-section {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .log-entry {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin: 8px 0;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px 5px 5px 0;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        .key-status { margin: 10px 0; padding: 10px; background: #fff; border-left: 4px solid #ccc; }
+        .key-status.valid { border-left-color: #28a745; }
+        .key-status.invalid { border-left-color: #dc3545; }
+        #results { margin-top: 20px; }
+        .loading { color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 System Diagnostics</h1>
+        <p>This page tests your API integrations and displays recent function logs.</p>
+        <p><strong>⚠️ Warning:</strong> This page exposes internal system information. Delete after use.</p>
+
+        <div class="test-section">
+            <h2>1. Environment Variables Check</h2>
+            <div id="env-check">Running...</div>
+        </div>
+
+        <div class="test-section">
+            <h2>2. Hugging Face Integration Test</h2>
+            <p>Testing image moderation endpoint...</p>
+            <button onclick="testHuggingFace()">Run Test</button>
+            <div id="hf-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>3. Groq Integration Test</h2>
+            <p>Testing LLM endpoint...</p>
+            <button onclick="testGroq()">Run Test</button>
+            <div id="groq-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>4. Recent Function Logs</h2>
+            <p>Logs from the last 10 minutes (simulated via test calls):</p>
+            <button onclick="fetchLogs()">Refresh Logs</button>
+            <div id="logs-container"></div>
+        </div>
+
+        <div class="test-section">
+            <h2>5. Manual Log Entry</h2>
+            <p>Add a test entry to verify logging works:</p>
+            <input type="text" id="log-message" placeholder="Enter test message..." style="padding: 8px; width: 60%; border: 1px solid #ddd; border-radius: 4px;">
+            <button onclick="addTestLog()">Add Log Entry</button>
+            <div id="manual-log-result"></div>
+        </div>
+    </div>
+
+    <script>
+        // Store logs temporarily in memory for this session
+        const sessionLogs = [];
+
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toISOString();
+            const logEntry = { timestamp, type, message };
+            sessionLogs.unshift(logEntry);
+            renderLogs();
+        }
+
+        function renderLogs() {
+            const container = document.getElementById('logs-container');
+            if (sessionLogs.length === 0) {
+                container.innerHTML = '<p class="loading">No logs yet. Run some tests first.</p>';
+                return;
+            }
+            
+            container.innerHTML = sessionLogs.map(log => `
+                <div class="log-entry">
+                    <span style="color: #66d9ef">[${log.timestamp}]</span> 
+                    <span style="color: ${log.type === 'error' ? '#f92672' : '#a6e22e'}">${log.type.toUpperCase()}</span>: 
+                    ${log.message}
+                </div>
+            `).join('');
+        }
+
+        async function checkEnv() {
+            try {
+                const response = await fetch('/api/check-env');
+                const data = await response.json();
+                
+                let html = '';
+                
+                if (data.huggingface) {
+                    html += `<div class="key-status valid">✅ Hugging Face Token: Configured</div>`;
+                    addLog('Hugging Face token is configured', 'success');
+                } else {
+                    html += `<div class="key-status invalid">❌ Hugging Face Token: Missing</div>`;
+                    addLog('Hugging Face token is missing', 'error');
+                }
+
+                if (data.groq) {
+                    html += `<div class="key-status valid">✅ Groq API Key: Configured</div>`;
+                    addLog('Groq API key is configured', 'success');
+                } else {
+                    html += `<div class="key-status invalid">❌ Groq API Key: Missing</div>`;
+                    addLog('Groq API key is missing', 'error');
+                }
+
+                document.getElementById('env-check').innerHTML = html;
+            } catch (error) {
+                document.getElementById('env-check').innerHTML = 
+                    `<div class="key-status invalid">❌ Error checking env: ${error.message}</div>`;
+                addLog(`Env check failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testHuggingFace() {
+            const resultDiv = document.getElementById('hf-result');
+            resultDiv.innerHTML = '<p class="loading">Testing...</p>';
+            
+            try {
+                const response = await fetch('/api/moderate-listing', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        imageUrls: ['https://via.placeholder.com/150'],
+                        title: 'Test Listing',
+                        description: 'Testing Hugging Face integration'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="status success">✅ Success</div>
+                        <div class="log-entry">${JSON.stringify(data, null, 2)}</div>
+                    `;
+                    addLog(`Hugging Face test passed: ${JSON.stringify(data)}`, 'success');
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="status error">❌ Failed</div>
+                        <div class="log-entry">Error: ${data.error || 'Unknown error'}</div>
+                    `;
+                    addLog(`Hugging Face test failed: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">❌ Error</div>
+                    <div class="log-entry">${error.message}</div>
+                `;
+                addLog(`Hugging Face test error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testGroq() {
+            const resultDiv = document.getElementById('groq-result');
+            resultDiv.innerHTML = '<p class="loading">Testing...</p>';
+            
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: [{ role: 'user', content: 'Say "Hello" if you can read this.' }],
+                        model: 'llama-3.1-8b-instant'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="status success">✅ Success</div>
+                        <div class="log-entry">Response: ${data.response || JSON.stringify(data, null, 2)}</div>
+                    `;
+                    addLog(`Groq test passed: ${data.response || 'OK'}`, 'success');
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="status error">❌ Failed</div>
+                        <div class="log-entry">Error: ${data.error || 'Unknown error'}</div>
+                    `;
+                    addLog(`Groq test failed: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">❌ Error</div>
+                    <div class="log-entry">${error.message}</div>
+                `;
+                addLog(`Groq test error: ${error.message}`, 'error');
+            }
+        }
+
+        async function fetchLogs() {
+            addLog('Logs refreshed', 'info');
+            renderLogs();
+        }
+
+        async function addTestLog() {
+            const message = document.getElementById('log-message').value;
+            if (!message) {
+                alert('Please enter a message');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/log-test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('manual-log-result').innerHTML = 
+                        '<div class="status success">✅ Log sent to server</div>';
+                    addLog(`Manual log: ${message} (Server confirmed)`, 'success');
+                } else {
+                    document.getElementById('manual-log-result').innerHTML = 
+                        '<div class="status error">❌ Failed to send</div>';
+                    addLog(`Manual log failed: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                document.getElementById('manual-log-result').innerHTML = 
+                    `<div class="status error">❌ Error: ${error.message}</div>`;
+                addLog(`Manual log error: ${error.message}`, 'error');
+            }
+            
+            document.getElementById('log-message').value = '';
+        }
+
+        // Initialize
+        window.onload = function() {
+            checkEnv();
+            renderLogs();
+        };
+    </script>
+</body>
+</html>
