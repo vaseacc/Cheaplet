@@ -203,24 +203,38 @@ window.checkBotLimits = async () => {
     const MAX_LISTINGS = 67; 
     const MAX_IMAGES = 67;
 
+    console.log('[checkBotLimits] Starting bot shield verification...');
+
     let stats = JSON.parse(localStorage.getItem('scoralia_usage_stats') || '{"listings":0, "images":0, "lastReset":0}');
     const now = Date.now();
 
+    console.log('[checkBotLimits] Current stats:', stats);
+
     if (now - stats.lastReset > 86400000) {
+        console.log('[checkBotLimits] Resetting daily stats (24h passed)');
         stats = { listings: 0, images: 0, lastReset: now };
         localStorage.setItem('scoralia_usage_stats', JSON.stringify(stats));
     }
 
     if (stats.listings >= MAX_LISTINGS || stats.images >= MAX_IMAGES) {
+        console.log('[checkBotLimits] Limit exceeded! Triggering bot challenge...');
+        console.log('[checkBotLimits] Listings:', stats.listings, '/', MAX_LISTINGS);
+        console.log('[checkBotLimits] Images:', stats.images, '/', MAX_IMAGES);
         return await triggerBotChallenge();
     }
+    
+    console.log('[checkBotLimits] Bot shield check PASSED - user is human');
     return true;
 };
 
 window.recordActivity = (type) => {
+    console.log('[recordActivity] Recording activity:', type);
+    
     let stats = JSON.parse(localStorage.getItem('scoralia_usage_stats') || '{"listings":0, "images":0, "lastReset":0}');
     if (!stats.lastReset) stats.lastReset = Date.now();
     if (stats[type] !== undefined) stats[type]++;
+    
+    console.log('[recordActivity] Updated stats:', stats);
     localStorage.setItem('scoralia_usage_stats', JSON.stringify(stats));
 };
 

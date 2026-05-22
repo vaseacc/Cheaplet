@@ -11,6 +11,9 @@ export async function onRequestPost({ request, env }) {
   try {
     const { imageUrls = [], title = '', description = '' } = await request.json();
     
+    console.log('[moderate-listing] Starting moderation for listing:', title);
+    console.log('[moderate-listing] Image count:', imageUrls.length);
+    
     // Log start
     fetch('/api/store-log', {
       method: 'POST',
@@ -24,7 +27,11 @@ export async function onRequestPost({ request, env }) {
     }).catch(() => {});
 
     const fullText = `${title} ${description}`;
+    console.log('[moderate-listing] Checking text content for forbidden words...');
+    
     if (containsForbiddenWords(fullText)) {
+      console.log('[moderate-listing] FORBIDDEN WORDS DETECTED!');
+      
       fetch('/api/store-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -36,12 +43,20 @@ export async function onRequestPost({ request, env }) {
         })
       }).catch(() => {});
       
-      return new Response(JSON.stringify({ verdict: 'UNSAFE', reason: 'Inappropriate language detected.' }), { headers });
+      return new Response(JSON.stringify({ 
+        verdict: 'UNSAFE', 
+        reason: 'Inappropriate language detected.',
+        _debug: { check: 'text', matched: true }
+      }), { headers });
     }
+    
+    console.log('[moderate-listing] Text check passed - no forbidden words');
 
     const tokens = [env.HUGGINGFACE_TOKEN, env.HUGGINGFACE_TOKEN_2].filter(Boolean);
     
     if (tokens.length === 0) {
+      console.log('[moderate-listing] WARNING: No Hugging Face tokens configured');
+      
       fetch('/api/store-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -53,10 +68,19 @@ export async function onRequestPost({ request, env }) {
         })
       }).catch(() => {});
       
-      return new Response(JSON.stringify({ verdict: 'SAFE', reason: 'No tokens configured, bypassing check' }), { headers });
+      return new Response(JSON.stringify({ 
+        verdict: 'SAFE', 
+        reason: 'No tokens configured, bypassing check',
+        _debug: { tokensConfigured: false }
+      }), { headers });
     }
     
-    for (const url of imageUrls) {
+    console.log('[moderate-listing] Starting image analysis for', imageUrls.length, 'images');
+    
+    for (let i = 0; i < imageUrls.length; i++) {
+      const url = imageUrls[i];
+      console.log(`[moderate-listing] Analyzing image ${i + 1}/${imageUrls.length}:`, url.substring(0, 60));
+      
       fetch('/api/store-log', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -69,6 +93,7 @@ export async function onRequestPost({ request, env }) {
       }).catch(() => {});
       
       const { score } = await moderateImage(url, tokens);
+      console.log(`[moderate-listing] Image ${i + 1} safety score:`, score);
       
       fetch('/api/store-log', {
         method: 'POST',
@@ -82,6 +107,8 @@ export async function onRequestPost({ request, env }) {
       }).catch(() => {});
       
       if (score > 0.70) {
+        console.log('[moderate-listing] IMAGE FLAGGED AS UNSAFE! Score:', score);
+        
         fetch('/api/store-log', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -96,13 +123,16 @@ export async function onRequestPost({ request, env }) {
         return new Response(JSON.stringify({
           verdict: 'UNSAFE',
           reason: 'Image flagged as inappropriate.',
-          details: { score }
+          details: { score },
+          _debug: { check: 'image', imageUrl: url.substring(0, 60), score }
         }), {
           status: 200,
           headers: { ...headers, 'Content-Type': 'application/json' }
         });
       }
     }
+    
+    console.log('[moderate-listing] All checks passed - listing is SAFE');
     
     fetch('/api/store-log', {
       method: 'POST',
@@ -115,8 +145,13 @@ export async function onRequestPost({ request, env }) {
       })
     }).catch(() => {});
     
-    return new Response(JSON.stringify({ verdict: 'SAFE' }), { headers });
+    return new Response(JSON.stringify({ 
+      verdict: 'SAFE',
+      _debug: { checksPassed: ['text', 'images'], imageCount: imageUrls.length }
+    }), { headers });
   } catch (err) {
+    console.error('[moderate-listing] CRITICAL ERROR:', err.message);
+    
     fetch('/api/store-log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -129,6 +164,10 @@ export async function onRequestPost({ request, env }) {
     }).catch(() => {});
     
     console.error(err);
-    return new Response(JSON.stringify({ verdict: 'SAFE', reason: 'System bypass (error).' }), { headers });
+    return new Response(JSON.stringify({ 
+      verdict: 'SAFE', 
+      reason: 'System bypass (error).',
+      _debug: { error: err.message, stack: err.stack }
+    }), { headers });
   }
 }
