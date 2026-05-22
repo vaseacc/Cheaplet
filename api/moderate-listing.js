@@ -28,14 +28,30 @@ export default async function handler(req, res) {
   try {
     const { imageUrls = [], title = '', description = '' } = req.body;
     
-    // Log start
-    console.log(`[moderate-listing] Listing moderation started - Title: "${title}", Images: ${imageUrls.length}`);
-    await sendLog(`[moderate-listing] Listing moderation started - Title: "${title}", Images: ${imageUrls.length}`, 'info');
+    // Log start (works on both Vercel and Cloudflare)
+    fetch('/api/store-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source: 'moderate-listing',
+        level: 'info',
+        message: 'Listing moderation started',
+        data: { title, imageCount: imageUrls.length }
+      })
+    }).catch(() => {});
 
     const fullText = `${title} ${description}`;
     if (containsForbiddenWords(fullText)) {
-      console.log(`[moderate-listing] Forbidden words detected`);
-      await sendLog(`[moderate-listing] Forbidden words detected`, 'warning');
+      fetch('/api/store-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'moderate-listing',
+          level: 'warning',
+          message: 'Forbidden words detected',
+          data: { text: fullText.substring(0, 50) }
+        })
+      }).catch(() => {});
       
       return res.status(200).json({ verdict: 'UNSAFE', reason: 'Inappropriate language detected.' });
     }
@@ -43,24 +59,56 @@ export default async function handler(req, res) {
     const tokens = [process.env.HUGGINGFACE_TOKEN, process.env.HUGGINGFACE_TOKEN_2].filter(Boolean);
     
     if (tokens.length === 0) {
-      console.log('[moderate-listing] Missing Hugging Face tokens - bypassing check');
-      await sendLog('[moderate-listing] Missing Hugging Face tokens - bypassing check', 'error');
+      fetch('/api/store-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'moderate-listing',
+          level: 'error',
+          message: 'Missing Hugging Face tokens',
+          data: {}
+        })
+      }).catch(() => {});
       
       return res.status(200).json({ verdict: 'SAFE', reason: 'No tokens configured, bypassing check' });
     }
 
     for (const url of imageUrls) {
-      console.log(`[moderate-listing] Analyzing image: ${url.substring(0, 60)}...`);
-      await sendLog(`[moderate-listing] Analyzing image: ${url.substring(0, 60)}...`, 'info');
+      fetch('/api/store-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'moderate-listing',
+          level: 'info',
+          message: `Analyzing image: ${url.substring(0, 40)}...`,
+          data: { url }
+        })
+      }).catch(() => {});
       
       const { score } = await moderateImage(url, tokens);
       
-      console.log(`[moderate-listing] Image analysis complete - Score: ${score}`);
-      await sendLog(`[moderate-listing] Image analysis complete - Score: ${score}`, 'info');
+      fetch('/api/store-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'moderate-listing',
+          level: 'info',
+          message: `Image analysis complete`,
+          data: { url: url.substring(0, 40), score }
+        })
+      }).catch(() => {});
       
       if (score > 0.70) {
-        console.log(`[moderate-listing] Image flagged as unsafe (score: ${score})`);
-        await sendLog(`[moderate-listing] Image flagged as unsafe (score: ${score})`, 'warning');
+        fetch('/api/store-log', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            source: 'moderate-listing',
+            level: 'warning',
+            message: 'Image flagged as unsafe',
+            data: { score }
+          })
+        }).catch(() => {});
         
         return res.status(200).json({
           verdict: 'UNSAFE',
@@ -70,14 +118,31 @@ export default async function handler(req, res) {
       }
     }
     
-    console.log('[moderate-listing] Listing approved as SAFE');
-    await sendLog('[moderate-listing] Listing approved as SAFE', 'success');
+    fetch('/api/store-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source: 'moderate-listing',
+        level: 'success',
+        message: 'Listing approved as SAFE',
+        data: {}
+      })
+    }).catch(() => {});
     
     return res.status(200).json({ verdict: 'SAFE' });
   } catch (err) {
-    console.error(`[moderate-listing] Critical error: ${err.message}`);
-    await sendLog(`[moderate-listing] Critical error: ${err.message}`, 'error');
+    fetch('/api/store-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source: 'moderate-listing',
+        level: 'error',
+        message: 'Critical error in moderation',
+        data: { error: err.message }
+      })
+    }).catch(() => {});
     
+    console.error(err);
     return res.status(200).json({ verdict: 'SAFE', reason: 'System bypass (error).' });
   }
 }
