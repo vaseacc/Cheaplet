@@ -1,5 +1,24 @@
 import { moderateImage, containsForbiddenWords } from '../lib/moderate-listing.js';
 
+// Helper to send logs synchronously (works on Vercel)
+async function sendLog(message, type) {
+  try {
+    // Use absolute URL for Vercel serverless functions
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : 'http://localhost:3000';
+      
+    await fetch(`${baseUrl}/api/store-log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, type })
+    });
+  } catch (e) {
+    // Silent fail - logging shouldn't break the main flow
+    console.log('Log send failed:', e.message);
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -9,26 +28,14 @@ export default async function handler(req, res) {
   try {
     const { imageUrls = [], title = '', description = '' } = req.body;
     
-    // Log start (works on both Vercel and Cloudflare)
-    fetch('/api/store-log', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: `[moderate-listing] Listing moderation started - Title: "${title}", Images: ${imageUrls.length}`,
-        type: 'info'
-      })
-    }).catch(() => {});
+    // Log start
+    console.log(`[moderate-listing] Listing moderation started - Title: "${title}", Images: ${imageUrls.length}`);
+    await sendLog(`[moderate-listing] Listing moderation started - Title: "${title}", Images: ${imageUrls.length}`, 'info');
 
     const fullText = `${title} ${description}`;
     if (containsForbiddenWords(fullText)) {
-      fetch('/api/store-log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: `[moderate-listing] Forbidden words detected in: "${fullText.substring(0, 50)}..."`,
-          type: 'warning'
-        })
-      }).catch(() => {});
+      console.log(`[moderate-listing] Forbidden words detected`);
+      await sendLog(`[moderate-listing] Forbidden words detected`, 'warning');
       
       return res.status(200).json({ verdict: 'UNSAFE', reason: 'Inappropriate language detected.' });
     }
@@ -36,48 +43,24 @@ export default async function handler(req, res) {
     const tokens = [process.env.HUGGINGFACE_TOKEN, process.env.HUGGINGFACE_TOKEN_2].filter(Boolean);
     
     if (tokens.length === 0) {
-      fetch('/api/store-log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: '[moderate-listing] Missing Hugging Face tokens - bypassing check',
-          type: 'error'
-        })
-      }).catch(() => {});
+      console.log('[moderate-listing] Missing Hugging Face tokens - bypassing check');
+      await sendLog('[moderate-listing] Missing Hugging Face tokens - bypassing check', 'error');
       
       return res.status(200).json({ verdict: 'SAFE', reason: 'No tokens configured, bypassing check' });
     }
 
     for (const url of imageUrls) {
-      fetch('/api/store-log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: `[moderate-listing] Analyzing image: ${url.substring(0, 60)}...`,
-          type: 'info'
-        })
-      }).catch(() => {});
+      console.log(`[moderate-listing] Analyzing image: ${url.substring(0, 60)}...`);
+      await sendLog(`[moderate-listing] Analyzing image: ${url.substring(0, 60)}...`, 'info');
       
       const { score } = await moderateImage(url, tokens);
       
-      fetch('/api/store-log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: `[moderate-listing] Image analysis complete - Score: ${score}`,
-          type: 'info'
-        })
-      }).catch(() => {});
+      console.log(`[moderate-listing] Image analysis complete - Score: ${score}`);
+      await sendLog(`[moderate-listing] Image analysis complete - Score: ${score}`, 'info');
       
       if (score > 0.70) {
-        fetch('/api/store-log', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: `[moderate-listing] Image flagged as unsafe (score: ${score})`,
-            type: 'warning'
-          })
-        }).catch(() => {});
+        console.log(`[moderate-listing] Image flagged as unsafe (score: ${score})`);
+        await sendLog(`[moderate-listing] Image flagged as unsafe (score: ${score})`, 'warning');
         
         return res.status(200).json({
           verdict: 'UNSAFE',
@@ -87,27 +70,14 @@ export default async function handler(req, res) {
       }
     }
     
-    fetch('/api/store-log', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: '[moderate-listing] Listing approved as SAFE',
-        type: 'success'
-      })
-    }).catch(() => {});
+    console.log('[moderate-listing] Listing approved as SAFE');
+    await sendLog('[moderate-listing] Listing approved as SAFE', 'success');
     
     return res.status(200).json({ verdict: 'SAFE' });
   } catch (err) {
-    fetch('/api/store-log', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message: `[moderate-listing] Critical error: ${err.message}`,
-        type: 'error'
-      })
-    }).catch(() => {});
+    console.error(`[moderate-listing] Critical error: ${err.message}`);
+    await sendLog(`[moderate-listing] Critical error: ${err.message}`, 'error');
     
-    console.error(err);
     return res.status(200).json({ verdict: 'SAFE', reason: 'System bypass (error).' });
   }
 }
