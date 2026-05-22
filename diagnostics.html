@@ -93,9 +93,10 @@
         </div>
 
         <div class="test-section">
-            <h2>4. Recent Function Logs</h2>
-            <p>Logs from the last 10 minutes (simulated via test calls):</p>
-            <button onclick="fetchLogs()">Refresh Logs</button>
+            <h2>4. Real-Time Function Logs</h2>
+            <p>Live logs from server functions (auto-refreshes every 2 seconds):</p>
+            <button onclick="fetchLogs()">Refresh Now</button>
+            <button id="autoRefreshBtn" onclick="toggleAutoRefresh()">Pause Auto-Refresh</button>
             <div id="logs-container"></div>
         </div>
 
@@ -110,7 +111,9 @@
 
     <script>
         // Store logs temporarily in memory for this session
-        const sessionLogs = [];
+        let sessionLogs = [];
+        let autoRefreshInterval = null;
+        let isAutoRefreshing = true;
 
         function addLog(message, type = 'info') {
             const timestamp = new Date().toISOString();
@@ -122,17 +125,62 @@
         function renderLogs() {
             const container = document.getElementById('logs-container');
             if (sessionLogs.length === 0) {
-                container.innerHTML = '<p class="loading">No logs yet. Run some tests first.</p>';
+                container.innerHTML = '<p class="loading">No logs yet. Create a listing or run tests.</p>';
                 return;
             }
             
             container.innerHTML = sessionLogs.map(log => `
                 <div class="log-entry">
-                    <span style="color: #66d9ef">[${log.timestamp}]</span> 
-                    <span style="color: ${log.type === 'error' ? '#f92672' : '#a6e22e'}">${log.type.toUpperCase()}</span>: 
+                    <span style="color: #66d9ef">[${new Date(log.timestamp).toLocaleTimeString()}]</span> 
+                    <span style="color: ${log.type === 'error' ? '#f92672' : log.type === 'success' ? '#a6e22e' : '#ffffff'}">${log.type.toUpperCase()}</span>: 
                     ${log.message}
                 </div>
             `).join('');
+        }
+
+        async function fetchLogs() {
+            try {
+                const response = await fetch('/api/store-log');
+                const data = await response.json();
+                
+                if (data.logs && data.logs.length > 0) {
+                    // Merge server logs with session logs, avoiding duplicates
+                    const existingIds = new Set(sessionLogs.map(l => l.id));
+                    const newLogs = data.logs.filter(log => !existingIds.has(log.id));
+                    
+                    if (newLogs.length > 0) {
+                        sessionLogs = [...newLogs, ...sessionLogs].slice(0, 50);
+                        renderLogs();
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to fetch logs:', error);
+            }
+        }
+
+        function toggleAutoRefresh() {
+            isAutoRefreshing = !isAutoRefreshing;
+            const btn = document.getElementById('autoRefreshBtn');
+            
+            if (isAutoRefreshing) {
+                btn.textContent = 'Pause Auto-Refresh';
+                startAutoRefresh();
+            } else {
+                btn.textContent = 'Resume Auto-Refresh';
+                stopAutoRefresh();
+            }
+        }
+
+        function startAutoRefresh() {
+            stopAutoRefresh(); // Clear any existing interval
+            autoRefreshInterval = setInterval(fetchLogs, 2000); // Refresh every 2 seconds
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
         }
 
         async function checkEnv() {
@@ -285,7 +333,8 @@
         // Initialize
         window.onload = function() {
             checkEnv();
-            renderLogs();
+            fetchLogs();
+            startAutoRefresh();
         };
     </script>
 </body>
