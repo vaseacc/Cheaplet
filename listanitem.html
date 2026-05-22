@@ -785,7 +785,11 @@
                         
                         if (!aiRes.ok) throw new Error("Moderation server error");
                         
-                        const aiData = await aiRes.json();
+                        if (!aiRes.ok) {
+                            const errorText = await aiRes.text();
+                            logs.push('    Error response: ' + errorText);
+                            throw new Error("Moderation server error: " + aiRes.status);
+                        }
                         
                         logs.push('[7] Moderation response received:');
                         logs.push('    Verdict: ' + (aiData.verdict || 'unknown'));
