@@ -211,16 +211,24 @@
             line-height: 1.6;
         }
 
-        .error-message {
-            color: #ff8f8f;
-            background: rgba(255,80,80,0.07);
-            border: 1px solid rgba(255,80,80,0.18);
+        /* ── INLINE MESSAGES ── */
+        .inline-message {
             padding: 10px 14px;
             border-radius: 9px;
             margin-bottom: 18px;
             display: none;
             font-size: 12.5px;
             animation: shake 0.35s ease;
+        }
+        .inline-message.error {
+            color: #ff8f8f;
+            background: rgba(255,80,80,0.07);
+            border: 1px solid rgba(255,80,80,0.18);
+        }
+        .inline-message.success {
+            color: #a5d6a7;
+            background: rgba(46,125,50,0.07);
+            border: 1px solid rgba(46,125,50,0.18);
         }
 
         @keyframes shake {
@@ -297,7 +305,6 @@
             border-color: rgba(200,169,110,0.35) !important;
         }
 
-        /* Select Styles */
         select.form-select {
             display: block;
             width: 100%;
@@ -496,7 +503,10 @@
                     <h2 class="card-title" id="form-title">Welcome Back</h2>
                     <p class="card-subtitle" id="form-subtitle">Log in to continue shopping and selling.</p>
 
-                    <div id="auth-error" class="error-message"></div>
+                    <!-- Error Message -->
+                    <div id="auth-error" class="inline-message error"></div>
+                    <!-- Success Message -->
+                    <div id="auth-success" class="inline-message success"></div>
 
                     <div class="student-tip" id="student-tip">
                         <i class="fas fa-graduation-cap"></i>
@@ -656,7 +666,6 @@
                 firebaseConfig = config.firebaseConfig;
             } catch (err) {
                 console.warn('⚠️ Config fetch failed, using fallback based on hostname. Error:', err.message);
-                const currentHost = window.location.hostname;
                 firebaseConfig = {
                     apiKey: "AIzaSyDYl9fSWCnkX5iqiesmCm6TTsFW4SRKOtE", 
                     authDomain: "chaeplet.firebaseapp.com",
@@ -679,6 +688,9 @@
             const submitBtn = document.getElementById('submit-btn');
             const loadingOverlay = document.getElementById('loading-overlay');
             const forgotPasswordLink = document.getElementById('forgot-password-link');
+
+            const authError = document.getElementById('auth-error');
+            const authSuccess = document.getElementById('auth-success');
 
             const registerFields = document.getElementById('register-fields');
             const fullNameInput = document.getElementById('full-name');
@@ -760,6 +772,12 @@
                     errSent: "Account created! Please check your email to verify your account before logging in.",
                     forgotPass: "Forgot Password?", enterEmailFirst: "Please enter your email address to reset your password.", 
                     resetSent: "Password reset email sent! Check your inbox.",
+                    // Inline error messages
+                    errInvalidCredentials: "Invalid email or password. Please try again.",
+                    errEmailInUse: "An account with this email already exists.",
+                    errWeakPassword: "Password should be at least 6 characters.",
+                    errNetwork: "Network error. Please check your connection.",
+                    errUnknown: "An unexpected error occurred. Please try again."
                 },
                 fr: {
                     loginTitle: "Bon retour", loginSub: "Connectez-vous pour continuer vos achats et ventes.",
@@ -794,8 +812,31 @@
                     errSent: "Compte créé ! Veuillez vérifier votre boîte mail pour activer votre compte avant de vous connecter.",
                     forgotPass: "Mot de passe oublié ?", enterEmailFirst: "Veuillez entrer votre adresse e-mail pour réinitialiser le mot de passe.", 
                     resetSent: "E-mail de réinitialisation envoyé ! Vérifiez votre boîte de réception.",
+                    // Inline error messages
+                    errInvalidCredentials: "Email ou mot de passe invalide. Veuillez réessayer.",
+                    errEmailInUse: "Un compte avec cet email existe déjà.",
+                    errWeakPassword: "Le mot de passe doit contenir au moins 6 caractères.",
+                    errNetwork: "Erreur réseau. Vérifiez votre connexion.",
+                    errUnknown: "Une erreur inattendue s'est produite. Veuillez réessayer."
                 }
             };
+
+            function showError(msg) {
+                authSuccess.style.display = 'none';
+                authError.textContent = msg;
+                authError.style.display = 'block';
+            }
+
+            function showSuccess(msg) {
+                authError.style.display = 'none';
+                authSuccess.textContent = msg;
+                authSuccess.style.display = 'block';
+            }
+
+            function hideMessages() {
+                authError.style.display = 'none';
+                authSuccess.style.display = 'none';
+            }
 
             const urlParams = new URLSearchParams(window.location.search);
             const msgParam = urlParams.get('msg');
@@ -967,7 +1008,8 @@
                 "@collegeahuntsic.qc.ca": "Collège Ahuntsic",
                 "@dawsoncollege.qc.ca": "Dawson College",
                 "@usherbrooke.ca": "Université de Sherbrooke",
-                "@ulaval.ca": "Université Laval"
+                "@ulaval.ca": "Université Laval",
+                "@vaniercollege.qc.ca": "Vanier College"
             };
 
             function getSchoolInfo(email) {
@@ -977,13 +1019,8 @@
 
             async function handleOAuth(provider) {
                 loadingOverlay.style.display = 'flex';
+                hideMessages();
                 try {
-                    // Set the redirect URI explicitly to match the current domain
-                    if (provider instanceof GoogleAuthProvider) {
-                        provider.setCustomParameters({
-                            prompt: 'select_account'
-                        });
-                    }
                     const result = await signInWithPopup(auth, provider);
                     const user = result.user;
                     await ensureUserDoc(user);
@@ -994,7 +1031,7 @@
                         sessionStorage.setItem('scoralia_redirect', redirectTo);
                         await signInWithRedirect(auth, provider);
                     } else {
-                        alert(error.message);
+                        showError(error.message);
                     }
                 }
             }
@@ -1015,9 +1052,9 @@
                     } catch (error) {
                         console.error("Redirect sign-in error:", error);
                         if (error.code === 'auth/missing-or-invalid-nonce') {
-                            alert('Login session expired. Please try again.');
+                            showError('Login session expired. Please try again.');
                         } else {
-                            alert(error.message);
+                            showError(error.message);
                         }
                     } finally {
                         sessionStorage.removeItem('scoralia_oauth_pending');
@@ -1061,7 +1098,7 @@
                     if (!isOAuth && !user.emailVerified) {
                         await signOut(auth);
                         loadingOverlay.style.display = 'none';
-                        alert(strings[lang].errVerify);
+                        showError(strings[lang].errVerify);
                         return; 
                     }
                     try {
@@ -1072,7 +1109,7 @@
                             if (data && data.role === 'banned') {
                                 await signOut(auth);
                                 loadingOverlay.style.display = 'none';
-                                alert(strings[lang].errBanned);
+                                showError(strings[lang].errBanned);
                                 return;
                             }
                         }
@@ -1090,13 +1127,18 @@
 
             forgotPasswordLink.onclick = async () => {
                 const emailVal = document.getElementById('email').value.trim();
-                if (!emailVal) { alert(strings[lang].enterEmailFirst); return; }
-                try { await sendPasswordResetEmail(auth, emailVal); alert(strings[lang].resetSent); } 
-                catch (e) { alert(e.message); }
+                if (!emailVal) { showError(strings[lang].enterEmailFirst); return; }
+                try {
+                    await sendPasswordResetEmail(auth, emailVal);
+                    showSuccess(strings[lang].resetSent);
+                } catch (e) {
+                    showError(e.message);
+                }
             };
 
             toggleLink.onclick = () => {
                 isLoginMode = !isLoginMode;
+                hideMessages();
                 if (!isLoginMode) {
                     registerFields.style.display = 'block';
                     setTimeout(() => registerFields.classList.add('visible'), 10);
@@ -1113,6 +1155,7 @@
             authForm.onsubmit = async (e) => {
                 e.preventDefault();
                 if (isSubmitting) return;
+                hideMessages();
                 isSubmitting = true; submitBtn.disabled = true;
                 const email = document.getElementById('email').value.toLowerCase();
                 const pass = document.getElementById('password').value;
@@ -1121,6 +1164,7 @@
                     if (isLoginMode) {
                         loadingOverlay.style.display = 'flex';
                         await signInWithEmailAndPassword(auth, email, pass);
+                        // On successful login, the onAuthStateChanged will redirect
                     } else {
                         const fullName = fullNameInput.value.trim();
                         const username = usernameInput.value.trim().toLowerCase();
@@ -1134,7 +1178,7 @@
                         }
 
                         if (!isFullnameValid || !isUsernameValid) {
-                            throw new Error("Please fix the errors before submitting.");
+                            throw { code: 'custom/validation' };
                         }
                         isRegistering = true;
                         loadingOverlay.style.display = 'flex';
@@ -1160,13 +1204,30 @@
                         await signOut(auth);
                         loadingOverlay.style.display = 'none';
                         isRegistering = false;
-                        alert(strings[lang].errSent);
-                        location.reload();
+                        showSuccess(strings[lang].errSent);
+                        setTimeout(() => location.reload(), 3500);
                     }
                 } catch (err) {
                     loadingOverlay.style.display = 'none';
-                    alert(err.message);
                     isSubmitting = false; submitBtn.disabled = false; isRegistering = false;
+
+                    // Map Firebase error codes to custom messages
+                    const code = err.code || '';
+                    let msg = strings[lang].errUnknown;
+                    if (code === 'auth/invalid-credential' || code === 'auth/user-not-found' || code === 'auth/wrong-password') {
+                        msg = strings[lang].errInvalidCredentials;
+                    } else if (code === 'auth/email-already-in-use') {
+                        msg = strings[lang].errEmailInUse;
+                    } else if (code === 'auth/weak-password') {
+                        msg = strings[lang].errWeakPassword;
+                    } else if (code === 'auth/network-request-failed') {
+                        msg = strings[lang].errNetwork;
+                    } else if (code === 'custom/validation') {
+                        msg = "Please fix the errors before submitting.";
+                    } else if (err.message) {
+                        msg = err.message; // fallback to Firebase error message
+                    }
+                    showError(msg);
                 }
             };
 
