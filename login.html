@@ -211,32 +211,6 @@
             line-height: 1.6;
         }
 
-        /* ── INLINE MESSAGES ── */
-        .inline-message {
-            padding: 10px 14px;
-            border-radius: 9px;
-            margin-bottom: 18px;
-            display: none;
-            font-size: 12.5px;
-            animation: shake 0.35s ease;
-        }
-        .inline-message.error {
-            color: #ff8f8f;
-            background: rgba(255,80,80,0.07);
-            border: 1px solid rgba(255,80,80,0.18);
-        }
-        .inline-message.success {
-            color: #a5d6a7;
-            background: rgba(46,125,50,0.07);
-            border: 1px solid rgba(46,125,50,0.18);
-        }
-
-        @keyframes shake {
-            0%,100% { transform: translateX(0); }
-            25%      { transform: translateX(-5px); }
-            75%      { transform: translateX(5px); }
-        }
-
         .student-tip {
             display: flex;
             align-items: flex-start;
@@ -305,6 +279,7 @@
             border-color: rgba(200,169,110,0.35) !important;
         }
 
+        /* Select Styles */
         select.form-select {
             display: block;
             width: 100%;
@@ -446,6 +421,55 @@
         @keyframes spin { to { transform: rotate(360deg); } }
         #loading-text { font-size: 12px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
 
+        /* ── CUSTOM POPUP MODAL ── */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(12,20,70,0.85);
+            backdrop-filter: blur(6px); z-index: 10020;
+            display: none; justify-content: center; align-items: center; padding: 20px;
+        }
+        .modal-card {
+            background: var(--navy-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px 30px;
+            max-width: 400px; width: 100%;
+            text-align: center;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.9) translateY(10px); }
+            to   { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .modal-icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        .modal-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+        .modal-message {
+            color: var(--muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 25px;
+        }
+        .modal-btn {
+            background: var(--gold-solid);
+            color: var(--navy);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .modal-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(200,169,110,0.4); }
+
         @media (max-width: 500px) { .auth-card { padding: 32px 22px 28px; border-radius: 16px; } .card-title { font-size: 24px; } }
 
         /* 🌙 DARK MODE OVERRIDES FOR LOGIN PAGE */
@@ -461,18 +485,10 @@
                 --text: #f4eedd;
                 --muted: rgba(244,238,221,0.55);
             }
-            body {
-                background-color: var(--navy);
-            }
-            .auth-card {
-                background: var(--navy-card);
-                border-color: var(--border);
-            }
-            input, select {
-                background: var(--navy-input);
-                border-color: rgba(255,255,255,0.1);
-                color: var(--text);
-            }
+            body { background-color: var(--navy); }
+            .auth-card { background: var(--navy-card); border-color: var(--border); }
+            input, select { background: var(--navy-input); border-color: rgba(255,255,255,0.1); color: var(--text); }
+            .modal-card { background: var(--navy-card); }
         }
     </style>
 </head>
@@ -502,11 +518,6 @@
 
                     <h2 class="card-title" id="form-title">Welcome Back</h2>
                     <p class="card-subtitle" id="form-subtitle">Log in to continue shopping and selling.</p>
-
-                    <!-- Error Message -->
-                    <div id="auth-error" class="inline-message error"></div>
-                    <!-- Success Message -->
-                    <div id="auth-success" class="inline-message success"></div>
 
                     <div class="student-tip" id="student-tip">
                         <i class="fas fa-graduation-cap"></i>
@@ -586,6 +597,16 @@
             </div>
         </div>
     </main>
+
+    <!-- CUSTOM POPUP MODAL -->
+    <div class="modal-overlay" id="custom-modal">
+        <div class="modal-card">
+            <div class="modal-icon" id="modal-icon"></div>
+            <h2 class="modal-title" id="modal-title"></h2>
+            <p class="modal-message" id="modal-message"></p>
+            <button class="modal-btn" id="modal-ok-btn">OK</button>
+        </div>
+    </div>
 
     <script>
     (() => {
@@ -689,9 +710,6 @@
             const loadingOverlay = document.getElementById('loading-overlay');
             const forgotPasswordLink = document.getElementById('forgot-password-link');
 
-            const authError = document.getElementById('auth-error');
-            const authSuccess = document.getElementById('auth-success');
-
             const registerFields = document.getElementById('register-fields');
             const fullNameInput = document.getElementById('full-name');
             const usernameInput = document.getElementById('username');
@@ -710,6 +728,23 @@
             let isUsernameValid = false;
             let isFullnameValid = false;
             let isSubmitting = false;
+
+            // ── CUSTOM POPUP MODAL ──
+            const modal = document.getElementById('custom-modal');
+            const modalIcon = document.getElementById('modal-icon');
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+            const modalOkBtn = document.getElementById('modal-ok-btn');
+
+            function showModal(type, title, message) {
+                modalIcon.innerHTML = type === 'error' 
+                    ? '<i class="fas fa-exclamation-circle" style="color: #e53e3e;"></i>'
+                    : '<i class="fas fa-check-circle" style="color: #2E7D32;"></i>';
+                modalTitle.textContent = title;
+                modalMessage.textContent = message;
+                modal.style.display = 'flex';
+                modalOkBtn.onclick = () => { modal.style.display = 'none'; };
+            }
 
             const extendedGenders =[
                 "Abimegender", "Admasgender", "Aerogender", "Aesthetgender", "Affectugender", "Agender", "Agenderfluid", 
@@ -777,7 +812,9 @@
                     errEmailInUse: "An account with this email already exists.",
                     errWeakPassword: "Password should be at least 6 characters.",
                     errNetwork: "Network error. Please check your connection.",
-                    errUnknown: "An unexpected error occurred. Please try again."
+                    errUnknown: "An unexpected error occurred. Please try again.",
+                    modalErrorTitle: "Error",
+                    modalSuccessTitle: "Success"
                 },
                 fr: {
                     loginTitle: "Bon retour", loginSub: "Connectez-vous pour continuer vos achats et ventes.",
@@ -817,26 +854,11 @@
                     errEmailInUse: "Un compte avec cet email existe déjà.",
                     errWeakPassword: "Le mot de passe doit contenir au moins 6 caractères.",
                     errNetwork: "Erreur réseau. Vérifiez votre connexion.",
-                    errUnknown: "Une erreur inattendue s'est produite. Veuillez réessayer."
+                    errUnknown: "Une erreur inattendue s'est produite. Veuillez réessayer.",
+                    modalErrorTitle: "Erreur",
+                    modalSuccessTitle: "Succès"
                 }
             };
-
-            function showError(msg) {
-                authSuccess.style.display = 'none';
-                authError.textContent = msg;
-                authError.style.display = 'block';
-            }
-
-            function showSuccess(msg) {
-                authError.style.display = 'none';
-                authSuccess.textContent = msg;
-                authSuccess.style.display = 'block';
-            }
-
-            function hideMessages() {
-                authError.style.display = 'none';
-                authSuccess.style.display = 'none';
-            }
 
             const urlParams = new URLSearchParams(window.location.search);
             const msgParam = urlParams.get('msg');
@@ -1019,7 +1041,6 @@
 
             async function handleOAuth(provider) {
                 loadingOverlay.style.display = 'flex';
-                hideMessages();
                 try {
                     const result = await signInWithPopup(auth, provider);
                     const user = result.user;
@@ -1031,7 +1052,7 @@
                         sessionStorage.setItem('scoralia_redirect', redirectTo);
                         await signInWithRedirect(auth, provider);
                     } else {
-                        showError(error.message);
+                        showModal('error', strings[lang].modalErrorTitle, error.message);
                     }
                 }
             }
@@ -1052,9 +1073,9 @@
                     } catch (error) {
                         console.error("Redirect sign-in error:", error);
                         if (error.code === 'auth/missing-or-invalid-nonce') {
-                            showError('Login session expired. Please try again.');
+                            showModal('error', strings[lang].modalErrorTitle, 'Login session expired. Please try again.');
                         } else {
-                            showError(error.message);
+                            showModal('error', strings[lang].modalErrorTitle, error.message);
                         }
                     } finally {
                         sessionStorage.removeItem('scoralia_oauth_pending');
@@ -1098,7 +1119,7 @@
                     if (!isOAuth && !user.emailVerified) {
                         await signOut(auth);
                         loadingOverlay.style.display = 'none';
-                        showError(strings[lang].errVerify);
+                        showModal('error', strings[lang].modalErrorTitle, strings[lang].errVerify);
                         return; 
                     }
                     try {
@@ -1109,7 +1130,7 @@
                             if (data && data.role === 'banned') {
                                 await signOut(auth);
                                 loadingOverlay.style.display = 'none';
-                                showError(strings[lang].errBanned);
+                                showModal('error', strings[lang].modalErrorTitle, strings[lang].errBanned);
                                 return;
                             }
                         }
@@ -1127,18 +1148,17 @@
 
             forgotPasswordLink.onclick = async () => {
                 const emailVal = document.getElementById('email').value.trim();
-                if (!emailVal) { showError(strings[lang].enterEmailFirst); return; }
+                if (!emailVal) { showModal('error', strings[lang].modalErrorTitle, strings[lang].enterEmailFirst); return; }
                 try {
                     await sendPasswordResetEmail(auth, emailVal);
-                    showSuccess(strings[lang].resetSent);
+                    showModal('success', strings[lang].modalSuccessTitle, strings[lang].resetSent);
                 } catch (e) {
-                    showError(e.message);
+                    showModal('error', strings[lang].modalErrorTitle, e.message);
                 }
             };
 
             toggleLink.onclick = () => {
                 isLoginMode = !isLoginMode;
-                hideMessages();
                 if (!isLoginMode) {
                     registerFields.style.display = 'block';
                     setTimeout(() => registerFields.classList.add('visible'), 10);
@@ -1155,7 +1175,6 @@
             authForm.onsubmit = async (e) => {
                 e.preventDefault();
                 if (isSubmitting) return;
-                hideMessages();
                 isSubmitting = true; submitBtn.disabled = true;
                 const email = document.getElementById('email').value.toLowerCase();
                 const pass = document.getElementById('password').value;
@@ -1164,7 +1183,7 @@
                     if (isLoginMode) {
                         loadingOverlay.style.display = 'flex';
                         await signInWithEmailAndPassword(auth, email, pass);
-                        // On successful login, the onAuthStateChanged will redirect
+                        // On success, onAuthStateChanged will redirect
                     } else {
                         const fullName = fullNameInput.value.trim();
                         const username = usernameInput.value.trim().toLowerCase();
@@ -1204,14 +1223,13 @@
                         await signOut(auth);
                         loadingOverlay.style.display = 'none';
                         isRegistering = false;
-                        showSuccess(strings[lang].errSent);
+                        showModal('success', strings[lang].modalSuccessTitle, strings[lang].errSent);
                         setTimeout(() => location.reload(), 3500);
                     }
                 } catch (err) {
                     loadingOverlay.style.display = 'none';
                     isSubmitting = false; submitBtn.disabled = false; isRegistering = false;
 
-                    // Map Firebase error codes to custom messages
                     const code = err.code || '';
                     let msg = strings[lang].errUnknown;
                     if (code === 'auth/invalid-credential' || code === 'auth/user-not-found' || code === 'auth/wrong-password') {
@@ -1225,9 +1243,9 @@
                     } else if (code === 'custom/validation') {
                         msg = "Please fix the errors before submitting.";
                     } else if (err.message) {
-                        msg = err.message; // fallback to Firebase error message
+                        msg = err.message;
                     }
-                    showError(msg);
+                    showModal('error', strings[lang].modalErrorTitle, msg);
                 }
             };
 
