@@ -1,5 +1,5 @@
-// sw.js – Scoralia (pass‑through only, never caches)
-self.addEventListener('install', event => {
+// sw.js – Scoralia (inactive, only for PWA installability)
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
@@ -10,7 +10,4 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-self.addEventListener('fetch', event => {
-  // Always go to the network, never serve from cache
-  event.respondWith(fetch(event.request));
-});
+// Do NOT intercept any fetch requests – let the browser handle everything normally
