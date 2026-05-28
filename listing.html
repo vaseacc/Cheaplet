@@ -60,7 +60,6 @@
         @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes imagePop { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
 
         header {
             position: relative; z-index: 200;
@@ -107,11 +106,14 @@
             top: 0; left: 0; right: 0; bottom: 0; 
             background-size: cover; background-position: center; 
             filter: blur(40px) brightness(0.5); 
-            z-index: 1; transition: background-image 0.3s ease-in-out; 
-            transform: scale(1.1); pointer-events: none;
+            z-index: 1; 
+            transition: background-image 0.3s ease-in-out; 
+            transform: scale(1.1);
+            pointer-events: none;
         }
         .main-image-container { 
-            position: relative; z-index: 2; 
+            position: relative; 
+            z-index: 2; 
             width: 100%; height: 100%; 
             display: flex; align-items: center; justify-content: center; 
             padding: 20px; 
@@ -124,27 +126,26 @@
             border-radius: 4px; 
         }
         
-        /* ── FIXED ARROWS (outside image stage, always on top) ── */
+        /* Navigation arrows – inside image-stage, always on top */
         .nav-arrow { 
-            position: fixed;          /* independent of any container */
-            top: 50%;
+            position: absolute; 
+            top: 50%; 
             transform: translateY(-50%);
             width: 50px; height: 50px; 
             border-radius: 50%; 
             background-color: rgba(60, 60, 60, 0.6); 
             color: white; 
-            display: flex; 
+            display: none;           /* hidden by default, JS will show if needed */
             align-items: center; 
             justify-content: center; 
             cursor: pointer; 
             font-size: 20px; 
             border: none; 
-            z-index: 9999;            /* higher than everything else */
-            transition: background-color 0.2s ease, transform 0.2s ease;
+            z-index: 100;            /* above the image and blur layers */
+            transition: background-color 0.2s ease;
         }
         .nav-arrow:hover { 
             background-color: rgba(60, 60, 60, 0.95);
-            transform: translateY(-50%) scale(1.05);
         }
         .nav-prev { left: 20px; }
         .nav-next { right: 20px; }
@@ -153,7 +154,10 @@
             position: absolute; 
             bottom: 20px; left: 50%; 
             transform: translateX(-50%);
-            display: none; gap: 10px; z-index: 50; padding: 5px; 
+            display: none; 
+            gap: 10px; 
+            z-index: 50; 
+            padding: 5px; 
         }
         .thumb { 
             width: 50px; height: 50px; border-radius: 6px; 
@@ -261,20 +265,10 @@
             pointer-events: none;
             border-left: 6px solid var(--gold);
         }
-        .toast-message i {
-            color: var(--gold);
-            font-size: 1.3rem;
-        }
-        .toast-message a {
-            color: var(--gold);
-            text-decoration: underline;
-            font-weight: 800;
-            margin-left: 8px;
-            pointer-events: auto;
-        }
-        .toast-message a:hover {
-            color: white;
-        }
+        .toast-message i { color: var(--gold); font-size: 1.3rem; }
+        .toast-message a { color: var(--gold); text-decoration: underline; font-weight: 800; margin-left: 8px; pointer-events: auto; }
+        .toast-message a:hover { color: white; }
+
         @keyframes toastSlideUp {
             from { opacity: 0; transform: translateX(-50%) translateY(20px); }
             to { opacity: 1; transform: translateX(-50%) translateY(0); }
@@ -316,12 +310,11 @@
             <div class="main-image-container">
                 <img src="" alt="Listing Item" class="main-image" id="main-image">
             </div>
+            
+            <button class="nav-arrow nav-prev" id="prev-img-btn"><i class="fas fa-chevron-left"></i></button>
+            <button class="nav-arrow nav-next" id="next-img-btn"><i class="fas fa-chevron-right"></i></button>
             <div class="thumbnails-overlay" id="thumbnail-container"></div>
         </div>
-
-        <!-- FIXED ARROWS – placed outside image stage so nothing can hide them -->
-        <button class="nav-arrow nav-prev" id="prev-img-btn" style="display: none;"><i class="fas fa-chevron-left"></i></button>
-        <button class="nav-arrow nav-next" id="next-img-btn" style="display: none;"><i class="fas fa-chevron-right"></i></button>
 
         <div class="details-panel" id="details-container">
             <div id="status-badge-area" class="status-badge-container"></div>
@@ -623,11 +616,14 @@
 
                     imageUrls = data.imageUrls || [];
                     // Reset thumbnail container
-                    thumbnailContainer.style.display = 'none';
                     thumbnailContainer.innerHTML = '';
 
                     if (imageUrls.length > 0) {
-                        updateMainImage(0);
+                        // Set first image without any animation
+                        currentImageIndex = 0;
+                        mainImage.src = imageUrls[0];
+                        blurBg.style.backgroundImage = `url('${imageUrls[0]}')`;
+                        
                         if (imageUrls.length > 1) {
                             thumbnailContainer.style.display = 'flex';
                             imageUrls.forEach((url, index) => {
@@ -636,6 +632,8 @@
                                 img.onclick = () => updateMainImage(index);
                                 thumbnailContainer.appendChild(img);
                             });
+                        } else {
+                            thumbnailContainer.style.display = 'none';
                         }
                     } else {
                         mainImage.style.display = 'none';
@@ -707,14 +705,12 @@
                 currentImageIndex = index;
                 const url = imageUrls[index];
                 if (url) {
-                    mainImage.style.animation = 'none';
-                    mainImage.offsetHeight;
-                    mainImage.style.animation = 'imagePop 0.3s ease both';
+                    // No animation – just swap the src and background
                     mainImage.src = url;
                     blurBg.style.backgroundImage = `url('${url}')`;
                 }
                 document.querySelectorAll('.thumb').forEach((thumb, i) => { thumb.classList.toggle('active', i === index); });
-                // Arrow visibility is already guaranteed – no need to re-set
+                // Arrows are always visible if imageUrls > 1; no need to re-set
             }
 
             prevBtn.onclick = () => { if (imageUrls.length <= 1) return; let n = currentImageIndex - 1; if (n < 0) n = imageUrls.length - 1; updateMainImage(n); };
