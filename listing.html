@@ -91,6 +91,7 @@
 
         .main-wrapper { display: flex; flex: 1; overflow: hidden; }
 
+        /* ── ISOLATED STAGE TO PREVENT GLITCHES ── */
         .image-stage { 
             flex: 1; 
             background-color: #000; 
@@ -100,17 +101,21 @@
             align-items: center; 
             justify-content: center; 
             overflow: hidden;
+            isolation: isolate; /* Forces browser to render this entirely independently */
         }
+        
         .blurred-bg { 
             position: absolute; 
             top: 0; left: 0; right: 0; bottom: 0; 
             background-size: cover; background-position: center; 
             filter: blur(40px) brightness(0.5); 
             z-index: 1; 
-            transition: background-image 0.3s ease-in-out; 
-            transform: scale(1.1);
+            transform: scale(1.1) translateZ(0); /* Hardware accelerated */
+            backface-visibility: hidden;
+            will-change: background-image;
             pointer-events: none;
         }
+        
         .main-image-container { 
             position: relative; 
             z-index: 2; 
@@ -126,26 +131,37 @@
             border-radius: 4px; 
         }
         
-        /* Navigation arrows – inside image-stage, always on top */
+        /* ── FIXED ARROWS ── */
         .nav-arrow { 
             position: absolute; 
             top: 50%; 
-            transform: translateY(-50%);
+            /* GPU Accelerated transforms to lock them on top */
+            transform: translateY(-50%) translateZ(0);
+            -webkit-transform: translateY(-50%) translateZ(0);
             width: 50px; height: 50px; 
             border-radius: 50%; 
             background-color: rgba(60, 60, 60, 0.6); 
             color: white; 
-            display: none;           /* hidden by default, JS will show if needed */
+            display: none; 
             align-items: center; 
             justify-content: center; 
             cursor: pointer; 
             font-size: 20px; 
             border: none; 
-            z-index: 200;            /* safely above everything */
-            transition: background-color 0.2s ease;
+            z-index: 100;
+            transition: background-color 0.2s ease, transform 0.15s ease;
+            user-select: none; /* Prevents text selection on rapid clicking */
+            outline: none;
+            will-change: transform, background-color;
         }
         .nav-arrow:hover { 
             background-color: rgba(60, 60, 60, 0.95);
+            transform: translateY(-50%) scale(1.08) translateZ(0);
+            -webkit-transform: translateY(-50%) scale(1.08) translateZ(0);
+        }
+        .nav-arrow:active {
+            transform: translateY(-50%) scale(0.95) translateZ(0);
+            -webkit-transform: translateY(-50%) scale(0.95) translateZ(0);
         }
         .nav-prev { left: 20px; }
         .nav-next { right: 20px; }
@@ -153,10 +169,10 @@
         .thumbnails-overlay { 
             position: absolute; 
             bottom: 20px; left: 50%; 
-            transform: translateX(-50%);
+            transform: translateX(-50%) translateZ(0);
             display: none; 
             gap: 10px; 
-            z-index: 50; 
+            z-index: 100; 
             padding: 5px; 
         }
         .thumb { 
@@ -311,8 +327,9 @@
                 <img src="" alt="Listing Item" class="main-image" id="main-image">
             </div>
             
-            <button class="nav-arrow nav-prev" id="prev-img-btn"><i class="fas fa-chevron-left"></i></button>
-            <button class="nav-arrow nav-next" id="next-img-btn"><i class="fas fa-chevron-right"></i></button>
+            <!-- Swapped to type="button" to prevent unwanted behavior -->
+            <button type="button" class="nav-arrow nav-prev" id="prev-img-btn"><i class="fas fa-chevron-left"></i></button>
+            <button type="button" class="nav-arrow nav-next" id="next-img-btn"><i class="fas fa-chevron-right"></i></button>
             <div class="thumbnails-overlay" id="thumbnail-container"></div>
         </div>
 
@@ -504,7 +521,7 @@
             });
 
             function showArrowsIfNeeded() {
-                if (imageUrls.length > 1) {
+                if (imageUrls && imageUrls.length > 1) {
                     prevBtn.style.display = 'flex';
                     nextBtn.style.display = 'flex';
                 } else {
@@ -615,11 +632,9 @@
                     }
 
                     imageUrls = data.imageUrls || [];
-                    // Reset thumbnail container
                     thumbnailContainer.innerHTML = '';
 
                     if (imageUrls.length > 0) {
-                        // Set first image without any animation
                         currentImageIndex = 0;
                         mainImage.src = imageUrls[0];
                         blurBg.style.backgroundImage = `url('${imageUrls[0]}')`;
@@ -629,7 +644,10 @@
                             imageUrls.forEach((url, index) => {
                                 const img = document.createElement('img');
                                 img.src = url; img.className = `thumb ${index === 0 ? 'active' : ''}`;
-                                img.onclick = () => updateMainImage(index);
+                                img.onclick = (e) => {
+                                    e.preventDefault();
+                                    updateMainImage(index);
+                                };
                                 thumbnailContainer.appendChild(img);
                             });
                         } else {
@@ -640,7 +658,6 @@
                         document.querySelector('.main-image-container').innerHTML = '<i class="fas fa-image" style="font-size: 4rem; color: #cbd5e1;"></i><div style="color:var(--text-muted); margin-top:10px;">No Image Available</div>';
                     }
 
-                    // Show/hide arrows based on image count
                     showArrowsIfNeeded();
 
                     if (currentUser) {
@@ -705,17 +722,31 @@
                 currentImageIndex = index;
                 const url = imageUrls[index];
                 if (url) {
-                    // No animation – just swap the src and background
                     mainImage.src = url;
                     blurBg.style.backgroundImage = `url('${url}')`;
                 }
                 document.querySelectorAll('.thumb').forEach((thumb, i) => { thumb.classList.toggle('active', i === index); });
-                // Force arrows to stay visible after every image change
+                
                 showArrowsIfNeeded();
             }
 
-            prevBtn.onclick = () => { if (imageUrls.length <= 1) return; let n = currentImageIndex - 1; if (n < 0) n = imageUrls.length - 1; updateMainImage(n); };
-            nextBtn.onclick = () => { if (imageUrls.length <= 1) return; let n = currentImageIndex + 1; if (n >= imageUrls.length) n = 0; updateMainImage(n); };
+            prevBtn.onclick = (e) => { 
+                e.preventDefault();
+                e.stopPropagation();
+                if (imageUrls.length <= 1) return; 
+                let n = currentImageIndex - 1; 
+                if (n < 0) n = imageUrls.length - 1; 
+                updateMainImage(n); 
+            };
+            
+            nextBtn.onclick = (e) => { 
+                e.preventDefault();
+                e.stopPropagation();
+                if (imageUrls.length <= 1) return; 
+                let n = currentImageIndex + 1; 
+                if (n >= imageUrls.length) n = 0; 
+                updateMainImage(n); 
+            };
 
             async function createChat(posterUid, posterName, initialMessage = null) {
                 if (!currentUser) {
