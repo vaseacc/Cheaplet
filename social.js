@@ -416,29 +416,23 @@ async function main() {
         };
     }
 
-    // --- FETCH MARKET LISTINGS ---
+    // --- FETCH MARKET LISTINGS (now works for guests too) ---
     async function fetchMarketListings() {
-        if (!currentUser) return;
         const isAdmin = currentUserData?.role === 'admin';
-        const userSchool = internalSchoolName || targetSchool || "Collège de Rosemont";
+        const userSchool = currentUser ? (internalSchoolName || targetSchool || "Collège de Rosemont") : null;
         
-        let bookQuery = query(
-            collection(db, "listings"),
-            where("status", "==", "active"),
-            orderBy("timestamp", "desc"),
-            limit(6)
-        );
-
-        if (!isAdmin && userSchool !== "Global Campus") {
+        let bookQuery;
+        // For logged-in users with a specific school (not admin), try school-specific first
+        if (currentUser && !isAdmin && userSchool && userSchool !== "Global Campus") {
+            bookQuery = query(
+                collection(db, "listings"),
+                where("location", "==", userSchool),
+                where("status", "==", "active"),
+                orderBy("timestamp", "desc"),
+                limit(6)
+            );
             try {
-                const schoolQuery = query(
-                    collection(db, "listings"),
-                    where("location", "==", userSchool),
-                    where("status", "==", "active"),
-                    orderBy("timestamp", "desc"),
-                    limit(6)
-                );
-                const snap = await getDocs(schoolQuery);
+                const snap = await getDocs(bookQuery);
                 if (!snap.empty) {
                     listings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                     return;
@@ -447,7 +441,14 @@ async function main() {
                 console.warn("School-specific listings failed, fallback to global", e);
             }
         }
-
+        
+        // Global fallback (admins, guests, Global Campus users, or failed school query)
+        bookQuery = query(
+            collection(db, "listings"),
+            where("status", "==", "active"),
+            orderBy("timestamp", "desc"),
+            limit(6)
+        );
         try {
             const snap = await getDocs(bookQuery);
             listings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -983,7 +984,10 @@ async function main() {
 
             showHubLayout();
             loadTopics();
-            loadGlobalFeed();           // ✅ immediately loads global feed
+            // Fetch market listings first so the market break has real data
+            fetchMarketListings().then(() => {
+                loadGlobalFeed();
+            });
             maybeShowLoginPrompt();
         }
     });
@@ -1020,6 +1024,8 @@ async function main() {
             
             if (snapshot.empty) {
                 feedContainer.innerHTML = `<div class="loader-msg">${ui.noPosts}</div>`;
+                // Still show market break even if no posts
+                feedContainer.appendChild(createMarketBreak());
                 return;
             }
             
@@ -1030,6 +1036,8 @@ async function main() {
                 frag.appendChild(createPostElement(docSnap.id, d, 'social_posts_global'));
             });
             feedContainer.appendChild(frag);
+            // Always append market break after posts
+            feedContainer.appendChild(createMarketBreak());
         });
     }
 
@@ -1466,6 +1474,7 @@ async function main() {
             `;
         }
 
+        // Full comment section (only for logged-in users)
         const commentSectionHtml = `
             <div class="comments-section" id="comments-section-${id}">
                 <div class="comment-list" id="comment-list-${id}">
@@ -1487,6 +1496,14 @@ async function main() {
                         </div>
                     </div>
                 </div>
+            </div>`;
+
+        // Login prompt for guests (replaces comment section)
+        const loginPromptHtml = currentUser ? commentSectionHtml : `
+            <div style="border-top: 1px solid #f1f5f9; padding-top: 15px; text-align: center; margin-top: 5px;">
+                <a href="/login?redirect=/social" style="color: var(--deep); font-weight: 600; text-decoration: none;">
+                    <i class="fas fa-sign-in-alt"></i> Log in or register to interact
+                </a>
             </div>`;
 
         const card = document.createElement('div');
@@ -1530,7 +1547,7 @@ async function main() {
                 </button>
             </div>
 
-            ${commentSectionHtml}
+            ${loginPromptHtml}
         `;
         return card;
     }
