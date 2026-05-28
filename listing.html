@@ -116,7 +116,8 @@
             flex-direction: column; 
             align-items: center; 
             justify-content: center; 
-            overflow: hidden; 
+            overflow: hidden;
+            isolation: isolate; /* FIX: Prevents child z-indexes from behaving unpredictably */
         }
         .blurred-bg { 
             position: absolute; 
@@ -129,7 +130,8 @@
             filter: blur(40px) brightness(0.5); 
             z-index: 1; 
             transition: background-image 0.3s ease-in-out; 
-            transform: scale(1.1); 
+            transform: scale(1.1);
+            pointer-events: none; /* FIX: Prevents this background layer from swallowing mouse clicks */
         }
         .main-image-container { 
             position: relative; 
@@ -149,11 +151,16 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.6); 
             border-radius: 4px; 
         }
+        
         /* ── NAVIGATION ARROWS (fixed position) ── */
         .nav-arrow { 
             position: absolute; 
             top: 50%; 
-            transform: translateY(-50%); 
+            /* FIX: Use 3D transform mapping to lock the arrows onto their own GPU layer so they don't glitch out */
+            transform: translateY(-50%) translateZ(0); 
+            -webkit-transform: translateY(-50%) translateZ(0);
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
             width: 50px; 
             height: 50px; 
             border-radius: 50%; 
@@ -165,19 +172,28 @@
             cursor: pointer; 
             font-size: 20px; 
             border: none; 
-            z-index: 20; 
+            z-index: 50; /* Securely placed above the image container */
+            transition: background-color 0.2s ease, transform 0.2s ease;
         }
-        .nav-arrow:hover { background-color: rgba(60, 60, 60, 0.9); }
+        .nav-arrow:hover { 
+            background-color: rgba(60, 60, 60, 0.95);
+            /* Important to re-declare the translateZ(0) inside the hover so it doesn't break */
+            transform: translateY(-50%) translateZ(0) scale(1.05); 
+            -webkit-transform: translateY(-50%) translateZ(0) scale(1.05);
+        }
         .nav-prev { left: 20px; }
         .nav-next { right: 20px; }
+        
         .thumbnails-overlay { 
             position: absolute; 
             bottom: 20px; 
             left: 50%; 
-            transform: translateX(-50%); 
+            /* Fix GPU layering for thumbnails too */
+            transform: translateX(-50%) translateZ(0); 
+            -webkit-transform: translateX(-50%) translateZ(0);
             display: flex; 
             gap: 10px; 
-            z-index: 10; 
+            z-index: 50; 
             padding: 5px; 
         }
         .thumb { 
@@ -361,7 +377,7 @@
             <div class="main-image-container">
                 <img src="" alt="Listing Item" class="main-image" id="main-image">
             </div>
-            <!-- Navigation arrows are now children of image-stage, so they stay centred -->
+            
             <button class="nav-arrow nav-prev" id="prev-img-btn" style="display:none;"><i class="fas fa-chevron-left"></i></button>
             <button class="nav-arrow nav-next" id="next-img-btn" style="display:none;"><i class="fas fa-chevron-right"></i></button>
             <div class="thumbnails-overlay" id="thumbnail-container"></div>
