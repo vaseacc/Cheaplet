@@ -151,7 +151,7 @@
             border-radius: 4px; 
         }
         
-        /* ── NAVIGATION ARROWS (simplified, no GPU forcing) ── */
+        /* ── NAVIGATION ARROWS ── */
         .nav-arrow { 
             position: absolute; 
             top: 50%; 
@@ -161,15 +161,17 @@
             border-radius: 50%; 
             background-color: rgba(60, 60, 60, 0.6); 
             color: white; 
-            display: flex; 
+            display: none;           /* hidden by default */
             align-items: center; 
             justify-content: center; 
             cursor: pointer; 
             font-size: 20px; 
             border: none; 
             z-index: 50; 
-            opacity: 1;               /* ensure always visible */
             transition: background-color 0.2s ease, transform 0.2s ease;
+        }
+        .nav-arrow.show {
+            display: flex !important;   /* force visible when class is added */
         }
         .nav-arrow:hover { 
             background-color: rgba(60, 60, 60, 0.95);
@@ -183,10 +185,13 @@
             bottom: 20px; 
             left: 50%; 
             transform: translateX(-50%);
-            display: flex; 
+            display: none;           /* hidden by default */
             gap: 10px; 
             z-index: 50; 
             padding: 5px; 
+        }
+        .thumbnails-overlay.show {
+            display: flex !important;
         }
         .thumb { 
             width: 50px; 
@@ -370,8 +375,9 @@
                 <img src="" alt="Listing Item" class="main-image" id="main-image">
             </div>
             
-            <button class="nav-arrow nav-prev" id="prev-img-btn" style="display:none;"><i class="fas fa-chevron-left"></i></button>
-            <button class="nav-arrow nav-next" id="next-img-btn" style="display:none;"><i class="fas fa-chevron-right"></i></button>
+            <!-- NO inline style="display:none" – CSS and class control visibility -->
+            <button class="nav-arrow nav-prev" id="prev-img-btn"><i class="fas fa-chevron-left"></i></button>
+            <button class="nav-arrow nav-next" id="next-img-btn"><i class="fas fa-chevron-right"></i></button>
             <div class="thumbnails-overlay" id="thumbnail-container"></div>
         </div>
 
@@ -664,13 +670,19 @@
                     }
 
                     imageUrls = data.imageUrls || [];
+                    // Reset display classes
+                    prevBtn.classList.remove('show');
+                    nextBtn.classList.remove('show');
+                    thumbnailContainer.classList.remove('show');
+
                     if (imageUrls.length > 0) {
                         updateMainImage(0);
                         thumbnailContainer.innerHTML = '';
                         if (imageUrls.length > 1) {
-                            prevBtn.style.display = 'flex';
-                            nextBtn.style.display = 'flex';
-                            thumbnailContainer.style.display = 'flex';
+                            // Show arrows and thumbnails with the 'show' class
+                            prevBtn.classList.add('show');
+                            nextBtn.classList.add('show');
+                            thumbnailContainer.classList.add('show');
                             imageUrls.forEach((url, index) => {
                                 const img = document.createElement('img');
                                 img.src = url; img.className = `thumb ${index === 0 ? 'active' : ''}`;
