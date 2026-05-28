@@ -1,3 +1,4 @@
+// social.js
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, doc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, limit, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
@@ -315,7 +316,7 @@ async function main() {
 
         const key = schoolName
             .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[\u0300-\u036f]/g, "") // Strips accents
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '_')
             .replace(/_+/g, '_')
@@ -358,28 +359,22 @@ async function main() {
     const myFilterBtn = document.getElementById('my-school-filter');
     let currentSchoolFilter = 'all'; 
 
+    // Login prompt
     const loginPromptModal = document.getElementById('login-prompt-modal');
     const btnDismissPrompt = document.getElementById('btn-dismiss-prompt');
 
+    // Set translated texts
     setElemText('login-prompt-title', ui.login_prompt_title);
     setElemText('login-prompt-desc', ui.login_prompt_desc);
     setElemText('btn-login-prompt', ui.login_prompt_login);
     setElemText('btn-register-prompt', ui.login_prompt_register);
     setElemText('btn-dismiss-prompt', ui.login_prompt_dismiss);
 
+    // Show prompt for guests
     function maybeShowLoginPrompt() {
         if (!currentUser && !sessionStorage.getItem('login_prompt_dismissed')) {
             loginPromptModal.style.display = 'flex';
         }
-    }
-
-    // Helper: show login prompt if not logged in, return true if logged in
-    function requireLogin() {
-        if (!currentUser) {
-            loginPromptModal.style.display = 'flex';
-            return false;
-        }
-        return true;
     }
 
     if (btnDismissPrompt) {
@@ -389,12 +384,23 @@ async function main() {
         };
     }
 
+    function requireLogin() {
+        if (!currentUser) {
+            if (loginPromptModal) loginPromptModal.style.display = 'flex';
+            return false;
+        }
+        return true;
+    }
+
     const btnCreateWay = document.getElementById('btn-create-way');
     if (btnCreateWay) {
         btnCreateWay.onclick = (e) => {
             e.preventDefault();
-            if (!requireLogin()) return;
-            window.location.href = '/createtopic';
+            if (!currentUser) {
+                window.location.href = '/login?redirect=/social';
+            } else {
+                window.location.href = '/createtopic';
+            }
         };
     }
 
@@ -402,8 +408,11 @@ async function main() {
     if (mSheetCreateWay) {
         mSheetCreateWay.onclick = (e) => {
             e.preventDefault();
-            if (!requireLogin()) return;
-            window.location.href = '/createtopic';
+            if (!currentUser) {
+                window.location.href = '/login?redirect=/social';
+            } else {
+                window.location.href = '/createtopic';
+            }
         };
     }
 
@@ -451,11 +460,10 @@ async function main() {
     // --- COMPOSER LOGIC ---
     function updateComposerSendButton() {
         if (!postInput) return;
-        const hasText = postInput.value.trim().length > 0;
-        const hasImg = postImageFile !== null;
-        const hasListing = postAttachedListing !== null;
+        const hasContent = postInput.value.trim().length > 0 || postImageFile !== null || postAttachedListing !== null;
         if (btnSendPost) {
-            btnSendPost.disabled = !(hasText || hasImg || hasListing);
+            btnSendPost.style.opacity = hasContent ? '1' : '0.5';
+            btnSendPost.disabled = false; // The Send button is ALWAYS clickable (no disabled attribute)
         }
     }
 
@@ -515,7 +523,9 @@ async function main() {
     if (btnAttachImg) {
         btnAttachImg.onclick = () => { 
             if (!requireLogin()) return;
-            if(imgUploadInput) imgUploadInput.click(); 
+            if(imgUploadInput) {
+                imgUploadInput.click(); 
+            }
         };
     }
     
@@ -614,6 +624,7 @@ async function main() {
         btnSendPost.onclick = async () => {
             if (!requireLogin()) return;
             const text = postInput.value.trim();
+            if (!text && !postImageFile && !postAttachedListing) return;
             
             btnSendPost.disabled = true;
             const origIcon = btnSendPost.innerHTML;
@@ -688,6 +699,7 @@ async function main() {
                 window.scoraliaAlert(ui.upload_fail); 
             } finally {
                 btnSendPost.innerHTML = origIcon;
+                btnSendPost.disabled = false;
                 updateComposerSendButton();
             }
         };
@@ -697,7 +709,7 @@ async function main() {
     const globalCommentImgInput = document.getElementById('global-comment-img-upload');
     
     window.triggerCommentImg = (postId, coll) => {
-        if (!currentUser) return;
+        if (!requireLogin()) return;
         activeCommentPostId = postId;
         activeCommentColl = coll;
         if (globalCommentImgInput) {
@@ -746,7 +758,7 @@ async function main() {
     };
 
     window.postComment = async (postId, coll) => {
-        if (!currentUser) return;
+        if (!requireLogin()) return;
         const inputEl = document.getElementById(`comment-input-${postId}`);
         const btnEl = document.getElementById(`btn-send-comment-${postId}`);
         if (!inputEl || !btnEl) return;
@@ -817,7 +829,7 @@ async function main() {
             window.scoraliaAlert("Upload failed."); 
         } finally { 
             btnEl.innerHTML = origIcon;
-            btnEl.disabled = true; 
+            btnEl.disabled = false; 
         }
     };
 
@@ -936,10 +948,11 @@ async function main() {
             currentUser = null;
             currentUserData = null;
 
-            // hide composer, disable My School filter, force "All Posts"
+            // hide composer
             if (document.getElementById('composer-card')) {
                 document.getElementById('composer-card').style.display = 'none';
             }
+            // disable My School filter
             if (myFilterBtn) {
                 myFilterBtn.style.display = 'none';
             }
@@ -950,6 +963,7 @@ async function main() {
                 myFilterBtn.classList.remove('active');
             }
             currentSchoolFilter = 'all';
+
             if (feedContainer) {
                 feedContainer.innerHTML = `
                     <div class="loader-msg">
@@ -961,7 +975,7 @@ async function main() {
 
             showHubLayout();
             loadTopics();
-            loadGlobalFeed();      // ← immediately loads global feed
+            loadGlobalFeed();           // ✅ immediately loads global feed
             maybeShowLoginPrompt();
         }
     });
@@ -1141,7 +1155,6 @@ async function main() {
             if (mobileWaysList) mobileWaysList.appendChild(createTopBarItem(t));
         });
 
-        // If user has no custom topics, show all discoverable topics in the horizontal bar
         if (!hasCustomTopics) {
             discT.forEach(t => {
                 if (mobileWaysList) mobileWaysList.appendChild(createTopBarItem(t));
@@ -1348,12 +1361,7 @@ async function main() {
     
     if (myFilterBtn) {
         myFilterBtn.onclick = () => {
-            if (!currentUser) {
-                alert(lang === 'fr' 
-                    ? 'Veuillez vous connecter pour voir le fil de votre école.' 
-                    : 'Please log in to view your school feed.');
-                return;
-            }
+            if (!requireLogin()) return;
             currentSchoolFilter = 'my';
             myFilterBtn.classList.add('active');
             if (allFilterBtn) allFilterBtn.classList.remove('active');
@@ -1450,8 +1458,7 @@ async function main() {
             `;
         }
 
-        const canInteract = currentUser !== null;
-        const commentSectionHtml = canInteract ? `
+        const commentSectionHtml = `
             <div class="comments-section" id="comments-section-${id}">
                 <div class="comment-list" id="comment-list-${id}">
                     <div style="text-align:center; font-size:0.8rem; color:#888;">
@@ -1461,23 +1468,17 @@ async function main() {
                 <div class="comment-composer-area">
                     <div class="comment-preview-area" id="comment-preview-area-${id}"></div>
                     <div class="comment-input-wrapper">
-                        <textarea class="comment-input" id="comment-input-${id}" data-coll="${coll}" placeholder="${ui.comment_placeholder || 'Write a comment...'}" oninput="window.checkCommentInput('${id}')"></textarea>
+                        <textarea class="comment-input" id="comment-input-${id}" data-coll="${coll}" placeholder="${ui.comment_placeholder || 'Write a comment...'}" oninput="window.checkCommentInput('${id}')" onclick="window.requireLogin()"></textarea>
                         <div class="comment-tools">
                             <button class="tool-btn" onclick="window.triggerCommentImg('${id}', '${coll}')">
                                 <i class="fas fa-camera"></i>
                             </button>
-                            <button class="btn-comment-send" onclick="window.postComment('${id}', '${coll}')" id="btn-send-comment-${id}" disabled>
+                            <button class="btn-comment-send" onclick="window.postComment('${id}', '${coll}')" id="btn-send-comment-${id}">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
                         </div>
                     </div>
                 </div>
-            </div>` : `
-            <div style="text-align:center; padding:12px; color:var(--text-muted); border-top:1px dashed #e2e8f0; margin-top:15px;">
-                <i class="fas fa-lock"></i> 
-                <span style="font-size: 0.95rem;">
-                    ${lang === 'fr' ? 'Connectez-vous pour voir et écrire des commentaires.' : 'Log in to view and write comments.'}
-                </span>
             </div>`;
 
         const card = document.createElement('div');
@@ -1542,7 +1543,7 @@ async function main() {
         const hasImg = !!commentImageFiles[id];
         const btn = document.getElementById(`btn-send-comment-${id}`);
         if (btn) {
-            btn.disabled = (!val && !hasImg);
+            btn.style.opacity = (!val && !hasImg) ? '0.5' : '1';
         }
     };
 
@@ -1569,6 +1570,7 @@ async function main() {
     });
 
     window.deletePost = async (id, coll) => {
+        if (!requireLogin()) return;
         const confirmed = await window.scoraliaConfirm(ui.dialog_delete_post);
         if(confirmed) {
             try {
@@ -1585,6 +1587,7 @@ async function main() {
     let reportTargetColl = null;
 
     window.reportPost = (postId, authorUid, authorName, coll) => {
+        if (!requireLogin()) return;
         document.querySelectorAll('.post-dropdown').forEach(d => {
             d.classList.remove('show');
         });
@@ -1645,6 +1648,7 @@ async function main() {
     let editTargetColl = null;
 
     window.openEditPost = (postId, encodedText, coll) => {
+        if (!requireLogin()) return;
         document.querySelectorAll('.post-dropdown').forEach(d => {
             d.classList.remove('show');
         });
@@ -1699,7 +1703,7 @@ async function main() {
     }
 
     window.likePost = async (id, alreadyLiked, coll) => {
-        if (!currentUser) return;
+        if (!requireLogin()) return;
         const ref = doc(db, coll, id);
         if(alreadyLiked) {
             await updateDoc(ref, { 
@@ -1715,6 +1719,7 @@ async function main() {
     };
 
     window.toggleComments = (id, coll) => {
+        if (!requireLogin()) return;
         const sec = document.getElementById(`comments-section-${id}`);
         if (!sec) return;
         
@@ -1831,6 +1836,7 @@ async function main() {
     }
 
     window.deleteComment = async (postId, commentId, coll) => {
+        if (!requireLogin()) return;
         const confirmed = await window.scoraliaConfirm(ui.dialog_delete_comment);
         if(confirmed) {
             try {
@@ -1843,9 +1849,12 @@ async function main() {
         }
     };
 
+    window.requireLogin = requireLogin; // Expose for inline handlers
+
     document.body.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && e.target.classList.contains('comment-input')) {
             e.preventDefault();
+            if (!requireLogin()) return;
             const coll = e.target.getAttribute('data-coll');
             window.postComment(e.target.id.replace('comment-input-', ''), coll);
         }
