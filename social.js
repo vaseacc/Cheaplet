@@ -373,6 +373,15 @@ async function main() {
         }
     }
 
+    // Helper: show login prompt if not logged in, return true if logged in
+    function requireLogin() {
+        if (!currentUser) {
+            loginPromptModal.style.display = 'flex';
+            return false;
+        }
+        return true;
+    }
+
     if (btnDismissPrompt) {
         btnDismissPrompt.onclick = () => {
             loginPromptModal.style.display = 'none';
@@ -384,11 +393,8 @@ async function main() {
     if (btnCreateWay) {
         btnCreateWay.onclick = (e) => {
             e.preventDefault();
-            if (!currentUser) {
-                window.location.href = '/login?redirect=/social';
-            } else {
-                window.location.href = '/createtopic';
-            }
+            if (!requireLogin()) return;
+            window.location.href = '/createtopic';
         };
     }
 
@@ -396,11 +402,8 @@ async function main() {
     if (mSheetCreateWay) {
         mSheetCreateWay.onclick = (e) => {
             e.preventDefault();
-            if (!currentUser) {
-                window.location.href = '/login?redirect=/social';
-            } else {
-                window.location.href = '/createtopic';
-            }
+            if (!requireLogin()) return;
+            window.location.href = '/createtopic';
         };
     }
 
@@ -511,9 +514,8 @@ async function main() {
 
     if (btnAttachImg) {
         btnAttachImg.onclick = () => { 
-            if(currentUser && imgUploadInput) {
-                imgUploadInput.click(); 
-            }
+            if (!requireLogin()) return;
+            if(imgUploadInput) imgUploadInput.click(); 
         };
     }
     
@@ -529,7 +531,8 @@ async function main() {
 
     if (btnAttachListing) {
         btnAttachListing.onclick = async () => {
-            if (!currentUser || !attachListingModal || !listingSelectorList) return;
+            if (!requireLogin()) return;
+            if (!attachListingModal || !listingSelectorList) return;
             
             attachListingModal.style.display = 'flex';
             listingSelectorList.innerHTML = '<div style="text-align:center; padding:20px; color:#888;"><i class="fas fa-circle-notch fa-spin"></i> Loading...</div>';
@@ -609,7 +612,7 @@ async function main() {
     // --- POST CREATION ---
     if (btnSendPost && postInput) {
         btnSendPost.onclick = async () => {
-            if (!currentUser) return;
+            if (!requireLogin()) return;
             const text = postInput.value.trim();
             
             btnSendPost.disabled = true;
@@ -958,7 +961,7 @@ async function main() {
 
             showHubLayout();
             loadTopics();
-            loadGlobalFeed();      // ← new function
+            loadGlobalFeed();      // ← immediately loads global feed
             maybeShowLoginPrompt();
         }
     });
