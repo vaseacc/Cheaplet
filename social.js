@@ -948,10 +948,18 @@ async function main() {
             currentUser = null;
             currentUserData = null;
 
-            // hide composer
-            if (document.getElementById('composer-card')) {
-                document.getElementById('composer-card').style.display = 'none';
+            // Show composer immediately so guests see the post box right away
+            const composerCard = document.getElementById('composer-card');
+            if (composerCard) {
+                composerCard.style.display = 'flex';
             }
+            // Set the placeholder to the global campus message
+            if (postInput) {
+                postInput.placeholder = lang === 'fr'
+                    ? "Que se passe-t-il sur le Campus Global ?"
+                    : "What's happening on Global Campus?";
+            }
+
             // disable My School filter
             if (myFilterBtn) {
                 myFilterBtn.style.display = 'none';
