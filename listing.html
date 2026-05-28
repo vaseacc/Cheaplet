@@ -124,21 +124,22 @@
             border-radius: 4px; 
         }
         
+        /* ── FIXED ARROWS (outside image stage, always on top) ── */
         .nav-arrow { 
-            position: absolute; 
-            top: 50%; 
+            position: fixed;          /* independent of any container */
+            top: 50%;
             transform: translateY(-50%);
             width: 50px; height: 50px; 
             border-radius: 50%; 
             background-color: rgba(60, 60, 60, 0.6); 
             color: white; 
-            display: none;          /* default hidden, overridden by JS */
+            display: flex; 
             align-items: center; 
             justify-content: center; 
             cursor: pointer; 
             font-size: 20px; 
             border: none; 
-            z-index: 50; 
+            z-index: 9999;            /* higher than everything else */
             transition: background-color 0.2s ease, transform 0.2s ease;
         }
         .nav-arrow:hover { 
@@ -147,7 +148,7 @@
         }
         .nav-prev { left: 20px; }
         .nav-next { right: 20px; }
-        
+
         .thumbnails-overlay { 
             position: absolute; 
             bottom: 20px; left: 50%; 
@@ -315,11 +316,12 @@
             <div class="main-image-container">
                 <img src="" alt="Listing Item" class="main-image" id="main-image">
             </div>
-            
-            <button class="nav-arrow nav-prev" id="prev-img-btn"><i class="fas fa-chevron-left"></i></button>
-            <button class="nav-arrow nav-next" id="next-img-btn"><i class="fas fa-chevron-right"></i></button>
             <div class="thumbnails-overlay" id="thumbnail-container"></div>
         </div>
+
+        <!-- FIXED ARROWS – placed outside image stage so nothing can hide them -->
+        <button class="nav-arrow nav-prev" id="prev-img-btn" style="display: none;"><i class="fas fa-chevron-left"></i></button>
+        <button class="nav-arrow nav-next" id="next-img-btn" style="display: none;"><i class="fas fa-chevron-right"></i></button>
 
         <div class="details-panel" id="details-container">
             <div id="status-badge-area" class="status-badge-container"></div>
@@ -508,16 +510,13 @@
                 fetchAndDisplayListing();
             });
 
-            // Helper to force arrows visibility
             function showArrowsIfNeeded() {
                 if (imageUrls.length > 1) {
                     prevBtn.style.display = 'flex';
                     nextBtn.style.display = 'flex';
-                    thumbnailContainer.style.display = 'flex';
                 } else {
                     prevBtn.style.display = 'none';
                     nextBtn.style.display = 'none';
-                    thumbnailContainer.style.display = 'none';
                 }
             }
 
@@ -623,17 +622,13 @@
                     }
 
                     imageUrls = data.imageUrls || [];
-                    // Reset arrows and thumbnails to hidden, then conditionally show
-                    prevBtn.style.display = 'none';
-                    nextBtn.style.display = 'none';
+                    // Reset thumbnail container
                     thumbnailContainer.style.display = 'none';
+                    thumbnailContainer.innerHTML = '';
 
                     if (imageUrls.length > 0) {
                         updateMainImage(0);
-                        thumbnailContainer.innerHTML = '';
                         if (imageUrls.length > 1) {
-                            prevBtn.style.display = 'flex';
-                            nextBtn.style.display = 'flex';
                             thumbnailContainer.style.display = 'flex';
                             imageUrls.forEach((url, index) => {
                                 const img = document.createElement('img');
@@ -646,6 +641,9 @@
                         mainImage.style.display = 'none';
                         document.querySelector('.main-image-container').innerHTML = '<i class="fas fa-image" style="font-size: 4rem; color: #cbd5e1;"></i><div style="color:var(--text-muted); margin-top:10px;">No Image Available</div>';
                     }
+
+                    // Show/hide arrows based on image count
+                    showArrowsIfNeeded();
 
                     if (currentUser) {
                         const userSnap = await getDoc(doc(db, "users", currentUser.uid));
@@ -716,8 +714,7 @@
                     blurBg.style.backgroundImage = `url('${url}')`;
                 }
                 document.querySelectorAll('.thumb').forEach((thumb, i) => { thumb.classList.toggle('active', i === index); });
-                // CRITICAL: re‑assert arrows visibility after image change
-                showArrowsIfNeeded();
+                // Arrow visibility is already guaranteed – no need to re-set
             }
 
             prevBtn.onclick = () => { if (imageUrls.length <= 1) return; let n = currentImageIndex - 1; if (n < 0) n = imageUrls.length - 1; updateMainImage(n); };
