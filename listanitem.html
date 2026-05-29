@@ -540,64 +540,59 @@
                 manualBtn.disabled = false;
             }
 
-            // === FIX FOR CAMERA INITIALIZATION ===
+            // === FORTIFIED CAMERA INITIALIZATION ===
             document.getElementById('start-scan-btn').onclick = async () => {
-                
-                // 1. Explicitly request camera permission FIRST to trigger the browser prompt securely
+                const scanBtn = document.getElementById('start-scan-btn');
+                const originalText = scanBtn.innerHTML;
+                scanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Requesting...`;
+                scanBtn.disabled = true;
+
                 try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    // If we get here, the user allowed it! Stop the manual stream so html5-qrcode can use it.
+                    // 1. Force the native browser prompt first using the standard API
+                    // Try to get the back camera first, fallback to ANY camera if none found
+                    let stream;
+                    try {
+                        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                    } catch(fallbackErr) {
+                        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    }
+                    
+                    // If we made it here, permission is granted!
+                    // Stop the stream immediately so html5qrcode can use it
                     stream.getTracks().forEach(track => track.stop());
+
+                    // 2. Start the html5-qrcode scanner UI
+                    if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+                    document.getElementById('reader').style.display = 'block';
+
+                    await html5QrCode.start(
+                        { facingMode: "environment" }, 
+                        { fps: 10, qrbox: { width: 250, height: 150 } }, 
+                        (decodedText) => {
+                            html5QrCode.stop().then(() => { 
+                                document.getElementById('reader').style.display = 'none'; 
+                                scanBtn.innerHTML = originalText;
+                                scanBtn.disabled = false;
+                                fetchBookData(decodedText); 
+                            });
+                        }
+                    );
                 } catch (err) {
-                    console.error("Camera permission error:", err);
-                    if (err.name === 'NotAllowedError' || err.name === 'SecurityError' || err.message.includes('policy')) {
-                        alert("⚠️ Camera Access Denied.\n\nPlease click 'Allow' when prompted. If you don't see a prompt, your browser settings are blocking the camera.\n\nNote: If you are viewing this inside an app preview (like Vercel, CodeSandbox, etc.), it is strictly blocked by the environment. Please open the website directly in a new, full browser tab (and ensure you are using https://).");
+                    console.error("Camera Error:", err);
+                    document.getElementById('reader').style.display = 'none';
+                    scanBtn.innerHTML = originalText;
+                    scanBtn.disabled = false;
+
+                    // Handle specific browser rejections and UI blocks
+                    if (err.name === 'NotAllowedError' || err.message.includes('permission')) {
+                        alert("CAMERA BLOCKED 🚫\n\nYour browser blocked the camera, so the permission prompt will not appear.\n\nHOW TO FIX:\n1. Click the Lock icon (🔒) next to the URL in your address bar.\n2. Find 'Camera' and change it to 'Allow'.\n3. Refresh the page and try again.\n\n(Note: If you are viewing this inside an app preview window, open the site directly in a full, new browser tab!)");
+                    } else if (err.message.includes('policy') || err.message.includes('Permissions policy')) {
+                        alert("SYSTEM BLOCK 🚫\n\nThe environment you are currently using strictly forbids camera access. (This usually happens if you are previewing the code inside an iframe).\n\nHOW TO FIX:\nOpen the website directly in a new browser tab (https://...) instead of viewing it inside another app.");
                     } else if (err.name === 'NotFoundError') {
                         alert("No camera hardware found on this device.");
                     } else {
-                        alert("Could not access the camera. Error: " + err.message);
+                        alert("Could not start camera: " + err.message);
                     }
-                    return; // Stop execution
-                }
-
-                // 2. We now have confirmed permission. Let html5-qrcode handle the rest.
-                if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-                document.getElementById('reader').style.display = 'block';
-
-                try {
-                    const devices = await Html5Qrcode.getCameras();
-                    if (devices && devices.length > 0) {
-                        let cameraId = devices[0].id;
-                        for (let i = 0; i < devices.length; i++) {
-                            const label = devices[i].label.toLowerCase();
-                            if (label.includes("back") || label.includes("environment") || label.includes("rear")) {
-                                cameraId = devices[i].id;
-                                break;
-                            }
-                        }
-                        
-                        html5QrCode.start(
-                            cameraId, 
-                            { fps: 10, qrbox: { width: 250, height: 150 } }, 
-                            (decodedText) => {
-                                html5QrCode.stop().then(() => { 
-                                    document.getElementById('reader').style.display = 'none'; 
-                                    fetchBookData(decodedText); 
-                                });
-                            }
-                        ).catch(err => { 
-                            console.warn("Scanner start error:", err);
-                            alert("Unable to start the scanner component: " + err); 
-                            document.getElementById('reader').style.display = 'none';
-                        });
-                    } else {
-                        alert("No cameras found on your device.");
-                        document.getElementById('reader').style.display = 'none';
-                    }
-                } catch (err) {
-                    console.warn("getCameras error:", err);
-                    alert("Error retrieving cameras: " + err.message);
-                    document.getElementById('reader').style.display = 'none';
                 }
             };
 
