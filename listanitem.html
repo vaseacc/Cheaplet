@@ -541,13 +541,13 @@
             }
 
             // === FIX FOR CAMERA INITIALIZATION ===
-            document.getElementById('start-scan-btn').onclick = () => {
+            document.getElementById('start-scan-btn').onclick = async () => {
                 if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
                 document.getElementById('reader').style.display = 'block';
 
-                Html5Qrcode.getCameras().then(devices => {
+                try {
+                    const devices = await Html5Qrcode.getCameras();
                     if (devices && devices.length > 0) {
-                        // Prefer back camera if available
                         let cameraId = devices[0].id;
                         for (let i = 0; i < devices.length; i++) {
                             const label = devices[i].label.toLowerCase();
@@ -575,10 +575,15 @@
                         alert("No cameras found on your device.");
                         document.getElementById('reader').style.display = 'none';
                     }
-                }).catch(err => {
-                    alert("Camera access denied or not available. Please allow camera access in your browser settings.");
+                } catch (err) {
+                    // CATCH BROWSER PERMISSIONS VIOLATION SPECIFICALLY
+                    if (err.name === 'NotAllowedError' || err.message.includes('permission') || err.message.includes('policy')) {
+                        alert("⚠️ Camera Access Blocked.\n\nYour browser's security settings are strictly blocking the camera. If you are viewing this website inside an iframe or a code preview window (like Vercel Preview, CodeSandbox, etc.), it will be blocked.\n\nFix: Open this website in a full, separate browser tab. Also check that your URL starts with https://");
+                    } else {
+                        alert("Camera access denied or not available. Please allow camera access in your browser settings. Error: " + err.message);
+                    }
                     document.getElementById('reader').style.display = 'none';
-                });
+                }
             };
 
             document.getElementById('manual-isbn-btn').onclick = () => {
