@@ -542,6 +542,25 @@
 
             // === FIX FOR CAMERA INITIALIZATION ===
             document.getElementById('start-scan-btn').onclick = async () => {
+                
+                // 1. Explicitly request camera permission FIRST to trigger the browser prompt securely
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    // If we get here, the user allowed it! Stop the manual stream so html5-qrcode can use it.
+                    stream.getTracks().forEach(track => track.stop());
+                } catch (err) {
+                    console.error("Camera permission error:", err);
+                    if (err.name === 'NotAllowedError' || err.name === 'SecurityError' || err.message.includes('policy')) {
+                        alert("⚠️ Camera Access Denied.\n\nPlease click 'Allow' when prompted. If you don't see a prompt, your browser settings are blocking the camera.\n\nNote: If you are viewing this inside an app preview (like Vercel, CodeSandbox, etc.), it is strictly blocked by the environment. Please open the website directly in a new, full browser tab (and ensure you are using https://).");
+                    } else if (err.name === 'NotFoundError') {
+                        alert("No camera hardware found on this device.");
+                    } else {
+                        alert("Could not access the camera. Error: " + err.message);
+                    }
+                    return; // Stop execution
+                }
+
+                // 2. We now have confirmed permission. Let html5-qrcode handle the rest.
                 if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
                 document.getElementById('reader').style.display = 'block';
 
@@ -567,8 +586,8 @@
                                 });
                             }
                         ).catch(err => { 
-                            console.warn(err);
-                            alert("Unable to start the camera: " + err); 
+                            console.warn("Scanner start error:", err);
+                            alert("Unable to start the scanner component: " + err); 
                             document.getElementById('reader').style.display = 'none';
                         });
                     } else {
@@ -576,12 +595,8 @@
                         document.getElementById('reader').style.display = 'none';
                     }
                 } catch (err) {
-                    // CATCH BROWSER PERMISSIONS VIOLATION SPECIFICALLY
-                    if (err.name === 'NotAllowedError' || err.message.includes('permission') || err.message.includes('policy')) {
-                        alert("⚠️ Camera Access Blocked.\n\nYour browser's security settings are strictly blocking the camera. If you are viewing this website inside an iframe or a code preview window (like Vercel Preview, CodeSandbox, etc.), it will be blocked.\n\nFix: Open this website in a full, separate browser tab. Also check that your URL starts with https://");
-                    } else {
-                        alert("Camera access denied or not available. Please allow camera access in your browser settings. Error: " + err.message);
-                    }
+                    console.warn("getCameras error:", err);
+                    alert("Error retrieving cameras: " + err.message);
                     document.getElementById('reader').style.display = 'none';
                 }
             };
