@@ -7,7 +7,6 @@
     <title>List an Item - Scoralia</title>
     <script type="module" src="ui-utils.js"></script>
     <script type="module" src="global.js"></script>
-    <!-- Using the exact version from your working code -->
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -462,6 +461,9 @@
                     document.getElementById('listing-isbn').value = cleanIsbn;
                     document.getElementById('isbn-section').style.display = 'none';
                     document.getElementById('main-form-section').style.display = 'block';
+                    if (html5QrCode && isScanning) {
+                        html5QrCode.stop().then(() => { isScanning = false; }).catch(e => console.log(e));
+                    }
                     return;
                 }
 
@@ -529,6 +531,9 @@
                     document.getElementById('listing-isbn').value = cleanIsbn;
                     document.getElementById('isbn-section').style.display = 'none';
                     document.getElementById('main-form-section').style.display = 'block';
+                    if (html5QrCode && isScanning) {
+                        html5QrCode.stop().then(() => { isScanning = false; }).catch(e => console.log(e));
+                    }
                 } else {
                     alert(ui[lang].notFound);
                 }
@@ -537,12 +542,13 @@
                 manualBtn.disabled = false;
             }
 
-            // === 100% IDENTICAL LOGIC TO LIVREX HTML ===
-            document.getElementById('start-scan-btn').onclick = () => {
+            // ==========================================
+            // ChatGPT STEP 4 & 5: PRE-CHECK + ERROR HANDLER
+            // ==========================================
+            document.getElementById('start-scan-btn').onclick = async () => {
                 const scanBtn = document.getElementById('start-scan-btn');
                 const originalText = `<i class="fas fa-camera"></i> <span id="ui-btn-scan">${ui[lang].btnScan}</span>`;
 
-                // If already scanning, act as a STOP button
                 if (isScanning) {
                     if (html5QrCode) {
                         html5QrCode.stop().then(() => {
@@ -550,17 +556,48 @@
                             document.getElementById('reader').style.display = 'none';
                             scanBtn.innerHTML = originalText;
                             scanBtn.style.background = 'var(--ink)';
-                        }).catch(e => console.error(e));
+                        }).catch(e => console.error("Error stopping scanner:", e));
                     }
                     return;
                 }
 
-                // Start Scanner
-                if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-                
-                document.getElementById('reader').style.display = 'block';
-                scanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Starting...`;
+                scanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Requesting Camera...`;
                 scanBtn.disabled = true;
+
+                // PRE-CHECK: Force the browser to ask for permission immediately
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: "environment" }
+                    });
+                    // Immediately stop the stream so html5QrCode can use it without conflicting
+                    stream.getTracks().forEach(track => track.stop());
+                } catch (err) {
+                    console.error("Camera pre-check failed:", err);
+                    let msg = "";
+                    let errName = err.name || "";
+                    let errMsg = err.message || String(err);
+
+                    if (errName === "NotAllowedError" || errMsg.includes("NotAllowedError") || errMsg.includes("Permission denied")) {
+                        msg = "Camera permission denied.\n\nPlease allow camera access in your browser settings. (If you are on Android/Chrome, tap the Lock icon 🔒 next to the URL, find Camera, and tap Allow).\n\nThen refresh the page.";
+                    } else if (errName === "NotFoundError" || errMsg.includes("NotFoundError")) {
+                        msg = "No camera found on this device.";
+                    } else if (errName === "NotReadableError" || errMsg.includes("NotReadableError")) {
+                        msg = "Camera already in use by another app or tab.";
+                    } else if (errName === "NotSupportedError") {
+                        msg = "Camera scanning not supported on this browser.";
+                    } else {
+                        msg = "Camera error: " + errMsg;
+                    }
+                    alert(msg);
+
+                    scanBtn.innerHTML = originalText;
+                    scanBtn.disabled = false;
+                    return; // Stop execution, the user must fix permissions first
+                }
+
+                // If we reach here, permission is granted! Initialize html5QrCode
+                if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+                document.getElementById('reader').style.display = 'block';
 
                 html5QrCode.start(
                     { facingMode: "environment" }, 
@@ -577,7 +614,7 @@
                         });
                     },
                     (errorMessage) => {
-                        // Ignore scan errors (normal behavior while hunting for code)
+                        // Ignore standard scan errors (happens when no barcode is in frame)
                     }
                 ).then(() => {
                     // CAMERA STARTED SUCCESSFULLY
@@ -586,13 +623,22 @@
                     scanBtn.innerHTML = `<i class="fas fa-times"></i> Stop Scanner`;
                     scanBtn.style.background = 'var(--red)';
                 }).catch(err => {
-                    // CAMERA BLOCKED OR FAILED
+                    console.error("Scanner failed to start:", err);
+                    let msg = "";
+                    let errMsg = err.message || String(err);
+                    if (errMsg.includes("NotAllowedError") || errMsg.includes("Permission denied")) {
+                        msg = "Camera permission denied. Please allow camera access in browser settings.";
+                    } else {
+                        msg = "Failed to start camera: " + errMsg;
+                    }
+                    alert(msg);
+                    
                     scanBtn.disabled = false;
                     scanBtn.innerHTML = originalText;
                     document.getElementById('reader').style.display = 'none';
-                    alert("Camera access denied or not available. Error: " + err);
                 });
             };
+            // ==========================================
 
             document.getElementById('manual-isbn-btn').onclick = () => {
                 const val = document.getElementById('manual-isbn-input').value.trim();
