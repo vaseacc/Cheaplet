@@ -472,7 +472,6 @@
 
                 let bookData = { title: "", description: "" };
 
-                // Helper for Google Books
                 const parseGoogleBooks = (data) => {
                     if (data.items && data.items.length > 0) {
                         const book = data.items[0].volumeInfo;
@@ -484,7 +483,6 @@
                     return null;
                 };
 
-                // 1. Google Books by ISBN
                 try {
                     const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`);
                     if (res.ok) {
@@ -494,7 +492,6 @@
                     }
                 } catch (e) { console.warn("Google ISBN fetch error:", e); }
 
-                // 2. OpenLibrary fallback
                 if (!bookData.title) {
                     try {
                         const res = await fetch(`https://openlibrary.org/isbn/${cleanIsbn}.json`);
@@ -514,7 +511,6 @@
                     } catch (e) { console.warn("OpenLibrary error:", e); }
                 }
 
-                // 3. If still no title, try Google Books search by the raw ISBN string
                 if (!bookData.title) {
                     try {
                         const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(isbn)}`);
@@ -526,7 +522,6 @@
                     } catch (e) { console.warn("Google title search error:", e); }
                 }
 
-                // 4. Apply result
                 if (bookData.title) {
                     isbnCache[cleanIsbn] = bookData;
                     saveCache();
@@ -545,22 +540,43 @@
                 manualBtn.disabled = false;
             }
 
-            document.getElementById('start-scan-btn').onclick = async () => {
-                // Request camera permission before attempting to start the scanner
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    stream.getTracks().forEach(track => track.stop()); // Clean up immediately after permission granted
-                } catch (error) {
-                    alert("Camera access denied or not available. Please allow camera access to scan barcodes.");
-                    return; // Stop execution if denied
-                }
-
+            // === FIX FOR CAMERA INITIALIZATION ===
+            document.getElementById('start-scan-btn').onclick = () => {
                 if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
                 document.getElementById('reader').style.display = 'block';
-                html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, (decodedText) => {
-                    html5QrCode.stop().then(() => { document.getElementById('reader').style.display = 'none'; fetchBookData(decodedText); });
-                }).catch(err => { 
-                    alert("Unable to start the camera. Please check your browser permissions."); 
+
+                Html5Qrcode.getCameras().then(devices => {
+                    if (devices && devices.length > 0) {
+                        // Prefer back camera if available
+                        let cameraId = devices[0].id;
+                        for (let i = 0; i < devices.length; i++) {
+                            const label = devices[i].label.toLowerCase();
+                            if (label.includes("back") || label.includes("environment") || label.includes("rear")) {
+                                cameraId = devices[i].id;
+                                break;
+                            }
+                        }
+                        
+                        html5QrCode.start(
+                            cameraId, 
+                            { fps: 10, qrbox: { width: 250, height: 150 } }, 
+                            (decodedText) => {
+                                html5QrCode.stop().then(() => { 
+                                    document.getElementById('reader').style.display = 'none'; 
+                                    fetchBookData(decodedText); 
+                                });
+                            }
+                        ).catch(err => { 
+                            console.warn(err);
+                            alert("Unable to start the camera: " + err); 
+                            document.getElementById('reader').style.display = 'none';
+                        });
+                    } else {
+                        alert("No cameras found on your device.");
+                        document.getElementById('reader').style.display = 'none';
+                    }
+                }).catch(err => {
+                    alert("Camera access denied or not available. Please allow camera access in your browser settings.");
                     document.getElementById('reader').style.display = 'none';
                 });
             };
@@ -643,7 +659,6 @@
             }
 
             imageInput.onchange = async (e) => {
-                // TRIGGER BOT SHIELD
                 const isHuman = await window.checkBotLimits();
                 if (!isHuman) { e.target.value = ''; return; }
 
@@ -656,17 +671,14 @@
                 e.target.value = '';
             };
 
-            // --- SUBMIT HANDLER ---
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
 
-                // Initialize logs array to collect all function logs
                 const logs = [];
                 logs.push('=== LISTING SUBMISSION LOGS ===');
                 logs.push('Timestamp: ' + new Date().toISOString());
                 logs.push('');
 
-                // TRIGGER BOT SHIELD
                 logs.push('[1] Checking bot shield...');
                 const isHuman = await window.checkBotLimits();
                 logs.push('[1] Bot shield result: ' + (isHuman ? 'PASSED (human)' : 'FAILED (bot detected)'));
@@ -785,13 +797,13 @@
                         
                         logs.push('[7] Moderation API response status: ' + aiRes.status);
                         
-                        if (!aiRes.ok) throw new Error("Moderation server error");
-                        
                         if (!aiRes.ok) {
                             const errorText = await aiRes.text();
                             logs.push('    Error response: ' + errorText);
                             throw new Error("Moderation server error: " + aiRes.status);
                         }
+
+                        const aiData = await aiRes.json();
                         
                         logs.push('[7] Moderation response received:');
                         logs.push('    Verdict: ' + (aiData.verdict || 'unknown'));
@@ -824,7 +836,6 @@
                             logs.push('');
                             logs.push('=== FINAL RESULT: APPROVED ===');
                             logs.push('Redirecting to my-listings...');
-                            alert('scoraliaa.vercel.app says:\n\n' + logs.join('\n'));
                             window.location.href = `/my-listings`;
                         }
                     } catch (err) {
@@ -833,7 +844,6 @@
                         logs.push('Proceeding with pending status...');
                         logs.push('');
                         logs.push('=== FINAL RESULT: PENDING (moderation error) ===');
-                        alert('scoraliaa.vercel.app says:\n\n' + logs.join('\n'));
                         window.location.href = `/my-listings?pending=true&id=${listingRef.id}`;
                     }
 
@@ -843,7 +853,6 @@
                     logs.push('');
                     logs.push('=== FINAL RESULT: ERROR ===');
                     alert("Error: " + err.message);
-                    alert('scoraliaa.vercel.app says:\n\n' + logs.join('\n'));
                     submitBtn.disabled = false;
                     postBtnText.textContent = ui[lang].btnPost;
                 }
