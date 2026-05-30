@@ -13,7 +13,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,700;0,900;1,700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* --- all styles unchanged --- */
         :root {
             --ink:       #0C1446;
             --deep:      #2B5C92;
@@ -135,15 +134,6 @@
         .social-promo { margin-top: 16px; text-align: center; font-size: 0.8rem; color: var(--text-muted); background: var(--off-white); padding: 8px 12px; border-radius: 40px; display: inline-block; width: 100%; }
         .social-promo i { color: var(--gold); margin-right: 6px; }
 
-        /* Camera status UI (unchanged) */
-        .camera-status-box { background: var(--surface); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 12px; text-align: center; font-weight: 600; }
-        .camera-status-box.warning { background: #fff3cd; color: #856404; }
-        .camera-buttons { display: flex; flex-direction: column; gap: 10px; }
-        .btn-allow-camera { width: 100%; background: var(--green); color: var(--white); border: none; border-radius: var(--radius-sm); padding: 12px 20px; font-size: 0.95rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s; }
-        .btn-allow-camera:hover:not(:disabled) { background: #1f5f46; }
-        .btn-allow-camera.granted { background: var(--surface); color: var(--text-muted); cursor: default; }
-        .reset-link { color: var(--deep); text-decoration: underline; cursor: pointer; font-size: 0.9rem; }
-
         @media (max-width: 767px) {
             nav { display: none; }
             .page-hero { padding: 28px 16px; }
@@ -191,20 +181,11 @@
             <div class="section-label" style="justify-content: center;"><i class="fas fa-barcode"></i> <span id="ui-isbn-title">Quick Book Scan</span></div>
             <p id="ui-isbn-desc" style="color: var(--text-muted); margin-bottom: 20px; font-size: 0.9rem;">Scan your book's barcode to automatically fill in the title and description.</p>
 
-            <!-- Camera diagnostic UI -->
-            <div id="camera-diagnostic" class="camera-status-box" style="display: none;"></div>
-
             <div id="reader" style="width: 100%; max-width: 400px; margin: 0 auto 20px; display: none; border-radius: var(--radius-sm); overflow: hidden; border: 2px solid var(--mist);"></div>
 
-            <div class="camera-buttons">
-                <!-- THE FIX: button is now visible by default -->
-                <button type="button" class="btn-allow-camera" id="allow-camera-btn">
-                    <i class="fas fa-unlock-alt"></i> <span id="ui-allow-camera">Allow Camera Access</span>
-                </button>
-                <button type="button" class="btn-submit" id="start-scan-btn" disabled style="width: 100%;">
-                    <i class="fas fa-camera"></i> <span id="ui-btn-scan">Scan Barcode</span>
-                </button>
-            </div>
+            <button type="button" class="btn-submit" id="start-scan-btn" style="width: 100%; margin-bottom: 15px;">
+                <i class="fas fa-camera"></i> <span id="ui-btn-scan">Scan Barcode</span>
+            </button>
 
             <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
                 <input type="text" id="manual-isbn-input" placeholder="Enter ISBN manually..." style="margin-bottom: 0; flex: 1;">
@@ -220,7 +201,6 @@
             <div class="form-wrapper">
                 <form id="listing-form">
                     <input type="hidden" id="listing-isbn" value="">
-                    <!-- all form sections unchanged -->
                     <div class="form-section">
                         <div class="section-label"><i class="fas fa-pen"></i> <span id="ui-sec-basic">Basic Info</span></div>
                         <label class="field-label" id="ui-label-title">Title</label>
@@ -339,12 +319,6 @@
                     mainTitle: "List an Item", mainSub: "Fill in the details below and your book will be automatically reviewed.",
                     isbnTitle: "Quick Book Scan", isbnDesc: "Scan your book's barcode to fill in info automatically.",
                     btnScan: "Scan Barcode", btnSkip: "Skip & Fill Manually", isbnPlace: "Enter ISBN manually...",
-                    allowCamera: "Allow Camera Access", cameraGranted: "Camera Access Granted ✅",
-                    noHttps: "⚠️ Camera requires a secure connection (HTTPS). You are currently on HTTP. Please switch to <a href='https://scoraliaa.vercel.app'>HTTPS</a> and try again.",
-                    permissionDenied: "❌ Camera permission is blocked. <br><a class='reset-link' href='#' id='reset-permission-link'>Open Site Settings to Reset</a>",
-                    permissionPrompt: "📷 Camera permission is needed. Click 'Allow Camera Access' below.",
-                    permissionGrantedState: "✅ Camera permission already granted. You can scan now.",
-                    permissionChecking: "Checking camera permission...",
                     fetching: "Fetching info...", notFound: "Book not found. Please fill manually.",
                     secBasic: "Basic Info", secTags: "Tags", secCond: "Condition & Details", secLoc: "Location", secPhoto: "Photos",
                     lblTitle: "Title", lblDesc: "Description",
@@ -361,21 +335,13 @@
                     tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.",
                     tagUses: "uses", uploadFail: "Image upload failed. Please try again.",
                     reviewMessage: "Your listing is being reviewed. You will be notified once approved.",
-                    cameraDeniedError: "Camera permission denied. Please allow camera access in your browser settings.\n\n(On Android/Chrome: tap 🔒 → Permissions → Camera → Allow). Then refresh.",
-                    cameraNotReadable: "Camera is already in use by another app.",
-                    cameraNotFound: "No camera found on this device.",
-                    cameraNotSupported: "Camera not supported in this browser.",
+                    cameraDenied: "Camera permission denied. Please allow camera access in your browser settings. (On Android/Chrome: tap 🔒 → Permissions → Camera → Allow). Then refresh.",
+                    cameraError: "Could not start camera. Please check your device."
                 },
                 fr: {
                     mainTitle: "Publier un article", mainSub: "Remplissez les détails ci-dessous et votre livre sera automatiquement examiné.",
                     isbnTitle: "Scan rapide du livre", isbnDesc: "Scannez le code-barres pour remplir les infos automatiquement.",
                     btnScan: "Scanner le code-barres", btnSkip: "Ignorer et remplir manuellement", isbnPlace: "Entrer l'ISBN manuellement...",
-                    allowCamera: "Autoriser l'accès à la caméra", cameraGranted: "Accès caméra autorisé ✅",
-                    noHttps: "⚠️ La caméra nécessite une connexion sécurisée (HTTPS). Vous êtes actuellement sur HTTP. Veuillez passer à <a href='https://scoraliaa.vercel.app'>HTTPS</a> et réessayer.",
-                    permissionDenied: "❌ Permission caméra bloquée. <br><a class='reset-link' href='#' id='reset-permission-link'>Ouvrir les paramètres du site pour réinitialiser</a>",
-                    permissionPrompt: "📷 Autorisation caméra nécessaire. Cliquez sur 'Autoriser l'accès' ci-dessous.",
-                    permissionGrantedState: "✅ Accès caméra déjà accordé. Vous pouvez scanner.",
-                    permissionChecking: "Vérification de la permission caméra...",
                     fetching: "Recherche en cours...", notFound: "Livre introuvable. Veuillez remplir manuellement.",
                     secBasic: "Infos de base", secTags: "Mots-clés", secCond: "État et Détails", secLoc: "Emplacement", secPhoto: "Photos",
                     lblTitle: "Titre", lblDesc: "Description",
@@ -392,14 +358,11 @@
                     tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.",
                     tagUses: "utilisations", uploadFail: "Échec du téléchargement. Veuillez réessayer.",
                     reviewMessage: "Votre annonce est en cours d'examen. Vous serez notifié une fois approuvée.",
-                    cameraDeniedError: "Permission de la caméra refusée. Veuillez autoriser l'accès dans les paramètres du navigateur.\n\n(Android/Chrome : appuyez sur 🔒 → Autorisations → Caméra → Autoriser). Actualisez ensuite.",
-                    cameraNotReadable: "La caméra est déjà utilisée par une autre application.",
-                    cameraNotFound: "Aucune caméra trouvée sur cet appareil.",
-                    cameraNotSupported: "Caméra non supportée sur ce navigateur.",
+                    cameraDenied: "Permission de la caméra refusée. Veuillez autoriser l'accès dans les paramètres du navigateur. (Android/Chrome : appuyez sur 🔒 → Autorisations → Caméra → Autoriser). Actualisez ensuite.",
+                    cameraError: "Impossible de démarrer la caméra. Veuillez vérifier votre appareil."
                 }
             };
 
-            // Apply texts
             document.getElementById('ui-main-title').textContent = ui[lang].mainTitle;
             document.getElementById('ui-main-subtitle').textContent = ui[lang].mainSub;
             document.getElementById('ui-isbn-title').textContent = ui[lang].isbnTitle;
@@ -407,7 +370,6 @@
             document.getElementById('ui-btn-scan').textContent = ui[lang].btnScan;
             document.getElementById('ui-btn-skip').textContent = ui[lang].btnSkip;
             document.getElementById('manual-isbn-input').placeholder = ui[lang].isbnPlace;
-            document.getElementById('ui-allow-camera').textContent = ui[lang].allowCamera;
             document.getElementById('ui-sec-basic').textContent = ui[lang].secBasic;
             document.getElementById('ui-sec-tags').textContent = ui[lang].secTags;
             document.getElementById('ui-sec-cond').textContent = ui[lang].secCond;
@@ -460,7 +422,9 @@
                 } else { window.location.href = '/login'; }
             });
 
-            // ISBN cache
+            let html5QrCode;
+            let isScanning = false;
+            
             const isbnCache = {};
             try {
                 const saved = localStorage.getItem('scoralia_isbn_cache');
@@ -494,8 +458,7 @@
                     document.getElementById('isbn-section').style.display = 'none';
                     document.getElementById('main-form-section').style.display = 'block';
                     if (html5QrCode && isScanning) {
-                        try { await html5QrCode.stop(); } catch(e){}
-                        isScanning = false;
+                        html5QrCode.stop().then(() => { isScanning = false; }).catch(e => console.log(e));
                     }
                     return;
                 }
@@ -505,6 +468,7 @@
                 manualBtn.disabled = true;
 
                 let bookData = { title: "", description: "" };
+
                 const parseGoogleBooks = (data) => {
                     if (data.items && data.items.length > 0) {
                         const book = data.items[0].volumeInfo;
@@ -564,8 +528,7 @@
                     document.getElementById('isbn-section').style.display = 'none';
                     document.getElementById('main-form-section').style.display = 'block';
                     if (html5QrCode && isScanning) {
-                        try { await html5QrCode.stop(); } catch(e){}
-                        isScanning = false;
+                        html5QrCode.stop().then(() => { isScanning = false; }).catch(e => console.log(e));
                     }
                 } else {
                     alert(ui[lang].notFound);
@@ -575,125 +538,27 @@
                 manualBtn.disabled = false;
             }
 
-            // --- CAMERA PERMISSION HANDLING (FIXED) ---
-            let html5QrCode = null;
-            let isScanning = false;
-            let cameraPermissionGranted = false;
+            // SIMPLE SCAN BUTTON HANDLER — NO PERMISSION CHECKS BEFOREHAND
+            document.getElementById('start-scan-btn').onclick = async () => {
+                const scanBtn = document.getElementById('start-scan-btn');
+                const originalHTML = `<i class="fas fa-camera"></i> <span id="ui-btn-scan">${ui[lang].btnScan}</span>`;
 
-            const diagnosticBox = document.getElementById('camera-diagnostic');
-            const allowCameraBtn = document.getElementById('allow-camera-btn');
-            const startScanBtn = document.getElementById('start-scan-btn');
-            const readerDiv = document.getElementById('reader');
-
-            // 1. HTTPS check
-            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-                diagnosticBox.style.display = 'block';
-                diagnosticBox.classList.add('warning');
-                diagnosticBox.innerHTML = ui[lang].noHttps;
-                startScanBtn.disabled = true;
-                // hide the allow button because camera won't work anyway
-                allowCameraBtn.style.display = 'none';
-            } else {
-                console.log('HTTPS OK, checking camera permission...');
-                checkCameraPermissionStatus();
-            }
-
-            async function checkCameraPermissionStatus() {
-                diagnosticBox.style.display = 'block';
-                diagnosticBox.innerHTML = ui[lang].permissionChecking;
-                try {
-                    const result = await navigator.permissions.query({ name: 'camera' });
-                    handlePermissionState(result.state);
-                    result.addEventListener('change', () => {
-                        handlePermissionState(result.state);
-                    });
-                } catch (err) {
-                    console.warn('Permissions API not available, showing allow button');
-                    diagnosticBox.innerHTML = ui[lang].permissionPrompt;
-                    allowCameraBtn.style.display = 'block';
-                    startScanBtn.disabled = true;
-                }
-            }
-
-            function handlePermissionState(state) {
-                if (state === 'granted') {
-                    diagnosticBox.innerHTML = ui[lang].permissionGrantedState;
-                    allowCameraBtn.style.display = 'none';   // already granted
-                    cameraPermissionGranted = true;
-                    startScanBtn.disabled = false;
-                } else if (state === 'denied') {
-                    diagnosticBox.classList.add('warning');
-                    diagnosticBox.innerHTML = ui[lang].permissionDenied;
-                    allowCameraBtn.style.display = 'none';   // can't do anything, show reset link
-                    startScanBtn.disabled = true;
-                    // attach reset link listener
-                    document.getElementById('reset-permission-link')?.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        window.open('chrome://settings/content/siteDetails?site=' + encodeURIComponent(location.origin), '_blank');
-                    });
-                } else { // 'prompt' or unknown
-                    diagnosticBox.innerHTML = ui[lang].permissionPrompt;
-                    allowCameraBtn.style.display = 'block';   // show button to ask
-                    startScanBtn.disabled = true;
-                }
-            }
-
-            // Allow Camera button - triggers real permission prompt
-            allowCameraBtn.onclick = async () => {
-                if (cameraPermissionGranted) return;
-
-                allowCameraBtn.disabled = true;
-                allowCameraBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Requesting...`;
-
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({
-                        video: { facingMode: "environment" }
-                    });
-                    stream.getTracks().forEach(track => track.stop());
-                    cameraPermissionGranted = true;
-                    allowCameraBtn.style.display = 'none';
-                    diagnosticBox.innerHTML = ui[lang].permissionGrantedState;
-                    startScanBtn.disabled = false;
-                } catch (err) {
-                    console.error('getUserMedia error:', err);
-                    allowCameraBtn.disabled = false;
-                    allowCameraBtn.innerHTML = `<i class="fas fa-unlock-alt"></i> ${ui[lang].allowCamera}`;
-                    let msg = '';
-                    const errMsg = (err.message || String(err)).toLowerCase();
-                    if (err.name === 'NotAllowedError' || errMsg.includes('not allowed') || errMsg.includes('permission denied')) {
-                        msg = ui[lang].cameraDeniedError;
-                    } else if (err.name === 'NotFoundError' || errMsg.includes('not found')) {
-                        msg = ui[lang].cameraNotFound;
-                    } else if (err.name === 'NotReadableError' || errMsg.includes('not readable')) {
-                        msg = ui[lang].cameraNotReadable;
-                    } else {
-                        msg = ui[lang].cameraNotSupported + ': ' + err.message;
-                    }
-                    alert(msg);
-                    // Re-check permission to update UI (likely denied now)
-                    checkCameraPermissionStatus();
-                }
-            };
-
-            // Scan button (unchanged)
-            startScanBtn.onclick = async () => {
-                if (!cameraPermissionGranted) return;
-
+                // If already scanning, stop
                 if (isScanning) {
-                    try { await html5QrCode.stop(); } catch(e){}
+                    try { await html5QrCode.stop(); } catch(e) {}
                     isScanning = false;
-                    readerDiv.style.display = 'none';
-                    startScanBtn.innerHTML = `<i class="fas fa-camera"></i> ${ui[lang].btnScan}`;
-                    startScanBtn.style.background = 'var(--ink)';
+                    document.getElementById('reader').style.display = 'none';
+                    scanBtn.innerHTML = originalHTML;
+                    scanBtn.style.background = 'var(--ink)';
                     return;
                 }
 
-                startScanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Starting scanner…`;
-                startScanBtn.disabled = true;
+                scanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Starting camera…`;
+                scanBtn.disabled = true;
 
                 try {
                     if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-                    readerDiv.style.display = 'block';
+                    document.getElementById('reader').style.display = 'block';
 
                     await html5QrCode.start(
                         { facingMode: "environment" },
@@ -701,45 +566,54 @@
                         (decodedText) => {
                             html5QrCode.stop().then(() => {
                                 isScanning = false;
-                                readerDiv.style.display = 'none';
-                                startScanBtn.innerHTML = `<i class="fas fa-camera"></i> ${ui[lang].btnScan}`;
-                                startScanBtn.style.background = 'var(--ink)';
-                                startScanBtn.disabled = false;
+                                document.getElementById('reader').style.display = 'none';
+                                scanBtn.innerHTML = originalHTML;
+                                scanBtn.style.background = 'var(--ink)';
+                                scanBtn.disabled = false;
                                 fetchBookData(decodedText);
                             });
                         },
-                        (errMsg) => { /* ignore */ }
+                        (errMsg) => { /* ignore scan errors */ }
                     );
 
                     isScanning = true;
-                    startScanBtn.disabled = false;
-                    startScanBtn.innerHTML = `<i class="fas fa-times"></i> Stop Scanner`;
-                    startScanBtn.style.background = 'var(--red)';
+                    scanBtn.disabled = false;
+                    scanBtn.innerHTML = `<i class="fas fa-times"></i> Stop Scanner`;
+                    scanBtn.style.background = 'var(--red)';
+
                 } catch (err) {
-                    console.error('Scanner start error:', err);
-                    alert(ui[lang].cameraDeniedError);
-                    startScanBtn.disabled = false;
-                    startScanBtn.innerHTML = `<i class="fas fa-camera"></i> ${ui[lang].btnScan}`;
-                    readerDiv.style.display = 'none';
+                    console.error('Scanner error:', err);
+                    let msg = '';
+                    const errMsg = (err.message || String(err)).toLowerCase();
+                    if (err.name === 'NotAllowedError' || errMsg.includes('not allowed') || errMsg.includes('permission denied')) {
+                        msg = ui[lang].cameraDenied;
+                    } else {
+                        msg = ui[lang].cameraError + ' ' + err.message;
+                    }
+                    alert(msg);
+
+                    scanBtn.disabled = false;
+                    scanBtn.innerHTML = originalHTML;
+                    document.getElementById('reader').style.display = 'none';
                 }
             };
 
-            // Skip & manual ISBN
-            document.getElementById('skip-scan-btn').onclick = () => {
-                if (html5QrCode && isScanning) {
-                    html5QrCode.stop().catch(e => console.log(e));
-                    isScanning = false;
-                }
-                document.getElementById('isbn-section').style.display = 'none';
-                document.getElementById('main-form-section').style.display = 'block';
-            };
             document.getElementById('manual-isbn-btn').onclick = () => {
                 const val = document.getElementById('manual-isbn-input').value.trim();
                 if(val) fetchBookData(val);
                 else alert("Please enter an ISBN.");
             };
 
-            // Tags
+            document.getElementById('skip-scan-btn').onclick = () => {
+                if(html5QrCode && isScanning) {
+                    html5QrCode.stop().catch(e=>console.log(e));
+                    isScanning = false;
+                }
+                document.getElementById('isbn-section').style.display = 'none';
+                document.getElementById('main-form-section').style.display = 'block';
+            };
+
+            // --- Tag management (unchanged) ---
             const tagInput = document.getElementById('tag-input');
             const selectedTagsContainer = document.getElementById('selected-tags');
             const suggestionsBox = document.getElementById('suggestions-box');
@@ -790,7 +664,7 @@
             
             tagInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput.value); } };
 
-            // Image upload
+            // Image uploads (unchanged)
             const imageInput = document.getElementById('listing-image-input');
             const previewContainer = document.getElementById('image-preview-container');
 
