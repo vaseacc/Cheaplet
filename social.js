@@ -1,4 +1,4 @@
-// social.js (fixed for admin & post owner visibility)
+// social.js – extracted from the working HTML (v1)
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, doc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, limit, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
@@ -14,124 +14,48 @@ async function main() {
     const lang = localStorage.getItem('preferred_language') || 'en';
     const allStrings = {
         en: { 
-            topics_public: "Public Channels", 
-            topics_campus: "Global Campus", 
-            topics_custom: "Custom Topics", 
-            topics_new: "Create Topic",
-            post_placeholder: "What's happening on Global Campus?", 
-            loading_hub: "Loading campus hub...",
-            noPosts: "No posts yet. Be the first to share something!", 
-            justNow: "Just now", 
-            suggest: "Campus Marketplace", 
-            browse: "Browse All →", 
-            guest: "Campus Hub", 
-            sell: "List a Book", 
-            comment_placeholder: "Write a comment...", 
-            no_comments: "No comments yet.",
-            lock_title: "Restricted Access", 
-            lock_desc: "The Campus Hub is an exclusive space for students. Please log in to join the conversation.", 
-            lock_btn: "Log In or Register",
-            rep_title: "Report Post", 
-            rep_desc: "Help us keep Scoralia safe.", 
-            rep_place: "Details...", 
-            rep_cancel: "Cancel", 
-            rep_submit: "Submit", 
-            rep_success: "Report submitted.",
-            attach_title: "Attach a Listing", 
-            attach_desc: "Select one of your active listings to share.", 
-            attach_empty: "You have no active listings.", 
-            upload_fail: "Image upload failed.",
-            search_social_place: "Search posts, topics, people...", 
-            edit_post_title: "Edit Post", 
-            save_changes: "Save Changes", 
-            edited_label: " • Edited",
-            my_topics: "My Topics", 
-            saved_topics: "Saved Topics", 
-            discover_topics: "Discover", 
-            topics_directory: "Topics Directory",
+            topics_public: "Public Channels", topics_campus: "Global Campus", topics_custom: "Custom Topics", topics_new: "Create Topic",
+            post_placeholder: "What's happening on Global Campus?", loading_hub: "Loading campus hub...",
+            noPosts: "No posts yet. Be the first to share something!", justNow: "Just now", suggest: "Campus Marketplace", browse: "Browse All →", 
+            guest: "Campus Hub", sell: "List a Book", comment_placeholder: "Write a comment...", no_comments: "No comments yet.",
+            lock_title: "Restricted Access", lock_desc: "The Campus Hub is an exclusive space for students. Please log in to join the conversation.", lock_btn: "Log In or Register",
+            rep_title: "Report Post", rep_desc: "Help us keep Scoralia safe.", rep_place: "Details...", rep_cancel: "Cancel", rep_submit: "Submit", rep_success: "Report submitted.",
+            attach_title: "Attach a Listing", attach_desc: "Select one of your active listings to share.", attach_empty: "You have no active listings.", upload_fail: "Image upload failed.",
+            search_social_place: "Search posts, topics, people...", edit_post_title: "Edit Post", save_changes: "Save Changes", edited_label: " • Edited",
+            my_topics: "My Topics", saved_topics: "Saved Topics", discover_topics: "Discover", topics_directory: "Topics Directory",
             verify_banner_text: "Get the Verified Student badge to filter posts by your school – create an account with your school email address.",
             restricted_title: "Verified Student Required",
             restricted_desc: "To post in a specific school's feed, you need a verified student account with a school email address.",
             restricted_btn: "Create School Account",
             filter_my_school: "My School",
             filter_all_posts: "All Posts",
-            safetyCheck: "Checking...", 
-            imgRejected: "Image rejected: ",
-            dialog_confirm: "Confirm", 
-            dialog_delete_post: "Are you sure you want to delete this post?", 
-            dialog_delete_comment: "Delete this comment?",
-            btn_yes: "Yes", 
-            btn_no: "No", 
-            btn_delete: "Delete", 
-            btn_ok: "OK", 
-            alert_title: "Notice",
+            safetyCheck: "Checking...", imgRejected: "Image rejected: ",
+            dialog_confirm: "Confirm", dialog_delete_post: "Are you sure you want to delete this post?", dialog_delete_comment: "Delete this comment?",
+            btn_yes: "Yes", btn_no: "No", btn_delete: "Delete", btn_ok: "OK", alert_title: "Notice",
             private_feed_locked: "Private Campus Feed",
-            private_feed_desc: "This feed is securely locked to protect student privacy. Only verified students from",
-            login_prompt_title: "Join the Campus Hub",
-            login_prompt_desc: "Create an account or log in to post, comment, and interact with your campus community.",
-            login_prompt_login: "Log In",
-            login_prompt_register: "Register",
-            login_prompt_dismiss: "Continue without logging in"
+            private_feed_desc: "This feed is securely locked to protect student privacy. Only verified students from"
         },
         fr: { 
-            topics_public: "Canaux Publics", 
-            topics_campus: "Campus Global", 
-            topics_custom: "Sujets Personnalisés", 
-            topics_new: "Nouveau Sujet",
-            post_placeholder: "Que se passe-t-il sur le Campus Global ?", 
-            loading_hub: "Chargement du hub...",
-            noPosts: "Aucune publication. Soyez le premier à partager !", 
-            justNow: "À l'instant", 
-            suggest: "Marché du Campus", 
-            browse: "Voir tout →", 
-            guest: "Hub Campus", 
-            sell: "Vendre un livre", 
-            comment_placeholder: "Écrire un commentaire...", 
-            no_comments: "Aucun commentaire pour le moment.",
-            lock_title: "Accès Restreint", 
-            lock_desc: "Le Hub Campus est un espace exclusif pour les étudiants. Connectez-vous pour rejoindre la conversation.", 
-            lock_btn: "Se Connecter ou S'inscrire",
-            rep_title: "Signaler le message", 
-            rep_desc: "Aidez-nous à protéger Scoralia.", 
-            rep_place: "Détails...", 
-            rep_cancel: "Annuler", 
-            rep_submit: "Envoyer", 
-            rep_success: "Signalement envoyé.",
-            attach_title: "Joindre une annonce", 
-            attach_desc: "Sélectionnez l'une de vos annonces actives.", 
-            attach_empty: "Vous n'avez aucune annonce active.", 
-            upload_fail: "Échec du téléchargement.",
-            search_social_place: "Rechercher messages, sujets, personnes...", 
-            edit_post_title: "Modifier le message", 
-            save_changes: "Enregistrer", 
-            edited_label: " • Modifié",
-            my_topics: "Mes Sujets", 
-            saved_topics: "Sujets Enregistrés", 
-            discover_topics: "Découvrir", 
-            topics_directory: "Annuaire des Sujets",
+            topics_public: "Canaux Publics", topics_campus: "Campus Global", topics_custom: "Sujets Personnalisés", topics_new: "Nouveau Sujet",
+            post_placeholder: "Que se passe-t-il sur le Campus Global ?", loading_hub: "Chargement du hub...",
+            noPosts: "Aucune publication. Soyez le premier à partager !", justNow: "À l'instant", suggest: "Marché du Campus", browse: "Voir tout →", 
+            guest: "Hub Campus", sell: "Vendre un livre", comment_placeholder: "Écrire un commentaire...", no_comments: "Aucun commentaire pour le moment.",
+            lock_title: "Accès Restreint", lock_desc: "Le Hub Campus est un espace exclusif pour les étudiants. Connectez-vous pour rejoindre la conversation.", lock_btn: "Se Connecter ou S'inscrire",
+            rep_title: "Signaler le message", rep_desc: "Aidez-nous à protéger Scoralia.", rep_place: "Détails...", rep_cancel: "Annuler", rep_submit: "Envoyer", rep_success: "Signalement envoyé.",
+            attach_title: "Joindre une annonce", attach_desc: "Sélectionnez l'une de vos annonces actives.", attach_empty: "Vous n'avez aucune annonce active.", upload_fail: "Échec du téléchargement.",
+            search_social_place: "Rechercher messages, sujets, personnes...", edit_post_title: "Modifier le message", save_changes: "Enregistrer", edited_label: " • Modifié",
+            my_topics: "Mes Sujets", saved_topics: "Sujets Enregistrés", discover_topics: "Découvrir", topics_directory: "Annuaire des Sujets",
             verify_banner_text: "Obtenez le badge « Étudiant vérifié » et filtrez les messages par votre établissement – créez un compte avec votre adresse e-mail scolaire.",
             restricted_title: "Compte étudiant requis",
             restricted_desc: "Pour publier dans le fil d'une école spécifique, vous avez besoin d'un compte étudiant vérifié avec une adresse e-mail scolaire.",
             restricted_btn: "Créer un compte scolaire",
             filter_my_school: "Mon école",
             filter_all_posts: "Tous les messages",
-            safetyCheck: "Vérification...", 
-            imgRejected: "Image rejetée : ",
-            dialog_confirm: "Confirmer", 
-            dialog_delete_post: "Êtes-vous sûr de vouloir supprimer ce message ?", 
-            dialog_delete_comment: "Supprimer ce commentaire ?",
-            btn_yes: "Oui", 
-            btn_no: "Non", 
-            btn_delete: "Supprimer", 
-            btn_ok: "OK", 
-            alert_title: "Avis",
+            safetyCheck: "Vérification...", imgRejected: "Image rejetée : ",
+            dialog_confirm: "Confirmer", dialog_delete_post: "Êtes-vous sûr de vouloir supprimer ce message ?", dialog_delete_comment: "Supprimer ce commentaire ?",
+            btn_yes: "Oui", btn_no: "Non", btn_delete: "Supprimer", btn_ok: "OK", alert_title: "Avis",
             private_feed_locked: "Fil d'actualité privé",
-            private_feed_desc: "Ce fil est verrouillé pour protéger la vie privée des étudiants. Seuls les étudiants vérifiés de",
-            login_prompt_title: "Rejoindre le Campus Hub",
-            login_prompt_desc: "Créez un compte ou connectez-vous pour publier, commenter et interagir avec votre communauté.",
-            login_prompt_login: "Se connecter",
-            login_prompt_register: "S'inscrire",
-            login_prompt_dismiss: "Continuer sans se connecter"
+            private_feed_desc: "Ce fil est verrouillé pour protéger la vie privée des étudiants. Seuls les étudiants vérifiés de"
         }
     };
     const ui = allStrings[lang] || allStrings['en'];
@@ -188,35 +112,18 @@ async function main() {
         if (el) el.textContent = text;
     };
 
-    document.querySelectorAll('[data-i18n]').forEach(el => { 
-        if (ui[el.getAttribute('data-i18n')]) {
-            el.textContent = ui[el.getAttribute('data-i18n')]; 
-        }
-    });
-    
-    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { 
-        if (ui[el.getAttribute('data-i18n-placeholder')]) {
-            el.placeholder = ui[el.getAttribute('data-i18n-placeholder')]; 
-        }
-    });
+    document.querySelectorAll('[data-i18n]').forEach(el => { if (ui[el.getAttribute('data-i18n')]) el.textContent = ui[el.getAttribute('data-i18n')]; });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { if (ui[el.getAttribute('data-i18n-placeholder')]) el.placeholder = ui[el.getAttribute('data-i18n-placeholder')]; });
     
     setElemText('ui-locked-title', ui.lock_title);
     setElemText('ui-locked-desc', ui.lock_desc);
-    
     const elLockedBtn = document.getElementById('ui-locked-btn');
-    if (elLockedBtn) { 
-        elLockedBtn.textContent = ui.lock_btn; 
-        elLockedBtn.href = `/login`; 
-    }
+    if (elLockedBtn) { elLockedBtn.textContent = ui.lock_btn; elLockedBtn.href = `/login`; }
 
     setElemText('report-modal-title', ui.rep_title);
     setElemText('report-modal-desc', ui.rep_desc);
-    
     const elRepDetails = document.getElementById('report-details');
-    if (elRepDetails) {
-        elRepDetails.placeholder = ui.rep_place;
-    }
-    
+    if (elRepDetails) elRepDetails.placeholder = ui.rep_place;
     setElemText('btn-cancel-report', ui.rep_cancel);
     setElemText('btn-submit-report', ui.rep_submit);
 
@@ -226,14 +133,7 @@ async function main() {
 
     const restrictedModal = document.getElementById('restricted-modal');
     const closeRestrictedBtn = document.getElementById('close-restricted-btn');
-    
-    if (closeRestrictedBtn) {
-        closeRestrictedBtn.onclick = () => { 
-            if (restrictedModal) {
-                restrictedModal.style.display = 'none'; 
-            }
-        };
-    }
+    if (closeRestrictedBtn) closeRestrictedBtn.onclick = () => { if (restrictedModal) restrictedModal.style.display = 'none'; };
 
     // --- BOTTOM SHEET LOGIC ---
     const sheetOverlay = document.getElementById('sheet-overlay');
@@ -248,30 +148,20 @@ async function main() {
                 void sheetOverlay.offsetWidth; // Trigger reflow
                 sheetOverlay.style.opacity = '1';
             }
-            if (bottomSheet) {
-                bottomSheet.style.transform = 'translateY(0)';
-            }
+            if (bottomSheet) bottomSheet.style.transform = 'translateY(0)';
         };
     }
 
     const closeSheet = () => {
         if (sheetOverlay) {
             sheetOverlay.style.opacity = '0';
-            setTimeout(() => { 
-                sheetOverlay.style.display = 'none'; 
-            }, 300);
+            setTimeout(() => { sheetOverlay.style.display = 'none'; }, 300);
         }
-        if (bottomSheet) {
-            bottomSheet.style.transform = 'translateY(100%)';
-        }
+        if (bottomSheet) bottomSheet.style.transform = 'translateY(100%)';
     };
 
-    if (btnCloseSheet) {
-        btnCloseSheet.onclick = closeSheet;
-    }
-    if (sheetOverlay) {
-        sheetOverlay.onclick = closeSheet;
-    }
+    if (btnCloseSheet) btnCloseSheet.onclick = closeSheet;
+    if (sheetOverlay) sheetOverlay.onclick = closeSheet;
 
     // --- SEARCH BAR LOGIC ---
     const socialSearchInput = document.getElementById('social-search-input');
@@ -279,33 +169,18 @@ async function main() {
 
     function executeSocialSearch() {
         const q = socialSearchInput.value.trim();
-        if(q) {
-            window.location.href = `/searchsocial?q=${encodeURIComponent(q)}`;
-        }
+        if(q) window.location.href = `/searchsocial?q=${encodeURIComponent(q)}`;
     }
-    
-    if (btnSocialSearch) {
-        btnSocialSearch.onclick = executeSocialSearch;
-    }
-    
-    if (socialSearchInput) {
-        socialSearchInput.addEventListener('keydown', (e) => {
-            if(e.key === 'Enter') { 
-                e.preventDefault(); 
-                executeSocialSearch(); 
-            }
-        });
-    }
+    if (btnSocialSearch) btnSocialSearch.onclick = executeSocialSearch;
+    if (socialSearchInput) socialSearchInput.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter') { e.preventDefault(); executeSocialSearch(); }
+    });
 
-    function formatCount(num) { 
-        return !num ? 0 : (num > 999 ? (num / 1000).toFixed(1) + 'k' : num); 
-    }
+    function formatCount(num) { return !num ? 0 : (num > 999 ? (num / 1000).toFixed(1) + 'k' : num); }
 
     // ─── HELPER: generate a safe Firestore collection name from a school name ───
     function getSchoolCollection(schoolName) {
-        if (!schoolName || schoolName === 'Global Campus') {
-            return 'social_posts_global';
-        }
+        if (!schoolName || schoolName === 'Global Campus') return 'social_posts_global';
         
         if (schoolName === 'Cégep de Rosemont' || schoolName === 'Collège de Rosemont') {
             return 'social_posts_rosemont';
@@ -316,7 +191,7 @@ async function main() {
 
         const key = schoolName
             .normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "") // Strips accents
+            .replace(/[\u0300-\u036f]/g, "")
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '_')
             .replace(/_+/g, '_')
@@ -332,7 +207,7 @@ async function main() {
     let unsubscribePosts = null;
     let commentUnsubscribes = {}; 
     let listings = []; 
-    let allTopicsData = [];
+    let allTopicsData =[];
 
     // --- COMPOSER STATE ---
     let postImageFile = null;
@@ -359,80 +234,29 @@ async function main() {
     const myFilterBtn = document.getElementById('my-school-filter');
     let currentSchoolFilter = 'all'; 
 
-    // Login prompt
-    const loginPromptModal = document.getElementById('login-prompt-modal');
-    const btnDismissPrompt = document.getElementById('btn-dismiss-prompt');
-
-    // Set translated texts
-    setElemText('login-prompt-title', ui.login_prompt_title);
-    setElemText('login-prompt-desc', ui.login_prompt_desc);
-    setElemText('btn-login-prompt', ui.login_prompt_login);
-    setElemText('btn-register-prompt', ui.login_prompt_register);
-    setElemText('btn-dismiss-prompt', ui.login_prompt_dismiss);
-
-    // Show prompt for guests
-    function maybeShowLoginPrompt() {
-        if (!currentUser && !sessionStorage.getItem('login_prompt_dismissed')) {
-            loginPromptModal.style.display = 'flex';
-        }
-    }
-
-    if (btnDismissPrompt) {
-        btnDismissPrompt.onclick = () => {
-            loginPromptModal.style.display = 'none';
-            sessionStorage.setItem('login_prompt_dismissed', 'true');
-        };
-    }
-
-    function requireLogin() {
-        if (!currentUser) {
-            if (loginPromptModal) loginPromptModal.style.display = 'flex';
-            return false;
-        }
-        return true;
-    }
-
-    const btnCreateWay = document.getElementById('btn-create-way');
-    if (btnCreateWay) {
-        btnCreateWay.onclick = (e) => {
-            e.preventDefault();
-            if (!currentUser) {
-                window.location.href = '/login?redirect=/social';
-            } else {
-                window.location.href = '/createtopic';
-            }
-        };
-    }
-
-    const mSheetCreateWay = document.getElementById('m-sheet-create-way');
-    if (mSheetCreateWay) {
-        mSheetCreateWay.onclick = (e) => {
-            e.preventDefault();
-            if (!currentUser) {
-                window.location.href = '/login?redirect=/social';
-            } else {
-                window.location.href = '/createtopic';
-            }
-        };
-    }
-
-    // --- FETCH MARKET LISTINGS (now works for guests too) ---
+    // --- FETCH MARKET LISTINGS ---
     async function fetchMarketListings() {
+        if (!currentUser) return;
         const isAdmin = currentUserData?.role === 'admin';
-        const userSchool = currentUser ? (internalSchoolName || targetSchool || "Collège de Rosemont") : null;
+        const userSchool = internalSchoolName || targetSchool || "Collège de Rosemont";
         
-        let bookQuery;
-        // For logged-in users with a specific school (not admin), try school-specific first
-        if (currentUser && !isAdmin && userSchool && userSchool !== "Global Campus") {
-            bookQuery = query(
-                collection(db, "listings"),
-                where("location", "==", userSchool),
-                where("status", "==", "active"),
-                orderBy("timestamp", "desc"),
-                limit(6)
-            );
+        let bookQuery = query(
+            collection(db, "listings"),
+            where("status", "==", "active"),
+            orderBy("timestamp", "desc"),
+            limit(6)
+        );
+
+        if (!isAdmin && userSchool !== "Global Campus") {
             try {
-                const snap = await getDocs(bookQuery);
+                const schoolQuery = query(
+                    collection(db, "listings"),
+                    where("location", "==", userSchool),
+                    where("status", "==", "active"),
+                    orderBy("timestamp", "desc"),
+                    limit(6)
+                );
+                const snap = await getDocs(schoolQuery);
                 if (!snap.empty) {
                     listings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                     return;
@@ -441,40 +265,30 @@ async function main() {
                 console.warn("School-specific listings failed, fallback to global", e);
             }
         }
-        
-        // Global fallback (admins, guests, Global Campus users, or failed school query)
-        bookQuery = query(
-            collection(db, "listings"),
-            where("status", "==", "active"),
-            orderBy("timestamp", "desc"),
-            limit(6)
-        );
+
         try {
             const snap = await getDocs(bookQuery);
             listings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         } catch (e) {
             console.error("Failed to fetch market listings", e);
-            listings = [];
+            listings =[];
         }
     }
 
     // --- COMPOSER LOGIC ---
     function updateComposerSendButton() {
         if (!postInput) return;
-        const hasContent = postInput.value.trim().length > 0 || postImageFile !== null || postAttachedListing !== null;
-        if (btnSendPost) {
-            btnSendPost.style.opacity = hasContent ? '1' : '0.5';
-            btnSendPost.disabled = false; // The Send button is ALWAYS clickable (no disabled attribute)
-        }
+        const hasText = postInput.value.trim().length > 0;
+        const hasImg = postImageFile !== null;
+        const hasListing = postAttachedListing !== null;
+        if (btnSendPost) btnSendPost.disabled = !(hasText || hasImg || hasListing);
     }
 
-    if (postInput) {
-        postInput.addEventListener('input', function() {
-            this.style.height = '40px';
-            this.style.height = (this.scrollHeight) + 'px';
-            updateComposerSendButton();
-        });
-    }
+    if (postInput) postInput.addEventListener('input', function() {
+        this.style.height = '40px';
+        this.style.height = (this.scrollHeight) + 'px';
+        updateComposerSendButton();
+    });
 
     function renderComposerPreview() {
         if (!previewArea) return;
@@ -485,10 +299,7 @@ async function main() {
             hasContent = true;
             const wrap = document.createElement('div');
             wrap.className = 'preview-img-wrap';
-            wrap.innerHTML = `
-                <img src="${URL.createObjectURL(postImageFile)}">
-                <button class="remove-preview-btn" onclick="window.removePostImg()">&times;</button>
-            `;
+            wrap.innerHTML = `<img src="${URL.createObjectURL(postImageFile)}"><button class="remove-preview-btn" onclick="window.removePostImg()">&times;</button>`;
             previewArea.appendChild(wrap);
         }
 
@@ -511,95 +322,60 @@ async function main() {
         updateComposerSendButton();
     }
 
-    window.removePostImg = () => { 
-        postImageFile = null; 
-        renderComposerPreview(); 
+    window.removePostImg = () => { postImageFile = null; renderComposerPreview(); };
+    window.removePostListing = () => { postAttachedListing = null; renderComposerPreview(); };
+
+    if (btnAttachImg) btnAttachImg.onclick = () => { if(currentUser && imgUploadInput) imgUploadInput.click(); };
+    if (imgUploadInput) imgUploadInput.onchange = (e) => {
+        if (e.target.files[0]) {
+            postImageFile = e.target.files[0];
+            renderComposerPreview();
+        }
+        e.target.value = '';
     };
-    
-    window.removePostListing = () => { 
-        postAttachedListing = null; 
-        renderComposerPreview(); 
+
+    if (btnAttachListing) btnAttachListing.onclick = async () => {
+        if (!currentUser || !attachListingModal || !listingSelectorList) return;
+        attachListingModal.style.display = 'flex';
+        listingSelectorList.innerHTML = '<div style="text-align:center; padding:20px; color:#888;"><i class="fas fa-circle-notch fa-spin"></i> Loading...</div>';
+        
+        try {
+            const q = query(collection(db, "listings"), where("posterUid", "==", currentUser.uid), where("status", "==", "active"), orderBy("timestamp", "desc"));
+            const snap = await getDocs(q);
+            listingSelectorList.innerHTML = '';
+            
+            if (snap.empty) {
+                listingSelectorList.innerHTML = `<div style="text-align:center; padding:20px; color:#888;">${ui.attach_empty}</div>`;
+                return;
+            }
+
+            snap.forEach(docSnap => {
+                const d = docSnap.data();
+                const item = document.createElement('div');
+                item.className = 'listing-selector-item';
+                const img = d.imageUrls?.[0] || '';
+                item.innerHTML = `
+                    <img src="${img}" class="ls-img">
+                    <div class="ls-info">
+                        <div class="ls-title">${d.title}</div>
+                        <div class="ls-price">$${d.price.toFixed(2)}</div>
+                    </div>
+                `;
+                item.onclick = () => {
+                    postAttachedListing = { id: docSnap.id, title: d.title, price: d.price.toFixed(2), img: img };
+                    attachListingModal.style.display = 'none';
+                    renderComposerPreview();
+                };
+                listingSelectorList.appendChild(item);
+            });
+        } catch(e) {
+            console.error(e);
+            listingSelectorList.innerHTML = '<div style="text-align:center; padding:20px; color:#e53e3e;">Error loading listings.</div>';
+        }
     };
-
-    if (btnAttachImg) {
-        btnAttachImg.onclick = () => { 
-            if (!requireLogin()) return;
-            if(imgUploadInput) {
-                imgUploadInput.click(); 
-            }
-        };
-    }
-    
-    if (imgUploadInput) {
-        imgUploadInput.onchange = (e) => {
-            if (e.target.files[0]) {
-                postImageFile = e.target.files[0];
-                renderComposerPreview();
-            }
-            e.target.value = '';
-        };
-    }
-
-    if (btnAttachListing) {
-        btnAttachListing.onclick = async () => {
-            if (!requireLogin()) return;
-            if (!attachListingModal || !listingSelectorList) return;
-            
-            attachListingModal.style.display = 'flex';
-            listingSelectorList.innerHTML = '<div style="text-align:center; padding:20px; color:#888;"><i class="fas fa-circle-notch fa-spin"></i> Loading...</div>';
-            
-            try {
-                const q = query(
-                    collection(db, "listings"), 
-                    where("posterUid", "==", currentUser.uid), 
-                    where("status", "==", "active"), 
-                    orderBy("timestamp", "desc")
-                );
-                const snap = await getDocs(q);
-                listingSelectorList.innerHTML = '';
-                
-                if (snap.empty) {
-                    listingSelectorList.innerHTML = `<div style="text-align:center; padding:20px; color:#888;">${ui.attach_empty}</div>`;
-                    return;
-                }
-
-                snap.forEach(docSnap => {
-                    const d = docSnap.data();
-                    const item = document.createElement('div');
-                    item.className = 'listing-selector-item';
-                    const img = d.imageUrls?.[0] || '';
-                    item.innerHTML = `
-                        <img src="${img}" class="ls-img">
-                        <div class="ls-info">
-                            <div class="ls-title">${d.title}</div>
-                            <div class="ls-price">$${d.price.toFixed(2)}</div>
-                        </div>
-                    `;
-                    item.onclick = () => {
-                        postAttachedListing = { 
-                            id: docSnap.id, 
-                            title: d.title, 
-                            price: d.price.toFixed(2), 
-                            img: img 
-                        };
-                        attachListingModal.style.display = 'none';
-                        renderComposerPreview();
-                    };
-                    listingSelectorList.appendChild(item);
-                });
-            } catch(e) {
-                console.error(e);
-                listingSelectorList.innerHTML = '<div style="text-align:center; padding:20px; color:#e53e3e;">Error loading listings.</div>';
-            }
-        };
-    }
 
     const closeListingModalBtn = document.getElementById('close-listing-modal');
-    if (closeListingModalBtn && attachListingModal) {
-        closeListingModalBtn.onclick = () => { 
-            attachListingModal.style.display = 'none'; 
-        };
-    }
+    if (closeListingModalBtn && attachListingModal) closeListingModalBtn.onclick = () => { attachListingModal.style.display = 'none'; };
 
     async function uploadImageToCloudinary(file) {
         const signRes = await fetch(getFunctionUrl('sign-upload')).then(r => r.json());
@@ -609,157 +385,132 @@ async function main() {
         formData.append('timestamp', signRes.timestamp);
         formData.append('signature', signRes.signature);
         formData.append('upload_preset', signRes.uploadPreset);
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { 
-            method: 'POST', 
-            body: formData 
-        }).then(r => r.json());
-        
-        if (!res.secure_url) {
-            throw new Error("Upload Failed");
-        }
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { method: 'POST', body: formData }).then(r => r.json());
+        if (!res.secure_url) throw new Error("Upload Failed");
         return res.secure_url;
     }
 
     // --- POST CREATION ---
-    if (btnSendPost && postInput) {
-        btnSendPost.onclick = async () => {
-            if (!requireLogin()) return;
-            const text = postInput.value.trim();
-            if (!text && !postImageFile && !postAttachedListing) return;
-            
-            btnSendPost.disabled = true;
-            const origIcon = btnSendPost.innerHTML;
-            btnSendPost.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    if (btnSendPost && postInput) btnSendPost.onclick = async () => {
+        if (!currentUser) return;
+        const text = postInput.value.trim();
+        
+        btnSendPost.disabled = true;
+        const origIcon = btnSendPost.innerHTML;
+        btnSendPost.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
-            try {
-                let uploadedImgUrl = null;
-                if (postImageFile) {
-                    uploadedImgUrl = await uploadImageToCloudinary(postImageFile);
-                }
-
-                const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-                const freshUserData = userDoc.data();
-                const isStudent = freshUserData?.isStudent === true;
-
-                let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
-                
-                const postingToSchool = currentSchoolFilter === 'my' ? targetSchool : "Global Campus";
-                const collectionName = getSchoolCollection(postingToSchool);
-                
-                const requiresReview = uploadedImgUrl !== null;
-                
-                const postData = {
-                    schoolName: postingToSchool,
-                    text: text,
-                    authorUid: currentUser.uid,
-                    authorName: currentUser.displayName || "User",
-                    authorPhoto: photoToSave,
-                    authorIsStudent: isStudent,
-                    likes: 0, 
-                    likedBy: [], 
-                    commentCount: 0,
-                    status: requiresReview ? 'pending' : 'active',
-                    timestamp: serverTimestamp()
-                };
-
-                if (uploadedImgUrl) postData.imageUrl = uploadedImgUrl;
-                if (postAttachedListing) postData.attachedListing = postAttachedListing;
-
-                const postRef = await addDoc(collection(db, collectionName), postData);
-
-                if (requiresReview) {
-                    fetch(getFunctionUrl('moderate-listing'), {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                            imageUrls: [uploadedImgUrl], 
-                            title: "Social Post", 
-                            description: text 
-                        })
-                    }).then(r => r.json()).then(aiData => {
-                        if (aiData.verdict === "UNSAFE") {
-                            updateDoc(postRef, { 
-                                status: 'rejected', 
-                                rejectionReason: aiData.reason || "Inappropriate content" 
-                            });
-                        } else {
-                            updateDoc(postRef, { status: 'active' });
-                        }
-                    }).catch(e => console.error("Moderation fetch failed:", e));
-                }
-
-                postInput.value = '';
-                postInput.style.height = '40px'; 
-                postInput.blur(); 
-                postImageFile = null;
-                postAttachedListing = null;
-                renderComposerPreview();
-                
-            } catch (e) { 
-                console.error(e);
-                window.scoraliaAlert(ui.upload_fail); 
-            } finally {
-                btnSendPost.innerHTML = origIcon;
-                btnSendPost.disabled = false;
-                updateComposerSendButton();
+        try {
+            let uploadedImgUrl = null;
+            if (postImageFile) {
+                uploadedImgUrl = await uploadImageToCloudinary(postImageFile);
             }
-        };
-    }
+
+            const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+            const freshUserData = userDoc.data();
+            const isStudent = freshUserData?.isStudent === true;
+
+            let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
+            
+            const postingToSchool = currentSchoolFilter === 'my' ? targetSchool : "Global Campus";
+            const collectionName = getSchoolCollection(postingToSchool);
+            
+            const requiresReview = uploadedImgUrl !== null;
+            
+            const postData = {
+                schoolName: postingToSchool,
+                text: text,
+                authorUid: currentUser.uid,
+                authorName: currentUser.displayName || "User",
+                authorPhoto: photoToSave,
+                authorIsStudent: isStudent,
+                likes: 0, likedBy:[], commentCount: 0,
+                status: requiresReview ? 'pending' : 'active',
+                timestamp: serverTimestamp()
+            };
+
+            if (uploadedImgUrl) postData.imageUrl = uploadedImgUrl;
+            if (postAttachedListing) postData.attachedListing = postAttachedListing;
+
+            const postRef = await addDoc(collection(db, collectionName), postData);
+
+            if (requiresReview) {
+                fetch(getFunctionUrl('moderate-listing'), {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        imageUrls: [uploadedImgUrl], 
+                        title: "Social Post", 
+                        description: text 
+                    })
+                }).then(r => r.json()).then(aiData => {
+                    if (aiData.verdict === "UNSAFE") {
+                        updateDoc(postRef, { status: 'rejected', rejectionReason: aiData.reason || "Inappropriate content" });
+                    } else {
+                        updateDoc(postRef, { status: 'active' });
+                    }
+                }).catch(e => console.error("Moderation fetch failed:", e));
+            }
+
+            postInput.value = '';
+            postInput.style.height = '40px'; 
+            postInput.blur(); 
+            postImageFile = null;
+            postAttachedListing = null;
+            renderComposerPreview();
+            
+        } catch (e) { 
+            console.error(e);
+            window.scoraliaAlert(ui.upload_fail); 
+        } finally {
+            btnSendPost.innerHTML = origIcon;
+            updateComposerSendButton();
+        }
+    };
 
     // --- COMMENT IMAGE LOGIC ---
     const globalCommentImgInput = document.getElementById('global-comment-img-upload');
     
     window.triggerCommentImg = (postId, coll) => {
-        if (!requireLogin()) return;
+        if (!currentUser) return;
         activeCommentPostId = postId;
         activeCommentColl = coll;
-        if (globalCommentImgInput) {
-            globalCommentImgInput.click();
-        }
+        if (globalCommentImgInput) globalCommentImgInput.click();
     };
 
     let activeCommentColl = null;
 
-    if (globalCommentImgInput) {
-        globalCommentImgInput.onchange = (e) => {
-            if (e.target.files[0] && activeCommentPostId) {
-                const file = e.target.files[0];
-                commentImageFiles[activeCommentPostId] = file;
-                
-                const pArea = document.getElementById(`comment-preview-area-${activeCommentPostId}`);
-                if (pArea) {
-                    pArea.innerHTML = `
-                        <div class="preview-img-wrap" style="width: 50px; height: 50px;">
-                            <img src="${URL.createObjectURL(file)}">
-                            <button class="remove-preview-btn" onclick="window.removeCommentImg('${activeCommentPostId}')">&times;</button>
-                        </div>
-                    `;
-                    pArea.style.display = 'flex';
-                }
-                const btnSend = document.getElementById(`btn-send-comment-${activeCommentPostId}`);
-                if (btnSend) {
-                    btnSend.disabled = false;
-                }
+    if (globalCommentImgInput) globalCommentImgInput.onchange = (e) => {
+        if (e.target.files[0] && activeCommentPostId) {
+            const file = e.target.files[0];
+            commentImageFiles[activeCommentPostId] = file;
+            
+            const pArea = document.getElementById(`comment-preview-area-${activeCommentPostId}`);
+            if (pArea) {
+                pArea.innerHTML = `
+                    <div class="preview-img-wrap" style="width: 50px; height: 50px;">
+                        <img src="${URL.createObjectURL(file)}">
+                        <button class="remove-preview-btn" onclick="window.removeCommentImg('${activeCommentPostId}')">&times;</button>
+                    </div>
+                `;
+                pArea.style.display = 'flex';
             }
-            e.target.value = '';
-        };
-    }
+            const btnSend = document.getElementById(`btn-send-comment-${activeCommentPostId}`);
+            if (btnSend) btnSend.disabled = false;
+        }
+        e.target.value = '';
+    };
 
     window.removeCommentImg = (postId) => {
         delete commentImageFiles[postId];
         const pArea = document.getElementById(`comment-preview-area-${postId}`);
         if (pArea) pArea.style.display = 'none';
-        
         const inputEl = document.getElementById(`comment-input-${postId}`);
         const btnSend = document.getElementById(`btn-send-comment-${postId}`);
-        
-        if (btnSend && inputEl) {
-            btnSend.disabled = inputEl.value.trim().length === 0;
-        }
+        if (btnSend && inputEl) btnSend.disabled = inputEl.value.trim().length === 0;
     };
 
     window.postComment = async (postId, coll) => {
-        if (!requireLogin()) return;
+        if (!currentUser) return;
         const inputEl = document.getElementById(`comment-input-${postId}`);
         const btnEl = document.getElementById(`btn-send-comment-${postId}`);
         if (!inputEl || !btnEl) return;
@@ -813,10 +564,7 @@ async function main() {
                     })
                 }).then(r => r.json()).then(aiData => {
                     if (aiData.verdict === "UNSAFE") {
-                        updateDoc(commentRef, { 
-                            status: 'rejected', 
-                            rejectionReason: aiData.reason || "Inappropriate content" 
-                        });
+                        updateDoc(commentRef, { status: 'rejected', rejectionReason: aiData.reason || "Inappropriate content" });
                     } else {
                         updateDoc(commentRef, { status: 'active' });
                     }
@@ -830,7 +578,7 @@ async function main() {
             window.scoraliaAlert("Upload failed."); 
         } finally { 
             btnEl.innerHTML = origIcon;
-            btnEl.disabled = false; 
+            btnEl.disabled = true; 
         }
     };
 
@@ -838,7 +586,6 @@ async function main() {
     // --- AUTH & SECURITY LOGIC ---
     onAuthStateChanged(auth, async (user) => {
         if (user) {
-            // ── LOGGED IN ──
             onSnapshot(doc(db, "users", user.uid), async (uSnap) => {
                 if (uSnap.exists()) {
                     const data = uSnap.data();
@@ -847,20 +594,29 @@ async function main() {
                     internalSchoolName = data.schoolName || "Global Campus";
                     const isStudent = data.isStudent === true;
                     
-                    if (dSchoolName) {
-                        dSchoolName.textContent = internalSchoolName === "Global Campus" && data.role === 'admin' 
-                            ? "Global Admin" 
-                            : internalSchoolName;
-                    }
-                    
+                    if (dSchoolName) dSchoolName.textContent = internalSchoolName === "Global Campus" && data.role === 'admin' ? "Global Admin" : internalSchoolName;
                     const composerPfp = document.getElementById('composer-pfp');
-                    if (composerPfp) {
-                        composerPfp.src = data.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
-                    }
+                    if (composerPfp) composerPfp.src = data.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
                     
+                    const btnCreateWay = document.getElementById('btn-create-way');
+                    const mSheetCreateWay = document.getElementById('m-sheet-create-way');
+
                     if (btnCreateWay) btnCreateWay.style.display = 'flex';
                     if (mSheetCreateWay) mSheetCreateWay.style.display = 'flex';
 
+                    const handleCreateTopic = (e) => {
+                        e.preventDefault();
+                        if (isStudent || data.role === 'admin') {
+                            window.location.href = '/createtopic';
+                        } else {
+                            const restrictedModal = document.getElementById('restricted-modal');
+                            if (restrictedModal) restrictedModal.style.display = 'flex';
+                        }
+                    };
+
+                    if (btnCreateWay) btnCreateWay.onclick = handleCreateTopic;
+                    if (mSheetCreateWay) mSheetCreateWay.onclick = handleCreateTopic;
+                    
                     // Determine the target school for the "My School" feed
                     if (isStudent && internalSchoolName && internalSchoolName !== "Global Campus") {
                         targetSchool = internalSchoolName;
@@ -904,28 +660,11 @@ async function main() {
                         if (composerCard) composerCard.style.display = 'flex';
                         if (postInput) {
                             if (currentSchoolFilter === 'all') {
-                                postInput.placeholder = lang === 'fr' 
-                                    ? "Que se passe-t-il sur le Campus Global ?" 
-                                    : "What's happening on Global Campus?";
+                                postInput.placeholder = lang === 'fr' ? "Que se passe-t-il sur le Campus Global ?" : "What's happening on Global Campus?";
                             } else {
-                                postInput.placeholder = lang === 'fr' 
-                                    ? `Que se passe-t-il à ${targetSchool} ?` 
-                                    : `What's happening at ${targetSchool}?`;
+                                postInput.placeholder = lang === 'fr' ? `Que se passe-t-il à ${targetSchool} ?` : `What's happening at ${targetSchool}?`;
                             }
                         }
-                    }
-
-                    // hide login prompt if visible
-                    if (typeof loginPromptModal !== 'undefined' && loginPromptModal) {
-                        loginPromptModal.style.display = 'none';
-                    }
-
-                    // show composer and enable My School filter
-                    if (document.getElementById('composer-card')) {
-                        document.getElementById('composer-card').style.display = 'flex';
-                    }
-                    if (myFilterBtn) {
-                        myFilterBtn.style.display = 'inline-block';
                     }
 
                     showHubLayout();
@@ -945,61 +684,16 @@ async function main() {
                 }
             });
         } else {
-            // ── NOT LOGGED IN ──
-            currentUser = null;
-            currentUserData = null;
-
-            // Show composer immediately so guests see the post box right away
-            const composerCard = document.getElementById('composer-card');
-            if (composerCard) {
-                composerCard.style.display = 'flex';
-            }
-            // Set the placeholder to the global campus message
-            if (postInput) {
-                postInput.placeholder = lang === 'fr'
-                    ? "Que se passe-t-il sur le Campus Global ?"
-                    : "What's happening on Global Campus?";
-            }
-
-            // disable My School filter
-            if (myFilterBtn) {
-                myFilterBtn.style.display = 'none';
-            }
-            if (allFilterBtn) {
-                allFilterBtn.classList.add('active');
-            }
-            if (myFilterBtn) {
-                myFilterBtn.classList.remove('active');
-            }
-            currentSchoolFilter = 'all';
-
-            if (feedContainer) {
-                feedContainer.innerHTML = `
-                    <div class="loader-msg">
-                        <i class="fas fa-circle-notch fa-spin"></i><br>
-                        <span>${ui.loading_hub}</span>
-                    </div>
-                `;
-            }
-
-            showHubLayout();
-            loadTopics();
-            // Fetch market listings first so the market break has real data
-            fetchMarketListings().then(() => {
-                loadGlobalFeed();
-            });
-            maybeShowLoginPrompt();
+            window.location.href = '/login?redirect=/social';
         }
     });
 
     const closeBannerBtn = document.getElementById('close-banner-btn');
-    if (closeBannerBtn) {
-        closeBannerBtn.onclick = () => {
-            const verifyBanner = document.getElementById('verify-banner');
-            if (verifyBanner) verifyBanner.style.display = 'none';
-            localStorage.setItem('verify_banner_dismissed', 'true');
-        };
-    }
+    if (closeBannerBtn) closeBannerBtn.onclick = () => {
+        const verifyBanner = document.getElementById('verify-banner');
+        if (verifyBanner) verifyBanner.style.display = 'none';
+        localStorage.setItem('verify_banner_dismissed', 'true');
+    };
 
     function showHubLayout() {
         const ls = document.getElementById('locked-screen');
@@ -1011,42 +705,10 @@ async function main() {
         if (mtw) mtw.style.display = window.innerWidth <= 850 ? 'flex' : 'none';
     }
 
-    function loadGlobalFeed() {
-        if (unsubscribePosts) unsubscribePosts();
-        Object.values(commentUnsubscribes).forEach(unsub => unsub());
-        commentUnsubscribes = {};
-        
-        const q = query(collection(db, 'social_posts_global'), orderBy("timestamp", "desc"), limit(100));
-        
-        unsubscribePosts = onSnapshot(q, (snapshot) => {
-            if (!feedContainer) return;
-            feedContainer.innerHTML = '';
-            
-            if (snapshot.empty) {
-                feedContainer.innerHTML = `<div class="loader-msg">${ui.noPosts}</div>`;
-                // Still show market break even if no posts
-                feedContainer.appendChild(createMarketBreak());
-                return;
-            }
-            
-            const frag = document.createDocumentFragment();
-            snapshot.docs.forEach(docSnap => {
-                const d = docSnap.data();
-                // For guests, only show active posts
-                if (d.status !== 'active') return;
-                frag.appendChild(createPostElement(docSnap.id, d, 'social_posts_global'));
-            });
-            feedContainer.appendChild(frag);
-            // Always append market break after posts
-            feedContainer.appendChild(createMarketBreak());
-        });
-    }
-
     window.addEventListener('resize', () => {
         if(currentUser) { 
             const hl = document.getElementById('hub-layout');
             const mtw = document.getElementById('mobile-topics-wrapper');
-            
             if(window.innerWidth <= 850) {
                 if (hl) hl.style.display = 'flex';
                 if (mtw) mtw.style.display = 'flex';
@@ -1077,20 +739,15 @@ async function main() {
         
         if (!dListMy || !mListMy) return; 
 
-        dListMy.innerHTML = ''; 
-        dListPinned.innerHTML = ''; 
-        dListDiscover.innerHTML = '';
-        
-        mListMy.innerHTML = ''; 
-        mListPinned.innerHTML = ''; 
-        mListDiscover.innerHTML = '';
+        dListMy.innerHTML = ''; dListPinned.innerHTML = ''; dListDiscover.innerHTML = '';
+        mListMy.innerHTML = ''; mListPinned.innerHTML = ''; mListDiscover.innerHTML = '';
         
         if (mobileWaysList) {
             mobileWaysList.innerHTML = '';
         }
 
-        const myT = [], pinT = [], discT = [];
-        const pinnedArr = (currentUser && currentUser.pinnedTopics) || [];
+        const myT = [], pinT = [], discT =[];
+        const pinnedArr = (currentUser && currentUser.pinnedTopics) ||[];
 
         allTopicsData.forEach(d => {
             const isPrivate = d.visibility === 'private';
@@ -1111,7 +768,6 @@ async function main() {
         const dSecMy = document.getElementById('d-sec-my');
         const dSecPinned = document.getElementById('d-sec-pinned');
         const dSecDiscover = document.getElementById('d-sec-discover');
-        
         if (dSecMy) dSecMy.style.display = myT.length ? 'block' : 'none';
         if (dSecPinned) dSecPinned.style.display = pinT.length ? 'block' : 'none';
         if (dSecDiscover) dSecDiscover.style.display = discT.length ? 'block' : 'none';
@@ -1119,7 +775,6 @@ async function main() {
         const mSecMy = document.getElementById('m-sec-my');
         const mSecPinned = document.getElementById('m-sec-pinned');
         const mSecDiscover = document.getElementById('m-sec-discover');
-        
         if (mSecMy) mSecMy.style.display = myT.length ? 'block' : 'none';
         if (mSecPinned) mSecPinned.style.display = pinT.length ? 'block' : 'none';
         if (mSecDiscover) mSecDiscover.style.display = discT.length ? 'block' : 'none';
@@ -1132,29 +787,17 @@ async function main() {
             const item = document.createElement('a');
             item.className = 'way-item'; 
             item.href = `/topic?id=${t.id}`;
-            item.innerHTML = `
-                <i class="fas fa-hashtag"></i> 
-                <span style="flex-grow:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-                    ${t.name}${lock}
-                </span> 
-                <span class="way-count">${count}</span>
-                ${editBtn}
-            `;
+            item.innerHTML = `<i class="fas fa-hashtag"></i> <span style="flex-grow:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${t.name}${lock}</span> <span class="way-count">${count}</span>${editBtn}`;
             return item;
         };
 
         const createTopBarItem = (t) => {
             const count = formatCount(t.postCount);
             const lock = t.visibility === 'private' ? ' <i class="fas fa-lock" style="font-size:0.65rem; margin-left:4px;"></i>' : '';
-            
             const item = document.createElement('a');
             item.className = 'm-way-pill'; 
             item.href = `/topic?id=${t.id}`;
-            item.innerHTML = `
-                <i class="fas fa-hashtag"></i> 
-                ${t.name}${lock} 
-                <span class="m-way-count">${count}</span>
-            `;
+            item.innerHTML = `<i class="fas fa-hashtag"></i> ${t.name}${lock} <span class="m-way-count">${count}</span>`;
             return item;
         };
 
@@ -1206,18 +849,12 @@ async function main() {
                 `;
             });
         } else {
-            bookHtml = `
-                <div style="padding:20px; text-align:center; color:var(--text-muted); width:100%;">
-                    No books listed yet. Be the first!
-                </div>
-            `;
+            bookHtml = `<div style="padding:20px; text-align:center; color:var(--text-muted); width:100%;">No books listed yet. Be the first!</div>`;
         }
 
         breakSection.innerHTML = `
             <div class="break-header">
-                <span class="break-title">
-                    <i class="fas fa-book-open"></i> ${ui.suggest || 'Campus Marketplace'}
-                </span>
+                <span class="break-title"><i class="fas fa-book-open"></i> ${ui.suggest || 'Campus Marketplace'}</span>
                 <a href="/search" class="break-link">${ui.browse || 'Browse All →'}</a>
             </div>
             <div class="break-scroll">${bookHtml}</div>
@@ -1253,37 +890,19 @@ async function main() {
                             <div style="background: rgba(255,255,255,0.95); padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; max-width: 420px; margin: 0 20px;">
                                 <i class="fas fa-lock" style="font-size: 3.5rem; color: var(--deep); margin-bottom: 20px;"></i>
                                 <h3 style="font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--ink); margin-bottom: 12px;">${ui.private_feed_locked}</h3>
-                                <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; line-height: 1.6;">
-                                    ${ui.private_feed_desc} <strong>${targetSchool}</strong> can view or participate in this channel.
-                                </p>
+                                <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; line-height: 1.6;">${ui.private_feed_desc} <strong>${targetSchool}</strong> can view or participate in this channel.</p>
                                 <button class="btn-action" style="width: 100%;" onclick="window.location.href='/verify'">Verify Student Email</button>
                             </div>
                         </div>
                         
                         <div class="post-card" style="filter: blur(8px); opacity: 0.5; pointer-events: none; user-select: none; margin-bottom: 20px;">
-                            <div class="post-header-top">
-                                <div style="display:flex; gap:15px; align-items:center;">
-                                    <div style="width:48px; height:48px; border-radius:50%; background:#cbd5e1;"></div>
-                                    <div>
-                                        <div style="width:120px; height:12px; background:#cbd5e1; border-radius:10px; margin-bottom:8px;"></div>
-                                        <div style="width:80px; height:10px; background:#e2e8f0; border-radius:10px;"></div>
-                                    </div>
-                                </div>
-                            </div>
+                            <div class="post-header-top"><div style="display:flex; gap:15px; align-items:center;"><div style="width:48px; height:48px; border-radius:50%; background:#cbd5e1;"></div><div><div style="width:120px; height:12px; background:#cbd5e1; border-radius:10px; margin-bottom:8px;"></div><div style="width:80px; height:10px; background:#e2e8f0; border-radius:10px;"></div></div></div></div>
                             <div style="width:100%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
                             <div style="width:85%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
                             <div style="width:60%; height:12px; background:#e2e8f0; border-radius:10px;"></div>
                         </div>
                         <div class="post-card" style="filter: blur(8px); opacity: 0.5; pointer-events: none; user-select: none;">
-                            <div class="post-header-top">
-                                <div style="display:flex; gap:15px; align-items:center;">
-                                    <div style="width:48px; height:48px; border-radius:50%; background:#cbd5e1;"></div>
-                                    <div>
-                                        <div style="width:140px; height:12px; background:#cbd5e1; border-radius:10px; margin-bottom:8px;"></div>
-                                        <div style="width:90px; height:10px; background:#e2e8f0; border-radius:10px;"></div>
-                                    </div>
-                                </div>
-                            </div>
+                            <div class="post-header-top"><div style="display:flex; gap:15px; align-items:center;"><div style="width:48px; height:48px; border-radius:50%; background:#cbd5e1;"></div><div><div style="width:140px; height:12px; background:#cbd5e1; border-radius:10px; margin-bottom:8px;"></div><div style="width:90px; height:10px; background:#e2e8f0; border-radius:10px;"></div></div></div></div>
                             <div style="width:100%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
                             <div style="width:95%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
                             <div style="width:40%; height:12px; background:#e2e8f0; border-radius:10px;"></div>
@@ -1299,34 +918,18 @@ async function main() {
         
         if (postInput) {
             if (currentSchoolFilter === 'all') {
-                postInput.placeholder = lang === 'fr' 
-                    ? "Que se passe-t-il sur le Campus Global ?" 
-                    : "What's happening on Global Campus?";
+                postInput.placeholder = lang === 'fr' ? "Que se passe-t-il sur le Campus Global ?" : "What's happening on Global Campus?";
             } else {
-                postInput.placeholder = lang === 'fr' 
-                    ? `Que se passe-t-il à ${targetSchool} ?` 
-                    : `What's happening at ${targetSchool}?`;
+                postInput.placeholder = lang === 'fr' ? `Que se passe-t-il à ${targetSchool} ?` : `What's happening at ${targetSchool}?`;
             }
         }
 
-        if (feedContainer) {
-            feedContainer.innerHTML = `
-                <div class="loader-msg">
-                    <i class="fas fa-circle-notch fa-spin"></i><br>
-                    <span>${ui.loading_hub || 'Loading campus hub...'}</span>
-                </div>
-            `;
-        }
+        if (feedContainer) feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub || 'Loading campus hub...'}</span></div>`;
 
         const collectionName = currentSchoolFilter === 'my'
             ? getSchoolCollection(targetSchool)
             : 'social_posts_global';
-        
-        let q = query(
-            collection(db, collectionName), 
-            orderBy("timestamp", "desc"), 
-            limit(100)
-        );
+        let q = query(collection(db, collectionName), orderBy("timestamp", "desc"), limit(100));
         
         try {
             unsubscribePosts = onSnapshot(q, (snapshot) => {
@@ -1345,17 +948,9 @@ async function main() {
                 snapshot.docs.forEach(docSnap => {
                     const d = docSnap.data();
                     
-                    // FIXED: Show pending and rejected posts only for the author or admin
-                    if (d.status === 'pending') {
-                        const isOwner = currentUser?.uid === d.authorUid;
-                        const isAdminUser = currentUser?.role === 'admin';
-                        if (!isOwner && !isAdminUser) return;
-                    }
-                    if (d.status === 'rejected') {
-                        const isOwner = currentUser?.uid === d.authorUid;
-                        const isAdminUser = currentUser?.role === 'admin';
-                        if (!isOwner && !isAdminUser) return;
-                    }
+                    // Only show pending/rejected to author and admin
+                    if (d.status === 'pending' && d.authorUid !== currentUser?.uid) return;
+                    if (d.status === 'rejected' && d.authorUid !== currentUser?.uid) return;
 
                     frag.appendChild(createPostElement(docSnap.id, d, collectionName));
                     postCounter++;
@@ -1371,29 +966,22 @@ async function main() {
 
                 feedContainer.appendChild(frag);
             });
-        } catch (e) { 
-            console.error(e); 
-        }
+        } catch (e) { console.error(e); }
     }
 
-    if (allFilterBtn) {
-        allFilterBtn.onclick = () => {
-            currentSchoolFilter = 'all';
-            allFilterBtn.classList.add('active');
-            if (myFilterBtn) myFilterBtn.classList.remove('active');
-            loadFeed();
-        };
-    }
+    if (allFilterBtn) allFilterBtn.onclick = () => {
+        currentSchoolFilter = 'all';
+        allFilterBtn.classList.add('active');
+        if (myFilterBtn) myFilterBtn.classList.remove('active');
+        loadFeed();
+    };
     
-    if (myFilterBtn) {
-        myFilterBtn.onclick = () => {
-            if (!requireLogin()) return;
-            currentSchoolFilter = 'my';
-            myFilterBtn.classList.add('active');
-            if (allFilterBtn) allFilterBtn.classList.remove('active');
-            loadFeed();
-        };
-    }
+    if (myFilterBtn) myFilterBtn.onclick = () => {
+        currentSchoolFilter = 'my';
+        myFilterBtn.classList.add('active');
+        if (allFilterBtn) allFilterBtn.classList.remove('active');
+        loadFeed();
+    };
 
     function createPostElement(id, d, coll) {
         if (d.status === 'rejected') {
@@ -1405,12 +993,8 @@ async function main() {
                 <p style="color: #b91c1c; font-weight: bold; font-size: 0.95rem; margin-bottom: 10px;">
                     <i class="fas fa-shield-alt"></i> Your post was removed by our safety system.
                 </p>
-                <p style="color: #991b1b; font-size: 0.85rem; margin-bottom: 15px;">
-                    Reason: ${d.rejectionReason || 'Inappropriate content.'}
-                </p>
-                <button class="btn-action" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; padding: 8px 16px; font-size: 0.85rem;" onclick="window.deletePost('${id}', '${coll}')">
-                    Delete Post
-                </button>
+                <p style="color: #991b1b; font-size: 0.85rem; margin-bottom: 15px;">Reason: ${d.rejectionReason || 'Inappropriate content.'}</p>
+                <button class="btn-action" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; padding: 8px 16px; font-size: 0.85rem;" onclick="window.deletePost('${id}', '${coll}')">Delete Post</button>
             `;
             return card;
         }
@@ -1423,10 +1007,7 @@ async function main() {
             ? `<span style="font-size: 0.7rem; color: var(--deep); background: var(--surface); padding: 2px 8px; border-radius: 12px; margin-left: 8px; font-weight: 700; white-space: nowrap;"><i class="fas fa-university"></i> ${d.schoolName}</span>` 
             : '';
 
-        const verifiedAvatarBadge = d.authorIsStudent 
-            ? '<div class="avatar-badge"><i class="fas fa-check-circle"></i></div>' 
-            : '';
-        
+        const verifiedAvatarBadge = d.authorIsStudent ? '<div class="avatar-badge"><i class="fas fa-check-circle"></i></div>' : '';
         const avatarHtml = `
             <div class="post-avatar-wrap">
                 <img src="${pfp}" class="post-avatar" alt="Avatar">
@@ -1434,48 +1015,24 @@ async function main() {
             </div>
         `;
 
-        const verifiedNameBadge = d.authorIsStudent 
-            ? '<i class="fas fa-check-circle" style="color: #2E7D32; font-size: 0.9rem; margin-left: 4px;" title="Verified Student"></i>' 
-            : '';
+        const verifiedNameBadge = d.authorIsStudent ? '<i class="fas fa-check-circle" style="color: #2E7D32; font-size: 0.9rem; margin-left: 4px;" title="Verified Student"></i>' : '';
 
-        const pendingBadgeHtml = d.status === 'pending' 
-            ? `<span style="font-size:0.7rem; color:#d97706; background:#fef3c7; padding:2px 6px; border-radius:10px; margin-left:6px; border: 1px solid #fde68a;">⏳ In Review</span>` 
-            : '';
+        const pendingBadgeHtml = d.status === 'pending' ? `<span style="font-size:0.7rem; color:#d97706; background:#fef3c7; padding:2px 6px; border-radius:10px; margin-left:6px; border: 1px solid #fde68a;">⏳ In Review</span>` : '';
 
         const canEdit = currentUser && currentUser.uid === d.authorUid;
         const canDelete = currentUser && (currentUser.uid === d.authorUid || currentUser.role === 'admin');
         
-        const safeText = d.text 
-            ? d.text.replace(/'/g, "&#39;").replace(/"/g, "&quot;").replace(/\n/g, "\\n") 
-            : '';
-        
-        const editBtnHtml = canEdit 
-            ? `<button class="post-dropdown-item" onclick="window.openEditPost('${id}', '${safeText}', '${coll}')"><i class="fas fa-edit"></i> Edit Post</button>` 
-            : '';
-        
-        const deleteBtnHtml = canDelete 
-            ? `<button class="post-dropdown-item danger" onclick="window.deletePost('${id}', '${coll}')"><i class="fas fa-trash-alt"></i> Delete Post</button>` 
-            : '';
-        
-        const editedLabel = d.edited 
-            ? `<span class="edited-badge" data-i18n="edited_label">${ui.edited_label || ' • Edited'}</span>` 
-            : '';
+        const safeText = d.text ? d.text.replace(/'/g, "&#39;").replace(/"/g, "&quot;").replace(/\n/g, "\\n") : '';
+        const editBtnHtml = canEdit ? `<button class="post-dropdown-item" onclick="window.openEditPost('${id}', '${safeText}', '${coll}')"><i class="fas fa-edit"></i> Edit Post</button>` : '';
+        const deleteBtnHtml = canDelete ? `<button class="post-dropdown-item danger" onclick="window.deletePost('${id}', '${coll}')"><i class="fas fa-trash-alt"></i> Delete Post</button>` : '';
+        const editedLabel = d.edited ? `<span class="edited-badge" data-i18n="edited_label">${ui.edited_label || ' • Edited'}</span>` : '';
 
-        let attachedImgHtml = '';
-        if (d.imageUrl) {
-            const optimizedUrl = window.optimizeImageUrl ? window.optimizeImageUrl(d.imageUrl) : d.imageUrl;
-            attachedImgHtml = `<img src="${optimizedUrl}" class="post-image-attachment">`;
-        }
-        
+        let attachedImgHtml = d.imageUrl ? `<img src="${window.optimizeImageUrl ? window.optimizeImageUrl(d.imageUrl) : d.imageUrl}" class="post-image-attachment">` : '';
         let attachedListHtml = '';
         if (d.attachedListing) {
-            const optimizedListImg = window.optimizeImageUrl 
-                ? window.optimizeImageUrl(d.attachedListing.img) 
-                : d.attachedListing.img;
-            
             attachedListHtml = `
                 <a href="/listing?id=${d.attachedListing.id}" class="post-listing-attachment">
-                    <div class="pla-img" style="background-image:url('${optimizedListImg}')"></div>
+                    <div class="pla-img" style="background-image:url('${window.optimizeImageUrl ? window.optimizeImageUrl(d.attachedListing.img) : d.attachedListing.img}')"></div>
                     <div class="pla-info">
                         <div class="pla-title">${d.attachedListing.title}</div>
                         <div class="pla-price">$${d.attachedListing.price}</div>
@@ -1483,38 +1040,6 @@ async function main() {
                 </a>
             `;
         }
-
-        // Full comment section (only for logged-in users)
-        const commentSectionHtml = `
-            <div class="comments-section" id="comments-section-${id}">
-                <div class="comment-list" id="comment-list-${id}">
-                    <div style="text-align:center; font-size:0.8rem; color:#888;">
-                        <i class="fas fa-spinner fa-spin"></i> Loading...
-                    </div>
-                </div>
-                <div class="comment-composer-area">
-                    <div class="comment-preview-area" id="comment-preview-area-${id}"></div>
-                    <div class="comment-input-wrapper">
-                        <textarea class="comment-input" id="comment-input-${id}" data-coll="${coll}" placeholder="${ui.comment_placeholder || 'Write a comment...'}" oninput="window.checkCommentInput('${id}')" onclick="window.requireLogin()"></textarea>
-                        <div class="comment-tools">
-                            <button class="tool-btn" onclick="window.triggerCommentImg('${id}', '${coll}')">
-                                <i class="fas fa-camera"></i>
-                            </button>
-                            <button class="btn-comment-send" onclick="window.postComment('${id}', '${coll}')" id="btn-send-comment-${id}">
-                                <i class="fas fa-paper-plane"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>`;
-
-        // Login prompt for guests (replaces comment section)
-        const loginPromptHtml = currentUser ? commentSectionHtml : `
-            <div style="border-top: 1px solid #f1f5f9; padding-top: 15px; text-align: center; margin-top: 5px;">
-                <a href="/login?redirect=/social" style="color: var(--deep); font-weight: 600; text-decoration: none;">
-                    <i class="fas fa-sign-in-alt"></i> Log in or register to interact
-                </a>
-            </div>`;
 
         const card = document.createElement('div');
         card.className = 'post-card';
@@ -1530,14 +1055,10 @@ async function main() {
                     </div>
                 </a>
                 <div class="post-menu-container">
-                    <button class="post-menu-btn" onclick="window.togglePostMenu('${id}')">
-                        <i class="fas fa-ellipsis-h"></i>
-                    </button>
+                    <button class="post-menu-btn" onclick="window.togglePostMenu('${id}')"><i class="fas fa-ellipsis-h"></i></button>
                     <div class="post-dropdown" id="post-dropdown-${id}">
                         ${editBtnHtml}
-                        <button class="post-dropdown-item" onclick="window.reportPost('${id}', '${d.authorUid}', '${d.authorName.replace(/'/g, "\\'")}', '${coll}')">
-                            <i class="fas fa-flag"></i> Report
-                        </button>
+                        <button class="post-dropdown-item" onclick="window.reportPost('${id}', '${d.authorUid}', '${d.authorName.replace(/'/g, "\\'")}', '${coll}')"><i class="fas fa-flag"></i> Report</button>
                         ${deleteBtnHtml}
                     </div>
                 </div>
@@ -1557,19 +1078,29 @@ async function main() {
                 </button>
             </div>
 
-            ${loginPromptHtml}
+            <div class="comments-section" id="comments-section-${id}">
+                <div class="comment-list" id="comment-list-${id}">
+                    <div style="text-align:center; font-size:0.8rem; color:#888;"><i class="fas fa-spinner fa-spin"></i> Loading...</div>
+                </div>
+                <div class="comment-composer-area">
+                    <div class="comment-preview-area" id="comment-preview-area-${id}"></div>
+                    <div class="comment-input-wrapper">
+                        <textarea class="comment-input" id="comment-input-${id}" data-coll="${coll}" placeholder="${ui.comment_placeholder || 'Write a comment...'}" oninput="window.checkCommentInput('${id}')"></textarea>
+                        <div class="comment-tools">
+                            <button class="tool-btn" onclick="window.triggerCommentImg('${id}', '${coll}')"><i class="fas fa-camera"></i></button>
+                            <button class="btn-comment-send" onclick="window.postComment('${id}', '${coll}')" id="btn-send-comment-${id}" disabled><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         `;
         return card;
     }
 
     function formatTime(date) {
         const diff = Math.round((new Date() - date) / 60000);
-        if (diff < 60) {
-            return lang === 'fr' ? `Il y a ${diff} min` : `${diff}m`;
-        }
-        if (diff < 1440) {
-            return lang === 'fr' ? `${Math.round(diff/60)} h` : `${Math.round(diff/60)}h`;
-        }
+        if (diff < 60) return lang === 'fr' ? `Il y a ${diff} min` : `${diff}m`;
+        if (diff < 1440) return lang === 'fr' ? `${Math.round(diff/60)} h` : `${Math.round(diff/60)}h`;
         return lang === 'fr' ? `${Math.round(diff/1440)} j` : `${Math.round(diff/1440)}d`;
     }
 
@@ -1577,116 +1108,80 @@ async function main() {
         const val = document.getElementById(`comment-input-${id}`).value.trim();
         const hasImg = !!commentImageFiles[id];
         const btn = document.getElementById(`btn-send-comment-${id}`);
-        if (btn) {
-            btn.style.opacity = (!val && !hasImg) ? '0.5' : '1';
-        }
+        if (btn) btn.disabled = (!val && !hasImg);
     };
 
     window.togglePostMenu = (id) => {
         const dropdown = document.getElementById(`post-dropdown-${id}`);
         if (!dropdown) return;
         const isShowing = dropdown.classList.contains('show');
-        
-        document.querySelectorAll('.post-dropdown').forEach(d => {
-            d.classList.remove('show');
-        }); 
-        
-        if (!isShowing) {
-            dropdown.classList.add('show');
-        }
+        document.querySelectorAll('.post-dropdown').forEach(d => d.classList.remove('show')); 
+        if (!isShowing) dropdown.classList.add('show');
     };
 
     window.addEventListener('click', (e) => {
         if (!e.target.closest('.post-menu-container')) {
-            document.querySelectorAll('.post-dropdown').forEach(d => {
-                d.classList.remove('show');
-            });
+            document.querySelectorAll('.post-dropdown').forEach(d => d.classList.remove('show'));
         }
     });
 
     window.deletePost = async (id, coll) => {
-        if (!requireLogin()) return;
         const confirmed = await window.scoraliaConfirm(ui.dialog_delete_post);
         if(confirmed) {
             try {
                 await deleteDoc(doc(db, coll, id));
-            } catch(e) { 
-                await window.scoraliaAlert("Error deleting post."); 
-            }
+            } catch(e) { await window.scoraliaAlert("Error deleting post."); }
         }
     };
 
-    let reportTargetId = null; 
-    let reportTargetName = null; 
-    let reportTargetPostId = null; 
-    let reportTargetColl = null;
+    let reportTargetId = null; let reportTargetName = null; let reportTargetPostId = null; let reportTargetColl = null;
 
     window.reportPost = (postId, authorUid, authorName, coll) => {
-        if (!requireLogin()) return;
-        document.querySelectorAll('.post-dropdown').forEach(d => {
-            d.classList.remove('show');
-        });
-        reportTargetId = authorUid; 
-        reportTargetName = authorName; 
-        reportTargetPostId = postId; 
-        reportTargetColl = coll;
-        
+        document.querySelectorAll('.post-dropdown').forEach(d => d.classList.remove('show'));
+        reportTargetId = authorUid; reportTargetName = authorName; reportTargetPostId = postId; reportTargetColl = coll;
         const reportDetails = document.getElementById('report-details');
         if (reportDetails) reportDetails.value = '';
-        
         const reportModal = document.getElementById('report-modal');
         if (reportModal) reportModal.style.display = 'flex';
     };
 
     const btnCancelReport = document.getElementById('btn-cancel-report');
-    if (btnCancelReport) {
-        btnCancelReport.onclick = () => { 
-            const reportModal = document.getElementById('report-modal');
-            if (reportModal) reportModal.style.display = 'none'; 
-        };
-    }
+    if (btnCancelReport) btnCancelReport.onclick = () => { 
+        const reportModal = document.getElementById('report-modal');
+        if (reportModal) reportModal.style.display = 'none'; 
+    };
     
     const btnSubmitReport = document.getElementById('btn-submit-report');
-    if (btnSubmitReport) {
-        btnSubmitReport.onclick = async () => {
-            const reasonEl = document.getElementById('report-reason');
-            const detailsEl = document.getElementById('report-details');
-            if (!reasonEl || !detailsEl) return;
-            
-            const reason = reasonEl.value;
-            const details = detailsEl.value.trim();
-            const btn = document.getElementById('btn-submit-report');
-            
-            btn.disabled = true;
-            try {
-                await addDoc(collection(db, "reports"), {
-                    reporterUid: currentUser.uid, 
-                    reporterName: currentUser.displayName,
-                    targetUid: reportTargetId, 
-                    targetUserName: reportTargetName,
-                    reason: `Post Report: ${reason}`,
-                    details: `Post ID: ${reportTargetPostId}\nCollection: ${reportTargetColl}\n\n${details}`,
-                    timestamp: serverTimestamp()
-                });
-                
-                await window.scoraliaAlert(ui.rep_success || "Report submitted.");
-                const reportModal = document.getElementById('report-modal');
-                if (reportModal) reportModal.style.display = 'none';
-            } catch(e) { 
-                await window.scoraliaAlert("Error submitting report."); 
-            }
-            btn.disabled = false;
-        };
-    }
+    if (btnSubmitReport) btnSubmitReport.onclick = async () => {
+        const reasonEl = document.getElementById('report-reason');
+        const detailsEl = document.getElementById('report-details');
+        if (!reasonEl || !detailsEl) return;
+        
+        const reason = reasonEl.value;
+        const details = detailsEl.value.trim();
+        const btn = document.getElementById('btn-submit-report');
+        
+        btn.disabled = true;
+        try {
+            await addDoc(collection(db, "reports"), {
+                reporterUid: currentUser.uid, reporterName: currentUser.displayName,
+                targetUid: reportTargetId, targetUserName: reportTargetName,
+                reason: `Post Report: ${reason}`,
+                details: `Post ID: ${reportTargetPostId}\nCollection: ${reportTargetColl}\n\n${details}`,
+                timestamp: serverTimestamp()
+            });
+            await window.scoraliaAlert(ui.rep_success || "Report submitted.");
+            const reportModal = document.getElementById('report-modal');
+            if (reportModal) reportModal.style.display = 'none';
+        } catch(e) { await window.scoraliaAlert("Error submitting report."); }
+        btn.disabled = false;
+    };
 
     let editTargetPostId = null;
     let editTargetColl = null;
 
     window.openEditPost = (postId, encodedText, coll) => {
-        if (!requireLogin()) return;
-        document.querySelectorAll('.post-dropdown').forEach(d => {
-            d.classList.remove('show');
-        });
+        document.querySelectorAll('.post-dropdown').forEach(d => d.classList.remove('show'));
         editTargetPostId = postId;
         editTargetColl = coll;
         
@@ -1695,7 +1190,6 @@ async function main() {
         
         const editPostText = document.getElementById('edit-post-text');
         const editPostModal = document.getElementById('edit-post-modal');
-        
         if (editPostText) editPostText.value = textarea.value;
         if (editPostModal) editPostModal.style.display = 'flex';
     };
@@ -1704,85 +1198,52 @@ async function main() {
     const closeEditModal = document.getElementById('close-edit-modal');
     const editPostModal = document.getElementById('edit-post-modal');
     
-    if (btnCancelEdit) {
-        btnCancelEdit.onclick = () => { 
-            if (editPostModal) editPostModal.style.display = 'none'; 
-        };
-    }
-    if (closeEditModal) {
-        closeEditModal.onclick = () => { 
-            if (editPostModal) editPostModal.style.display = 'none'; 
-        };
-    }
+    if (btnCancelEdit) btnCancelEdit.onclick = () => { if (editPostModal) editPostModal.style.display = 'none'; };
+    if (closeEditModal) closeEditModal.onclick = () => { if (editPostModal) editPostModal.style.display = 'none'; };
 
     const btnSubmitEdit = document.getElementById('btn-submit-edit');
-    if (btnSubmitEdit) {
-        btnSubmitEdit.onclick = async () => {
-            const editPostText = document.getElementById('edit-post-text');
-            if (!editPostText) return;
-            
-            const newText = editPostText.value.trim();
-            btnSubmitEdit.disabled = true;
+    if (btnSubmitEdit) btnSubmitEdit.onclick = async () => {
+        const editPostText = document.getElementById('edit-post-text');
+        if (!editPostText) return;
+        
+        const newText = editPostText.value.trim();
+        btnSubmitEdit.disabled = true;
 
-            try {
-                await updateDoc(doc(db, editTargetColl, editTargetPostId), {
-                    text: newText,
-                    edited: true
-                });
-                if (editPostModal) editPostModal.style.display = 'none';
-            } catch(e) {
-                await window.scoraliaAlert("Error updating post.");
-            }
-            btnSubmitEdit.disabled = false;
-        };
-    }
+        try {
+            await updateDoc(doc(db, editTargetColl, editTargetPostId), {
+                text: newText,
+                edited: true
+            });
+            if (editPostModal) editPostModal.style.display = 'none';
+        } catch(e) {
+            await window.scoraliaAlert("Error updating post.");
+        }
+        btnSubmitEdit.disabled = false;
+    };
 
     window.likePost = async (id, alreadyLiked, coll) => {
-        if (!requireLogin()) return;
+        if (!currentUser) return;
         const ref = doc(db, coll, id);
         if(alreadyLiked) {
-            await updateDoc(ref, { 
-                likes: increment(-1), 
-                likedBy: arrayRemove(currentUser.uid) 
-            });
+            await updateDoc(ref, { likes: increment(-1), likedBy: arrayRemove(currentUser.uid) });
         } else {
-            await updateDoc(ref, { 
-                likes: increment(1), 
-                likedBy: arrayUnion(currentUser.uid) 
-            });
+            await updateDoc(ref, { likes: increment(1), likedBy: arrayUnion(currentUser.uid) });
         }
     };
 
     window.toggleComments = (id, coll) => {
-        if (!requireLogin()) return;
         const sec = document.getElementById(`comments-section-${id}`);
         if (!sec) return;
-        
-        if (sec.style.display === 'block') { 
-            sec.style.display = 'none'; 
-            if(commentUnsubscribes[id]) {
-                commentUnsubscribes[id](); 
-            }
-        } else { 
-            sec.style.display = 'block'; 
-            loadComments(id, coll); 
-        }
+        if (sec.style.display === 'block') { sec.style.display = 'none'; if(commentUnsubscribes[id]) commentUnsubscribes[id](); }
+        else { sec.style.display = 'block'; loadComments(id, coll); }
     };
 
     function loadComments(postId, coll) {
         const list = document.getElementById(`comment-list-${postId}`);
         if (!list) return;
         
-        const q = query(
-            collection(db, coll, postId, "comments"), 
-            orderBy("timestamp", "asc")
-        );
-        
-        commentUnsubscribes[postId] = onSnapshot(q, (snap) => {
-            list.innerHTML = snap.empty 
-                ? `<div style="text-align:center; font-size:0.85rem; color:#888;">${ui.no_comments || 'No comments yet.'}</div>` 
-                : '';
-                
+        commentUnsubscribes[postId] = onSnapshot(query(collection(db, coll, postId, "comments"), orderBy("timestamp", "asc")), (snap) => {
+            list.innerHTML = snap.empty ? `<div style="text-align:center; font-size:0.85rem; color:#888;">${ui.no_comments || 'No comments yet.'}</div>` : '';
             snap.forEach(docSnap => {
                 const c = docSnap.data();
                 const commentId = docSnap.id;
@@ -1793,14 +1254,7 @@ async function main() {
                 if (c.status === 'rejected') {
                     const div = document.createElement('div');
                     div.className = 'comment-item';
-                    div.innerHTML = `
-                        <div class="comment-content" style="background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; font-size: 0.85rem;">
-                            <i class="fas fa-shield-alt"></i> Your comment was removed by our safety system. 
-                            <button onclick="window.deleteComment('${postId}', '${commentId}', '${coll}')" style="background:none; border:none; color:#b91c1c; text-decoration:underline; cursor:pointer; margin-left:10px;">
-                                Delete
-                            </button>
-                        </div>
-                    `;
+                    div.innerHTML = `<div class="comment-content" style="background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; font-size: 0.85rem;"><i class="fas fa-shield-alt"></i> Your comment was removed by our safety system. <button onclick="window.deleteComment('${postId}', '${commentId}', '${coll}')" style="background:none; border:none; color:#b91c1c; text-decoration:underline; cursor:pointer; margin-left:10px;">Delete</button></div>`;
                     list.appendChild(div);
                     return;
                 }
@@ -1808,26 +1262,14 @@ async function main() {
                 let timeStr = ui.justNow || "Just now";
                 if (c.timestamp) {
                     const diffMins = Math.round((new Date() - c.timestamp.toDate()) / 60000);
-                    if (diffMins < 60) {
-                        timeStr = lang === 'fr' ? `Il y a ${diffMins}m` : `${diffMins}m`;
-                    } else if (diffMins < 1440) {
-                        timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/60)}h` : `${Math.round(diffMins/60)}h`;
-                    } else {
-                        timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/1440)}j` : `${Math.round(diffMins/1440)}d`;
-                    }
+                    if (diffMins < 60) timeStr = lang === 'fr' ? `Il y a ${diffMins}m` : `${diffMins}m`;
+                    else if (diffMins < 1440) timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/60)}h` : `${Math.round(diffMins/60)}h`;
+                    else timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/1440)}j` : `${Math.round(diffMins/1440)}d`;
                 }
-                
                 const pfp = c.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${c.authorUid}&backgroundColor=EBF2FA`;
-                let imgHtml = '';
-                if (c.imageUrl) {
-                    const optimizedCommentImg = window.optimizeImageUrl ? window.optimizeImageUrl(c.imageUrl) : c.imageUrl;
-                    imgHtml = `<img src="${optimizedCommentImg}" class="comment-image-attachment">`;
-                }
+                const imgHtml = c.imageUrl ? `<img src="${window.optimizeImageUrl ? window.optimizeImageUrl(c.imageUrl) : c.imageUrl}" class="comment-image-attachment">` : '';
                 
-                const commentVerifiedAvatar = c.authorIsStudent 
-                    ? '<div class="comment-avatar-badge"><i class="fas fa-check-circle"></i></div>' 
-                    : '';
-                    
+                const commentVerifiedAvatar = c.authorIsStudent ? '<div class="comment-avatar-badge"><i class="fas fa-check-circle"></i></div>' : '';
                 const commentAvatarHtml = `
                     <a href="/user?id=${c.authorUid}">
                         <div class="comment-avatar-wrapper">
@@ -1837,9 +1279,7 @@ async function main() {
                     </a>
                 `;
                 
-                const pendingBadgeHtml = c.status === 'pending' 
-                    ? `<span style="font-size:0.65rem; color:#d97706; background:#fef3c7; padding:2px 6px; border-radius:10px; margin-left:6px;">⏳ In Review</span>` 
-                    : '';
+                const pendingBadgeHtml = c.status === 'pending' ? `<span style="font-size:0.65rem; color:#d97706; background:#fef3c7; padding:2px 6px; border-radius:10px; margin-left:6px;">⏳ In Review</span>` : '';
 
                 const isCommentAuthor = currentUser && currentUser.uid === c.authorUid;
                 const isAdmin = currentUser && currentUser.role === 'admin';
@@ -1854,9 +1294,7 @@ async function main() {
                     ${commentAvatarHtml}
                     <div class="comment-content">
                         <div style="display:flex; justify-content:space-between; align-items:start;">
-                            <a href="/user?id=${c.authorUid}" class="comment-author-link">
-                                <div class="comment-author">${c.authorName} ${pendingBadgeHtml}</div>
-                            </a>
+                            <a href="/user?id=${c.authorUid}" class="comment-author-link"><div class="comment-author">${c.authorName} ${pendingBadgeHtml}</div></a>
                             ${deleteBtnHtml}
                         </div>
                         <div class="comment-text">${c.text}</div>
@@ -1871,7 +1309,6 @@ async function main() {
     }
 
     window.deleteComment = async (postId, commentId, coll) => {
-        if (!requireLogin()) return;
         const confirmed = await window.scoraliaConfirm(ui.dialog_delete_comment);
         if(confirmed) {
             try {
@@ -1884,12 +1321,9 @@ async function main() {
         }
     };
 
-    window.requireLogin = requireLogin; // Expose for inline handlers
-
     document.body.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && e.target.classList.contains('comment-input')) {
             e.preventDefault();
-            if (!requireLogin()) return;
             const coll = e.target.getAttribute('data-coll');
             window.postComment(e.target.id.replace('comment-input-', ''), coll);
         }
