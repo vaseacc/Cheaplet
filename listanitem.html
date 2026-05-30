@@ -531,6 +531,7 @@
                 } catch(e) { console.warn("Could not save ISBN cache"); }
             }
 
+            // ===================== FIXED ISBN FETCH FUNCTION =====================
             async function fetchBookData(isbn) {
                 const cleanIsbn = isbn.replace(/[^0-9]/g, '');
                 if (cleanIsbn.length < 10) {
@@ -557,12 +558,28 @@
 
                 let bookData = { title: "", description: "" };
 
+                // Helper to clean authors (filters empty strings)
+                function formatAuthors(authorsArray) {
+                    if (!authorsArray || !authorsArray.length) return "";
+                    const validAuthors = authorsArray.filter(a => a && typeof a === 'string' && a.trim().length > 0);
+                    if (validAuthors.length === 0) return "";
+                    return ` by ${validAuthors.join(', ')}`;
+                }
+
+                // Parse Google Books response
                 const parseGoogleBooks = (data) => {
                     if (data.items && data.items.length > 0) {
                         const book = data.items[0].volumeInfo;
                         let title = book.title || "";
-                        if (book.authors && book.authors.length) title += ` by ${book.authors.join(', ')}`;
-                        const description = book.description ? book.description.replace(/<[^>]*>?/gm, '') : "";
+                        const authorsSuffix = formatAuthors(book.authors);
+                        if (authorsSuffix) title += authorsSuffix;
+                        
+                        let description = "";
+                        if (book.description) {
+                            description = book.description.replace(/<[^>]*>?/gm, '');
+                        } else if (book.subtitle) {
+                            description = book.subtitle;
+                        }
                         return { title, description };
                     }
                     return null;
@@ -573,7 +590,7 @@
                     if (res.ok) {
                         const data = await res.json();
                         const result = parseGoogleBooks(data);
-                        if (result) bookData = result;
+                        if (result && result.title) bookData = result;
                     }
                 } catch (e) { console.warn("Google ISBN fetch error:", e); }
 
@@ -584,8 +601,8 @@
                             const data = await res.json();
                             let title = data.title || "";
                             if (data.authors && data.authors.length) {
-                                const authorNames = data.authors.map(a => a.name).join(', ');
-                                title += ` by ${authorNames}`;
+                                const authorNames = data.authors.map(a => a.name).filter(n => n && n.trim());
+                                if (authorNames.length) title += ` by ${authorNames.join(', ')}`;
                             }
                             let description = "";
                             if (data.description) {
@@ -602,7 +619,7 @@
                         if (res.ok) {
                             const data = await res.json();
                             const result = parseGoogleBooks(data);
-                            if (result) bookData = result;
+                            if (result && result.title) bookData = result;
                         }
                     } catch (e) { console.warn("Google title search error:", e); }
                 }
@@ -625,6 +642,7 @@
                 manualBtn.innerHTML = `<i class="fas fa-search"></i>`;
                 manualBtn.disabled = false;
             }
+            // ===================== END FIXED ISBN FETCH =====================
 
             // ---- WORKING BARCODE SCANNER (with explicit permission trigger) ----
             let html5QrCode = null;
@@ -646,33 +664,27 @@
             }
 
             async function startScanner() {
-                // Stop any existing scanner
                 await stopScanner();
 
-                // Check secure context (though we know it's true, keep safety)
                 if (!window.isSecureContext) {
                     alert("Camera requires HTTPS. Please use https://");
                     return;
                 }
 
-                // Show the reader container
                 readerDiv.style.display = 'block';
                 startScanBtn.disabled = true;
                 startScanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Requesting camera...`;
 
                 try {
-                    // Force permission prompt by requesting a stream (this triggers the browser dialog)
+                    // Force permission prompt by requesting a stream
                     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    // Immediately stop the tracks – we only wanted permission
                     stream.getTracks().forEach(track => track.stop());
 
-                    // Now that permission is granted (or denied, but we caught error), start the scanner
                     html5QrCode = new Html5Qrcode("reader");
                     await html5QrCode.start(
                         { facingMode: "environment" },
                         { fps: 10, qrbox: { width: 250, height: 150 } },
                         (decodedText) => {
-                            // Success: stop scanner and fill book data
                             stopScanner().then(() => {
                                 fetchBookData(decodedText);
                             });
@@ -698,7 +710,6 @@
                 }
             }
 
-            // Event listeners for scanner
             startScanBtn.addEventListener('click', () => {
                 if (isScanning) {
                     stopScanner();
@@ -707,14 +718,12 @@
                 }
             });
 
-            // Manual ISBN lookup
             document.getElementById('manual-isbn-btn').onclick = () => {
                 const val = document.getElementById('manual-isbn-input').value.trim();
                 if(val) fetchBookData(val);
                 else alert("Please enter an ISBN.");
             };
 
-            // Skip button (hides scanner and shows main form)
             document.getElementById('skip-scan-btn').onclick = () => {
                 stopScanner();
                 document.getElementById('isbn-section').style.display = 'none';
