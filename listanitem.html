@@ -531,7 +531,7 @@
                 } catch(e) { console.warn("Could not save ISBN cache"); }
             }
 
-            // ========== REPLACED fetchBookData using OpenLibrary (no rate limits) ==========
+            // ========== IMPROVED fetchBookData with better description extraction ==========
             async function fetchBookData(isbn) {
                 const cleanIsbn = isbn.replace(/[^0-9]/g, '');
                 if (cleanIsbn.length < 10) {
@@ -560,11 +560,9 @@
                 let bookData = { title: "", description: "" };
 
                 try {
-                    // OpenLibrary API call – free, unlimited, no API key needed
                     const url = `https://openlibrary.org/isbn/${cleanIsbn}.json`;
                     const response = await fetch(url, {
                         headers: {
-                            // Identify your app – this helps get better rate limits
                             'User-Agent': 'ScoraliaBookApp (admin@scoralia.ca)'
                         }
                     });
@@ -579,14 +577,41 @@
 
                     const data = await response.json();
                     
-                    // Extract title
+                    // Extract title (fallback to "Unknown Title")
                     const title = data.title || "Unknown Title";
                     
-                    // Extract description (can be string or object with .value)
+                    // ----- IMPROVED DESCRIPTION EXTRACTION -----
                     let description = "";
+                    
+                    // Try data.description (can be string or object with .value)
                     if (data.description) {
-                        description = typeof data.description === 'string' ? data.description : (data.description.value || "");
+                        if (typeof data.description === 'string') {
+                            description = data.description;
+                        } else if (data.description.value) {
+                            description = data.description.value;
+                        }
                     }
+                    
+                    // If still empty, try data.subtitle
+                    if (!description && data.subtitle) {
+                        description = data.subtitle;
+                    }
+                    
+                    // If still empty, try data.notes
+                    if (!description && data.notes) {
+                        if (typeof data.notes === 'string') {
+                            description = data.notes;
+                        } else if (data.notes.value) {
+                            description = data.notes.value;
+                        }
+                    }
+                    
+                    // If still empty, try data.full_title (sometimes contains extended title)
+                    if (!description && data.full_title) {
+                        description = data.full_title;
+                    }
+                    
+                    // Final fallback: leave empty string (user can fill manually)
                     
                     bookData = { title, description };
 
@@ -594,7 +619,7 @@
                     isbnCache[cleanIsbn] = bookData;
                     saveCache();
 
-                    // Fill the form and show it
+                    // Fill the form
                     document.getElementById('listing-title').value = bookData.title;
                     document.getElementById('listing-description').value = bookData.description;
                     document.getElementById('listing-isbn').value = cleanIsbn;
@@ -614,7 +639,7 @@
                 manualBtn.innerHTML = `<i class="fas fa-search"></i>`;
                 manualBtn.disabled = false;
             }
-            // ========== END OF REPLACED fetchBookData ==========
+            // ========== END OF fetchBookData ==========
 
             // ---- WORKING BARCODE SCANNER (with explicit permission trigger) ----
             let html5QrCode = null;
@@ -648,7 +673,6 @@
                 startScanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Requesting camera...`;
 
                 try {
-                    // Force permission prompt by requesting a stream
                     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                     stream.getTracks().forEach(track => track.stop());
 
