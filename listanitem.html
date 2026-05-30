@@ -210,6 +210,16 @@
             cursor: pointer;
             margin-top: 12px;
         }
+        .camera-warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 8px;
+            border-radius: var(--radius-sm);
+            font-size: 0.8rem;
+            margin-top: 10px;
+            border-left: 4px solid #ffc107;
+            text-align: left;
+        }
 
         @media (max-width: 767px) {
             nav { display: none; }
@@ -254,7 +264,7 @@
 
     <div class="form-outer">
 
-        <!-- SCANNER CARD (replaces old isbn-section) -->
+        <!-- SCANNER CARD -->
         <div class="scanner-card" id="isbn-section">
             <h2 id="ui-isbn-title">Quick Book Scan</h2>
             <p id="ui-isbn-desc">Scan your book's barcode to fill in the title and description automatically.</p>
@@ -264,6 +274,7 @@
             </button>
 
             <div id="reader"></div>
+            <div id="camera-status" class="camera-warning" style="display: none;"></div>
 
             <div class="manual-group">
                 <input type="text" id="manual-isbn-input" placeholder="Enter ISBN manually...">
@@ -415,7 +426,8 @@
                     tagUses: "uses", uploadFail: "Image upload failed. Please try again.",
                     reviewMessage: "Your listing is being reviewed. You will be notified once approved.",
                     cameraDenied: "Camera permission denied. Please allow camera access in your browser settings.\n\n(On Android/Chrome: tap 🔒 → Permissions → Camera → Allow). Then refresh.",
-                    cameraError: "Could not start camera. Make sure you're on a secure connection (HTTPS) and your device has a camera."
+                    cameraError: "Could not start camera. Make sure you're on a secure connection (HTTPS) and your device has a camera.",
+                    insecureContext: "Camera scanning requires a secure connection (HTTPS). Please use https://www.livrex.org to scan barcodes."
                 },
                 fr: {
                     mainTitle: "Publier un article", mainSub: "Remplissez les détails ci-dessous et votre livre sera automatiquement examiné.",
@@ -438,7 +450,8 @@
                     tagUses: "utilisations", uploadFail: "Échec du téléchargement. Veuillez réessayer.",
                     reviewMessage: "Votre annonce est en cours d'examen. Vous serez notifié une fois approuvée.",
                     cameraDenied: "Permission de la caméra refusée. Veuillez autoriser l'accès dans les paramètres du navigateur.\n\n(Android/Chrome : appuyez sur 🔒 → Autorisations → Caméra → Autoriser). Actualisez ensuite.",
-                    cameraError: "Impossible de démarrer la caméra. Vérifiez que vous êtes en HTTPS et que votre appareil possède une caméra."
+                    cameraError: "Impossible de démarrer la caméra. Vérifiez que vous êtes en HTTPS et que votre appareil possède une caméra.",
+                    insecureContext: "Le scan par caméra nécessite une connexion sécurisée (HTTPS). Utilisez https://www.livrex.org pour scanner."
                 }
             };
 
@@ -616,64 +629,94 @@
                 manualBtn.disabled = false;
             }
 
-            // ---- NEW SIMPLE SCANNER ----
+            // ---- IMPROVED SCANNER WITH PROPER PERMISSION PROMPT ----
             let html5QrCode = null;
             let isScanning = false;
-
             const startScanBtn = document.getElementById('start-scan-btn');
             const readerDiv = document.getElementById('reader');
-            const scanBtnText = document.getElementById('ui-btn-scan');
+            const cameraStatusDiv = document.getElementById('camera-status');
 
-            // Check for HTTPS (required for camera)
-            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-                startScanBtn.disabled = true;
-                startScanBtn.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Camera requires HTTPS`;
-                startScanBtn.title = "Camera access is only available over a secure connection (HTTPS). Please open this page using https://";
-                // Still allow manual input
-            }
-
-            startScanBtn.addEventListener('click', async () => {
-                // If already scanning, stop
-                if (isScanning) {
-                    try { await html5QrCode.stop(); } catch(e) {}
+            // Function to stop any ongoing scanner
+            async function stopScanner() {
+                if (html5QrCode && isScanning) {
+                    try {
+                        await html5QrCode.stop();
+                    } catch (e) { console.warn("stop error", e); }
                     isScanning = false;
                     readerDiv.style.display = 'none';
                     startScanBtn.classList.remove('stop');
                     startScanBtn.innerHTML = `<i class="fas fa-camera"></i> ${ui[lang].btnScan}`;
+                }
+            }
+
+            // Check if the page is secure and camera is supported
+            function isSecureCameraContext() {
+                const isSecure = window.isSecureContext === true;
+                const hasMediaDevices = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+                if (!isSecure) {
+                    cameraStatusDiv.style.display = 'block';
+                    cameraStatusDiv.innerHTML = `<i class="fas fa-lock"></i> ${ui[lang].insecureContext}`;
+                    startScanBtn.disabled = true;
+                    return false;
+                }
+                if (!hasMediaDevices) {
+                    cameraStatusDiv.style.display = 'block';
+                    cameraStatusDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Camera not supported by this browser.`;
+                    startScanBtn.disabled = true;
+                    return false;
+                }
+                cameraStatusDiv.style.display = 'none';
+                startScanBtn.disabled = false;
+                return true;
+            }
+
+            // Initial security check
+            isSecureCameraContext();
+
+            startScanBtn.addEventListener('click', async () => {
+                // Re-check security in case something changed
+                if (!window.isSecureContext) {
+                    alert(ui[lang].insecureContext);
                     return;
                 }
 
-                // Disable button while starting
+                // If scanning, stop it
+                if (isScanning) {
+                    await stopScanner();
+                    return;
+                }
+
+                // Disable button temporarily while starting
                 startScanBtn.disabled = true;
                 startScanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Starting camera...`;
 
                 try {
-                    if (!html5QrCode) {
-                        html5QrCode = new Html5Qrcode("reader");
+                    // Ensure any previous scanner instance is fully stopped and recreated
+                    if (html5QrCode) {
+                        try { await html5QrCode.stop(); } catch(e) {}
+                        html5QrCode = null;
                     }
 
+                    // Create fresh scanner instance
+                    html5QrCode = new Html5Qrcode("reader");
                     readerDiv.style.display = 'block';
-                    
+
+                    // This call triggers the browser permission prompt (if not already granted/denied)
                     await html5QrCode.start(
                         { facingMode: "environment" },
                         { fps: 10, qrbox: { width: 250, height: 150 } },
                         (decodedText) => {
                             // Success: stop scanner and use the ISBN
-                            html5QrCode.stop().then(() => {
-                                isScanning = false;
-                                readerDiv.style.display = 'none';
-                                startScanBtn.classList.remove('stop');
-                                startScanBtn.innerHTML = `<i class="fas fa-camera"></i> ${ui[lang].btnScan}`;
-                                startScanBtn.disabled = false;
+                            stopScanner().then(() => {
                                 fetchBookData(decodedText);
-                            }).catch(() => {});
+                            });
                         },
                         (errorMessage) => {
-                            // scan errors are normal – ignore them
+                            // Normal scanning errors (no QR found) – ignore
                         }
                     );
 
-                    // Scanner started successfully
+                    // If we reach here, scanner started successfully
                     isScanning = true;
                     startScanBtn.disabled = false;
                     startScanBtn.classList.add('stop');
@@ -690,6 +733,8 @@
                     const errMsg = (err.message || String(err)).toLowerCase();
                     if (err.name === 'NotAllowedError' || errMsg.includes('not allowed') || errMsg.includes('permission denied')) {
                         msg = ui[lang].cameraDenied;
+                    } else if (errMsg.includes('security') || errMsg.includes('https')) {
+                        msg = ui[lang].insecureContext;
                     } else {
                         msg = ui[lang].cameraError + ' ' + err.message;
                     }
@@ -706,10 +751,7 @@
 
             // Skip button
             document.getElementById('skip-scan-btn').onclick = () => {
-                if(html5QrCode && isScanning) {
-                    html5QrCode.stop().catch(e=>console.log(e));
-                    isScanning = false;
-                }
+                stopScanner();
                 document.getElementById('isbn-section').style.display = 'none';
                 document.getElementById('main-form-section').style.display = 'block';
             };
