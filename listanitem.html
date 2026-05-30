@@ -531,7 +531,7 @@
                 } catch(e) { console.warn("Could not save ISBN cache"); }
             }
 
-            // ========== IMPROVED fetchBookData with better description extraction ==========
+            // ========== DUAL API LOOKUP: OpenLibrary + Google Books Fallback ==========
             async function fetchBookData(isbn) {
                 const cleanIsbn = isbn.replace(/[^0-9]/g, '');
                 if (cleanIsbn.length < 10) {
@@ -558,7 +558,9 @@
                 manualBtn.disabled = true;
 
                 let bookData = { title: "", description: "" };
+                let found = false;
 
+                // --- Attempt 1: OpenLibrary API (free, no key) ---
                 try {
                     const url = `https://openlibrary.org/isbn/${cleanIsbn}.json`;
                     const response = await fetch(url, {
@@ -567,79 +569,97 @@
                         }
                     });
 
-                    if (!response.ok) {
-                        if (response.status === 404) {
-                            throw new Error(`Book with ISBN ${cleanIsbn} not found.`);
-                        } else {
-                            throw new Error(`API error: ${response.status}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        const title = data.title || "";
+                        
+                        let description = "";
+                        if (data.description) {
+                            description = typeof data.description === 'string' ? data.description : (data.description.value || "");
+                        }
+                        if (!description && data.subtitle) description = data.subtitle;
+                        if (!description && data.notes) {
+                            description = typeof data.notes === 'string' ? data.notes : (data.notes.value || "");
+                        }
+                        
+                        if (title) {
+                            bookData = { title, description };
+                            found = true;
+                            console.log("Book found via OpenLibrary");
                         }
                     }
+                } catch (error) {
+                    console.warn("OpenLibrary fetch error:", error);
+                }
 
-                    const data = await response.json();
-                    
-                    // Extract title (fallback to "Unknown Title")
-                    const title = data.title || "Unknown Title";
-                    
-                    // ----- IMPROVED DESCRIPTION EXTRACTION -----
-                    let description = "";
-                    
-                    // Try data.description (can be string or object with .value)
-                    if (data.description) {
-                        if (typeof data.description === 'string') {
-                            description = data.description;
-                        } else if (data.description.value) {
-                            description = data.description.value;
-                        }
-                    }
-                    
-                    // If still empty, try data.subtitle
-                    if (!description && data.subtitle) {
-                        description = data.subtitle;
-                    }
-                    
-                    // If still empty, try data.notes
-                    if (!description && data.notes) {
-                        if (typeof data.notes === 'string') {
-                            description = data.notes;
-                        } else if (data.notes.value) {
-                            description = data.notes.value;
-                        }
-                    }
-                    
-                    // If still empty, try data.full_title (sometimes contains extended title)
-                    if (!description && data.full_title) {
-                        description = data.full_title;
-                    }
-                    
-                    // Final fallback: leave empty string (user can fill manually)
-                    
-                    bookData = { title, description };
+                // --- Attempt 2: Google Books API (Fallback) ---
+                if (!found) {
+                    try {
+                        // Using a CORS proxy to avoid browser restrictions
+                        const proxyUrl = `https://cors-anywhere.herokuapp.com/https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`;
+                        const response = await fetch(proxyUrl, {
+                            headers: {
+                                'User-Agent': 'ScoraliaBookApp (admin@scoralia.ca)'
+                            }
+                        });
 
-                    // Save to cache
+                        if (response.ok) {
+                            const data = await response.json();
+                            if (data.items && data.items.length > 0) {
+                                const book = data.items[0].volumeInfo;
+                                let title = book.title || "";
+                                
+                                // Add authors if available
+                                if (book.authors && book.authors.length) {
+                                    const validAuthors = book.authors.filter(a => a && a.trim().length > 0);
+                                    if (validAuthors.length) {
+                                        title += ` by ${validAuthors.join(', ')}`;
+                                    }
+                                }
+                                
+                                let description = "";
+                                if (book.description) {
+                                    description = book.description.replace(/<[^>]*>?/gm, '');
+                                } else if (book.subtitle) {
+                                    description = book.subtitle;
+                                }
+                                
+                                if (title) {
+                                    bookData = { title, description };
+                                    found = true;
+                                    console.log("Book found via Google Books");
+                                }
+                            }
+                        } else if (response.status === 429) {
+                            console.warn("Google Books API rate limit hit");
+                        }
+                    } catch (error) {
+                        console.warn("Google Books fetch error:", error);
+                    }
+                }
+
+                // --- Success or Failure ---
+                if (found && bookData.title) {
                     isbnCache[cleanIsbn] = bookData;
                     saveCache();
 
-                    // Fill the form
                     document.getElementById('listing-title').value = bookData.title;
                     document.getElementById('listing-description').value = bookData.description;
                     document.getElementById('listing-isbn').value = cleanIsbn;
                     document.getElementById('isbn-section').style.display = 'none';
                     document.getElementById('main-form-section').style.display = 'block';
                     
-                    // Stop scanner if active
                     if (html5QrCode && isScanning) {
                         html5QrCode.stop().then(() => { isScanning = false; }).catch(e => console.log(e));
                     }
-
-                } catch (error) {
-                    console.error('OpenLibrary fetch error:', error);
-                    alert(`Could not find book data for this ISBN.\n\nError: ${error.message || ui[lang].notFound}`);
+                } else {
+                    alert(`Could not find book data for ISBN ${cleanIsbn}. Please fill in the details manually.`);
                 }
 
                 manualBtn.innerHTML = `<i class="fas fa-search"></i>`;
                 manualBtn.disabled = false;
             }
-            // ========== END OF fetchBookData ==========
+            // ========== END OF DUAL API LOOKUP ==========
 
             // ---- WORKING BARCODE SCANNER (with explicit permission trigger) ----
             let html5QrCode = null;
@@ -726,7 +746,7 @@
                 document.getElementById('main-form-section').style.display = 'block';
             };
 
-            // --- Tag management (unchanged) ---
+            // --- Tag management ---
             const tagInput = document.getElementById('tag-input');
             const selectedTagsContainer = document.getElementById('selected-tags');
             const suggestionsBox = document.getElementById('suggestions-box');
@@ -777,7 +797,7 @@
             
             tagInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput.value); } };
 
-            // Image uploads (unchanged)
+            // Image uploads
             const imageInput = document.getElementById('listing-image-input');
             const previewContainer = document.getElementById('image-preview-container');
 
@@ -806,7 +826,7 @@
                 e.target.value = '';
             };
 
-            // Form submission (unchanged)
+            // Form submission
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
 
