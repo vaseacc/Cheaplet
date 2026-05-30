@@ -1,4 +1,4 @@
-// social.js
+// social.js (fixed for admin & post owner visibility)
 import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp, query, where, onSnapshot, orderBy, doc, getDoc, updateDoc, increment, arrayUnion, arrayRemove, limit, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
@@ -1032,7 +1032,8 @@ async function main() {
             const frag = document.createDocumentFragment();
             snapshot.docs.forEach(docSnap => {
                 const d = docSnap.data();
-                if (d.status === 'pending' || d.status === 'rejected') return;
+                // For guests, only show active posts
+                if (d.status !== 'active') return;
                 frag.appendChild(createPostElement(docSnap.id, d, 'social_posts_global'));
             });
             feedContainer.appendChild(frag);
@@ -1344,8 +1345,17 @@ async function main() {
                 snapshot.docs.forEach(docSnap => {
                     const d = docSnap.data();
                     
-                    if (d.status === 'pending' && d.authorUid !== currentUser?.uid) return;
-                    if (d.status === 'rejected' && d.authorUid !== currentUser?.uid) return;
+                    // FIXED: Show pending and rejected posts only for the author or admin
+                    if (d.status === 'pending') {
+                        const isOwner = currentUser?.uid === d.authorUid;
+                        const isAdminUser = currentUser?.role === 'admin';
+                        if (!isOwner && !isAdminUser) return;
+                    }
+                    if (d.status === 'rejected') {
+                        const isOwner = currentUser?.uid === d.authorUid;
+                        const isAdminUser = currentUser?.role === 'admin';
+                        if (!isOwner && !isAdminUser) return;
+                    }
 
                     frag.appendChild(createPostElement(docSnap.id, d, collectionName));
                     postCounter++;
