@@ -285,7 +285,7 @@
             </button>
         </div>
 
-        <!-- HIDDEN MAIN FORM -->
+        <!-- MAIN FORM -->
         <div id="main-form-section" style="display: none;">
             <div class="form-wrapper">
                 <form id="listing-form">
@@ -531,39 +531,27 @@
                 } catch(e) { console.warn("Could not save ISBN cache"); }
             }
 
-            // ---------- SMART ISBN EXTRACTOR AND HYPHENATION ----------
-            function extractIsbnFromScannedText(rawText) {
+            // ---------- ISBN EXTRACTION ----------
+            function extractIsbn(rawText) {
+                if (!rawText) return null;
                 let digits = rawText.replace(/[^0-9]/g, '');
-                // Try to find a valid 13-digit ISBN (starting with 978 or 979)
+                if (digits.length === 13 || digits.length === 10) return digits;
                 let match13 = digits.match(/(978|979)\d{10}/);
                 if (match13) return match13[0];
                 let match10 = digits.match(/\d{10}/);
                 if (match10) return match10[0];
-                return digits;
+                return null;
             }
 
-            function hyphenateIsbn13(isbn13) {
-                // Convert 13-digit ISBN to hyphenated format: XXX-X-XXXX-XXXX-X
-                // Example: 9782761787116 -> 978-2-7617-8711-6
-                if (isbn13.length !== 13) return isbn13;
-                return `${isbn13.substring(0,3)}-${isbn13.substring(3,4)}-${isbn13.substring(4,8)}-${isbn13.substring(8,12)}-${isbn13.substring(12)}`;
-            }
-
-            // ---------- ENHANCED ISBN LOOKUP WITH BOTH RAW AND HYPHENATED FORMATS ----------
-            async function fetchBookData(isbn) {
-                let cleanIsbn = extractIsbnFromScannedText(isbn);
-                
-                if (cleanIsbn.length === 13 || cleanIsbn.length === 10) {
-                    // valid
-                } else {
-                    alert("Scanned code is not a valid ISBN (must be 10 or 13 digits). Please try again or enter manually.");
+            // ---------- BOOK FETCH USING OPENLIBRARY ONLY (no Google, no quota) ----------
+            async function fetchBookData(isbnInput) {
+                const cleanIsbn = extractIsbn(isbnInput);
+                if (!cleanIsbn) {
+                    alert("Invalid ISBN (must be 10 or 13 digits). Please try again or enter manually.");
                     return;
                 }
 
-                // Also create hyphenated version if 13-digit
-                let hyphenatedIsbn = (cleanIsbn.length === 13) ? hyphenateIsbn13(cleanIsbn) : cleanIsbn;
-
-                // Check cache using raw ISBN as key
+                // Check cache
                 if (isbnCache[cleanIsbn]) {
                     const cached = isbnCache[cleanIsbn];
                     document.getElementById('listing-title').value = cached.title;
@@ -581,84 +569,57 @@
                 manualBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
                 manualBtn.disabled = true;
 
-                let bookData = { title: "", description: "" };
-                let found = false;
-
-                // Helper to try a given ISBN string (raw or hyphenated) against both APIs
-                async function tryIsbn(isbnStr) {
-                    // OpenLibrary
-                    try {
-                        const url = `https://openlibrary.org/isbn/${encodeURIComponent(isbnStr)}.json`;
-                        const res = await fetch(url, { headers: { 'User-Agent': 'ScoraliaBookApp (admin@scoralia.ca)' } });
-                        if (res.ok) {
-                            const data = await res.json();
-                            const title = data.title || "";
-                            let description = "";
-                            if (data.description) description = typeof data.description === 'string' ? data.description : (data.description.value || "");
-                            if (!description && data.subtitle) description = data.subtitle;
-                            if (title) return { title, description };
-                        }
-                    } catch(e) { /* ignore */ }
+                try {
+                    // OpenLibrary API with data format
+                    const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`;
+                    const response = await fetch(url, {
+                        headers: { 'User-Agent': 'ScoraliaBookApp (admin@scoralia.ca)' }
+                    });
                     
-                    // Google Books direct
-                    try {
-                        const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbnStr)}`;
-                        const res = await fetch(url);
-                        if (res.ok) {
-                            const data = await res.json();
-                            if (data.items && data.items.length) {
-                                const book = data.items[0].volumeInfo;
-                                let title = book.title || "";
-                                if (book.authors && book.authors.length) {
-                                    const validAuthors = book.authors.filter(a => a && a.trim());
-                                    if (validAuthors.length) title += ` by ${validAuthors.join(', ')}`;
-                                }
-                                let description = "";
-                                if (book.description) description = book.description.replace(/<[^>]*>?/gm, '');
-                                else if (book.subtitle) description = book.subtitle;
-                                if (title) return { title, description };
-                            }
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                    const data = await response.json();
+                    const key = `ISBN:${cleanIsbn}`;
+                    const book = data[key];
+
+                    if (book && book.title) {
+                        let title = book.title || "";
+                        if (book.authors && book.authors.length) {
+                            const authorNames = book.authors.map(a => a.name).filter(n => n && n.trim());
+                            if (authorNames.length) title += ` by ${authorNames.join(', ')}`;
                         }
-                    } catch(e) { /* ignore */ }
-                    return null;
-                }
-
-                // Try raw digits first
-                let result = await tryIsbn(cleanIsbn);
-                if (result) {
-                    bookData = result;
-                    found = true;
-                } 
-                // If failed and we have a hyphenated version, try that
-                else if (cleanIsbn !== hyphenatedIsbn) {
-                    result = await tryIsbn(hyphenatedIsbn);
-                    if (result) {
-                        bookData = result;
-                        found = true;
-                        console.log(`Found using hyphenated ISBN: ${hyphenatedIsbn}`);
+                        let description = "";
+                        if (book.description) {
+                            description = typeof book.description === 'string' ? book.description : (book.description.value || "");
+                        }
+                        if (!description && book.excerpts && book.excerpts.length) {
+                            description = book.excerpts[0].text || "";
+                        }
+                        
+                        const bookData = { title, description };
+                        isbnCache[cleanIsbn] = bookData;
+                        saveCache();
+                        
+                        document.getElementById('listing-title').value = title;
+                        document.getElementById('listing-description').value = description;
+                        document.getElementById('listing-isbn').value = cleanIsbn;
+                        document.getElementById('isbn-section').style.display = 'none';
+                        document.getElementById('main-form-section').style.display = 'block';
+                        if (html5QrCode && isScanning) {
+                            html5QrCode.stop().then(() => { isScanning = false; }).catch(e => console.log(e));
+                        }
+                    } else {
+                        alert(`ISBN ${cleanIsbn} not found in OpenLibrary. Please fill in the details manually.`);
                     }
+                } catch (error) {
+                    console.error("OpenLibrary fetch error:", error);
+                    alert(`Could not find book data for ISBN ${cleanIsbn}. Please fill in the details manually.\n\nError: ${error.message}`);
+                } finally {
+                    manualBtn.innerHTML = `<i class="fas fa-search"></i>`;
+                    manualBtn.disabled = false;
                 }
-
-                if (found && bookData.title) {
-                    isbnCache[cleanIsbn] = bookData;
-                    saveCache();
-                    document.getElementById('listing-title').value = bookData.title;
-                    document.getElementById('listing-description').value = bookData.description;
-                    document.getElementById('listing-isbn').value = cleanIsbn;
-                    document.getElementById('isbn-section').style.display = 'none';
-                    document.getElementById('main-form-section').style.display = 'block';
-                    if (html5QrCode && isScanning) {
-                        html5QrCode.stop().then(() => { isScanning = false; }).catch(e => console.log(e));
-                    }
-                } else {
-                    alert(`Could not find book data for ISBN ${cleanIsbn}. Please fill in the details manually.`);
-                }
-
-                manualBtn.innerHTML = `<i class="fas fa-search"></i>`;
-                manualBtn.disabled = false;
             }
 
-            // ---------- SCANNER CODE ----------
+            // ---------- WORKING BARCODE SCANNER ----------
             let html5QrCode = null;
             let isScanning = false;
             const startScanBtn = document.getElementById('start-scan-btn');
@@ -696,16 +657,21 @@
                         (decodedText) => {
                             stopScanner().then(() => { fetchBookData(decodedText); });
                         },
-                        (errorMessage) => { /* ignore */ }
+                        (errorMessage) => { /* ignore scanning errors */ }
                     );
                     isScanning = true;
                     startScanBtn.classList.add('stop');
                     startScanBtn.innerHTML = `<i class="fas fa-times"></i> Stop Scanner`;
                     startScanBtn.disabled = false;
                 } catch (err) {
-                    console.error(err);
+                    console.error("Camera start error:", err);
                     readerDiv.style.display = 'none';
-                    let msg = err.name === 'NotAllowedError' ? ui[lang].cameraDenied : ui[lang].cameraError + ' ' + (err.message || err);
+                    let msg = '';
+                    if (err.name === 'NotAllowedError') {
+                        msg = ui[lang].cameraDenied;
+                    } else {
+                        msg = ui[lang].cameraError + ' ' + (err.message || err);
+                    }
                     alert(msg);
                     startScanBtn.disabled = false;
                     startScanBtn.innerHTML = `<i class="fas fa-camera"></i> ${ui[lang].btnScan}`;
@@ -807,7 +773,7 @@
                 e.target.value = '';
             };
 
-            // ---------- FORM SUBMISSION (unchanged for brevity, but include full) ----------
+            // ---------- FORM SUBMISSION ----------
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
                 const logs = [];
