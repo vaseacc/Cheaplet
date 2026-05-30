@@ -13,7 +13,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,700;0,900;1,700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* --- same root and layout styles, unchanged --- */
+        /* --- all styles unchanged --- */
         :root {
             --ink:       #0C1446;
             --deep:      #2B5C92;
@@ -135,7 +135,7 @@
         .social-promo { margin-top: 16px; text-align: center; font-size: 0.8rem; color: var(--text-muted); background: var(--off-white); padding: 8px 12px; border-radius: 40px; display: inline-block; width: 100%; }
         .social-promo i { color: var(--gold); margin-right: 6px; }
 
-        /* Camera status UI */
+        /* Camera status UI (unchanged) */
         .camera-status-box { background: var(--surface); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 12px; text-align: center; font-weight: 600; }
         .camera-status-box.warning { background: #fff3cd; color: #856404; }
         .camera-buttons { display: flex; flex-direction: column; gap: 10px; }
@@ -197,7 +197,8 @@
             <div id="reader" style="width: 100%; max-width: 400px; margin: 0 auto 20px; display: none; border-radius: var(--radius-sm); overflow: hidden; border: 2px solid var(--mist);"></div>
 
             <div class="camera-buttons">
-                <button type="button" class="btn-allow-camera" id="allow-camera-btn" style="display: none;">
+                <!-- THE FIX: button is now visible by default -->
+                <button type="button" class="btn-allow-camera" id="allow-camera-btn">
                     <i class="fas fa-unlock-alt"></i> <span id="ui-allow-camera">Allow Camera Access</span>
                 </button>
                 <button type="button" class="btn-submit" id="start-scan-btn" disabled style="width: 100%;">
@@ -219,7 +220,7 @@
             <div class="form-wrapper">
                 <form id="listing-form">
                     <input type="hidden" id="listing-isbn" value="">
-                    <!-- form sections unchanged -->
+                    <!-- all form sections unchanged -->
                     <div class="form-section">
                         <div class="section-label"><i class="fas fa-pen"></i> <span id="ui-sec-basic">Basic Info</span></div>
                         <label class="field-label" id="ui-label-title">Title</label>
@@ -398,7 +399,7 @@
                 }
             };
 
-            // Apply texts to all UI elements
+            // Apply texts
             document.getElementById('ui-main-title').textContent = ui[lang].mainTitle;
             document.getElementById('ui-main-subtitle').textContent = ui[lang].mainSub;
             document.getElementById('ui-isbn-title').textContent = ui[lang].isbnTitle;
@@ -440,7 +441,6 @@
             document.getElementById('post-btn-text').textContent = ui[lang].btnPost;
             document.getElementById('cancelListingBtn').textContent = ui[lang].btnCancel;
 
-            // --- Same globals as before ---
             let currentUser = null;
             let internalSchoolName = "Global Campus";
             let selectedFiles = [];
@@ -460,7 +460,7 @@
                 } else { window.location.href = '/login'; }
             });
 
-            // ISBN cache and fetch function (unchanged)
+            // ISBN cache
             const isbnCache = {};
             try {
                 const saved = localStorage.getItem('scoralia_isbn_cache');
@@ -505,7 +505,6 @@
                 manualBtn.disabled = true;
 
                 let bookData = { title: "", description: "" };
-
                 const parseGoogleBooks = (data) => {
                     if (data.items && data.items.length > 0) {
                         const book = data.items[0].volumeInfo;
@@ -576,7 +575,7 @@
                 manualBtn.disabled = false;
             }
 
-            // --- NEW: Robust camera permission handling ---
+            // --- CAMERA PERMISSION HANDLING (FIXED) ---
             let html5QrCode = null;
             let isScanning = false;
             let cameraPermissionGranted = false;
@@ -586,21 +585,22 @@
             const startScanBtn = document.getElementById('start-scan-btn');
             const readerDiv = document.getElementById('reader');
 
-            // 1. Check for HTTPS
+            // 1. HTTPS check
             if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
                 diagnosticBox.style.display = 'block';
                 diagnosticBox.classList.add('warning');
                 diagnosticBox.innerHTML = ui[lang].noHttps;
                 startScanBtn.disabled = true;
+                // hide the allow button because camera won't work anyway
+                allowCameraBtn.style.display = 'none';
             } else {
-                // 2. Use Permissions API to check current camera status
+                console.log('HTTPS OK, checking camera permission...');
                 checkCameraPermissionStatus();
             }
 
             async function checkCameraPermissionStatus() {
                 diagnosticBox.style.display = 'block';
                 diagnosticBox.innerHTML = ui[lang].permissionChecking;
-
                 try {
                     const result = await navigator.permissions.query({ name: 'camera' });
                     handlePermissionState(result.state);
@@ -608,8 +608,7 @@
                         handlePermissionState(result.state);
                     });
                 } catch (err) {
-                    // Permissions API not supported (e.g., Firefox Android). Fallback: just show the allow button.
-                    console.warn('Permissions API not available, falling back to user gesture');
+                    console.warn('Permissions API not available, showing allow button');
                     diagnosticBox.innerHTML = ui[lang].permissionPrompt;
                     allowCameraBtn.style.display = 'block';
                     startScanBtn.disabled = true;
@@ -618,31 +617,28 @@
 
             function handlePermissionState(state) {
                 if (state === 'granted') {
-                    diagnosticBox.classList.remove('warning');
                     diagnosticBox.innerHTML = ui[lang].permissionGrantedState;
-                    allowCameraBtn.style.display = 'none';
+                    allowCameraBtn.style.display = 'none';   // already granted
                     cameraPermissionGranted = true;
                     startScanBtn.disabled = false;
                 } else if (state === 'denied') {
                     diagnosticBox.classList.add('warning');
                     diagnosticBox.innerHTML = ui[lang].permissionDenied;
-                    allowCameraBtn.style.display = 'none';
+                    allowCameraBtn.style.display = 'none';   // can't do anything, show reset link
                     startScanBtn.disabled = true;
-                    // Add click handler to the "reset" link
+                    // attach reset link listener
                     document.getElementById('reset-permission-link')?.addEventListener('click', (e) => {
                         e.preventDefault();
-                        // Direct to Chrome's site settings for the origin
                         window.open('chrome://settings/content/siteDetails?site=' + encodeURIComponent(location.origin), '_blank');
                     });
-                } else { // 'prompt' or any other
-                    diagnosticBox.classList.remove('warning');
+                } else { // 'prompt' or unknown
                     diagnosticBox.innerHTML = ui[lang].permissionPrompt;
-                    allowCameraBtn.style.display = 'block';
+                    allowCameraBtn.style.display = 'block';   // show button to ask
                     startScanBtn.disabled = true;
                 }
             }
 
-            // Allow camera button click – triggers getUserMedia
+            // Allow Camera button - triggers real permission prompt
             allowCameraBtn.onclick = async () => {
                 if (cameraPermissionGranted) return;
 
@@ -653,7 +649,6 @@
                     const stream = await navigator.mediaDevices.getUserMedia({
                         video: { facingMode: "environment" }
                     });
-                    // Success: stop the stream, we don't need it now
                     stream.getTracks().forEach(track => track.stop());
                     cameraPermissionGranted = true;
                     allowCameraBtn.style.display = 'none';
@@ -663,7 +658,6 @@
                     console.error('getUserMedia error:', err);
                     allowCameraBtn.disabled = false;
                     allowCameraBtn.innerHTML = `<i class="fas fa-unlock-alt"></i> ${ui[lang].allowCamera}`;
-                    // Map error to user-friendly message
                     let msg = '';
                     const errMsg = (err.message || String(err)).toLowerCase();
                     if (err.name === 'NotAllowedError' || errMsg.includes('not allowed') || errMsg.includes('permission denied')) {
@@ -676,12 +670,12 @@
                         msg = ui[lang].cameraNotSupported + ': ' + err.message;
                     }
                     alert(msg);
-                    // Re-check permission state to update UI
+                    // Re-check permission to update UI (likely denied now)
                     checkCameraPermissionStatus();
                 }
             };
 
-            // Scan barcode button (only active after permission is granted)
+            // Scan button (unchanged)
             startScanBtn.onclick = async () => {
                 if (!cameraPermissionGranted) return;
 
@@ -730,7 +724,7 @@
                 }
             };
 
-            // Skip and manual ISBN buttons (unchanged)
+            // Skip & manual ISBN
             document.getElementById('skip-scan-btn').onclick = () => {
                 if (html5QrCode && isScanning) {
                     html5QrCode.stop().catch(e => console.log(e));
@@ -745,7 +739,7 @@
                 else alert("Please enter an ISBN.");
             };
 
-            // --- Tags and Image uploads (unchanged) ---
+            // Tags
             const tagInput = document.getElementById('tag-input');
             const selectedTagsContainer = document.getElementById('selected-tags');
             const suggestionsBox = document.getElementById('suggestions-box');
@@ -796,6 +790,7 @@
             
             tagInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput.value); } };
 
+            // Image upload
             const imageInput = document.getElementById('listing-image-input');
             const previewContainer = document.getElementById('image-preview-container');
 
