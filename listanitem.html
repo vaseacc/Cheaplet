@@ -531,32 +531,39 @@
                 } catch(e) { console.warn("Could not save ISBN cache"); }
             }
 
-            // ---------- SMART ISBN EXTRACTOR ----------
+            // ---------- SMART ISBN EXTRACTOR AND HYPHENATION ----------
             function extractIsbnFromScannedText(rawText) {
-                // Remove all non-digit characters
                 let digits = rawText.replace(/[^0-9]/g, '');
                 // Try to find a valid 13-digit ISBN (starting with 978 or 979)
                 let match13 = digits.match(/(978|979)\d{10}/);
                 if (match13) return match13[0];
-                // Try to find a 10-digit ISBN
                 let match10 = digits.match(/\d{10}/);
                 if (match10) return match10[0];
-                // If all else fails, return the raw digits (will be validated later)
                 return digits;
             }
 
-            // ---------- IMPROVED BOOK FETCH WITH DIRECT GOOGLE BOOKS ----------
+            function hyphenateIsbn13(isbn13) {
+                // Convert 13-digit ISBN to hyphenated format: XXX-X-XXXX-XXXX-X
+                // Example: 9782761787116 -> 978-2-7617-8711-6
+                if (isbn13.length !== 13) return isbn13;
+                return `${isbn13.substring(0,3)}-${isbn13.substring(3,4)}-${isbn13.substring(4,8)}-${isbn13.substring(8,12)}-${isbn13.substring(12)}`;
+            }
+
+            // ---------- ENHANCED ISBN LOOKUP WITH BOTH RAW AND HYPHENATED FORMATS ----------
             async function fetchBookData(isbn) {
                 let cleanIsbn = extractIsbnFromScannedText(isbn);
                 
                 if (cleanIsbn.length === 13 || cleanIsbn.length === 10) {
-                    // valid length
+                    // valid
                 } else {
                     alert("Scanned code is not a valid ISBN (must be 10 or 13 digits). Please try again or enter manually.");
                     return;
                 }
 
-                // Check cache
+                // Also create hyphenated version if 13-digit
+                let hyphenatedIsbn = (cleanIsbn.length === 13) ? hyphenateIsbn13(cleanIsbn) : cleanIsbn;
+
+                // Check cache using raw ISBN as key
                 if (isbnCache[cleanIsbn]) {
                     const cached = isbnCache[cleanIsbn];
                     document.getElementById('listing-title').value = cached.title;
@@ -577,35 +584,31 @@
                 let bookData = { title: "", description: "" };
                 let found = false;
 
-                // ----- Attempt 1: OpenLibrary (no CORS, free) -----
-                try {
-                    const url = `https://openlibrary.org/isbn/${cleanIsbn}.json`;
-                    const res = await fetch(url, { headers: { 'User-Agent': 'ScoraliaBookApp (admin@scoralia.ca)' } });
-                    if (res.ok) {
-                        const data = await res.json();
-                        const title = data.title || "";
-                        let description = "";
-                        if (data.description) description = typeof data.description === 'string' ? data.description : (data.description.value || "");
-                        if (!description && data.subtitle) description = data.subtitle;
-                        if (title) {
-                            bookData = { title, description };
-                            found = true;
-                            console.log("Found via OpenLibrary");
-                        }
-                    }
-                } catch(e) { console.warn("OpenLibrary error", e); }
-
-                // ----- Attempt 2: Google Books DIRECT (CORS enabled) -----
-                if (!found) {
+                // Helper to try a given ISBN string (raw or hyphenated) against both APIs
+                async function tryIsbn(isbnStr) {
+                    // OpenLibrary
                     try {
-                        const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`;
+                        const url = `https://openlibrary.org/isbn/${encodeURIComponent(isbnStr)}.json`;
+                        const res = await fetch(url, { headers: { 'User-Agent': 'ScoraliaBookApp (admin@scoralia.ca)' } });
+                        if (res.ok) {
+                            const data = await res.json();
+                            const title = data.title || "";
+                            let description = "";
+                            if (data.description) description = typeof data.description === 'string' ? data.description : (data.description.value || "");
+                            if (!description && data.subtitle) description = data.subtitle;
+                            if (title) return { title, description };
+                        }
+                    } catch(e) { /* ignore */ }
+                    
+                    // Google Books direct
+                    try {
+                        const url = `https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbnStr)}`;
                         const res = await fetch(url);
                         if (res.ok) {
                             const data = await res.json();
-                            if (data.items && data.items.length > 0) {
+                            if (data.items && data.items.length) {
                                 const book = data.items[0].volumeInfo;
                                 let title = book.title || "";
-                                // Add authors if present and valid
                                 if (book.authors && book.authors.length) {
                                     const validAuthors = book.authors.filter(a => a && a.trim());
                                     if (validAuthors.length) title += ` by ${validAuthors.join(', ')}`;
@@ -613,16 +616,27 @@
                                 let description = "";
                                 if (book.description) description = book.description.replace(/<[^>]*>?/gm, '');
                                 else if (book.subtitle) description = book.subtitle;
-                                if (title) {
-                                    bookData = { title, description };
-                                    found = true;
-                                    console.log("Found via Google Books");
-                                }
+                                if (title) return { title, description };
                             }
-                        } else if (res.status === 429) {
-                            console.warn("Google Books rate limit");
                         }
-                    } catch(e) { console.warn("Google Books error", e); }
+                    } catch(e) { /* ignore */ }
+                    return null;
+                }
+
+                // Try raw digits first
+                let result = await tryIsbn(cleanIsbn);
+                if (result) {
+                    bookData = result;
+                    found = true;
+                } 
+                // If failed and we have a hyphenated version, try that
+                else if (cleanIsbn !== hyphenatedIsbn) {
+                    result = await tryIsbn(hyphenatedIsbn);
+                    if (result) {
+                        bookData = result;
+                        found = true;
+                        console.log(`Found using hyphenated ISBN: ${hyphenatedIsbn}`);
+                    }
                 }
 
                 if (found && bookData.title) {
@@ -793,7 +807,7 @@
                 e.target.value = '';
             };
 
-            // ---------- FORM SUBMISSION (unchanged) ----------
+            // ---------- FORM SUBMISSION (unchanged for brevity, but include full) ----------
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
                 const logs = [];
