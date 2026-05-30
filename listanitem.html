@@ -134,6 +134,83 @@
         .social-promo { margin-top: 16px; text-align: center; font-size: 0.8rem; color: var(--text-muted); background: var(--off-white); padding: 8px 12px; border-radius: 40px; display: inline-block; width: 100%; }
         .social-promo i { color: var(--gold); margin-right: 6px; }
 
+        /* Scanner card styling */
+        .scanner-card {
+            background: var(--white);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            border: 1px solid rgba(179,205,224,0.3);
+            padding: 28px 24px;
+            text-align: center;
+        }
+        .scanner-card h2 {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            color: var(--ink);
+            margin-bottom: 8px;
+        }
+        .scanner-card p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+        .scanner-card .btn-scan {
+            width: 100%;
+            background: var(--ink);
+            color: var(--white);
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 14px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .scanner-card .btn-scan:hover:not(:disabled) { background: var(--deep); }
+        .scanner-card .btn-scan:disabled { opacity: 0.6; cursor: not-allowed; }
+        .scanner-card .btn-scan.stop { background: var(--red); }
+        .scanner-card .btn-scan.stop:hover { background: #a52820; }
+        #reader {
+            width: 100%;
+            max-width: 400px;
+            margin: 16px auto 0;
+            display: none;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            border: 2px solid var(--mist);
+        }
+        .manual-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            align-items: center;
+        }
+        .manual-group input {
+            margin-bottom: 0;
+            flex: 1;
+        }
+        .manual-group button {
+            background: var(--surface);
+            color: var(--deep);
+            border: 1.5px solid var(--mist);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .skip-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            text-decoration: underline;
+            cursor: pointer;
+            margin-top: 12px;
+        }
+
         @media (max-width: 767px) {
             nav { display: none; }
             .page-hero { padding: 28px 16px; }
@@ -176,27 +253,29 @@
     </div>
 
     <div class="form-outer">
-        
-        <div id="isbn-section" class="form-wrapper" style="text-align: center; margin-bottom: 20px;">
-            <div class="section-label" style="justify-content: center;"><i class="fas fa-barcode"></i> <span id="ui-isbn-title">Quick Book Scan</span></div>
-            <p id="ui-isbn-desc" style="color: var(--text-muted); margin-bottom: 20px; font-size: 0.9rem;">Scan your book's barcode to automatically fill in the title and description.</p>
 
-            <div id="reader" style="width: 100%; max-width: 400px; margin: 0 auto 20px; display: none; border-radius: var(--radius-sm); overflow: hidden; border: 2px solid var(--mist);"></div>
+        <!-- SCANNER CARD (replaces old isbn-section) -->
+        <div class="scanner-card" id="isbn-section">
+            <h2 id="ui-isbn-title">Quick Book Scan</h2>
+            <p id="ui-isbn-desc">Scan your book's barcode to fill in the title and description automatically.</p>
 
-            <button type="button" class="btn-submit" id="start-scan-btn" style="width: 100%; margin-bottom: 15px;">
+            <button type="button" class="btn-scan" id="start-scan-btn">
                 <i class="fas fa-camera"></i> <span id="ui-btn-scan">Scan Barcode</span>
             </button>
 
-            <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
-                <input type="text" id="manual-isbn-input" placeholder="Enter ISBN manually..." style="margin-bottom: 0; flex: 1;">
-                <button type="button" class="btn-submit" id="manual-isbn-btn" style="min-width: 50px; padding: 10px;"><i class="fas fa-search"></i></button>
+            <div id="reader"></div>
+
+            <div class="manual-group">
+                <input type="text" id="manual-isbn-input" placeholder="Enter ISBN manually...">
+                <button type="button" id="manual-isbn-btn"><i class="fas fa-search"></i> Lookup</button>
             </div>
 
-            <button type="button" class="btn-cancel" id="skip-scan-btn" style="width: 100%;">
+            <button class="skip-btn" id="skip-scan-btn">
                 <span id="ui-btn-skip">Skip & Fill Manually</span>
             </button>
         </div>
 
+        <!-- HIDDEN MAIN FORM (unchanged) -->
         <div id="main-form-section" style="display: none;">
             <div class="form-wrapper">
                 <form id="listing-form">
@@ -335,8 +414,8 @@
                     tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.",
                     tagUses: "uses", uploadFail: "Image upload failed. Please try again.",
                     reviewMessage: "Your listing is being reviewed. You will be notified once approved.",
-                    cameraDenied: "Camera permission denied. Please allow camera access in your browser settings. (On Android/Chrome: tap 🔒 → Permissions → Camera → Allow). Then refresh.",
-                    cameraError: "Could not start camera. Please check your device."
+                    cameraDenied: "Camera permission denied. Please allow camera access in your browser settings.\n\n(On Android/Chrome: tap 🔒 → Permissions → Camera → Allow). Then refresh.",
+                    cameraError: "Could not start camera. Make sure you're on a secure connection (HTTPS) and your device has a camera."
                 },
                 fr: {
                     mainTitle: "Publier un article", mainSub: "Remplissez les détails ci-dessous et votre livre sera automatiquement examiné.",
@@ -358,11 +437,12 @@
                     tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.",
                     tagUses: "utilisations", uploadFail: "Échec du téléchargement. Veuillez réessayer.",
                     reviewMessage: "Votre annonce est en cours d'examen. Vous serez notifié une fois approuvée.",
-                    cameraDenied: "Permission de la caméra refusée. Veuillez autoriser l'accès dans les paramètres du navigateur. (Android/Chrome : appuyez sur 🔒 → Autorisations → Caméra → Autoriser). Actualisez ensuite.",
-                    cameraError: "Impossible de démarrer la caméra. Veuillez vérifier votre appareil."
+                    cameraDenied: "Permission de la caméra refusée. Veuillez autoriser l'accès dans les paramètres du navigateur.\n\n(Android/Chrome : appuyez sur 🔒 → Autorisations → Caméra → Autoriser). Actualisez ensuite.",
+                    cameraError: "Impossible de démarrer la caméra. Vérifiez que vous êtes en HTTPS et que votre appareil possède une caméra."
                 }
             };
 
+            // Apply texts
             document.getElementById('ui-main-title').textContent = ui[lang].mainTitle;
             document.getElementById('ui-main-subtitle').textContent = ui[lang].mainSub;
             document.getElementById('ui-isbn-title').textContent = ui[lang].isbnTitle;
@@ -422,9 +502,7 @@
                 } else { window.location.href = '/login'; }
             });
 
-            let html5QrCode;
-            let isScanning = false;
-            
+            // ISBN cache
             const isbnCache = {};
             try {
                 const saved = localStorage.getItem('scoralia_isbn_cache');
@@ -538,51 +616,76 @@
                 manualBtn.disabled = false;
             }
 
-            // SIMPLE SCAN BUTTON HANDLER — NO PERMISSION CHECKS BEFOREHAND
-            document.getElementById('start-scan-btn').onclick = async () => {
-                const scanBtn = document.getElementById('start-scan-btn');
-                const originalHTML = `<i class="fas fa-camera"></i> <span id="ui-btn-scan">${ui[lang].btnScan}</span>`;
+            // ---- NEW SIMPLE SCANNER ----
+            let html5QrCode = null;
+            let isScanning = false;
 
+            const startScanBtn = document.getElementById('start-scan-btn');
+            const readerDiv = document.getElementById('reader');
+            const scanBtnText = document.getElementById('ui-btn-scan');
+
+            // Check for HTTPS (required for camera)
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                startScanBtn.disabled = true;
+                startScanBtn.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Camera requires HTTPS`;
+                startScanBtn.title = "Camera access is only available over a secure connection (HTTPS). Please open this page using https://";
+                // Still allow manual input
+            }
+
+            startScanBtn.addEventListener('click', async () => {
                 // If already scanning, stop
                 if (isScanning) {
                     try { await html5QrCode.stop(); } catch(e) {}
                     isScanning = false;
-                    document.getElementById('reader').style.display = 'none';
-                    scanBtn.innerHTML = originalHTML;
-                    scanBtn.style.background = 'var(--ink)';
+                    readerDiv.style.display = 'none';
+                    startScanBtn.classList.remove('stop');
+                    startScanBtn.innerHTML = `<i class="fas fa-camera"></i> ${ui[lang].btnScan}`;
                     return;
                 }
 
-                scanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Starting camera…`;
-                scanBtn.disabled = true;
+                // Disable button while starting
+                startScanBtn.disabled = true;
+                startScanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Starting camera...`;
 
                 try {
-                    if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-                    document.getElementById('reader').style.display = 'block';
+                    if (!html5QrCode) {
+                        html5QrCode = new Html5Qrcode("reader");
+                    }
 
+                    readerDiv.style.display = 'block';
+                    
                     await html5QrCode.start(
                         { facingMode: "environment" },
                         { fps: 10, qrbox: { width: 250, height: 150 } },
                         (decodedText) => {
+                            // Success: stop scanner and use the ISBN
                             html5QrCode.stop().then(() => {
                                 isScanning = false;
-                                document.getElementById('reader').style.display = 'none';
-                                scanBtn.innerHTML = originalHTML;
-                                scanBtn.style.background = 'var(--ink)';
-                                scanBtn.disabled = false;
+                                readerDiv.style.display = 'none';
+                                startScanBtn.classList.remove('stop');
+                                startScanBtn.innerHTML = `<i class="fas fa-camera"></i> ${ui[lang].btnScan}`;
+                                startScanBtn.disabled = false;
                                 fetchBookData(decodedText);
-                            });
+                            }).catch(() => {});
                         },
-                        (errMsg) => { /* ignore scan errors */ }
+                        (errorMessage) => {
+                            // scan errors are normal – ignore them
+                        }
                     );
 
+                    // Scanner started successfully
                     isScanning = true;
-                    scanBtn.disabled = false;
-                    scanBtn.innerHTML = `<i class="fas fa-times"></i> Stop Scanner`;
-                    scanBtn.style.background = 'var(--red)';
+                    startScanBtn.disabled = false;
+                    startScanBtn.classList.add('stop');
+                    startScanBtn.innerHTML = `<i class="fas fa-times"></i> Stop Scanner`;
 
                 } catch (err) {
                     console.error('Scanner error:', err);
+                    startScanBtn.disabled = false;
+                    startScanBtn.classList.remove('stop');
+                    startScanBtn.innerHTML = `<i class="fas fa-camera"></i> ${ui[lang].btnScan}`;
+                    readerDiv.style.display = 'none';
+
                     let msg = '';
                     const errMsg = (err.message || String(err)).toLowerCase();
                     if (err.name === 'NotAllowedError' || errMsg.includes('not allowed') || errMsg.includes('permission denied')) {
@@ -591,19 +694,17 @@
                         msg = ui[lang].cameraError + ' ' + err.message;
                     }
                     alert(msg);
-
-                    scanBtn.disabled = false;
-                    scanBtn.innerHTML = originalHTML;
-                    document.getElementById('reader').style.display = 'none';
                 }
-            };
+            });
 
+            // Manual ISBN lookup
             document.getElementById('manual-isbn-btn').onclick = () => {
                 const val = document.getElementById('manual-isbn-input').value.trim();
                 if(val) fetchBookData(val);
                 else alert("Please enter an ISBN.");
             };
 
+            // Skip button
             document.getElementById('skip-scan-btn').onclick = () => {
                 if(html5QrCode && isScanning) {
                     html5QrCode.stop().catch(e=>console.log(e));
