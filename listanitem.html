@@ -1,184 +1,238 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- This is crucial for viewport scaling on mobile devices -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-    <title>Live QR/Barcode Scanner</title>
-    <!-- Include html5-qrcode library from CDN -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Camera Scanner Test - Scoralia</title>
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
-        /* Simple styles for layout */
-        body { font-family: sans-serif; text-align: center; margin: 20px; }
-        #reader { width: 100%; max-width: 500px; margin: 0 auto; }
-        button { margin: 10px; padding: 10px 15px; font-size: 16px; cursor: pointer; }
-        #result { margin-top: 20px; font-weight: bold; word-wrap: break-word; }
-        .fallback { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 20px; }
-        .error { color: red; }
+        * { box-sizing: border-box; }
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+            background: #0C1446;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            max-width: 550px;
+            width: 100%;
+            border-radius: 32px;
+            padding: 28px 24px;
+            box-shadow: 0 25px 40px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+            color: #0C1446;
+        }
+        .secure-badge {
+            background: #e6f4ea;
+            color: #1e7e34;
+            padding: 6px 12px;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #0C1446;
+            color: white;
+            border: none;
+            padding: 14px 24px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 60px;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.2s;
+            margin-top: 16px;
+        }
+        button:active { transform: scale(0.97); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        #reader {
+            width: 100%;
+            margin: 20px 0;
+            border-radius: 20px;
+            overflow: hidden;
+            display: none;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 12px;
+            background: #f0f2f5;
+            border-radius: 16px;
+            word-break: break-all;
+            font-family: monospace;
+        }
+        .error {
+            color: #c0392b;
+            background: #fbe9e7;
+        }
+        .fallback {
+            margin-top: 20px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+        input[type="file"] {
+            margin-top: 12px;
+        }
     </style>
 </head>
 <body>
-
-    <h1>QR / Barcode Scanner</h1>
-    <p>Click the button below to start scanning.</p>
-
-    <div id="reader" style="display: none;"></div>
-    
-    <div>
-        <button id="startBtn">📷 Start Camera Scanner</button>
-        <button id="stopBtn" disabled>⏹️ Stop Scanner</button>
-    </div>
-
-    <div id="result">Scan result will appear here.</div>
+<div class="card">
+    <h1>📸 Barcode Scanner</h1>
+    <div class="secure-badge" id="secureStatus">Checking security...</div>
+    <p>Click the button below → browser will ask for camera permission.</p>
+    <button id="startBtn">🔘 Start Camera Scanner</button>
+    <div id="reader"></div>
+    <div class="result" id="result">Ready. Scan result will appear here.</div>
 
     <div class="fallback">
-        <h3>Having trouble with your camera? Scan from an image file instead:</h3>
+        <p><strong>📁 Alternatively, scan from an image:</strong></p>
         <input type="file" id="fileInput" accept="image/*">
-        <p id="fileResult"></p>
+        <div id="fileResult" class="result" style="margin-top: 12px;"></div>
     </div>
+</div>
 
-    <script>
-        // --- Configuration ---
-        const qrCodeRegionId = "reader";
-        let html5QrCode = null; // Holds the scanner instance
-        let isScanning = false;
-
-        // --- DOM Elements ---
+<script>
+    (function() {
+        // ---- DOM elements ----
         const startBtn = document.getElementById('startBtn');
-        const stopBtn = document.getElementById('stopBtn');
+        const readerDiv = document.getElementById('reader');
         const resultDiv = document.getElementById('result');
+        const secureSpan = document.getElementById('secureStatus');
         const fileInput = document.getElementById('fileInput');
         const fileResultDiv = document.getElementById('fileResult');
 
-        // --- Helper function to update UI and scanner state ---
-        function setScanningState(scanning) {
-            isScanning = scanning;
-            startBtn.disabled = scanning;
-            stopBtn.disabled = !scanning;
+        let html5QrCode = null;
+        let isScanning = false;
+
+        // ---- Show secure context status ----
+        if (window.isSecureContext) {
+            secureSpan.innerHTML = '✅ Secure context (HTTPS) – camera allowed';
+            secureSpan.style.background = '#e6f4ea';
+        } else {
+            secureSpan.innerHTML = '⚠️ NOT secure – camera will not work. Use HTTPS or localhost.';
+            secureSpan.style.background = '#ffe6e5';
+            startBtn.disabled = true;
+            resultDiv.innerHTML = '❌ Camera requires HTTPS. Please open this page via https://';
         }
 
-        // --- Function to stop the scanner ---
+        // ---- Helper: stop scanner ----
         async function stopScanner() {
             if (html5QrCode && isScanning) {
                 try {
                     await html5QrCode.stop();
-                    console.log("Scanner stopped successfully.");
-                } catch (err) {
-                    console.error("Error stopping scanner:", err);
-                } finally {
-                    // Hide the reader container when stopped
-                    document.getElementById(qrCodeRegionId).style.display = 'none';
-                    setScanningState(false);
-                }
+                    console.log("Scanner stopped");
+                } catch(e) { console.warn(e); }
+                isScanning = false;
+                readerDiv.style.display = 'none';
+                startBtn.innerText = '🔘 Start Camera Scanner';
+                startBtn.disabled = false;
             }
         }
 
-        // --- Function to start the scanner ---
+        // ---- Start scanner (triggers permission prompt) ----
         async function startScanner() {
-            // Before starting, stop any existing scanner instance to ensure a clean slate
+            // Stop any existing scanner first
             await stopScanner();
 
-            // 1. Check for a secure context (HTTPS or localhost)
-            if (!window.isSecureContext) {
-                const errorMsg = "Camera access is only allowed on secure origins (HTTPS or localhost). Please access this page via HTTPS.";
-                console.error(errorMsg);
-                resultDiv.innerHTML = `<span class="error">Error: ${errorMsg}</span>`;
-                return;
-            }
+            // Make reader div visible (important for some browsers)
+            readerDiv.style.display = 'block';
+            readerDiv.style.minHeight = '300px';
 
-            // 2. Show the reader container (it might have been hidden)
-            const readerContainer = document.getElementById(qrCodeRegionId);
-            readerContainer.style.display = 'block';
+            // Create new instance
+            html5QrCode = new Html5Qrcode("reader");
 
-            // 3. Create a new instance of Html5Qrcode
-            html5QrCode = new Html5Qrcode(qrCodeRegionId);
-
-            // 4. Define the configuration for the scanner
-            const config = { 
-                fps: 10,     // Frames per second to scan
-                qrbox: { width: 250, height: 150 } // Scanning box size
+            // Camera config: use back camera on mobile
+            const config = {
+                fps: 10,
+                qrbox: { width: 280, height: 200 }
             };
 
             try {
-                // This is the critical line that triggers the camera permission prompt
+                resultDiv.innerHTML = '⏳ Requesting camera access... Please allow when prompted.';
+                resultDiv.classList.remove('error');
+                
+                // This line is what triggers the browser permission dialog.
                 await html5QrCode.start(
-                    { facingMode: "environment" }, // Use the back camera
+                    { facingMode: "environment" },   // back camera
                     config,
-                    (decodedText, decodedResult) => {
-                        // Success callback: A QR code or barcode was detected
-                        console.log(`Code detected: ${decodedText}`);
-                        resultDiv.innerHTML = `✅ Success! Scanned result: <strong>${decodedText}</strong>`;
-                        // Optional: Automatically stop scanning after a successful scan
+                    (decodedText) => {
+                        // Success callback
+                        resultDiv.innerHTML = `✅ Scanned: <strong>${decodedText}</strong>`;
+                        resultDiv.classList.remove('error');
+                        // Optional: auto stop after 1 scan
                         // stopScanner();
                     },
-                    (errorMessage) => {
-                        // Error callback: This is for scanning errors (e.g., no QR code found in the current frame)
-                        // These are normal and can be ignored or logged for debugging.
-                        // console.log(`Scan error: ${errorMessage}`);
+                    (errorMsg) => {
+                        // Ignore scanning errors (no code found yet)
+                        // console.log(errorMsg);
                     }
                 );
-                setScanningState(true);
-                resultDiv.innerHTML = "Scanner is ready. Point your camera at a QR code or barcode.";
+                
+                isScanning = true;
+                startBtn.innerText = '⏹️ Stop Scanner';
+                resultDiv.innerHTML = '📷 Camera active. Point at a barcode or QR code.';
             } catch (err) {
-                // This catch block handles errors from the .start() method
-                console.error("Failed to start scanner:", err);
-                let userMessage = "An unknown error occurred while starting the camera.";
-                readerContainer.style.display = 'none';
-                
-                // Provide more specific error messages based on the error type
+                console.error('Start error:', err);
+                readerDiv.style.display = 'none';
+                let errorMessage = '';
                 if (err.name === 'NotAllowedError') {
-                    userMessage = "Camera permission denied. Please allow camera access for this site in your browser settings, then refresh and try again.";
+                    errorMessage = '❌ Camera permission denied. Please click the camera icon in the address bar and allow access, then refresh and try again.';
                 } else if (err.name === 'NotFoundError') {
-                    userMessage = "No camera found on this device.";
+                    errorMessage = '❌ No camera found on this device.';
                 } else if (err.name === 'NotReadableError') {
-                    userMessage = "Camera is already in use by another application. Please close other apps and try again.";
-                } else if (err.name === 'SecurityError' || err.message.includes('secure')) {
-                    userMessage = "Camera access is restricted to secure contexts (HTTPS). Please access this page via HTTPS.";
-                } else if (err.name === 'AbortError') {
-                    userMessage = "Camera initialization was aborted. The camera might be in use by another tab or application.";
+                    errorMessage = '❌ Camera is already in use by another app. Close other apps and try again.';
+                } else if (err.message && err.message.includes('getUserMedia')) {
+                    errorMessage = '❌ Could not access camera. Make sure you are on HTTPS and no other tab is using the camera.';
+                } else {
+                    errorMessage = `❌ Error: ${err.message || err}`;
                 }
-                
-                resultDiv.innerHTML = `<span class="error">Error: ${userMessage}</span>`;
-                setScanningState(false);
+                resultDiv.innerHTML = errorMessage;
+                resultDiv.classList.add('error');
+                startBtn.disabled = false;
+                startBtn.innerText = '🔘 Start Camera Scanner';
             }
         }
 
-        // --- File-based scanning (The robust fallback) ---
-        async function scanImageFile(file) {
+        // ---- File based scanning (fallback) ----
+        async function scanFromFile(file) {
             if (!file) return;
-            fileResultDiv.innerHTML = "Processing image...";
-            
-            // We need a temporary scanner instance for the file upload
-            // A new instance can be created just for this purpose.
-            const tempScanner = new Html5Qrcode(/* elementId not needed for file scan */);
+            fileResultDiv.innerHTML = '📄 Processing image...';
+            const tempScanner = new Html5Qrcode(/* no element needed */);
             try {
-                const decodedText = await tempScanner.scanFile(file, /* showImage= */ true);
-                fileResultDiv.innerHTML = `✅ Success! Scanned from image: <strong>${decodedText}</strong>`;
+                const decoded = await tempScanner.scanFile(file, true);
+                fileResultDiv.innerHTML = `✅ Image scan result: <strong>${decoded}</strong>`;
+                fileResultDiv.classList.remove('error');
             } catch (err) {
-                console.error("File scan failed:", err);
-                fileResultDiv.innerHTML = `<span class="error">Error: Could not read barcode from this image. Please try a clearer photo.</span>`;
+                console.error(err);
+                fileResultDiv.innerHTML = `❌ Could not read barcode from this image. Try a clearer photo.`;
+                fileResultDiv.classList.add('error');
             } finally {
-                // Clean up the temporary scanner instance
                 tempScanner.clear();
             }
         }
 
-        // --- Event Listeners ---
+        // ---- Event listeners ----
         startBtn.addEventListener('click', startScanner);
-        stopBtn.addEventListener('click', stopScanner);
-        
-        fileInput.addEventListener('change', (event) => {
-            if (event.target.files.length > 0) {
-                scanImageFile(event.target.files[0]);
-            }
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) scanFromFile(e.target.files[0]);
         });
 
-        // --- Initial UI message ---
-        if (!window.isSecureContext) {
-            resultDiv.innerHTML = "<span class='error'>Warning: Page not loaded over HTTPS. Camera scanner will not work. Please use the 'Scan from an image file' option instead.</span>";
-        } else {
-            resultDiv.innerHTML = "Click 'Start Camera Scanner' and allow camera permissions when prompted.";
-        }
-    </script>
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            if (html5QrCode && isScanning) {
+                html5QrCode.stop().catch(() => {});
+            }
+        });
+    })();
+</script>
 </body>
 </html>
