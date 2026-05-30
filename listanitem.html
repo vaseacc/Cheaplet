@@ -531,7 +531,7 @@
                 } catch(e) { console.warn("Could not save ISBN cache"); }
             }
 
-            // ===================== FIXED ISBN FETCH FUNCTION =====================
+            // ========== REPLACED fetchBookData using OpenLibrary (no rate limits) ==========
             async function fetchBookData(isbn) {
                 const cleanIsbn = isbn.replace(/[^0-9]/g, '');
                 if (cleanIsbn.length < 10) {
@@ -539,6 +539,7 @@
                     return;
                 }
 
+                // Check cache
                 if (isbnCache[cleanIsbn]) {
                     const cached = isbnCache[cleanIsbn];
                     document.getElementById('listing-title').value = cached.title;
@@ -558,91 +559,62 @@
 
                 let bookData = { title: "", description: "" };
 
-                // Helper to clean authors (filters empty strings)
-                function formatAuthors(authorsArray) {
-                    if (!authorsArray || !authorsArray.length) return "";
-                    const validAuthors = authorsArray.filter(a => a && typeof a === 'string' && a.trim().length > 0);
-                    if (validAuthors.length === 0) return "";
-                    return ` by ${validAuthors.join(', ')}`;
-                }
-
-                // Parse Google Books response
-                const parseGoogleBooks = (data) => {
-                    if (data.items && data.items.length > 0) {
-                        const book = data.items[0].volumeInfo;
-                        let title = book.title || "";
-                        const authorsSuffix = formatAuthors(book.authors);
-                        if (authorsSuffix) title += authorsSuffix;
-                        
-                        let description = "";
-                        if (book.description) {
-                            description = book.description.replace(/<[^>]*>?/gm, '');
-                        } else if (book.subtitle) {
-                            description = book.subtitle;
-                        }
-                        return { title, description };
-                    }
-                    return null;
-                };
-
                 try {
-                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        const result = parseGoogleBooks(data);
-                        if (result && result.title) bookData = result;
+                    // OpenLibrary API call – free, unlimited, no API key needed
+                    const url = `https://openlibrary.org/isbn/${cleanIsbn}.json`;
+                    const response = await fetch(url, {
+                        headers: {
+                            // Identify your app – this helps get better rate limits
+                            'User-Agent': 'ScoraliaBookApp (admin@scoralia.ca)'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 404) {
+                            throw new Error(`Book with ISBN ${cleanIsbn} not found.`);
+                        } else {
+                            throw new Error(`API error: ${response.status}`);
+                        }
                     }
-                } catch (e) { console.warn("Google ISBN fetch error:", e); }
 
-                if (!bookData.title) {
-                    try {
-                        const res = await fetch(`https://openlibrary.org/isbn/${cleanIsbn}.json`);
-                        if (res.ok) {
-                            const data = await res.json();
-                            let title = data.title || "";
-                            if (data.authors && data.authors.length) {
-                                const authorNames = data.authors.map(a => a.name).filter(n => n && n.trim());
-                                if (authorNames.length) title += ` by ${authorNames.join(', ')}`;
-                            }
-                            let description = "";
-                            if (data.description) {
-                                description = typeof data.description === 'string' ? data.description : (data.description.value || "");
-                            }
-                            if (title) bookData = { title, description };
-                        }
-                    } catch (e) { console.warn("OpenLibrary error:", e); }
-                }
+                    const data = await response.json();
+                    
+                    // Extract title
+                    const title = data.title || "Unknown Title";
+                    
+                    // Extract description (can be string or object with .value)
+                    let description = "";
+                    if (data.description) {
+                        description = typeof data.description === 'string' ? data.description : (data.description.value || "");
+                    }
+                    
+                    bookData = { title, description };
 
-                if (!bookData.title) {
-                    try {
-                        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(isbn)}`);
-                        if (res.ok) {
-                            const data = await res.json();
-                            const result = parseGoogleBooks(data);
-                            if (result && result.title) bookData = result;
-                        }
-                    } catch (e) { console.warn("Google title search error:", e); }
-                }
-
-                if (bookData.title) {
+                    // Save to cache
                     isbnCache[cleanIsbn] = bookData;
                     saveCache();
+
+                    // Fill the form and show it
                     document.getElementById('listing-title').value = bookData.title;
-                    document.getElementById('listing-description').value = bookData.description || "";
+                    document.getElementById('listing-description').value = bookData.description;
                     document.getElementById('listing-isbn').value = cleanIsbn;
                     document.getElementById('isbn-section').style.display = 'none';
                     document.getElementById('main-form-section').style.display = 'block';
+                    
+                    // Stop scanner if active
                     if (html5QrCode && isScanning) {
                         html5QrCode.stop().then(() => { isScanning = false; }).catch(e => console.log(e));
                     }
-                } else {
-                    alert(ui[lang].notFound);
+
+                } catch (error) {
+                    console.error('OpenLibrary fetch error:', error);
+                    alert(`Could not find book data for this ISBN.\n\nError: ${error.message || ui[lang].notFound}`);
                 }
 
                 manualBtn.innerHTML = `<i class="fas fa-search"></i>`;
                 manualBtn.disabled = false;
             }
-            // ===================== END FIXED ISBN FETCH =====================
+            // ========== END OF REPLACED fetchBookData ==========
 
             // ---- WORKING BARCODE SCANNER (with explicit permission trigger) ----
             let html5QrCode = null;
