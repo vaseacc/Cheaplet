@@ -1,1030 +1,184 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="description" content="List your used textbook or course material on Scoralia. Upload photos, set a price, and reach students on your campus in minutes.">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>List an Item - Scoralia</title>
-    <script type="module" src="ui-utils.js"></script>
-    <script type="module" src="global.js"></script>
+    <!-- This is crucial for viewport scaling on mobile devices -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <title>Live QR/Barcode Scanner</title>
+    <!-- Include html5-qrcode library from CDN -->
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,700;0,900;1,700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root {
-            --ink:       #0C1446;
-            --deep:      #2B5C92;
-            --mist:      #B3CDE0;
-            --white:     #FFFFFF;
-            --off-white: #F4F7FC;
-            --surface:   #EBF2FA;
-            --text-body: #1a2a4a;
-            --text-muted:#6b84a3;
-            --gold:      #C8A96E;
-            --green:     #2E7D5E;
-            --red:       #C0392B;
-            --radius-sm: 8px;
-            --radius-md: 16px;
-            --shadow-sm: 0 2px 12px rgba(12,20,70,0.08);
-            --shadow-md: 0 8px 32px rgba(12,20,70,0.13);
-            --font-display: 'Source Serif 4', Georgia, serif;
-            --font-body:    'Source Sans 3', sans-serif;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: var(--font-body);
-            background: var(--off-white);
-            color: var(--text-body);
-            line-height: 1.6;
-            min-height: 100vh;
-        }
-
-        @keyframes slideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes popIn { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
-
-        #page-loader {
-            position: fixed; inset: 0; background: var(--ink); z-index: 9999;
-            display: flex; justify-content: center; align-items: center; flex-direction: column; gap: 14px;
-        }
-        #page-loader .loader-logo { font-family: var(--font-display); font-size: 1.8rem; font-weight: 900; color: var(--white); letter-spacing: -0.5px; }
-        #page-loader .loader-logo em { color: var(--gold); font-style: normal; }
-        #page-loader .loader-dots { display: flex; gap: 7px; }
-        #page-loader .loader-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--mist); opacity: 0.4; animation: dotPulse 1.2s ease-in-out infinite; }
-        #page-loader .loader-dots span:nth-child(2) { animation-delay: 0.2s; }
-        #page-loader .loader-dots span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes dotPulse { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 1; transform: scale(1.3); } }
-
-        header { position: sticky; top: 0; z-index: 200; background: rgba(12, 20, 70, 0.97); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(179,205,224,0.15); animation: slideDown 0.4s ease both; }
-        .header-inner { max-width: 1280px; margin: 0 auto; padding: 0 28px; height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
-        .logo { font-family: var(--font-display); font-size: 1.6rem; font-weight: 900; color: var(--white); text-decoration: none; letter-spacing: -0.5px; }
-        .logo em { color: var(--gold); font-style: normal; }
-        nav ul { display: flex; list-style: none; gap: 28px; }
-        nav ul li a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
-        nav ul li a:hover { color: var(--white); }
-        .header-right { display: flex; align-items: center; gap: 10px; }
-
-        .page-hero { background: linear-gradient(135deg, var(--ink) 0%, var(--deep) 60%, #4a7db5 100%); padding: 36px 28px 32px; position: relative; overflow: hidden; animation: fadeIn 0.5s ease both; }
-        .page-hero::after { content: ''; position: absolute; inset: 0; background-image: linear-gradient(rgba(179,205,224,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(179,205,224,0.06) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; }
-        .page-hero-inner { max-width: 680px; margin: 0 auto; position: relative; z-index: 1; text-align: center; animation: fadeUp 0.5s 0.1s ease both; opacity: 0; animation-fill-mode: forwards; }
-        .page-hero h1 { font-family: var(--font-display); font-size: clamp(1.6rem, 4vw, 2.2rem); font-weight: 900; color: var(--white); letter-spacing: -0.5px; margin-bottom: 6px; }
-        .page-hero p { color: rgba(255,255,255,0.6); font-size: 0.92rem; }
-
-        .form-outer { max-width: 660px; margin: 36px auto 60px; padding: 0 20px; animation: fadeUp 0.5s 0.2s ease both; opacity: 0; animation-fill-mode: forwards; }
-        .form-wrapper { background: var(--white); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid rgba(179,205,224,0.3); padding: 36px 32px; }
-
-        .form-section { border-bottom: 1px solid var(--surface); padding-bottom: 24px; margin-bottom: 24px; }
-        .form-section:last-of-type { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
-        .section-label { font-family: var(--font-display); font-size: 0.88rem; font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-        .section-label i { color: var(--deep); font-size: 0.8rem; }
-
-        label.field-label { font-weight: 600; font-size: 0.85rem; margin-bottom: 5px; display: block; color: var(--text-muted); }
-        input[type="text"], input[type="number"], textarea, select { width: 100%; padding: 10px 14px; margin-bottom: 16px; border: 1.5px solid rgba(179,205,224,0.5); border-radius: var(--radius-sm); font-family: var(--font-body); font-size: 0.93rem; color: var(--text-body); background: var(--off-white); outline: none; transition: border-color 0.2s, background 0.2s, box-shadow 0.2s; display: block; }
-        input:focus, textarea:focus, select:focus { border-color: var(--deep); background: var(--white); box-shadow: 0 0 0 3px rgba(43,92,146,0.1); }
-        textarea { resize: vertical; min-height: 100px; }
-
-        .price-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .price-row > div { display: flex; flex-direction: column; }
-        .price-row input { margin-bottom: 0; }
-
-        .tag-container { border: 1.5px solid rgba(179,205,224,0.5); border-radius: var(--radius-sm); padding: 8px 10px; margin-bottom: 16px; background: var(--off-white); display: flex; flex-wrap: wrap; gap: 7px; position: relative; transition: border-color 0.2s, box-shadow 0.2s; }
-        .tag-container:focus-within { border-color: var(--deep); background: var(--white); box-shadow: 0 0 0 3px rgba(43,92,146,0.1); }
-        .tag-chip { background: var(--surface); color: var(--deep); padding: 4px 10px; border-radius: 50px; font-size: 0.82rem; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--mist); animation: popIn 0.18s ease both; }
-        .tag-chip .remove-tag { cursor: pointer; opacity: 0.6; font-size: 1rem; line-height: 1; transition: opacity 0.15s; }
-        .tag-chip .remove-tag:hover { opacity: 1; }
-        #tag-input { border: none; outline: none; padding: 4px 6px; flex-grow: 1; min-width: 120px; margin-bottom: 0; background: transparent; font-size: 0.9rem; box-shadow: none; }
-        #tag-input:focus { box-shadow: none; }
-        .suggestions-box { position: absolute; top: calc(100% + 4px); left: 0; width: 100%; background: var(--white); border: 1.5px solid rgba(179,205,224,0.5); border-radius: var(--radius-sm); max-height: 200px; overflow-y: auto; z-index: 50; display: none; box-shadow: var(--shadow-md); animation: fadeUp 0.15s ease both; }
-        .suggestion-item { padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--surface); display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; color: var(--text-body); transition: background 0.15s; }
-        .suggestion-item:last-child { border-bottom: none; }
-        .suggestion-item:hover { background: var(--surface); }
-        .suggestion-count { font-size: 0.75rem; color: var(--text-muted); background: var(--surface); padding: 2px 8px; border-radius: 50px; border: 1px solid var(--mist); }
-
-        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-        .two-col > div { display: flex; flex-direction: column; }
-        .two-col select { margin-bottom: 0; }
-
-        .checkbox-group { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
-        .checkbox-item { display: flex; align-items: center; gap: 8px; font-weight: 500; font-size: 0.88rem; cursor: pointer; color: var(--text-body); background: var(--surface); border: 1.5px solid rgba(179,205,224,0.4); border-radius: var(--radius-sm); padding: 8px 14px; transition: background 0.18s, border-color 0.18s; user-select: none; }
-        .checkbox-item:has(input:checked) { background: var(--deep); border-color: var(--deep); color: var(--white); }
-        .checkbox-item input { width: 16px; height: 16px; margin: 0; cursor: pointer; accent-color: var(--deep); margin-bottom: 0; }
-        .checkbox-item:has(input:checked) input { accent-color: var(--white); }
-
-        .image-preview-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
-        .image-preview-wrapper { position: relative; width: 90px; height: 90px; animation: popIn 0.2s ease both; }
-        .image-preview { width: 100%; height: 100%; border-radius: var(--radius-sm); object-fit: cover; border: 2px solid var(--mist); }
-        .remove-image-btn { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; background: var(--red); color: var(--white); border: 2px solid var(--white); border-radius: 50%; cursor: pointer; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: transform 0.15s; }
-        .remove-image-btn:hover { transform: scale(1.15); }
-        #add-photo-label { width: 90px; height: 90px; border: 2px dashed rgba(179,205,224,0.7); border-radius: var(--radius-sm); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); gap: 5px; font-size: 0.75rem; transition: border-color 0.2s, background 0.2s, color 0.2s; }
-        #add-photo-label i { font-size: 1.3rem; }
-        #add-photo-label:hover { border-color: var(--deep); background: var(--surface); color: var(--deep); }
-        #listing-image-input { display: none; }
-
-        .form-buttons { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
-        .btn-submit { flex: 1; min-width: 140px; background: var(--ink); color: var(--white); border: none; border-radius: var(--radius-sm); padding: 12px 20px; font-family: var(--font-body); font-size: 0.95rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s, transform 0.15s; }
-        .btn-submit:hover:not(:disabled) { background: var(--deep); transform: translateY(-1px); }
-        .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
-        .btn-cancel { flex: 1; min-width: 120px; background: var(--surface); color: var(--text-muted); border: 1.5px solid rgba(179,205,224,0.5); border-radius: var(--radius-sm); padding: 12px 20px; font-family: var(--font-body); font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s, color 0.2s; }
-        .btn-cancel:hover { background: var(--mist); color: var(--ink); }
-
-        .social-promo { margin-top: 16px; text-align: center; font-size: 0.8rem; color: var(--text-muted); background: var(--off-white); padding: 8px 12px; border-radius: 40px; display: inline-block; width: 100%; }
-        .social-promo i { color: var(--gold); margin-right: 6px; }
-
-        /* Scanner card styling */
-        .scanner-card {
-            background: var(--white);
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-sm);
-            border: 1px solid rgba(179,205,224,0.3);
-            padding: 28px 24px;
-            text-align: center;
-        }
-        .scanner-card h2 {
-            font-family: var(--font-display);
-            font-size: 1.3rem;
-            color: var(--ink);
-            margin-bottom: 8px;
-        }
-        .scanner-card p {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            margin-bottom: 20px;
-        }
-        .scanner-card .btn-scan {
-            width: 100%;
-            background: var(--ink);
-            color: var(--white);
-            border: none;
-            border-radius: var(--radius-sm);
-            padding: 14px;
-            font-size: 1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .scanner-card .btn-scan:hover:not(:disabled) { background: var(--deep); }
-        .scanner-card .btn-scan:disabled { opacity: 0.6; cursor: not-allowed; }
-        .scanner-card .btn-scan.stop { background: var(--red); }
-        .scanner-card .btn-scan.stop:hover { background: #a52820; }
-        #reader {
-            width: 100%;
-            max-width: 400px;
-            margin: 16px auto 0;
-            display: none;
-            border-radius: var(--radius-sm);
-            overflow: hidden;
-            border: 2px solid var(--mist);
-        }
-        .manual-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 16px;
-            align-items: center;
-        }
-        .manual-group input {
-            margin-bottom: 0;
-            flex: 1;
-        }
-        .manual-group button {
-            background: var(--surface);
-            color: var(--deep);
-            border: 1.5px solid var(--mist);
-            border-radius: var(--radius-sm);
-            padding: 10px 14px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .skip-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            text-decoration: underline;
-            cursor: pointer;
-            margin-top: 12px;
-        }
-        .camera-warning {
-            background: #fff3cd;
-            color: #856404;
-            padding: 8px;
-            border-radius: var(--radius-sm);
-            font-size: 0.8rem;
-            margin-top: 10px;
-            border-left: 4px solid #ffc107;
-            text-align: left;
-        }
-
-        @media (max-width: 767px) {
-            nav { display: none; }
-            .page-hero { padding: 28px 16px; }
-            .form-outer { padding: 0 12px; margin: 24px auto 40px; }
-            .form-wrapper { padding: 24px 18px; }
-            .price-row { grid-template-columns: 1fr; }
-            .two-col { grid-template-columns: 1fr; }
-        }
+        /* Simple styles for layout */
+        body { font-family: sans-serif; text-align: center; margin: 20px; }
+        #reader { width: 100%; max-width: 500px; margin: 0 auto; }
+        button { margin: 10px; padding: 10px 15px; font-size: 16px; cursor: pointer; }
+        #result { margin-top: 20px; font-weight: bold; word-wrap: break-word; }
+        .fallback { margin-top: 20px; border-top: 1px solid #ccc; padding-top: 20px; }
+        .error { color: red; }
     </style>
 </head>
 <body>
 
-    <div id="page-loader">
-        <div class="loader-logo">Scor<em>alia</em></div>
-        <div class="loader-dots">
-            <span></span><span></span><span></span>
-        </div>
+    <h1>QR / Barcode Scanner</h1>
+    <p>Click the button below to start scanning.</p>
+
+    <div id="reader" style="display: none;"></div>
+    
+    <div>
+        <button id="startBtn">📷 Start Camera Scanner</button>
+        <button id="stopBtn" disabled>⏹️ Stop Scanner</button>
     </div>
 
-    <header>
-        <div class="header-inner">
-            <a href="/" class="logo">Scor<em>alia</em></a>
-            <nav>
-                <ul>
-                    <li><a href="/search">Browse</a></li>
-                    <li><a href="/my-listings">My Listings</a></li>
-                    <li><a href="/social">Campus Hub</a></li>
-                    <li><a href="/messages">Messages</a></li>
-                </ul>
-            </nav>
-            <div class="header-right"></div>
-        </div>
-    </header>
+    <div id="result">Scan result will appear here.</div>
 
-    <div class="page-hero">
-        <div class="page-hero-inner">
-            <h1 id="ui-main-title">List an Item</h1>
-            <p id="ui-main-subtitle">Fill in the details below and your book will be automatically reviewed.</p>
-        </div>
+    <div class="fallback">
+        <h3>Having trouble with your camera? Scan from an image file instead:</h3>
+        <input type="file" id="fileInput" accept="image/*">
+        <p id="fileResult"></p>
     </div>
 
-    <div class="form-outer">
+    <script>
+        // --- Configuration ---
+        const qrCodeRegionId = "reader";
+        let html5QrCode = null; // Holds the scanner instance
+        let isScanning = false;
 
-        <!-- SCANNER CARD -->
-        <div class="scanner-card" id="isbn-section">
-            <h2 id="ui-isbn-title">Quick Book Scan</h2>
-            <p id="ui-isbn-desc">Scan your book's barcode to fill in the title and description automatically.</p>
+        // --- DOM Elements ---
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resultDiv = document.getElementById('result');
+        const fileInput = document.getElementById('fileInput');
+        const fileResultDiv = document.getElementById('fileResult');
 
-            <button type="button" class="btn-scan" id="start-scan-btn">
-                <i class="fas fa-camera"></i> <span id="ui-btn-scan">Scan Barcode</span>
-            </button>
-
-            <div id="reader"></div>
-            <div id="camera-status" class="camera-warning" style="display: none;"></div>
-
-            <div class="manual-group">
-                <input type="text" id="manual-isbn-input" placeholder="Enter ISBN manually...">
-                <button type="button" id="manual-isbn-btn"><i class="fas fa-search"></i> Lookup</button>
-            </div>
-
-            <button class="skip-btn" id="skip-scan-btn">
-                <span id="ui-btn-skip">Skip & Fill Manually</span>
-            </button>
-        </div>
-
-        <!-- HIDDEN MAIN FORM (unchanged) -->
-        <div id="main-form-section" style="display: none;">
-            <div class="form-wrapper">
-                <form id="listing-form">
-                    <input type="hidden" id="listing-isbn" value="">
-                    <div class="form-section">
-                        <div class="section-label"><i class="fas fa-pen"></i> <span id="ui-sec-basic">Basic Info</span></div>
-                        <label class="field-label" id="ui-label-title">Title</label>
-                        <input type="text" id="listing-title" maxlength="80" required>
-                        <label class="field-label" id="ui-label-desc">Description</label>
-                        <textarea id="listing-description" maxlength="1500" required></textarea>
-                        <div class="price-row">
-                            <div>
-                                <label class="field-label" id="ui-label-price">Sale Price ($)</label>
-                                <input type="text" inputmode="decimal" id="listing-price" placeholder="0.00" required
-                                       oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 1200) this.value = '1200';">
-                            </div>
-                            <div>
-                                <label class="field-label" id="ui-label-orig-price">Original Price ($) (optional)</label>
-                                <input type="text" inputmode="decimal" id="listing-original-price" placeholder="0.00"
-                                       oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 5000) this.value = '5000';">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-section">
-                        <div class="section-label"><i class="fas fa-tags"></i> <span id="ui-sec-tags">Tags</span></div>
-                        <label class="field-label" id="ui-label-tags">Tags (Max 15)</label>
-                        <div class="tag-container" id="tag-container">
-                            <div id="selected-tags"></div>
-                            <input type="text" id="tag-input" autocomplete="off">
-                            <div class="suggestions-box" id="suggestions-box"></div>
-                        </div>
-                    </div>
-                    <div class="form-section">
-                        <div class="section-label"><i class="fas fa-book"></i> <span id="ui-sec-cond">Condition & Details</span></div>
-                        <div class="two-col">
-                            <div>
-                                <label class="field-label" id="ui-label-condition">Condition</label>
-                                <select id="listing-condition" required>
-                                    <option value="" id="opt-cond-select">Select Condition</option>
-                                    <option value="New" id="opt-cond-new">New</option>
-                                    <option value="Like New" id="opt-cond-likenew">Like New</option>
-                                    <option value="Good" id="opt-cond-good">Good</option>
-                                    <option value="Fair" id="opt-cond-fair">Fair</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="field-label" id="ui-label-code">Digital Access Code</label>
-                                <select id="listing-digital-code">
-                                    <option value="Not applicable" id="opt-code-na">Not applicable</option>
-                                    <option value="Available / Unused" id="opt-code-avail">Available / Unused</option>
-                                    <option value="Already used" id="opt-code-used">Already used</option>
-                                </select>
-                            </div>
-                        </div>
-                        <label class="field-label" id="ui-label-details">Additional Details</label>
-                        <div class="checkbox-group">
-                            <label class="checkbox-item"><input type="checkbox" id="cond-writing"> <span id="ui-check-writing">Writing inside</span></label>
-                            <label class="checkbox-item"><input type="checkbox" id="cond-water"> <span id="ui-check-water">Water damage</span></label>
-                            <label class="checkbox-item"><input type="checkbox" id="cond-missing"> <span id="ui-check-missing">Missing pages</span></label>
-                        </div>
-                    </div>
-                    <div class="form-section">
-                        <div class="section-label"><i class="fas fa-location-dot"></i> <span id="ui-sec-loc">Location</span></div>
-                        <div class="two-col">
-                            <div>
-                                <label class="field-label" id="ui-label-location">Campus Location</label>
-                                <select id="listing-location" required>
-                                    <option value="Collège de Rosemont" selected>Collège de Rosemont</option>
-                                    <option value="Vanier College">Vanier College</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="field-label" id="ui-label-meet">Meeting Point</label>
-                                <input type="text" id="listing-meeting-point" maxlength="60" placeholder="e.g., Near Library">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-section">
-                        <div class="section-label"><i class="fas fa-camera"></i> <span id="ui-sec-photo">Photos</span></div>
-                        <label class="field-label" id="ui-label-photos">Photos (Max 5, Max 5MB each)</label>
-                        <div id="image-uploader">
-                            <div class="image-preview-grid" id="image-preview-container"></div>
-                            <label for="listing-image-input" id="add-photo-label">
-                                <i class="fas fa-plus"></i>
-                                <span id="ui-btn-add-photo">Add Photo</span>
-                            </label>
-                            <input type="file" id="listing-image-input" accept="image/*">
-                        </div>
-                    </div>
-                    <div class="form-buttons">
-                        <button type="submit" class="btn-submit" id="postListingBtn">
-                            <i class="fas fa-paper-plane"></i>
-                            <span id="post-btn-text">Submit for Review</span>
-                        </button>
-                        <button type="button" class="btn-cancel" id="cancelListingBtn" onclick="window.location.href='/'">Cancel</button>
-                    </div>
-                    <div class="social-promo">
-                        <i class="fas fa-share-alt"></i> Also share your listing in the <strong>Campus Hub</strong> social feed!
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <script type="module">
-        import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, setDoc, increment, limit, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
-
-        async function main() {
-            const response = await fetch(getFunctionUrl('config'));
-            const config = await response.json();
-            const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
-            const auth = getAuth(app);
-            const db = getFirestore(app);
-
-            const lang = localStorage.getItem('preferred_language') || 'en';
-            const ui = {
-                en: {
-                    mainTitle: "List an Item", mainSub: "Fill in the details below and your book will be automatically reviewed.",
-                    isbnTitle: "Quick Book Scan", isbnDesc: "Scan your book's barcode to fill in info automatically.",
-                    btnScan: "Scan Barcode", btnSkip: "Skip & Fill Manually", isbnPlace: "Enter ISBN manually...",
-                    fetching: "Fetching info...", notFound: "Book not found. Please fill manually.",
-                    secBasic: "Basic Info", secTags: "Tags", secCond: "Condition & Details", secLoc: "Location", secPhoto: "Photos",
-                    lblTitle: "Title", lblDesc: "Description",
-                    lblPrice: "Sale Price ($) — Max $1200", lblOrigPrice: "Original Price ($) — Max $5000",
-                    lblTags: "Tags (Max 15)", tagPlace: "e.g., Technique, Math, Biology… (press Enter)",
-                    lblCond: "Condition", optCondSel: "Select Condition", optNew: "New", optLikeNew: "Like New", optGood: "Good", optFair: "Fair",
-                    lblCode: "Digital Access Code", optNa: "Not applicable", optAvail: "Available / Unused", optUsed: "Already used",
-                    lblLoc: "Campus Location", lblMeet: "Meeting Point (Max 60 chars)", meetPlace: "e.g., Near Library",
-                    lblDet: "Additional Details", chkWrite: "Writing inside", chkWater: "Water damage", chkMiss: "Missing pages",
-                    lblPhotos: "Photos (Max 5, Max 5MB each)", btnAddPhoto: "Add Photo", btnPost: "Submit for Review", btnCancel: "Cancel",
-                    priceErr: "Price cannot exceed $1200.", origPriceErr: "Original price cannot exceed $5000.",
-                    imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type.",
-                    imgSizeErr: "Image too large (Max 5MB).", uploading: "Uploading Images…",
-                    tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.",
-                    tagUses: "uses", uploadFail: "Image upload failed. Please try again.",
-                    reviewMessage: "Your listing is being reviewed. You will be notified once approved.",
-                    cameraDenied: "Camera permission denied. Please allow camera access in your browser settings.\n\n(On Android/Chrome: tap 🔒 → Permissions → Camera → Allow). Then refresh.",
-                    cameraError: "Could not start camera. Make sure you're on a secure connection (HTTPS) and your device has a camera.",
-                    insecureContext: "Camera scanning requires a secure connection (HTTPS). Please use https://www.livrex.org to scan barcodes."
-                },
-                fr: {
-                    mainTitle: "Publier un article", mainSub: "Remplissez les détails ci-dessous et votre livre sera automatiquement examiné.",
-                    isbnTitle: "Scan rapide du livre", isbnDesc: "Scannez le code-barres pour remplir les infos automatiquement.",
-                    btnScan: "Scanner le code-barres", btnSkip: "Ignorer et remplir manuellement", isbnPlace: "Entrer l'ISBN manuellement...",
-                    fetching: "Recherche en cours...", notFound: "Livre introuvable. Veuillez remplir manuellement.",
-                    secBasic: "Infos de base", secTags: "Mots-clés", secCond: "État et Détails", secLoc: "Emplacement", secPhoto: "Photos",
-                    lblTitle: "Titre", lblDesc: "Description",
-                    lblPrice: "Prix de vente ($) — Max 1200$", lblOrigPrice: "Prix d'origine ($) — Max 5000$",
-                    lblTags: "Mots-clés (Max 15)", tagPlace: "ex : Technique, Mathématiques, Biologie… (Entrée)",
-                    lblCond: "État", optCondSel: "Sélectionner l'état", optNew: "Neuf", optLikeNew: "Comme neuf", optGood: "Bon état", optFair: "Acceptable",
-                    lblCode: "Code d'accès numérique", optNa: "Non applicable", optAvail: "Disponible / Inutilisé", optUsed: "Déjà utilisé",
-                    lblLoc: "Emplacement du campus", lblMeet: "Point de rencontre (Max 60 car.)", meetPlace: "ex: Près de la bibliothèque",
-                    lblDet: "Détails supplémentaires", chkWrite: "Écritures à l'intérieur", chkWater: "Dommages causés par l'eau", chkMiss: "Pages manquantes",
-                    lblPhotos: "Photos (Max 5, Max 5MB chacune)", btnAddPhoto: "Ajouter une photo", btnPost: "Soumettre pour examen", btnCancel: "Annuler",
-                    priceErr: "Le prix ne peut dépasser 1200$.", origPriceErr: "Le prix d'origine ne peut dépasser 5000$.",
-                    imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté.",
-                    imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Téléchargement…",
-                    tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.",
-                    tagUses: "utilisations", uploadFail: "Échec du téléchargement. Veuillez réessayer.",
-                    reviewMessage: "Votre annonce est en cours d'examen. Vous serez notifié une fois approuvée.",
-                    cameraDenied: "Permission de la caméra refusée. Veuillez autoriser l'accès dans les paramètres du navigateur.\n\n(Android/Chrome : appuyez sur 🔒 → Autorisations → Caméra → Autoriser). Actualisez ensuite.",
-                    cameraError: "Impossible de démarrer la caméra. Vérifiez que vous êtes en HTTPS et que votre appareil possède une caméra.",
-                    insecureContext: "Le scan par caméra nécessite une connexion sécurisée (HTTPS). Utilisez https://www.livrex.org pour scanner."
-                }
-            };
-
-            // Apply texts
-            document.getElementById('ui-main-title').textContent = ui[lang].mainTitle;
-            document.getElementById('ui-main-subtitle').textContent = ui[lang].mainSub;
-            document.getElementById('ui-isbn-title').textContent = ui[lang].isbnTitle;
-            document.getElementById('ui-isbn-desc').textContent = ui[lang].isbnDesc;
-            document.getElementById('ui-btn-scan').textContent = ui[lang].btnScan;
-            document.getElementById('ui-btn-skip').textContent = ui[lang].btnSkip;
-            document.getElementById('manual-isbn-input').placeholder = ui[lang].isbnPlace;
-            document.getElementById('ui-sec-basic').textContent = ui[lang].secBasic;
-            document.getElementById('ui-sec-tags').textContent = ui[lang].secTags;
-            document.getElementById('ui-sec-cond').textContent = ui[lang].secCond;
-            document.getElementById('ui-sec-loc').textContent = ui[lang].secLoc;
-            document.getElementById('ui-sec-photo').textContent = ui[lang].secPhoto;
-            document.getElementById('ui-label-title').textContent = ui[lang].lblTitle;
-            document.getElementById('ui-label-desc').textContent = ui[lang].lblDesc;
-            document.getElementById('ui-label-price').textContent = ui[lang].lblPrice;
-            document.getElementById('ui-label-orig-price').textContent = ui[lang].lblOrigPrice;
-            document.getElementById('ui-label-tags').textContent = ui[lang].lblTags;
-            document.getElementById('tag-input').placeholder = ui[lang].tagPlace;
-            document.getElementById('ui-label-condition').textContent = ui[lang].lblCond;
-            document.getElementById('opt-cond-select').textContent = ui[lang].optCondSel;
-            document.getElementById('opt-cond-new').textContent = ui[lang].optNew;
-            document.getElementById('opt-cond-likenew').textContent = ui[lang].optLikeNew;
-            document.getElementById('opt-cond-good').textContent = ui[lang].optGood;
-            document.getElementById('opt-cond-fair').textContent = ui[lang].optFair;
-            document.getElementById('ui-label-code').textContent = ui[lang].lblCode;
-            document.getElementById('opt-code-na').textContent = ui[lang].optNa;
-            document.getElementById('opt-code-avail').textContent = ui[lang].optAvail;
-            document.getElementById('opt-code-used').textContent = ui[lang].optUsed;
-            document.getElementById('ui-label-location').textContent = ui[lang].lblLoc;
-            document.getElementById('ui-label-meet').textContent = ui[lang].lblMeet;
-            document.getElementById('listing-meeting-point').placeholder = ui[lang].meetPlace;
-            document.getElementById('ui-label-details').textContent = ui[lang].lblDet;
-            document.getElementById('ui-check-writing').textContent = ui[lang].chkWrite;
-            document.getElementById('ui-check-water').textContent = ui[lang].chkWater;
-            document.getElementById('ui-check-missing').textContent = ui[lang].chkMiss;
-            document.getElementById('ui-label-photos').textContent = ui[lang].lblPhotos;
-            document.getElementById('ui-btn-add-photo').textContent = ui[lang].btnAddPhoto;
-            document.getElementById('post-btn-text').textContent = ui[lang].btnPost;
-            document.getElementById('cancelListingBtn').textContent = ui[lang].btnCancel;
-
-            let currentUser = null;
-            let internalSchoolName = "Global Campus";
-            let selectedFiles = [];
-            let tags = [];
-            const pageLoader = document.getElementById('page-loader');
-            const loaderTimeout = setTimeout(() => { pageLoader.style.display = 'none'; }, 4000);
-
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    const uSnap = await getDoc(doc(db, "users", user.uid));
-                    if (uSnap.exists()) {
-                        const data = uSnap.data();
-                        currentUser = user;
-                        internalSchoolName = data.schoolName || "Global Campus";
-                        clearTimeout(loaderTimeout); pageLoader.style.display = 'none';
-                    }
-                } else { window.location.href = '/login'; }
-            });
-
-            // ISBN cache
-            const isbnCache = {};
-            try {
-                const saved = localStorage.getItem('scoralia_isbn_cache');
-                if (saved) Object.assign(isbnCache, JSON.parse(saved));
-            } catch(e) { console.warn("Could not load ISBN cache"); }
-
-            function saveCache() {
-                try {
-                    const entries = Object.entries(isbnCache);
-                    if (entries.length > 50) {
-                        const trimmed = Object.fromEntries(entries.slice(-50));
-                        localStorage.setItem('scoralia_isbn_cache', JSON.stringify(trimmed));
-                    } else {
-                        localStorage.setItem('scoralia_isbn_cache', JSON.stringify(isbnCache));
-                    }
-                } catch(e) { console.warn("Could not save ISBN cache"); }
-            }
-
-            async function fetchBookData(isbn) {
-                const cleanIsbn = isbn.replace(/[^0-9]/g, '');
-                if (cleanIsbn.length < 10) {
-                    alert("Invalid ISBN format. Please enter a valid 10 or 13 digit ISBN.");
-                    return;
-                }
-
-                if (isbnCache[cleanIsbn]) {
-                    const cached = isbnCache[cleanIsbn];
-                    document.getElementById('listing-title').value = cached.title;
-                    document.getElementById('listing-description').value = cached.description || "";
-                    document.getElementById('listing-isbn').value = cleanIsbn;
-                    document.getElementById('isbn-section').style.display = 'none';
-                    document.getElementById('main-form-section').style.display = 'block';
-                    if (html5QrCode && isScanning) {
-                        html5QrCode.stop().then(() => { isScanning = false; }).catch(e => console.log(e));
-                    }
-                    return;
-                }
-
-                const manualBtn = document.getElementById('manual-isbn-btn');
-                manualBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
-                manualBtn.disabled = true;
-
-                let bookData = { title: "", description: "" };
-
-                const parseGoogleBooks = (data) => {
-                    if (data.items && data.items.length > 0) {
-                        const book = data.items[0].volumeInfo;
-                        let title = book.title || "";
-                        if (book.authors && book.authors.length) title += ` by ${book.authors.join(', ')}`;
-                        const description = book.description ? book.description.replace(/<[^>]*>?/gm, '') : "";
-                        return { title, description };
-                    }
-                    return null;
-                };
-
-                try {
-                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        const result = parseGoogleBooks(data);
-                        if (result) bookData = result;
-                    }
-                } catch (e) { console.warn("Google ISBN fetch error:", e); }
-
-                if (!bookData.title) {
-                    try {
-                        const res = await fetch(`https://openlibrary.org/isbn/${cleanIsbn}.json`);
-                        if (res.ok) {
-                            const data = await res.json();
-                            let title = data.title || "";
-                            if (data.authors && data.authors.length) {
-                                const authorNames = data.authors.map(a => a.name).join(', ');
-                                title += ` by ${authorNames}`;
-                            }
-                            let description = "";
-                            if (data.description) {
-                                description = typeof data.description === 'string' ? data.description : (data.description.value || "");
-                            }
-                            if (title) bookData = { title, description };
-                        }
-                    } catch (e) { console.warn("OpenLibrary error:", e); }
-                }
-
-                if (!bookData.title) {
-                    try {
-                        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(isbn)}`);
-                        if (res.ok) {
-                            const data = await res.json();
-                            const result = parseGoogleBooks(data);
-                            if (result) bookData = result;
-                        }
-                    } catch (e) { console.warn("Google title search error:", e); }
-                }
-
-                if (bookData.title) {
-                    isbnCache[cleanIsbn] = bookData;
-                    saveCache();
-                    document.getElementById('listing-title').value = bookData.title;
-                    document.getElementById('listing-description').value = bookData.description || "";
-                    document.getElementById('listing-isbn').value = cleanIsbn;
-                    document.getElementById('isbn-section').style.display = 'none';
-                    document.getElementById('main-form-section').style.display = 'block';
-                    if (html5QrCode && isScanning) {
-                        html5QrCode.stop().then(() => { isScanning = false; }).catch(e => console.log(e));
-                    }
-                } else {
-                    alert(ui[lang].notFound);
-                }
-
-                manualBtn.innerHTML = `<i class="fas fa-search"></i>`;
-                manualBtn.disabled = false;
-            }
-
-            // ---- IMPROVED SCANNER WITH PROPER PERMISSION PROMPT ----
-            let html5QrCode = null;
-            let isScanning = false;
-            const startScanBtn = document.getElementById('start-scan-btn');
-            const readerDiv = document.getElementById('reader');
-            const cameraStatusDiv = document.getElementById('camera-status');
-
-            // Function to stop any ongoing scanner
-            async function stopScanner() {
-                if (html5QrCode && isScanning) {
-                    try {
-                        await html5QrCode.stop();
-                    } catch (e) { console.warn("stop error", e); }
-                    isScanning = false;
-                    readerDiv.style.display = 'none';
-                    startScanBtn.classList.remove('stop');
-                    startScanBtn.innerHTML = `<i class="fas fa-camera"></i> ${ui[lang].btnScan}`;
-                }
-            }
-
-            // Check if the page is secure and camera is supported
-            function isSecureCameraContext() {
-                const isSecure = window.isSecureContext === true;
-                const hasMediaDevices = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-                if (!isSecure) {
-                    cameraStatusDiv.style.display = 'block';
-                    cameraStatusDiv.innerHTML = `<i class="fas fa-lock"></i> ${ui[lang].insecureContext}`;
-                    startScanBtn.disabled = true;
-                    return false;
-                }
-                if (!hasMediaDevices) {
-                    cameraStatusDiv.style.display = 'block';
-                    cameraStatusDiv.innerHTML = `<i class="fas fa-exclamation-triangle"></i> Camera not supported by this browser.`;
-                    startScanBtn.disabled = true;
-                    return false;
-                }
-                cameraStatusDiv.style.display = 'none';
-                startScanBtn.disabled = false;
-                return true;
-            }
-
-            // Initial security check
-            isSecureCameraContext();
-
-            startScanBtn.addEventListener('click', async () => {
-                // Re-check security in case something changed
-                if (!window.isSecureContext) {
-                    alert(ui[lang].insecureContext);
-                    return;
-                }
-
-                // If scanning, stop it
-                if (isScanning) {
-                    await stopScanner();
-                    return;
-                }
-
-                // Disable button temporarily while starting
-                startScanBtn.disabled = true;
-                startScanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Starting camera...`;
-
-                try {
-                    // Ensure any previous scanner instance is fully stopped and recreated
-                    if (html5QrCode) {
-                        try { await html5QrCode.stop(); } catch(e) {}
-                        html5QrCode = null;
-                    }
-
-                    // Create fresh scanner instance
-                    html5QrCode = new Html5Qrcode("reader");
-                    readerDiv.style.display = 'block';
-
-                    // This call triggers the browser permission prompt (if not already granted/denied)
-                    await html5QrCode.start(
-                        { facingMode: "environment" },
-                        { fps: 10, qrbox: { width: 250, height: 150 } },
-                        (decodedText) => {
-                            // Success: stop scanner and use the ISBN
-                            stopScanner().then(() => {
-                                fetchBookData(decodedText);
-                            });
-                        },
-                        (errorMessage) => {
-                            // Normal scanning errors (no QR found) – ignore
-                        }
-                    );
-
-                    // If we reach here, scanner started successfully
-                    isScanning = true;
-                    startScanBtn.disabled = false;
-                    startScanBtn.classList.add('stop');
-                    startScanBtn.innerHTML = `<i class="fas fa-times"></i> Stop Scanner`;
-
-                } catch (err) {
-                    console.error('Scanner error:', err);
-                    startScanBtn.disabled = false;
-                    startScanBtn.classList.remove('stop');
-                    startScanBtn.innerHTML = `<i class="fas fa-camera"></i> ${ui[lang].btnScan}`;
-                    readerDiv.style.display = 'none';
-
-                    let msg = '';
-                    const errMsg = (err.message || String(err)).toLowerCase();
-                    if (err.name === 'NotAllowedError' || errMsg.includes('not allowed') || errMsg.includes('permission denied')) {
-                        msg = ui[lang].cameraDenied;
-                    } else if (errMsg.includes('security') || errMsg.includes('https')) {
-                        msg = ui[lang].insecureContext;
-                    } else {
-                        msg = ui[lang].cameraError + ' ' + err.message;
-                    }
-                    alert(msg);
-                }
-            });
-
-            // Manual ISBN lookup
-            document.getElementById('manual-isbn-btn').onclick = () => {
-                const val = document.getElementById('manual-isbn-input').value.trim();
-                if(val) fetchBookData(val);
-                else alert("Please enter an ISBN.");
-            };
-
-            // Skip button
-            document.getElementById('skip-scan-btn').onclick = () => {
-                stopScanner();
-                document.getElementById('isbn-section').style.display = 'none';
-                document.getElementById('main-form-section').style.display = 'block';
-            };
-
-            // --- Tag management (unchanged) ---
-            const tagInput = document.getElementById('tag-input');
-            const selectedTagsContainer = document.getElementById('selected-tags');
-            const suggestionsBox = document.getElementById('suggestions-box');
-
-            function renderTags() {
-                selectedTagsContainer.innerHTML = '';
-                tags.forEach((tag, index) => {
-                    const chip = document.createElement('div');
-                    chip.className = 'tag-chip';
-                    chip.innerHTML = `${tag} <span class="remove-tag" onclick="window.removeTag(${index})">&times;</span>`;
-                    selectedTagsContainer.appendChild(chip);
-                });
-            }
-            window.removeTag = (index) => { tags.splice(index, 1); renderTags(); };
-
-            function addTag(tagName) {
-                const cleaned = tagName.trim();
-                if (tags.length >= 15) { alert(ui[lang].tagLimit); return; }
-                if (cleaned && !tags.includes(cleaned)) { tags.push(cleaned); renderTags(); }
-                tagInput.value = ''; suggestionsBox.style.display = 'none';
-            }
-
-            tagInput.oninput = async (e) => {
-                const val = e.target.value.trim().toLowerCase();
-                if (val.length < 1) { suggestionsBox.style.display = 'none'; return; }
-                const snap = await getDocs(query(collection(db, "global_tags"), where("tag_lowercase", ">=", val), where("tag_lowercase", "<=", val + "\uf8ff"), limit(5)));
-                suggestionsBox.innerHTML = '';
-                let hasMatch = false;
-                if (!snap.empty) {
-                    snap.forEach(doc => {
-                        hasMatch = true;
-                        const div = document.createElement('div');
-                        div.className = 'suggestion-item';
-                        div.innerHTML = `<span>${doc.data().tag}</span><span class="suggestion-count">${doc.data().count || 1} ${ui[lang].tagUses}</span>`;
-                        div.onmousedown = (ev) => { ev.preventDefault(); addTag(doc.data().tag); };
-                        suggestionsBox.appendChild(div);
-                    });
-                }
-                if (val && !tags.includes(val) && (!hasMatch || ![...suggestionsBox.children].some(child => child.innerText.trim().startsWith(val)))) {
-                    const createDiv = document.createElement('div');
-                    createDiv.className = 'suggestion-item create-tag-item';
-                    createDiv.innerHTML = `<span><i class="fas fa-plus-circle"></i> Create new tag: "<strong>${val}</strong>"</span>`;
-                    createDiv.onmousedown = (ev) => { ev.preventDefault(); addTag(val); };
-                    suggestionsBox.appendChild(createDiv);
-                }
-                if (suggestionsBox.children.length > 0) suggestionsBox.style.display = 'block';
-            };
-            
-            tagInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput.value); } };
-
-            // Image uploads (unchanged)
-            const imageInput = document.getElementById('listing-image-input');
-            const previewContainer = document.getElementById('image-preview-container');
-
-            function renderPreviews() {
-                previewContainer.innerHTML = '';
-                selectedFiles.forEach((file, index) => {
-                    const wrapper = document.createElement('div'); wrapper.className = 'image-preview-wrapper';
-                    const img = document.createElement('img'); img.src = URL.createObjectURL(file); img.className = 'image-preview';
-                    const btn = document.createElement('button'); btn.className = 'remove-image-btn'; btn.type = 'button'; btn.innerHTML = '&times;';
-                    btn.onclick = () => { selectedFiles.splice(index, 1); renderPreviews(); };
-                    wrapper.appendChild(img); wrapper.appendChild(btn); previewContainer.appendChild(wrapper);
-                });
-                document.getElementById('add-photo-label').style.display = selectedFiles.length < 5 ? 'flex' : 'none';
-            }
-
-            imageInput.onchange = async (e) => {
-                const isHuman = await window.checkBotLimits();
-                if (!isHuman) { e.target.value = ''; return; }
-
-                const file = e.target.files[0];
-                if (file) {
-                    if (file.size > 5 * 1024 * 1024) { alert(ui[lang].imgSizeErr); return; }
-                    window.recordActivity('images');
-                    selectedFiles.push(file); renderPreviews();
-                }
-                e.target.value = '';
-            };
-
-            // Form submission (unchanged)
-            document.getElementById('listing-form').onsubmit = async (e) => {
-                e.preventDefault();
-
-                const logs = [];
-                logs.push('=== LISTING SUBMISSION LOGS ===');
-                logs.push('Timestamp: ' + new Date().toISOString());
-                logs.push('');
-
-                logs.push('[1] Checking bot shield...');
-                const isHuman = await window.checkBotLimits();
-                logs.push('[1] Bot shield result: ' + (isHuman ? 'PASSED (human)' : 'FAILED (bot detected)'));
-                if (!isHuman) {
-                    logs.push('ABORTED: Bot detected');
-                    alert('scoraliaa.vercel.app says:\n\n' + logs.join('\n'));
-                    return;
-                }
-                logs.push('');
-
-                const title = document.getElementById('listing-title').value.trim();
-                const desc = document.getElementById('listing-description').value.trim();
-                const price = parseFloat(document.getElementById('listing-price').value);
-                const originalPriceInput = document.getElementById('listing-original-price').value;
-                const originalPrice = originalPriceInput ? parseFloat(originalPriceInput) : null;
-
-                logs.push('[2] Form validation...');
-                logs.push('    Title: ' + title);
-                logs.push('    Description length: ' + desc.length + ' chars');
-                logs.push('    Price: ' + price);
-                logs.push('    Original Price: ' + (originalPrice || 'not set'));
-                logs.push('    Images count: ' + selectedFiles.length);
-
-                if (price > 1200) {
-                    logs.push('VALIDATION FAILED: Price exceeds 1200');
-                    alert(ui[lang].priceErr);
-                    alert('scoraliaa.vercel.app says:\n\n' + logs.join('\n'));
-                    return;
-                }
-                if (originalPrice && originalPrice > 5000) {
-                    logs.push('VALIDATION FAILED: Original price exceeds 5000');
-                    alert(ui[lang].origPriceErr);
-                    alert('scoraliaa.vercel.app says:\n\n' + logs.join('\n'));
-                    return;
-                }
-                if (selectedFiles.length === 0) {
-                    logs.push('VALIDATION FAILED: No images selected');
-                    alert(ui[lang].imgErr);
-                    alert('scoraliaa.vercel.app says:\n\n' + logs.join('\n'));
-                    return;
-                }
-                logs.push('[2] Validation: PASSED');
-                logs.push('');
-
-                logs.push('[3] Recording activity...');
-                window.recordActivity('listings');
-                logs.push('[3] Activity recorded');
-                logs.push('');
-
-                const submitBtn = document.getElementById('postListingBtn');
-                const postBtnText = document.getElementById('post-btn-text');
-                submitBtn.disabled = true;
-                postBtnText.textContent = "AI Safety Check... (Please wait)";
-
-                try {
-                    logs.push('[4] Uploading images to Cloudinary...');
-                    const imageUrls = [];
-                    for (let i = 0; i < selectedFiles.length; i++) {
-                        const file = selectedFiles[i];
-                        logs.push('    Uploading image ' + (i + 1) + '/' + selectedFiles.length + ': ' + file.name + ' (' + (file.size / 1024).toFixed(2) + ' KB)');
-                        const signRes = await fetch(getFunctionUrl('sign-upload')).then(r => r.json());
-                        logs.push('    Got signature from sign-upload API');
-                        const formData = new FormData();
-                        formData.append('file', file); 
-                        formData.append('api_key', signRes.apiKey);
-                        formData.append('timestamp', signRes.timestamp); 
-                        formData.append('signature', signRes.signature);
-                        formData.append('upload_preset', signRes.uploadPreset);
-                        const res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { method: 'POST', body: formData }).then(r => r.json());
-                        if (res.secure_url) {
-                            imageUrls.push(res.secure_url);
-                            logs.push('    Uploaded successfully: ' + res.secure_url);
-                        } else {
-                            throw new Error(res.error?.message || 'Upload failed');
-                        }
-                    }
-                    logs.push('[4] All images uploaded: ' + imageUrls.length + ' URLs');
-                    logs.push('');
-
-                    const rawIsbn = document.getElementById('listing-isbn').value.trim();
-                    const cleanIsbn = rawIsbn ? rawIsbn.replace(/[^0-9]/g, '') : null;
-
-                    logs.push('[5] Preparing listing data...');
-                    const listingData = {
-                        title, description: desc, price, 
-                        originalPrice: originalPrice,
-                        condition: document.getElementById('listing-condition').value,
-                        digitalCode: document.getElementById('listing-digital-code').value,
-                        location: document.getElementById('listing-location').value,
-                        meetingPoint: document.getElementById('listing-meeting-point').value.trim(),
-                        hasWriting: document.getElementById('cond-writing').checked,
-                        hasWaterDamage: document.getElementById('cond-water').checked,
-                        hasMissingPages: document.getElementById('cond-missing').checked,
-                        tags, imageUrls,
-                        isbn: cleanIsbn, 
-                        posterUid: currentUser.uid,
-                        posterDisplayName: currentUser.displayName || "User",
-                        status: 'pending',
-                        timestamp: serverTimestamp() 
-                    };
-                    logs.push('[5] Listing data prepared');
-                    logs.push('');
-
-                    logs.push('[6] Saving listing to Firestore...');
-                    const listingRef = await addDoc(collection(db, 'listings'), listingData);
-                    logs.push('[6] Listing saved with ID: ' + listingRef.id);
-                    logs.push('');
-
-                    logs.push('[7] Sending to AI moderation...');
-                    try {
-                        const aiRes = await fetch(getFunctionUrl('moderate-listing'), {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ imageUrls, title, description: desc })
-                        });
-                        
-                        logs.push('[7] Moderation API response status: ' + aiRes.status);
-                        
-                        if (!aiRes.ok) {
-                            const errorText = await aiRes.text();
-                            logs.push('    Error response: ' + errorText);
-                            throw new Error("Moderation server error: " + aiRes.status);
-                        }
-
-                        const aiData = await aiRes.json();
-                        
-                        logs.push('[7] Moderation response received:');
-                        logs.push('    Verdict: ' + (aiData.verdict || 'unknown'));
-                        logs.push('    Reason: ' + (aiData.reason || 'none'));
-                        if (aiData._debug) {
-                            logs.push('    Debug Info: ' + JSON.stringify(aiData._debug));
-                        }
-
-                        if (aiData.verdict === "UNSAFE") {
-                            logs.push('[8] Listing REJECTED by AI moderation');
-                            await updateDoc(doc(db, "listings", listingRef.id), {
-                                status: 'rejected',
-                                rejectionReason: aiData.reason || "Violates community guidelines."
-                            });
-                            logs.push('[8] Status updated to rejected in Firestore');
-                            alert("Your listing was rejected by safety checks: " + (aiData.reason || "Inappropriate content."));
-                            submitBtn.disabled = false;
-                            postBtnText.textContent = ui[lang].btnPost;
-                            logs.push('');
-                            logs.push('=== FINAL RESULT: REJECTED ===');
-                            alert('scoraliaa.vercel.app says:\n\n' + logs.join('\n'));
-                            return; 
-                        } else {
-                            logs.push('[8] Listing APPROVED by AI moderation');
-                            await updateDoc(doc(db, "listings", listingRef.id), {
-                                status: 'active',
-                                approvedAt: serverTimestamp()
-                            });
-                            logs.push('[8] Status updated to active in Firestore');
-                            logs.push('');
-                            logs.push('=== FINAL RESULT: APPROVED ===');
-                            logs.push('Redirecting to my-listings...');
-                            window.location.href = `/my-listings`;
-                        }
-                    } catch (err) {
-                        logs.push('[7] Moderation error: ' + err.message);
-                        console.error("Moderation failed or timed out:", err);
-                        logs.push('Proceeding with pending status...');
-                        logs.push('');
-                        logs.push('=== FINAL RESULT: PENDING (moderation error) ===');
-                        window.location.href = `/my-listings?pending=true&id=${listingRef.id}`;
-                    }
-
-                } catch (err) {
-                    logs.push('ERROR: ' + err.message);
-                    logs.push('Stack: ' + err.stack);
-                    logs.push('');
-                    logs.push('=== FINAL RESULT: ERROR ===');
-                    alert("Error: " + err.message);
-                    submitBtn.disabled = false;
-                    postBtnText.textContent = ui[lang].btnPost;
-                }
-            };
+        // --- Helper function to update UI and scanner state ---
+        function setScanningState(scanning) {
+            isScanning = scanning;
+            startBtn.disabled = scanning;
+            stopBtn.disabled = !scanning;
         }
-        main();
+
+        // --- Function to stop the scanner ---
+        async function stopScanner() {
+            if (html5QrCode && isScanning) {
+                try {
+                    await html5QrCode.stop();
+                    console.log("Scanner stopped successfully.");
+                } catch (err) {
+                    console.error("Error stopping scanner:", err);
+                } finally {
+                    // Hide the reader container when stopped
+                    document.getElementById(qrCodeRegionId).style.display = 'none';
+                    setScanningState(false);
+                }
+            }
+        }
+
+        // --- Function to start the scanner ---
+        async function startScanner() {
+            // Before starting, stop any existing scanner instance to ensure a clean slate
+            await stopScanner();
+
+            // 1. Check for a secure context (HTTPS or localhost)
+            if (!window.isSecureContext) {
+                const errorMsg = "Camera access is only allowed on secure origins (HTTPS or localhost). Please access this page via HTTPS.";
+                console.error(errorMsg);
+                resultDiv.innerHTML = `<span class="error">Error: ${errorMsg}</span>`;
+                return;
+            }
+
+            // 2. Show the reader container (it might have been hidden)
+            const readerContainer = document.getElementById(qrCodeRegionId);
+            readerContainer.style.display = 'block';
+
+            // 3. Create a new instance of Html5Qrcode
+            html5QrCode = new Html5Qrcode(qrCodeRegionId);
+
+            // 4. Define the configuration for the scanner
+            const config = { 
+                fps: 10,     // Frames per second to scan
+                qrbox: { width: 250, height: 150 } // Scanning box size
+            };
+
+            try {
+                // This is the critical line that triggers the camera permission prompt
+                await html5QrCode.start(
+                    { facingMode: "environment" }, // Use the back camera
+                    config,
+                    (decodedText, decodedResult) => {
+                        // Success callback: A QR code or barcode was detected
+                        console.log(`Code detected: ${decodedText}`);
+                        resultDiv.innerHTML = `✅ Success! Scanned result: <strong>${decodedText}</strong>`;
+                        // Optional: Automatically stop scanning after a successful scan
+                        // stopScanner();
+                    },
+                    (errorMessage) => {
+                        // Error callback: This is for scanning errors (e.g., no QR code found in the current frame)
+                        // These are normal and can be ignored or logged for debugging.
+                        // console.log(`Scan error: ${errorMessage}`);
+                    }
+                );
+                setScanningState(true);
+                resultDiv.innerHTML = "Scanner is ready. Point your camera at a QR code or barcode.";
+            } catch (err) {
+                // This catch block handles errors from the .start() method
+                console.error("Failed to start scanner:", err);
+                let userMessage = "An unknown error occurred while starting the camera.";
+                readerContainer.style.display = 'none';
+                
+                // Provide more specific error messages based on the error type
+                if (err.name === 'NotAllowedError') {
+                    userMessage = "Camera permission denied. Please allow camera access for this site in your browser settings, then refresh and try again.";
+                } else if (err.name === 'NotFoundError') {
+                    userMessage = "No camera found on this device.";
+                } else if (err.name === 'NotReadableError') {
+                    userMessage = "Camera is already in use by another application. Please close other apps and try again.";
+                } else if (err.name === 'SecurityError' || err.message.includes('secure')) {
+                    userMessage = "Camera access is restricted to secure contexts (HTTPS). Please access this page via HTTPS.";
+                } else if (err.name === 'AbortError') {
+                    userMessage = "Camera initialization was aborted. The camera might be in use by another tab or application.";
+                }
+                
+                resultDiv.innerHTML = `<span class="error">Error: ${userMessage}</span>`;
+                setScanningState(false);
+            }
+        }
+
+        // --- File-based scanning (The robust fallback) ---
+        async function scanImageFile(file) {
+            if (!file) return;
+            fileResultDiv.innerHTML = "Processing image...";
+            
+            // We need a temporary scanner instance for the file upload
+            // A new instance can be created just for this purpose.
+            const tempScanner = new Html5Qrcode(/* elementId not needed for file scan */);
+            try {
+                const decodedText = await tempScanner.scanFile(file, /* showImage= */ true);
+                fileResultDiv.innerHTML = `✅ Success! Scanned from image: <strong>${decodedText}</strong>`;
+            } catch (err) {
+                console.error("File scan failed:", err);
+                fileResultDiv.innerHTML = `<span class="error">Error: Could not read barcode from this image. Please try a clearer photo.</span>`;
+            } finally {
+                // Clean up the temporary scanner instance
+                tempScanner.clear();
+            }
+        }
+
+        // --- Event Listeners ---
+        startBtn.addEventListener('click', startScanner);
+        stopBtn.addEventListener('click', stopScanner);
+        
+        fileInput.addEventListener('change', (event) => {
+            if (event.target.files.length > 0) {
+                scanImageFile(event.target.files[0]);
+            }
+        });
+
+        // --- Initial UI message ---
+        if (!window.isSecureContext) {
+            resultDiv.innerHTML = "<span class='error'>Warning: Page not loaded over HTTPS. Camera scanner will not work. Please use the 'Scan from an image file' option instead.</span>";
+        } else {
+            resultDiv.innerHTML = "Click 'Start Camera Scanner' and allow camera permissions when prompted.";
+        }
     </script>
 </body>
 </html>
