@@ -491,6 +491,7 @@
                 <span><i class="fas fa-filter"></i> Feed:</span>
                 <button class="school-filter active" data-filter="all" id="all-filter-btn">All Posts</button>
                 <button class="school-filter" data-filter="my" id="my-school-filter">My School</button>
+                <button class="school-filter" data-filter="rosemont" id="rosemont-filter-btn">Cégep de Rosemont</button>
             </div>
 
             <!-- SEARCH BAR -->
@@ -827,6 +828,7 @@
             const verifyBanner = document.getElementById('verify-banner');
             const allFilterBtn = document.getElementById('all-filter-btn');
             const myFilterBtn = document.getElementById('my-school-filter');
+            const rosemontFilterBtn = document.getElementById('rosemont-filter-btn');
             let currentSchoolFilter = 'all'; 
 
             // --- FETCH MARKET LISTINGS ---
@@ -1552,6 +1554,8 @@
                 if (postInput) {
                     if (currentSchoolFilter === 'all') {
                         postInput.placeholder = lang === 'fr' ? "Que se passe-t-il sur le Campus Global ?" : "What's happening on Global Campus?";
+                    } else if (currentSchoolFilter === 'rosemont') {
+                        postInput.placeholder = lang === 'fr' ? `Que se passe-t-il à Cégep de Rosemont ?` : `What's happening at Cégep de Rosemont?`;
                     } else {
                         postInput.placeholder = lang === 'fr' ? `Que se passe-t-il à ${targetSchool} ?` : `What's happening at ${targetSchool}?`;
                     }
@@ -1559,9 +1563,14 @@
 
                 if (feedContainer) feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub || 'Loading campus hub...'}</span></div>`;
 
-                const collectionName = currentSchoolFilter === 'my'
-                    ? getSchoolCollection(targetSchool)
-                    : 'social_posts_global';
+                let collectionName;
+                if (currentSchoolFilter === 'my') {
+                    collectionName = getSchoolCollection(targetSchool);
+                } else if (currentSchoolFilter === 'rosemont') {
+                    collectionName = 'social_posts_rosemont';
+                } else {
+                    collectionName = 'social_posts_global';
+                }
                 let q = query(collection(db, collectionName), orderBy("timestamp", "desc"), limit(100));
                 
                 try {
@@ -1611,6 +1620,7 @@
                 currentSchoolFilter = 'all';
                 allFilterBtn.classList.add('active');
                 if (myFilterBtn) myFilterBtn.classList.remove('active');
+                if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
                 loadFeed();
             };
             
@@ -1618,6 +1628,15 @@
                 currentSchoolFilter = 'my';
                 myFilterBtn.classList.add('active');
                 if (allFilterBtn) allFilterBtn.classList.remove('active');
+                if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
+                loadFeed();
+            };
+
+            if (rosemontFilterBtn) rosemontFilterBtn.onclick = () => {
+                currentSchoolFilter = 'rosemont';
+                rosemontFilterBtn.classList.add('active');
+                if (allFilterBtn) allFilterBtn.classList.remove('active');
+                if (myFilterBtn) myFilterBtn.classList.remove('active');
                 loadFeed();
             };
 
