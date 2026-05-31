@@ -393,7 +393,7 @@
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, limit, updateDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc, query, where, getDocs, limit, updateDoc, writeBatch } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch(getFunctionUrl('config'));
@@ -887,6 +887,36 @@
                     logs.push('[6] Saving listing to Firestore...');
                     const listingRef = await addDoc(collection(db, 'listings'), listingData);
                     logs.push('[6] Listing saved with ID: ' + listingRef.id);
+                    logs.push('');
+
+                    logs.push('[6b] Updating global_tags collection...');
+                    // Update or create global_tags for each tag used in this listing
+                    const batch = writeBatch(db);
+                    for (const tag of tags) {
+                        const tagLower = tag.toLowerCase();
+                        const tagQuery = query(collection(db, "global_tags"), where("tag_lowercase", "==", tagLower));
+                        const tagSnap = await getDocs(tagQuery);
+                        
+                        if (tagSnap.empty) {
+                            // Create new tag document
+                            const newTagRef = doc(collection(db, "global_tags"));
+                            batch.set(newTagRef, {
+                                tag: tag,
+                                tag_lowercase: tagLower,
+                                count: 1,
+                                createdAt: serverTimestamp()
+                            });
+                        } else {
+                            // Increment existing tag count
+                            const existingDoc = tagSnap.docs[0];
+                            const currentCount = existingDoc.data().count || 0;
+                            batch.update(existingDoc.ref, {
+                                count: currentCount + 1
+                            });
+                        }
+                    }
+                    await batch.commit();
+                    logs.push('[6b] Global tags updated successfully');
                     logs.push('');
 
                     logs.push('[7] Sending to AI moderation...');
