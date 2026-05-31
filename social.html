@@ -1105,7 +1105,10 @@
             };
 
             window.postComment = async (postId, coll) => {
-                if (!currentUser) return;
+                if (!currentUser) {
+                    window.location.href = '/login?redirect=/social';
+                    return;
+                }
                 const inputEl = document.getElementById(`comment-input-${postId}`);
                 const btnEl = document.getElementById(`btn-send-comment-${postId}`);
                 if (!inputEl || !btnEl) return;
@@ -1196,12 +1199,27 @@
                             const btnCreateWay = document.getElementById('btn-create-way');
                             const mSheetCreateWay = document.getElementById('m-sheet-create-way');
 
-                            if (btnCreateWay) btnCreateWay.style.display = 'flex';
-                            if (mSheetCreateWay) mSheetCreateWay.style.display = 'flex';
+                            if (btnCreateWay) {
+                                if (!currentUser) {
+                                    btnCreateWay.style.display = 'none';
+                                } else {
+                                    btnCreateWay.style.display = 'flex';
+                                }
+                            }
+                            if (mSheetCreateWay) {
+                                if (!currentUser) {
+                                    mSheetCreateWay.style.display = 'none';
+                                } else {
+                                    mSheetCreateWay.style.display = 'flex';
+                                }
+                            }
 
                             const handleCreateTopic = (e) => {
                                 e.preventDefault();
-                                if (isStudent || data.role === 'admin') {
+                                if (!currentUser) {
+                                    // Guest user - redirect to login
+                                    window.location.href = '/login?redirect=/social';
+                                } else if (isStudent || data.role === 'admin') {
                                     window.location.href = '/createtopic';
                                 } else {
                                     const restrictedModal = document.getElementById('restricted-modal');
@@ -1279,7 +1297,19 @@
                         }
                     });
                 } else {
-                    window.location.href = '/login?redirect=/social';
+                    // Allow guest access - show feed but restrict interactions
+                    currentUser = null;
+                    currentUserData = null;
+                    
+                    // Hide create topic buttons for guests
+                    const btnCreateWay = document.getElementById('btn-create-way');
+                    const mSheetCreateWay = document.getElementById('m-sheet-create-way');
+                    if (btnCreateWay) btnCreateWay.style.display = 'none';
+                    if (mSheetCreateWay) mSheetCreateWay.style.display = 'none';
+                    
+                    showHubLayout();
+                    loadTopics();
+                    loadFeed();
                 }
             });
 
@@ -1510,7 +1540,14 @@
                 }
 
                 const composerCard = document.getElementById('composer-card');
-                if (composerCard) composerCard.style.display = 'flex';
+                if (composerCard) {
+                    if (!currentUser) {
+                        // Guest user - hide composer and show login prompt on posts
+                        composerCard.style.display = 'none';
+                    } else {
+                        composerCard.style.display = 'flex';
+                    }
+                }
                 
                 if (postInput) {
                     if (currentSchoolFilter === 'all') {
@@ -1544,8 +1581,14 @@
                         snapshot.docs.forEach(docSnap => {
                             const d = docSnap.data();
                             
-                            if (d.status === 'pending' && d.authorUid !== currentUser.uid) return;
-                            if (d.status === 'rejected' && d.authorUid !== currentUser.uid) return;
+                            if (!currentUser) {
+                                // Guest users can see all posts except rejected ones
+                                if (d.status === 'rejected') return;
+                            } else {
+                                // Logged in users: hide pending/rejected posts from others
+                                if (d.status === 'pending' && d.authorUid !== currentUser.uid) return;
+                                if (d.status === 'rejected' && d.authorUid !== currentUser.uid) return;
+                            }
 
                             frag.appendChild(createPostElement(docSnap.id, d, collectionName));
                             postCounter++;
@@ -1636,8 +1679,20 @@
                     `;
                 }
 
+                // Guest user interaction overlay
+                const loginOverlayHtml = !currentUser ? `
+                    <div style="position:absolute; inset:0; background:rgba(255,255,255,0.7); backdrop-filter:blur(2px); z-index:50; display:flex; align-items:center; justify-content:center; border-radius:var(--radius);">
+                        <div style="text-align:center; padding:20px;">
+                            <i class="fas fa-lock" style="font-size:2rem; color:var(--deep); margin-bottom:10px;"></i>
+                            <p style="font-weight:700; color:var(--ink); margin-bottom:10px;">Log in to interact</p>
+                            <a href="/login?redirect=/social" class="btn-action" style="display:inline-block; padding:8px 20px; font-size:0.9rem;">Log In</a>
+                        </div>
+                    </div>
+                ` : '';
+
                 const card = document.createElement('div');
                 card.className = 'post-card';
+                card.style.position = 'relative';
                 card.innerHTML = `
                     <div class="post-header-top">
                         <a href="/user?id=${d.authorUid}" class="post-author-link">
@@ -1688,6 +1743,7 @@
                             </div>
                         </div>
                     </div>
+                    ${loginOverlayHtml}
                 `;
                 return card;
             }
@@ -1817,7 +1873,10 @@
             };
 
             window.likePost = async (id, alreadyLiked, coll) => {
-                if (!currentUser) return;
+                if (!currentUser) {
+                    window.location.href = '/login?redirect=/social';
+                    return;
+                }
                 const ref = doc(db, coll, id);
                 if(alreadyLiked) {
                     await updateDoc(ref, { likes: increment(-1), likedBy: arrayRemove(currentUser.uid) });
