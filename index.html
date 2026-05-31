@@ -478,7 +478,7 @@
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getFirestore, collection, query, orderBy, onSnapshot, getDocs, limit, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, query, orderBy, onSnapshot, getDocs, limit, where, doc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
 
         async function main() {
             const response = await fetch(getFunctionUrl('config'));
@@ -597,13 +597,50 @@
 
             async function loadGlobalTags() {
                 try {
+                    // First, try to fetch tags from global_tags collection ordered by count
                     const q = query(collection(db, "global_tags"), orderBy("count", "desc"), limit(6));
                     const snapshot = await getDocs(q);
                     
                     tagsGridContainer.innerHTML = '';
                     
                     if (snapshot.empty) {
-                        // Fallback: Show common subjects if no tags exist in database
+                        // Fallback: Extract unique tags from recent listings if global_tags is empty
+                        const listingsQuery = query(collection(db, "listings"), where("status", "==", "active"), orderBy("timestamp", "desc"), limit(50));
+                        const listingsSnap = await getDocs(listingsQuery);
+                        
+                        const tagCounts = {};
+                        listingsSnap.forEach(doc => {
+                            const data = doc.data();
+                            if (data.tags && Array.isArray(data.tags)) {
+                                data.tags.forEach(tag => {
+                                    const lowerTag = tag.toLowerCase();
+                                    if (!tagCounts[lowerTag]) {
+                                        tagCounts[lowerTag] = { original: tag, count: 0 };
+                                    }
+                                    tagCounts[lowerTag].count++;
+                                });
+                            }
+                        });
+                        
+                        // Convert to array and sort by count
+                        const extractedTags = Object.values(tagCounts)
+                            .sort((a, b) => b.count - a.count)
+                            .slice(0, 6);
+                        
+                        if (extractedTags.length > 0) {
+                            const frag = document.createDocumentFragment();
+                            extractedTags.forEach(subject => {
+                                const pill = document.createElement('div'); 
+                                pill.className = 'tag-pill';
+                                pill.innerHTML = `${subject.original} <span class="tag-count">${subject.count}</span>`;
+                                pill.onclick = () => window.location.href = `/tag?tag=${encodeURIComponent(subject.original)}`;
+                                frag.appendChild(pill);
+                            });
+                            tagsGridContainer.appendChild(frag);
+                            return;
+                        }
+                        
+                        // Final fallback: Show common subjects if no tags exist anywhere
                         const commonSubjects = [
                             { tag: "Mathematics", count: 0 },
                             { tag: "Physics", count: 0 },
