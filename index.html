@@ -600,6 +600,31 @@
                     const q = query(collection(db, "global_tags"), orderBy("count", "desc"), limit(6));
                     const snapshot = await getDocs(q);
                     
+                    tagsGridContainer.innerHTML = '';
+                    
+                    if (snapshot.empty) {
+                        // Fallback: Show common subjects if no tags exist in database
+                        const commonSubjects = [
+                            { tag: "Mathematics", count: 0 },
+                            { tag: "Physics", count: 0 },
+                            { tag: "Chemistry", count: 0 },
+                            { tag: "Biology", count: 0 },
+                            { tag: "Computer Science", count: 0 },
+                            { tag: "Economics", count: 0 }
+                        ];
+                        
+                        const frag = document.createDocumentFragment();
+                        commonSubjects.forEach(subject => {
+                            const pill = document.createElement('div'); 
+                            pill.className = 'tag-pill';
+                            pill.innerHTML = `${subject.tag} <span class="tag-count">${subject.count}</span>`;
+                            pill.onclick = () => window.location.href = `/tag?tag=${encodeURIComponent(subject.tag)}`;
+                            frag.appendChild(pill);
+                        });
+                        tagsGridContainer.appendChild(frag);
+                        return;
+                    }
+                    
                     const frag = document.createDocumentFragment();
                     snapshot.forEach(doc => {
                         const data = doc.data();
@@ -609,7 +634,6 @@
                         frag.appendChild(pill);
                     });
                     
-                    tagsGridContainer.innerHTML = '';
                     tagsGridContainer.appendChild(frag);
                 } catch (e) { console.error("Error loading tags:", e); }
             }
