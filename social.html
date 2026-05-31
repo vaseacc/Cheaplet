@@ -491,7 +491,6 @@
                 <span><i class="fas fa-filter"></i> Feed:</span>
                 <button class="school-filter active" data-filter="all" id="all-filter-btn">All Posts</button>
                 <button class="school-filter" data-filter="my" id="my-school-filter">My School</button>
-                <a href="rosemont.html" class="school-filter" style="text-decoration: none; border: none; cursor: pointer;">Cégep de Rosemont</a>
             </div>
 
             <!-- SEARCH BAR -->
@@ -828,7 +827,6 @@
             const verifyBanner = document.getElementById('verify-banner');
             const allFilterBtn = document.getElementById('all-filter-btn');
             const myFilterBtn = document.getElementById('my-school-filter');
-            const rosemontFilterBtn = document.getElementById('rosemont-filter-btn');
             let currentSchoolFilter = 'all'; 
 
             // --- FETCH MARKET LISTINGS ---
@@ -1257,7 +1255,22 @@
                             const allFilterBtn = document.getElementById('all-filter-btn');
 
                             if (filterBar) filterBar.style.display = 'flex';
-                            if (myFilterBtn) myFilterBtn.textContent = targetSchool;
+                            
+                            // Show "My School" only if user is a student, otherwise show school name or hide
+                            if (isStudent && internalSchoolName && internalSchoolName !== "Global Campus") {
+                                if (myFilterBtn) {
+                                    myFilterBtn.textContent = internalSchoolName;
+                                    myFilterBtn.style.display = 'inline-block';
+                                }
+                                targetSchool = internalSchoolName;
+                            } else {
+                                // Not a student or Global Campus - hide My School button or show default school
+                                if (myFilterBtn) {
+                                    myFilterBtn.style.display = 'none';
+                                }
+                                targetSchool = "Collège de Rosemont";
+                            }
+                            
                             if (allFilterBtn) allFilterBtn.classList.add('active');
                             
                             if (currentSchoolFilter === 'my') {
@@ -1620,7 +1633,6 @@
                 currentSchoolFilter = 'all';
                 allFilterBtn.classList.add('active');
                 if (myFilterBtn) myFilterBtn.classList.remove('active');
-                if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
                 loadFeed();
             };
             
@@ -1628,15 +1640,6 @@
                 currentSchoolFilter = 'my';
                 myFilterBtn.classList.add('active');
                 if (allFilterBtn) allFilterBtn.classList.remove('active');
-                if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
-                loadFeed();
-            };
-
-            if (rosemontFilterBtn) rosemontFilterBtn.onclick = () => {
-                currentSchoolFilter = 'rosemont';
-                rosemontFilterBtn.classList.add('active');
-                if (allFilterBtn) allFilterBtn.classList.remove('active');
-                if (myFilterBtn) myFilterBtn.classList.remove('active');
                 loadFeed();
             };
 
