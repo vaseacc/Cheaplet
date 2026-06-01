@@ -491,6 +491,7 @@
                 <span><i class="fas fa-filter"></i> Feed:</span>
                 <button class="school-filter active" data-filter="all" id="all-filter-btn">All Posts</button>
                 <button class="school-filter" data-filter="my" id="my-school-filter">My School</button>
+                <button class="school-filter" data-filter="rosemont" id="rosemont-filter-btn">Cégep de Rosemont</button>
             </div>
 
             <!-- SEARCH BAR -->
@@ -827,6 +828,7 @@
             const verifyBanner = document.getElementById('verify-banner');
             const allFilterBtn = document.getElementById('all-filter-btn');
             const myFilterBtn = document.getElementById('my-school-filter');
+            const rosemontFilterBtn = document.getElementById('rosemont-filter-btn');
             let currentSchoolFilter = 'all'; 
 
             // --- FETCH MARKET LISTINGS ---
@@ -1256,7 +1258,7 @@
 
                             if (filterBar) filterBar.style.display = 'flex';
                             
-                            // Show "My School" only if user is a student, otherwise hide the button
+                            // Show "My School" only if user is a student, otherwise show school name or hide
                             if (isStudent && internalSchoolName && internalSchoolName !== "Global Campus") {
                                 if (myFilterBtn) {
                                     myFilterBtn.textContent = internalSchoolName;
@@ -1264,11 +1266,11 @@
                                 }
                                 targetSchool = internalSchoolName;
                             } else {
-                                // Not a student or Global Campus - hide My School button
+                                // Not a student or Global Campus - hide My School button or show default school
                                 if (myFilterBtn) {
                                     myFilterBtn.style.display = 'none';
                                 }
-                                targetSchool = null;
+                                targetSchool = "Collège de Rosemont";
                             }
                             
                             if (allFilterBtn) allFilterBtn.classList.add('active');
@@ -1556,8 +1558,8 @@
 
                 const composerCard = document.getElementById('composer-card');
                 if (composerCard) {
-                    if (!currentUser || currentSchoolFilter === 'rosemont') {
-                        // Guest users and Rosemont filter - hide composer
+                    if (!currentUser) {
+                        // Guest user - hide composer and show login prompt on posts
                         composerCard.style.display = 'none';
                     } else {
                         composerCard.style.display = 'flex';
@@ -1633,6 +1635,7 @@
                 currentSchoolFilter = 'all';
                 allFilterBtn.classList.add('active');
                 if (myFilterBtn) myFilterBtn.classList.remove('active');
+                if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
                 loadFeed();
             };
             
@@ -1647,6 +1650,15 @@
                 currentSchoolFilter = 'my';
                 myFilterBtn.classList.add('active');
                 if (allFilterBtn) allFilterBtn.classList.remove('active');
+                if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
+                loadFeed();
+            };
+
+            if (rosemontFilterBtn) rosemontFilterBtn.onclick = () => {
+                currentSchoolFilter = 'rosemont';
+                rosemontFilterBtn.classList.add('active');
+                if (allFilterBtn) allFilterBtn.classList.remove('active');
+                if (myFilterBtn) myFilterBtn.classList.remove('active');
                 loadFeed();
             };
 
@@ -1708,12 +1720,12 @@
                     `;
                 }
 
-                // Guest user or Rosemont filter interaction overlay
-                const loginOverlayHtml = (!currentUser || currentSchoolFilter === 'rosemont') ? `
+                // Guest user interaction overlay
+                const loginOverlayHtml = !currentUser ? `
                     <div style="position:absolute; inset:0; background:rgba(255,255,255,0.7); backdrop-filter:blur(2px); z-index:50; display:flex; align-items:center; justify-content:center; border-radius:var(--radius);">
                         <div style="text-align:center; padding:20px;">
                             <i class="fas fa-lock" style="font-size:2rem; color:var(--deep); margin-bottom:10px;"></i>
-                            <p style="font-weight:700; color:var(--ink); margin-bottom:10px;">${currentSchoolFilter === 'rosemont' ? 'Login to interact with Rosemont posts' : 'Log in to interact'}</p>
+                            <p style="font-weight:700; color:var(--ink); margin-bottom:10px;">Log in to interact</p>
                             <a href="/login?redirect=/social" class="btn-action" style="display:inline-block; padding:8px 20px; font-size:0.9rem;">Log In</a>
                         </div>
                     </div>
