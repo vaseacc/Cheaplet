@@ -833,7 +833,7 @@
             async function fetchMarketListings() {
                 if (!currentUser) return;
                 const isAdmin = currentUserData?.role === 'admin';
-                const userSchool = internalSchoolName || targetSchool || "Collège de Rosemont";
+                const userSchool = internalSchoolName || targetSchool || "Global Campus";
                 
                 let bookQuery = query(
                     collection(db, "listings"),
@@ -1234,7 +1234,7 @@
                             if (isStudent && internalSchoolName && internalSchoolName !== "Global Campus") {
                                 targetSchool = internalSchoolName;
                             } else {
-                                targetSchool = "Collège de Rosemont";
+                                targetSchool = null;
                             }
 
                             if (isStudent) {
@@ -1511,13 +1511,14 @@
                 const isAdmin = currentUserData && currentUserData.role === 'admin';
                 const isVerifiedStudent = currentUserData && currentUserData.isStudent === true;
                 
-                const isRosemont = (name) => name === "Cégep de Rosemont" || name === "Collège de Rosemont";
-                const isVanier = (name) => name === "Vanier College";
+                // isRosemont and isVanier helpers are no longer used but kept for potential future reference
+                // const isRosemont = (name) => name === "Cégep de Rosemont" || name === "Collège de Rosemont";
+                // const isVanier = (name) => name === "Vanier College";
                 
                 const matchesSchool = currentUserData && (
                     currentUserData.schoolName === targetSchool || 
-                    (isRosemont(targetSchool) && isRosemont(currentUserData.schoolName)) ||
-                    (isVanier(targetSchool) && isVanier(currentUserData.schoolName))
+                    (targetSchool && currentUserData.schoolName && targetSchool.includes(currentUserData.schoolName)) ||
+                    (targetSchool && currentUserData.schoolName && currentUserData.schoolName.includes(targetSchool))
                 );
 
                 if (currentSchoolFilter === 'my' && !isAdmin && (!isVerifiedStudent || !matchesSchool)) {
