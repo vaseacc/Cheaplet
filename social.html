@@ -122,7 +122,7 @@
         /* ── SCHOOL FILTER ── */
         .filter-bar { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; background: var(--white); border-radius: 30px; padding: 5px 15px; width: fit-content; border: var(--border); box-shadow: var(--shadow); }
         .filter-bar span { font-size: 0.85rem; color: var(--text-muted); }
-        .school-filter { background: none; border: none; padding: 8px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: 0.2s; }
+        .school-filter { background: none; border: none; padding: 8px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; cursor: pointer; transition: 0.2s; text-decoration: none; color: var(--text-main); display: inline-block; }
         .school-filter.active { background: linear-gradient(135deg, #0C1446 0%, #2B5C92 100%); color: white; }
 
         /* ── SEARCH BAR ── */
@@ -486,11 +486,12 @@
                 <button class="banner-close" id="close-banner-btn">&times;</button>
             </div>
 
-            <!-- SCHOOL FILTER BAR (only "All Posts" and the Rosemont button that redirects) -->
+            <!-- SCHOOL FILTER BAR -->
             <div id="filter-bar" class="filter-bar">
                 <span><i class="fas fa-filter"></i> Feed:</span>
                 <button class="school-filter active" data-filter="all" id="all-filter-btn">All Posts</button>
-                <button class="school-filter" id="rosemont-filter-btn">Cégep de Rosemont</button>
+                <!-- Rosemont button is now a link that goes to the same page with a query parameter -->
+                <a href="/social?filter=rosemont" class="school-filter" id="rosemont-filter-btn">Cégep de Rosemont</a>
             </div>
 
             <!-- SEARCH BAR -->
@@ -775,7 +776,7 @@
             function getSchoolCollection(schoolName) {
                 if (!schoolName || schoolName === 'Global Campus') return 'social_posts_global';
                 
-                if (schoolName === 'Cégep de Rosemont' || schoolName === 'Collège de Rosemont') {
+                if (schoolName === 'Cégep de Rosemont' || schoolName === 'Collège de Rosemont' || schoolName === 'Rosemont Private School' || schoolName === 'Rosemont') {
                     return 'social_posts_rosemont';
                 }
                 if (schoolName === 'Vanier College') {
@@ -825,7 +826,11 @@
             const verifyBanner = document.getElementById('verify-banner');
             const allFilterBtn = document.getElementById('all-filter-btn');
             const rosemontFilterBtn = document.getElementById('rosemont-filter-btn');
-            let currentSchoolFilter = 'all'; // only 'all' is used for filtering now
+
+            // Check URL parameter for forced Rosemont filter
+            const urlParams = new URLSearchParams(window.location.search);
+            const forceRosemont = urlParams.get('filter') === 'rosemont';
+            let currentSchoolFilter = forceRosemont ? 'rosemont' : 'all';
 
             // --- FETCH MARKET LISTINGS ---
             async function fetchMarketListings() {
@@ -1004,7 +1009,7 @@
 
                     let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
                     
-                    const postingToSchool = "Global Campus"; // always global in social.html
+                    const postingToSchool = currentSchoolFilter === 'rosemont' ? "Rosemont Private School" : "Global Campus";
                     const collectionName = getSchoolCollection(postingToSchool);
                     
                     const requiresReview = uploadedImgUrl !== null;
@@ -1227,7 +1232,6 @@
                             if (btnCreateWay) btnCreateWay.onclick = handleCreateTopic;
                             if (mSheetCreateWay) mSheetCreateWay.onclick = handleCreateTopic;
                             
-                            // Update the banner and sidebar check based on verification status
                             if (isStudent) {
                                 if (verifyBanner) verifyBanner.style.display = 'none';
                                 const sidebarCheck = document.getElementById('verified-check-sidebar');
@@ -1239,16 +1243,27 @@
                                 if (sidebarCheck) sidebarCheck.style.display = 'none';
                             }
                             
-                            // Filter bar: keep the two buttons but only All Posts is a filter; Rosemont redirects
-                            if (filterBar) filterBar.style.display = 'flex';
-                            if (allFilterBtn) allFilterBtn.classList.add('active');
-                            if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
-                            
-                            // Show composer appropriately (always for logged in)
+                            // Hide or show filter bar based on forced rosemont
+                            if (filterBar) {
+                                if (forceRosemont) {
+                                    filterBar.style.display = 'none';
+                                } else {
+                                    filterBar.style.display = 'flex';
+                                }
+                            }
+
+                            // Composer placeholder
                             const composerCard = document.getElementById('composer-card');
-                            if (composerCard) composerCard.style.display = 'flex';
+                            if (composerCard) {
+                                if (!currentUser) composerCard.style.display = 'none';
+                                else composerCard.style.display = 'flex';
+                            }
                             if (postInput) {
-                                postInput.placeholder = ui.post_placeholder || "What's happening on Global Campus?";
+                                if (currentSchoolFilter === 'all') {
+                                    postInput.placeholder = ui.post_placeholder || "What's happening on Global Campus?";
+                                } else {
+                                    postInput.placeholder = lang === 'fr' ? `Que se passe-t-il à Rosemont ?` : `What's happening at Rosemont?`;
+                                }
                             }
 
                             showHubLayout();
@@ -1268,11 +1283,9 @@
                         }
                     });
                 } else {
-                    // Guest access: show feed but no interaction
                     currentUser = null;
                     currentUserData = null;
                     
-                    // Hide create topic buttons for guests
                     const btnCreateWay = document.getElementById('btn-create-way');
                     const mSheetCreateWay = document.getElementById('m-sheet-create-way');
                     if (btnCreateWay) btnCreateWay.style.display = 'none';
@@ -1462,23 +1475,67 @@
                 Object.values(commentUnsubscribes).forEach(unsub => unsub());
                 commentUnsubscribes = {};
 
+                const isAdmin = currentUserData && currentUserData.role === 'admin';
+                const isVerifiedStudent = currentUserData && currentUserData.isStudent === true;
+                
+                const matchesSchool = currentUserData && (
+                    currentUserData.schoolName === targetSchool || 
+                    (targetSchool && currentUserData.schoolName && targetSchool.includes(currentUserData.schoolName)) ||
+                    (targetSchool && currentUserData.schoolName && currentUserData.schoolName.includes(targetSchool))
+                );
+
+                // If user tries to access Rosemont but isn't verified/admin, show lock
+                if (currentSchoolFilter === 'rosemont' && !isAdmin && (!isVerifiedStudent || !matchesSchool)) {
+                    const composerCard = document.getElementById('composer-card');
+                    if (composerCard) composerCard.style.display = 'none';
+
+                    if (feedContainer) {
+                        feedContainer.innerHTML = `
+                            <div style="position: relative; min-height: 400px; overflow: hidden; border-radius: var(--radius-md);">
+                                <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; padding: 20px;">
+                                    <div style="background: rgba(255,255,255,0.95); padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; max-width: 420px; margin: 0 20px;">
+                                        <i class="fas fa-lock" style="font-size: 3.5rem; color: var(--deep); margin-bottom: 20px;"></i>
+                                        <h3 style="font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--ink); margin-bottom: 12px;">${ui.private_feed_locked}</h3>
+                                        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; line-height: 1.6;">${ui.private_feed_desc} <strong>Rosemont Private School</strong> can view or participate in this channel.</p>
+                                        <button class="btn-action" style="width: 100%;" onclick="window.location.href='/verify'">Verify Student Email</button>
+                                    </div>
+                                </div>
+                                
+                                <div class="post-card" style="filter: blur(8px); opacity: 0.5; pointer-events: none; user-select: none; margin-bottom: 20px;">
+                                    <div class="post-header-top"><div style="display:flex; gap:15px; align-items:center;"><div style="width:48px; height:48px; border-radius:50%; background:#cbd5e1;"></div><div><div style="width:120px; height:12px; background:#cbd5e1; border-radius:10px; margin-bottom:8px;"></div><div style="width:80px; height:10px; background:#e2e8f0; border-radius:10px;"></div></div></div></div>
+                                    <div style="width:100%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
+                                    <div style="width:85%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
+                                    <div style="width:60%; height:12px; background:#e2e8f0; border-radius:10px;"></div>
+                                </div>
+                                <div class="post-card" style="filter: blur(8px); opacity: 0.5; pointer-events: none; user-select: none;">
+                                    <div class="post-header-top"><div style="display:flex; gap:15px; align-items:center;"><div style="width:48px; height:48px; border-radius:50%; background:#cbd5e1;"></div><div><div style="width:140px; height:12px; background:#cbd5e1; border-radius:10px; margin-bottom:8px;"></div><div style="width:90px; height:10px; background:#e2e8f0; border-radius:10px;"></div></div></div></div>
+                                    <div style="width:100%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
+                                    <div style="width:95%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
+                                    <div style="width:40%; height:12px; background:#e2e8f0; border-radius:10px;"></div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    return; 
+                }
+
                 const composerCard = document.getElementById('composer-card');
                 if (composerCard) {
-                    if (!currentUser) {
-                        composerCard.style.display = 'none';
-                    } else {
-                        composerCard.style.display = 'flex';
-                    }
+                    if (!currentUser) composerCard.style.display = 'none';
+                    else composerCard.style.display = 'flex';
                 }
                 
                 if (postInput) {
-                    postInput.placeholder = ui.post_placeholder || "What's happening on Global Campus?";
+                    if (currentSchoolFilter === 'all') {
+                        postInput.placeholder = ui.post_placeholder || "What's happening on Global Campus?";
+                    } else {
+                        postInput.placeholder = lang === 'fr' ? `Que se passe-t-il à Rosemont ?` : `What's happening at Rosemont?`;
+                    }
                 }
 
                 if (feedContainer) feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub || 'Loading campus hub...'}</span></div>`;
 
-                // Always load Global Campus feed
-                const collectionName = 'social_posts_global';
+                const collectionName = currentSchoolFilter === 'rosemont' ? 'social_posts_rosemont' : 'social_posts_global';
                 let q = query(collection(db, collectionName), orderBy("timestamp", "desc"), limit(100));
                 
                 try {
@@ -1518,25 +1575,30 @@
                         }
 
                         feedContainer.appendChild(frag);
+                    }, (error) => {
+                        console.error("Feed error:", error);
+                        if (feedContainer) {
+                            feedContainer.innerHTML = `
+                                <div class="loader-msg">
+                                    <i class="fas fa-exclamation-triangle" style="color: var(--red);"></i><br>
+                                    <span>Couldn't load feed. Please try again.</span><br>
+                                    <button class="btn-action" style="margin-top: 15px;" onclick="loadFeed()">Retry</button>
+                                </div>
+                            `;
+                        }
                     });
                 } catch (e) { console.error(e); }
             }
 
-            // Filter buttons: All Posts stays as active filter; Rosemont redirects to rosemont.html
+            // All Posts button
             if (allFilterBtn) {
                 allFilterBtn.onclick = () => {
+                    if (forceRosemont) return; // stay on rosemont if forced
                     currentSchoolFilter = 'all';
                     allFilterBtn.classList.add('active');
                     if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
                     loadFeed();
                 };
-            }
-            
-            if (rosemontFilterBtn) {
-                rosemontFilterBtn.onclick = () => {
-                    window.location.href = '/rosemont.html';
-                };
-                // no active class needed
             }
 
             function createPostElement(id, d, coll) {
