@@ -480,8 +480,6 @@
                 <button class="banner-close" id="close-banner-btn">&times;</button>
             </div>
 
-            <!-- NO FILTER BAR – Always shows Rosemont feed -->
-
             <!-- SEARCH BAR -->
             <div class="social-search-bar">
                 <i class="fas fa-search" style="color:var(--text-muted); margin-left:5px;"></i>
@@ -1435,6 +1433,9 @@
                 return breakSection;
             }
 
+            // ─────────────────────
+            // FEED LOADER WITH ERROR HANDLER
+            // ─────────────────────
             function loadFeed() {
                 if (unsubscribePosts) unsubscribePosts();
                 Object.values(commentUnsubscribes).forEach(unsub => unsub());
@@ -1450,7 +1451,6 @@
                     isRosemont(targetSchool) && isRosemont(currentUserData.schoolName)
                 );
 
-                // If not verified Rosemont student and not admin, show locked overlay
                 if (!isAdmin && (!isVerifiedStudent || !matchesSchool)) {
                     const composerCard = document.getElementById('composer-card');
                     if (composerCard) composerCard.style.display = 'none';
@@ -1535,6 +1535,17 @@
                         }
 
                         feedContainer.appendChild(frag);
+                    }, (error) => {
+                        console.error("Rosemont feed error:", error);
+                        if (feedContainer) {
+                            feedContainer.innerHTML = `
+                                <div class="loader-msg">
+                                    <i class="fas fa-exclamation-triangle" style="color: var(--red);"></i><br>
+                                    <span>Couldn't load the feed. Please try again.</span><br>
+                                    <button class="btn-action" style="margin-top: 15px;" onclick="loadFeed()">Retry</button>
+                                </div>
+                            `;
+                        }
                     });
                 } catch (e) { console.error(e); }
             }
@@ -1813,70 +1824,79 @@
                 const list = document.getElementById(`comment-list-${postId}`);
                 if (!list) return;
                 
-                commentUnsubscribes[postId] = onSnapshot(query(collection(db, coll, postId, "comments"), orderBy("timestamp", "asc")), (snap) => {
-                    list.innerHTML = snap.empty ? `<div style="text-align:center; font-size:0.85rem; color:#888;">${ui.no_comments || 'No comments yet.'}</div>` : '';
-                    snap.forEach(docSnap => {
-                        const c = docSnap.data();
-                        const commentId = docSnap.id;
+                commentUnsubscribes[postId] = onSnapshot(
+                    query(collection(db, coll, postId, "comments"), orderBy("timestamp", "asc")),
+                    (snap) => {
+                        list.innerHTML = snap.empty ? `<div style="text-align:center; font-size:0.85rem; color:#888;">${ui.no_comments || 'No comments yet.'}</div>` : '';
+                        snap.forEach(docSnap => {
+                            const c = docSnap.data();
+                            const commentId = docSnap.id;
 
-                        if (c.status === 'pending' && c.authorUid !== currentUser.uid) return;
-                        if (c.status === 'rejected' && c.authorUid !== currentUser.uid) return;
+                            if (c.status === 'pending' && c.authorUid !== currentUser.uid) return;
+                            if (c.status === 'rejected' && c.authorUid !== currentUser.uid) return;
 
-                        if (c.status === 'rejected') {
+                            if (c.status === 'rejected') {
+                                const div = document.createElement('div');
+                                div.className = 'comment-item';
+                                div.innerHTML = `<div class="comment-content" style="background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; font-size: 0.85rem;"><i class="fas fa-shield-alt"></i> Your comment was removed by our safety system. <button onclick="window.deleteComment('${postId}', '${commentId}', '${coll}')" style="background:none; border:none; color:#b91c1c; text-decoration:underline; cursor:pointer; margin-left:10px;">Delete</button></div>`;
+                                list.appendChild(div);
+                                return;
+                            }
+
+                            let timeStr = ui.justNow || "Just now";
+                            if (c.timestamp) {
+                                const diffMins = Math.round((new Date() - c.timestamp.toDate()) / 60000);
+                                if (diffMins < 60) timeStr = lang === 'fr' ? `Il y a ${diffMins}m` : `${diffMins}m`;
+                                else if (diffMins < 1440) timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/60)}h` : `${Math.round(diffMins/60)}h`;
+                                else timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/1440)}j` : `${Math.round(diffMins/1440)}d`;
+                            }
+                            const pfp = c.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${c.authorUid}&backgroundColor=EBF2FA`;
+                            const imgHtml = c.imageUrl ? `<img src="${window.optimizeImageUrl ? window.optimizeImageUrl(c.imageUrl) : c.imageUrl}" class="comment-image-attachment">` : '';
+                            
+                            const commentVerifiedAvatar = c.authorIsStudent ? '<div class="comment-avatar-badge"><i class="fas fa-check-circle"></i></div>' : '';
+                            const commentAvatarHtml = `
+                                <a href="/user?id=${c.authorUid}">
+                                    <div class="comment-avatar-wrapper">
+                                        <img src="${pfp}" alt="Avatar">
+                                        ${commentVerifiedAvatar}
+                                    </div>
+                                </a>
+                            `;
+                            
+                            const pendingBadgeHtml = c.status === 'pending' ? `<span style="font-size:0.65rem; color:#d97706; background:#fef3c7; padding:2px 6px; border-radius:10px; margin-left:6px;">⏳ In Review</span>` : '';
+
+                            const isCommentAuthor = currentUser && currentUser.uid === c.authorUid;
+                            const isAdmin = currentUser && currentUser.role === 'admin';
+
+                            const deleteBtnHtml = (isCommentAuthor || isAdmin) 
+                                ? `<button onclick="window.deleteComment('${postId}', '${commentId}', '${coll}')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:0.75rem; margin-left:10px;"><i class="fas fa-trash-alt"></i></button>` 
+                                : '';
+
                             const div = document.createElement('div');
                             div.className = 'comment-item';
-                            div.innerHTML = `<div class="comment-content" style="background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; font-size: 0.85rem;"><i class="fas fa-shield-alt"></i> Your comment was removed by our safety system. <button onclick="window.deleteComment('${postId}', '${commentId}', '${coll}')" style="background:none; border:none; color:#b91c1c; text-decoration:underline; cursor:pointer; margin-left:10px;">Delete</button></div>`;
+                            div.innerHTML = `
+                                ${commentAvatarHtml}
+                                <div class="comment-content">
+                                    <div style="display:flex; justify-content:space-between; align-items:start;">
+                                        <a href="/user?id=${c.authorUid}" class="comment-author-link"><div class="comment-author">${c.authorName} ${pendingBadgeHtml}</div></a>
+                                        ${deleteBtnHtml}
+                                    </div>
+                                    <div class="comment-text">${c.text}</div>
+                                    ${imgHtml}
+                                    <div class="comment-time">${timeStr}</div>
+                                </div>
+                            `;
                             list.appendChild(div);
-                            return;
+                        });
+                        list.scrollTop = list.scrollHeight;
+                    },
+                    (error) => {
+                        console.error("Comments error:", error);
+                        if (list) {
+                            list.innerHTML = `<div style="text-align:center; font-size:0.85rem; color: var(--red);">Comments unavailable</div>`;
                         }
-
-                        let timeStr = ui.justNow || "Just now";
-                        if (c.timestamp) {
-                            const diffMins = Math.round((new Date() - c.timestamp.toDate()) / 60000);
-                            if (diffMins < 60) timeStr = lang === 'fr' ? `Il y a ${diffMins}m` : `${diffMins}m`;
-                            else if (diffMins < 1440) timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/60)}h` : `${Math.round(diffMins/60)}h`;
-                            else timeStr = lang === 'fr' ? `Il y a ${Math.round(diffMins/1440)}j` : `${Math.round(diffMins/1440)}d`;
-                        }
-                        const pfp = c.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${c.authorUid}&backgroundColor=EBF2FA`;
-                        const imgHtml = c.imageUrl ? `<img src="${window.optimizeImageUrl ? window.optimizeImageUrl(c.imageUrl) : c.imageUrl}" class="comment-image-attachment">` : '';
-                        
-                        const commentVerifiedAvatar = c.authorIsStudent ? '<div class="comment-avatar-badge"><i class="fas fa-check-circle"></i></div>' : '';
-                        const commentAvatarHtml = `
-                            <a href="/user?id=${c.authorUid}">
-                                <div class="comment-avatar-wrapper">
-                                    <img src="${pfp}" alt="Avatar">
-                                    ${commentVerifiedAvatar}
-                                </div>
-                            </a>
-                        `;
-                        
-                        const pendingBadgeHtml = c.status === 'pending' ? `<span style="font-size:0.65rem; color:#d97706; background:#fef3c7; padding:2px 6px; border-radius:10px; margin-left:6px;">⏳ In Review</span>` : '';
-
-                        const isCommentAuthor = currentUser && currentUser.uid === c.authorUid;
-                        const isAdmin = currentUser && currentUser.role === 'admin';
-
-                        const deleteBtnHtml = (isCommentAuthor || isAdmin) 
-                            ? `<button onclick="window.deleteComment('${postId}', '${commentId}', '${coll}')" style="background:none; border:none; color:var(--red); cursor:pointer; font-size:0.75rem; margin-left:10px;"><i class="fas fa-trash-alt"></i></button>` 
-                            : '';
-
-                        const div = document.createElement('div');
-                        div.className = 'comment-item';
-                        div.innerHTML = `
-                            ${commentAvatarHtml}
-                            <div class="comment-content">
-                                <div style="display:flex; justify-content:space-between; align-items:start;">
-                                    <a href="/user?id=${c.authorUid}" class="comment-author-link"><div class="comment-author">${c.authorName} ${pendingBadgeHtml}</div></a>
-                                    ${deleteBtnHtml}
-                                </div>
-                                <div class="comment-text">${c.text}</div>
-                                ${imgHtml}
-                                <div class="comment-time">${timeStr}</div>
-                            </div>
-                        `;
-                        list.appendChild(div);
-                    });
-                    list.scrollTop = list.scrollHeight;
-                });
+                    }
+                );
             }
 
             window.deleteComment = async (postId, commentId, coll) => {
