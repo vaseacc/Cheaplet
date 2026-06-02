@@ -486,12 +486,11 @@
                 <button class="banner-close" id="close-banner-btn">&times;</button>
             </div>
 
-            <!-- SCHOOL FILTER BAR -->
+            <!-- SCHOOL FILTER BAR (now with toggle button) -->
             <div id="filter-bar" class="filter-bar">
                 <span><i class="fas fa-filter"></i> Feed:</span>
                 <button class="school-filter active" data-filter="all" id="all-filter-btn">All Posts</button>
-                <!-- Rosemont button is now a link that goes to the same page with a query parameter -->
-                <a href="/social?filter=rosemont" class="school-filter" id="rosemont-filter-btn">Cégep de Rosemont</a>
+                <button class="school-filter" id="rosemont-filter-btn">Cégep de Rosemont</button>
             </div>
 
             <!-- SEARCH BAR -->
@@ -827,10 +826,51 @@
             const allFilterBtn = document.getElementById('all-filter-btn');
             const rosemontFilterBtn = document.getElementById('rosemont-filter-btn');
 
-            // Check URL parameter for forced Rosemont filter
+            // Check URL parameter to set initial filter (still allows toggling)
             const urlParams = new URLSearchParams(window.location.search);
             const forceRosemont = urlParams.get('filter') === 'rosemont';
             let currentSchoolFilter = forceRosemont ? 'rosemont' : 'all';
+
+            // Set initial active button state
+            if (forceRosemont) {
+                if (allFilterBtn) allFilterBtn.classList.remove('active');
+                if (rosemontFilterBtn) rosemontFilterBtn.classList.add('active');
+            } else {
+                if (allFilterBtn) allFilterBtn.classList.add('active');
+                if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
+            }
+
+            // --- BUTTON HANDLERS ---
+            if (allFilterBtn) {
+                allFilterBtn.onclick = () => {
+                    currentSchoolFilter = 'all';
+                    allFilterBtn.classList.add('active');
+                    rosemontFilterBtn.classList.remove('active');
+                    updateComposerPlaceholder();
+                    loadFeed();
+                };
+            }
+
+            if (rosemontFilterBtn) {
+                rosemontFilterBtn.onclick = () => {
+                    currentSchoolFilter = 'rosemont';
+                    rosemontFilterBtn.classList.add('active');
+                    allFilterBtn.classList.remove('active');
+                    updateComposerPlaceholder();
+                    loadFeed();
+                };
+            }
+
+            // Helper to update composer placeholder
+            function updateComposerPlaceholder() {
+                if (postInput) {
+                    if (currentSchoolFilter === 'all') {
+                        postInput.placeholder = ui.post_placeholder || "What's happening on Global Campus?";
+                    } else {
+                        postInput.placeholder = lang === 'fr' ? `Que se passe-t-il à Rosemont ?` : `What's happening at Rosemont?`;
+                    }
+                }
+            }
 
             // --- FETCH MARKET LISTINGS ---
             async function fetchMarketListings() {
@@ -1243,14 +1283,8 @@
                                 if (sidebarCheck) sidebarCheck.style.display = 'none';
                             }
                             
-                            // Hide or show filter bar based on forced rosemont
-                            if (filterBar) {
-                                if (forceRosemont) {
-                                    filterBar.style.display = 'none';
-                                } else {
-                                    filterBar.style.display = 'flex';
-                                }
-                            }
+                            // Always show the filter bar (toggle will handle switching)
+                            if (filterBar) filterBar.style.display = 'flex';
 
                             // Composer placeholder
                             const composerCard = document.getElementById('composer-card');
@@ -1259,11 +1293,7 @@
                                 else composerCard.style.display = 'flex';
                             }
                             if (postInput) {
-                                if (currentSchoolFilter === 'all') {
-                                    postInput.placeholder = ui.post_placeholder || "What's happening on Global Campus?";
-                                } else {
-                                    postInput.placeholder = lang === 'fr' ? `Que se passe-t-il à Rosemont ?` : `What's happening at Rosemont?`;
-                                }
+                                updateComposerPlaceholder();
                             }
 
                             showHubLayout();
@@ -1526,11 +1556,7 @@
                 }
                 
                 if (postInput) {
-                    if (currentSchoolFilter === 'all') {
-                        postInput.placeholder = ui.post_placeholder || "What's happening on Global Campus?";
-                    } else {
-                        postInput.placeholder = lang === 'fr' ? `Que se passe-t-il à Rosemont ?` : `What's happening at Rosemont?`;
-                    }
+                    updateComposerPlaceholder();
                 }
 
                 if (feedContainer) feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub || 'Loading campus hub...'}</span></div>`;
@@ -1588,17 +1614,6 @@
                         }
                     });
                 } catch (e) { console.error(e); }
-            }
-
-            // All Posts button
-            if (allFilterBtn) {
-                allFilterBtn.onclick = () => {
-                    if (forceRosemont) return; // stay on rosemont if forced
-                    currentSchoolFilter = 'all';
-                    allFilterBtn.classList.add('active');
-                    if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
-                    loadFeed();
-                };
             }
 
             function createPostElement(id, d, coll) {
