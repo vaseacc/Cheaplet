@@ -486,12 +486,11 @@
                 <button class="banner-close" id="close-banner-btn">&times;</button>
             </div>
 
-            <!-- SCHOOL FILTER BAR -->
+            <!-- SCHOOL FILTER BAR (only "All Posts" and the Rosemont button that redirects) -->
             <div id="filter-bar" class="filter-bar">
                 <span><i class="fas fa-filter"></i> Feed:</span>
                 <button class="school-filter active" data-filter="all" id="all-filter-btn">All Posts</button>
-                <button class="school-filter" data-filter="my" id="my-school-filter">My School</button>
-                <button class="school-filter" data-filter="rosemont" id="rosemont-filter-btn">Cégep de Rosemont</button>
+                <button class="school-filter" id="rosemont-filter-btn">Cégep de Rosemont</button>
             </div>
 
             <!-- SEARCH BAR -->
@@ -776,7 +775,6 @@
             function getSchoolCollection(schoolName) {
                 if (!schoolName || schoolName === 'Global Campus') return 'social_posts_global';
                 
-                // Explicit mappings to match your Firestore Security Rules exactly
                 if (schoolName === 'Cégep de Rosemont' || schoolName === 'Collège de Rosemont') {
                     return 'social_posts_rosemont';
                 }
@@ -784,10 +782,9 @@
                     return 'social_posts_vanier';
                 }
 
-                // Fallback logic: Remove accents properly (é -> e) before converting to underscores
                 const key = schoolName
                     .normalize("NFD")
-                    .replace(/[\u0300-\u036f]/g, "") // Strips accents
+                    .replace(/[\u0300-\u036f]/g, "")
                     .toLowerCase()
                     .replace(/[^a-z0-9]+/g, '_')
                     .replace(/_+/g, '_')
@@ -827,9 +824,8 @@
             const filterBar = document.getElementById('filter-bar');
             const verifyBanner = document.getElementById('verify-banner');
             const allFilterBtn = document.getElementById('all-filter-btn');
-            const myFilterBtn = document.getElementById('my-school-filter');
             const rosemontFilterBtn = document.getElementById('rosemont-filter-btn');
-            let currentSchoolFilter = 'all'; 
+            let currentSchoolFilter = 'all'; // only 'all' is used for filtering now
 
             // --- FETCH MARKET LISTINGS ---
             async function fetchMarketListings() {
@@ -1008,7 +1004,7 @@
 
                     let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
                     
-                    const postingToSchool = currentSchoolFilter === 'my' ? targetSchool : "Global Campus";
+                    const postingToSchool = "Global Campus"; // always global in social.html
                     const collectionName = getSchoolCollection(postingToSchool);
                     
                     const requiresReview = uploadedImgUrl !== null;
@@ -1219,7 +1215,6 @@
                             const handleCreateTopic = (e) => {
                                 e.preventDefault();
                                 if (!currentUser) {
-                                    // Guest user - redirect to login
                                     window.location.href = '/login?redirect=/social';
                                 } else if (isStudent || data.role === 'admin') {
                                     window.location.href = '/createtopic';
@@ -1232,67 +1227,28 @@
                             if (btnCreateWay) btnCreateWay.onclick = handleCreateTopic;
                             if (mSheetCreateWay) mSheetCreateWay.onclick = handleCreateTopic;
                             
-                            // Determine the target school for the "My School" feed
-                            if (isStudent && internalSchoolName && internalSchoolName !== "Global Campus") {
-                                targetSchool = internalSchoolName;
-                            } else {
-                                targetSchool = null;
-                            }
-
+                            // Update the banner and sidebar check based on verification status
                             if (isStudent) {
-                                const verifyBanner = document.getElementById('verify-banner');
                                 if (verifyBanner) verifyBanner.style.display = 'none';
                                 const sidebarCheck = document.getElementById('verified-check-sidebar');
                                 if (sidebarCheck) sidebarCheck.style.display = 'inline-block';
                             } else {
                                 const bannerDismissed = localStorage.getItem('verify_banner_dismissed') === 'true';
-                                const verifyBanner = document.getElementById('verify-banner');
                                 if (verifyBanner) verifyBanner.style.display = !bannerDismissed ? 'flex' : 'none';
                                 const sidebarCheck = document.getElementById('verified-check-sidebar');
                                 if (sidebarCheck) sidebarCheck.style.display = 'none';
                             }
                             
-                            // Use the globally declared filter buttons
-                            
+                            // Filter bar: keep the two buttons but only All Posts is a filter; Rosemont redirects
                             if (filterBar) filterBar.style.display = 'flex';
-                            
-                            // Show "My School" only if user is a student, otherwise show school name or hide
-                            if (isStudent && internalSchoolName && internalSchoolName !== "Global Campus") {
-                                if (myFilterBtn) {
-                                    myFilterBtn.textContent = internalSchoolName;
-                                    myFilterBtn.style.display = 'inline-block';
-                                }
-                                targetSchool = internalSchoolName;
-                            } else {
-                                // Not a student or Global Campus - hide My School button or show default school
-                                if (myFilterBtn) {
-                                    myFilterBtn.style.display = 'none';
-                                }
-                                targetSchool = "Collège de Rosemont";
-                            }
-                            
                             if (allFilterBtn) allFilterBtn.classList.add('active');
+                            if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
                             
-                            if (currentSchoolFilter === 'my') {
-                                if (myFilterBtn) myFilterBtn.classList.add('active');
-                                if (allFilterBtn) allFilterBtn.classList.remove('active');
-                            } else {
-                                if (myFilterBtn) myFilterBtn.classList.remove('active');
-                                if (allFilterBtn) allFilterBtn.classList.add('active');
-                            }
-                            
+                            // Show composer appropriately (always for logged in)
                             const composerCard = document.getElementById('composer-card');
-                            if (currentSchoolFilter === 'my' && !isStudent && data.role !== 'admin') {
-                                if (composerCard) composerCard.style.display = 'none';
-                            } else {
-                                if (composerCard) composerCard.style.display = 'flex';
-                                if (postInput) {
-                                    if (currentSchoolFilter === 'all') {
-                                        postInput.placeholder = lang === 'fr' ? "Que se passe-t-il sur le Campus Global ?" : "What's happening on Global Campus?";
-                                    } else {
-                                        postInput.placeholder = lang === 'fr' ? `Que se passe-t-il à ${targetSchool} ?` : `What's happening at ${targetSchool}?`;
-                                    }
-                                }
+                            if (composerCard) composerCard.style.display = 'flex';
+                            if (postInput) {
+                                postInput.placeholder = ui.post_placeholder || "What's happening on Global Campus?";
                             }
 
                             showHubLayout();
@@ -1312,7 +1268,7 @@
                         }
                     });
                 } else {
-                    // Allow guest access - show feed but restrict interactions
+                    // Guest access: show feed but no interaction
                     currentUser = null;
                     currentUserData = null;
                     
@@ -1330,7 +1286,6 @@
 
             const closeBannerBtn = document.getElementById('close-banner-btn');
             if (closeBannerBtn) closeBannerBtn.onclick = () => {
-                const verifyBanner = document.getElementById('verify-banner');
                 if (verifyBanner) verifyBanner.style.display = 'none';
                 localStorage.setItem('verify_banner_dismissed', 'true');
             };
@@ -1455,7 +1410,6 @@
                     if (mobileWaysList) mobileWaysList.appendChild(createTopBarItem(t));
                 });
 
-                // If user has no custom topics, show all discoverable topics in the horizontal bar
                 if (!hasCustomTopics) {
                     discT.forEach(t => {
                         if (mobileWaysList) mobileWaysList.appendChild(createTopBarItem(t));
@@ -1508,57 +1462,9 @@
                 Object.values(commentUnsubscribes).forEach(unsub => unsub());
                 commentUnsubscribes = {};
 
-                const isAdmin = currentUserData && currentUserData.role === 'admin';
-                const isVerifiedStudent = currentUserData && currentUserData.isStudent === true;
-                
-                // isRosemont and isVanier helpers are no longer used but kept for potential future reference
-                // const isRosemont = (name) => name === "Cégep de Rosemont" || name === "Collège de Rosemont";
-                // const isVanier = (name) => name === "Vanier College";
-                
-                const matchesSchool = currentUserData && (
-                    currentUserData.schoolName === targetSchool || 
-                    (targetSchool && currentUserData.schoolName && targetSchool.includes(currentUserData.schoolName)) ||
-                    (targetSchool && currentUserData.schoolName && currentUserData.schoolName.includes(targetSchool))
-                );
-
-                if (currentSchoolFilter === 'my' && !isAdmin && (!isVerifiedStudent || !matchesSchool)) {
-                    const composerCard = document.getElementById('composer-card');
-                    if (composerCard) composerCard.style.display = 'none';
-
-                    if (feedContainer) {
-                        feedContainer.innerHTML = `
-                            <div style="position: relative; min-height: 400px; overflow: hidden; border-radius: var(--radius-md);">
-                                <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; padding: 20px;">
-                                    <div style="background: rgba(255,255,255,0.95); padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; max-width: 420px; margin: 0 20px;">
-                                        <i class="fas fa-lock" style="font-size: 3.5rem; color: var(--deep); margin-bottom: 20px;"></i>
-                                        <h3 style="font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--ink); margin-bottom: 12px;">${ui.private_feed_locked}</h3>
-                                        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; line-height: 1.6;">${ui.private_feed_desc} <strong>${targetSchool}</strong> can view or participate in this channel.</p>
-                                        <button class="btn-action" style="width: 100%;" onclick="window.location.href='/verify'">Verify Student Email</button>
-                                    </div>
-                                </div>
-                                
-                                <div class="post-card" style="filter: blur(8px); opacity: 0.5; pointer-events: none; user-select: none; margin-bottom: 20px;">
-                                    <div class="post-header-top"><div style="display:flex; gap:15px; align-items:center;"><div style="width:48px; height:48px; border-radius:50%; background:#cbd5e1;"></div><div><div style="width:120px; height:12px; background:#cbd5e1; border-radius:10px; margin-bottom:8px;"></div><div style="width:80px; height:10px; background:#e2e8f0; border-radius:10px;"></div></div></div></div>
-                                    <div style="width:100%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
-                                    <div style="width:85%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
-                                    <div style="width:60%; height:12px; background:#e2e8f0; border-radius:10px;"></div>
-                                </div>
-                                <div class="post-card" style="filter: blur(8px); opacity: 0.5; pointer-events: none; user-select: none;">
-                                    <div class="post-header-top"><div style="display:flex; gap:15px; align-items:center;"><div style="width:48px; height:48px; border-radius:50%; background:#cbd5e1;"></div><div><div style="width:140px; height:12px; background:#cbd5e1; border-radius:10px; margin-bottom:8px;"></div><div style="width:90px; height:10px; background:#e2e8f0; border-radius:10px;"></div></div></div></div>
-                                    <div style="width:100%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
-                                    <div style="width:95%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
-                                    <div style="width:40%; height:12px; background:#e2e8f0; border-radius:10px;"></div>
-                                </div>
-                            </div>
-                        `;
-                    }
-                    return; 
-                }
-
                 const composerCard = document.getElementById('composer-card');
                 if (composerCard) {
                     if (!currentUser) {
-                        // Guest user - hide composer and show login prompt on posts
                         composerCard.style.display = 'none';
                     } else {
                         composerCard.style.display = 'flex';
@@ -1566,25 +1472,13 @@
                 }
                 
                 if (postInput) {
-                    if (currentSchoolFilter === 'all') {
-                        postInput.placeholder = lang === 'fr' ? "Que se passe-t-il sur le Campus Global ?" : "What's happening on Global Campus?";
-                    } else if (currentSchoolFilter === 'rosemont') {
-                        postInput.placeholder = lang === 'fr' ? `Que se passe-t-il à Cégep de Rosemont ?` : `What's happening at Cégep de Rosemont?`;
-                    } else {
-                        postInput.placeholder = lang === 'fr' ? `Que se passe-t-il à ${targetSchool} ?` : `What's happening at ${targetSchool}?`;
-                    }
+                    postInput.placeholder = ui.post_placeholder || "What's happening on Global Campus?";
                 }
 
                 if (feedContainer) feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub || 'Loading campus hub...'}</span></div>`;
 
-                let collectionName;
-                if (currentSchoolFilter === 'my') {
-                    collectionName = getSchoolCollection(targetSchool);
-                } else if (currentSchoolFilter === 'rosemont') {
-                    collectionName = 'social_posts_rosemont';
-                } else {
-                    collectionName = 'social_posts_global';
-                }
+                // Always load Global Campus feed
+                const collectionName = 'social_posts_global';
                 let q = query(collection(db, collectionName), orderBy("timestamp", "desc"), limit(100));
                 
                 try {
@@ -1605,10 +1499,8 @@
                             const d = docSnap.data();
                             
                             if (!currentUser) {
-                                // Guest users can see all posts except rejected ones
                                 if (d.status === 'rejected') return;
                             } else {
-                                // Logged in users: hide pending/rejected posts from others
                                 if (d.status === 'pending' && d.authorUid !== currentUser.uid) return;
                                 if (d.status === 'rejected' && d.authorUid !== currentUser.uid) return;
                             }
@@ -1630,36 +1522,22 @@
                 } catch (e) { console.error(e); }
             }
 
-            if (allFilterBtn) allFilterBtn.onclick = () => {
-                currentSchoolFilter = 'all';
-                allFilterBtn.classList.add('active');
-                if (myFilterBtn) myFilterBtn.classList.remove('active');
-                if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
-                loadFeed();
-            };
+            // Filter buttons: All Posts stays as active filter; Rosemont redirects to rosemont.html
+            if (allFilterBtn) {
+                allFilterBtn.onclick = () => {
+                    currentSchoolFilter = 'all';
+                    allFilterBtn.classList.add('active');
+                    if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
+                    loadFeed();
+                };
+            }
             
-            if (myFilterBtn) myFilterBtn.onclick = () => {
-                // If user is a student from Rosemont, redirect to rosemont.html
-                if (currentUser && internalSchoolName && 
-                    (internalSchoolName === 'Cégep de Rosemont' || internalSchoolName === 'Collège de Rosemont')) {
+            if (rosemontFilterBtn) {
+                rosemontFilterBtn.onclick = () => {
                     window.location.href = '/rosemont.html';
-                    return;
-                }
-                
-                currentSchoolFilter = 'my';
-                myFilterBtn.classList.add('active');
-                if (allFilterBtn) allFilterBtn.classList.remove('active');
-                if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
-                loadFeed();
-            };
-
-            if (rosemontFilterBtn) rosemontFilterBtn.onclick = () => {
-                currentSchoolFilter = 'rosemont';
-                rosemontFilterBtn.classList.add('active');
-                if (allFilterBtn) allFilterBtn.classList.remove('active');
-                if (myFilterBtn) myFilterBtn.classList.remove('active');
-                loadFeed();
-            };
+                };
+                // no active class needed
+            }
 
             function createPostElement(id, d, coll) {
                 if (d.status === 'rejected') {
@@ -1719,7 +1597,6 @@
                     `;
                 }
 
-                // Guest user interaction overlay
                 const loginOverlayHtml = !currentUser ? `
                     <div style="position:absolute; inset:0; background:rgba(255,255,255,0.7); backdrop-filter:blur(2px); z-index:50; display:flex; align-items:center; justify-content:center; border-radius:var(--radius);">
                         <div style="text-align:center; padding:20px;">
@@ -2026,4 +1903,4 @@
         main();
     </script>
 </body>
-    </html>
+</html>
