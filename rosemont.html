@@ -762,7 +762,6 @@
             function getSchoolCollection(schoolName) {
                 if (!schoolName || schoolName === 'Global Campus') return 'social_posts_global';
                 
-                // Explicit mappings to match your Firestore Security Rules exactly
                 if (schoolName === 'Rosemont Private School' || schoolName === 'Rosemont') {
                     return 'social_posts_rosemont';
                 }
@@ -770,7 +769,6 @@
                     return 'social_posts_vanier';
                 }
 
-                // Fallback logic
                 const key = schoolName
                     .normalize("NFD")
                     .replace(/[\u0300-\u036f]/g, "")
@@ -1221,7 +1219,6 @@
                             
                             const composerCard = document.getElementById('composer-card');
                             if (!isStudent && data.role !== 'admin') {
-                                // non-verified: hide composer and show lock overlay
                                 if (composerCard) composerCard.style.display = 'none';
                             } else {
                                 if (composerCard) composerCard.style.display = 'flex';
@@ -1248,7 +1245,6 @@
                         }
                     });
                 } else {
-                    // Guest access: show lock screen
                     currentUser = null;
                     currentUserData = null;
                     
@@ -1434,7 +1430,7 @@
             }
 
             // ─────────────────────
-            // FEED LOADER WITH ERROR HANDLER
+            // FEED LOADER WITH FALLBACK TO getDocs
             // ─────────────────────
             function loadFeed() {
                 if (unsubscribePosts) unsubscribePosts();
@@ -1485,7 +1481,6 @@
                     return; 
                 }
 
-                // User is allowed – show composer and load Rosemont feed
                 const composerCard = document.getElementById('composer-card');
                 if (composerCard) composerCard.style.display = 'flex';
                 
@@ -1496,58 +1491,72 @@
                 if (feedContainer) feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub || 'Loading Rosemont community...'}</span></div>`;
 
                 const collectionName = getSchoolCollection(targetSchool);
-                let q = query(collection(db, collectionName), orderBy("timestamp", "desc"), limit(100));
-                
+                const q = query(collection(db, collectionName), orderBy("timestamp", "desc"), limit(100));
+
                 try {
                     unsubscribePosts = onSnapshot(q, (snapshot) => {
-                        if (!feedContainer) return;
-                        feedContainer.innerHTML = '';
+                        renderFeedSnapshot(snapshot, collectionName);
+                    }, async (error) => {
+                        console.warn("Real‑time feed failed, switching to one‑time fetch:", error);
+                        if (feedContainer) feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-sync fa-spin"></i><br><span>Loading (offline mode)...</span></div>`;
                         
-                        if (snapshot.empty) {
-                            feedContainer.innerHTML = `<div class="loader-msg">${ui.noPosts || 'No posts yet.'}</div>`;
-                            feedContainer.appendChild(createMarketBreak());
-                            return;
-                        }
-
-                        const frag = document.createDocumentFragment();
-                        let postCounter = 0;
-
-                        snapshot.docs.forEach(docSnap => {
-                            const d = docSnap.data();
-                            
-                            if (!currentUser) {
-                                if (d.status === 'rejected') return;
-                            } else {
-                                if (d.status === 'pending' && d.authorUid !== currentUser.uid) return;
-                                if (d.status === 'rejected' && d.authorUid !== currentUser.uid) return;
+                        try {
+                            const snap = await getDocs(q);
+                            renderFeedSnapshot(snap, collectionName);
+                        } catch (fallbackError) {
+                            console.error("Fallback fetch also failed:", fallbackError);
+                            if (feedContainer) {
+                                feedContainer.innerHTML = `
+                                    <div class="loader-msg">
+                                        <i class="fas fa-exclamation-triangle" style="color: var(--red);"></i><br>
+                                        <span>Couldn't load the feed. Please try again.</span><br>
+                                        <button class="btn-action" style="margin-top: 15px;" onclick="loadFeed()">Retry</button>
+                                    </div>
+                                `;
                             }
-
-                            frag.appendChild(createPostElement(docSnap.id, d, collectionName));
-                            postCounter++;
-
-                            if (postCounter === 3) {
-                                frag.appendChild(createMarketBreak());
-                            }
-                        });
-                        
-                        if (postCounter < 3) {
-                            frag.appendChild(createMarketBreak());
-                        }
-
-                        feedContainer.appendChild(frag);
-                    }, (error) => {
-                        console.error("Rosemont feed error:", error);
-                        if (feedContainer) {
-                            feedContainer.innerHTML = `
-                                <div class="loader-msg">
-                                    <i class="fas fa-exclamation-triangle" style="color: var(--red);"></i><br>
-                                    <span>Couldn't load the feed. Please try again.</span><br>
-                                    <button class="btn-action" style="margin-top: 15px;" onclick="loadFeed()">Retry</button>
-                                </div>
-                            `;
                         }
                     });
-                } catch (e) { console.error(e); }
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+
+            function renderFeedSnapshot(snapshot, collectionName) {
+                if (!feedContainer) return;
+                feedContainer.innerHTML = '';
+                
+                if (snapshot.empty) {
+                    feedContainer.innerHTML = `<div class="loader-msg">${ui.noPosts || 'No posts yet.'}</div>`;
+                    feedContainer.appendChild(createMarketBreak());
+                    return;
+                }
+
+                const frag = document.createDocumentFragment();
+                let postCounter = 0;
+
+                snapshot.docs.forEach(docSnap => {
+                    const d = docSnap.data();
+                    
+                    if (!currentUser) {
+                        if (d.status === 'rejected') return;
+                    } else {
+                        if (d.status === 'pending' && d.authorUid !== currentUser.uid) return;
+                        if (d.status === 'rejected' && d.authorUid !== currentUser.uid) return;
+                    }
+
+                    frag.appendChild(createPostElement(docSnap.id, d, collectionName));
+                    postCounter++;
+
+                    if (postCounter === 3) {
+                        frag.appendChild(createMarketBreak());
+                    }
+                });
+                
+                if (postCounter < 3) {
+                    frag.appendChild(createMarketBreak());
+                }
+
+                feedContainer.appendChild(frag);
             }
 
             function createPostElement(id, d, coll) {
