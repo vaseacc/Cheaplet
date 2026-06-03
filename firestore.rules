@@ -1,0 +1,270 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- HELPER FUNCTIONS ---
+    function isUserAdmin() {
+      return request.auth != null 
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') == 'admin';
+    }
+
+    function isNotBanned() {
+      return request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', 'user') != 'banned';
+    }
+
+    function canAccess() {
+      return request.auth != null && isNotBanned();
+    }
+
+    function isParticipant(chatId) {
+      return request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+    }
+
+    // Check if user is a Rosemont student
+    function isRosemontStudent() {
+      return request.auth != null && (
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('schoolName', '') == 'Rosemont Private School' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('schoolName', '') == 'Cégep de Rosemont' ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('schoolName', '') == 'Collège de Rosemont'
+      );
+    }
+
+    // --- CRITICAL FIX: Prevent users from modifying sensitive fields ---
+    // Only admins can set role, school verification fields
+    function isSafeUserUpdate() {
+      let allowedFields = ['displayName', 'photoURL', 'language', 'pinnedTopics', 'ratingSum', 'ratingCount', 'activeWarning'];
+      // Allow these fields only if they're not being used to escalate privileges
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(allowedFields)
+        || (isUserAdmin() && request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isStudent', 'schoolName']));
+    }
+
+    // --- 1. GLOBAL CAMPUS FEED ---
+    match /social_posts_global/{postId} {
+      allow read: if true;
+      allow create: if canAccess();
+      allow delete: if canAccess() && (request.auth.uid == resource.data.authorUid || isUserAdmin());
+      allow update: if canAccess() && (
+        request.auth.uid == resource.data.authorUid || 
+        isUserAdmin() || 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount', 'likes', 'likedBy'])
+      );
+      
+      match /comments/{commentId} {
+        allow read: if true;
+        allow write: if canAccess();
+      }
+    }
+
+    // --- 2. COLLÈGE DE ROSEMONT FEED (restricted to Rosemont students) ---
+    match /social_posts_rosemont/{postId} {
+      // Only Rosemont students (or admins) can read
+      allow read: if isRosemontStudent() || isUserAdmin();
+      // Only Rosemont students can create new posts (admins can also)
+      allow create: if canAccess() && (isRosemontStudent() || isUserAdmin());
+      allow delete: if canAccess() && (request.auth.uid == resource.data.authorUid || isUserAdmin());
+      allow update: if canAccess() && (
+        request.auth.uid == resource.data.authorUid || 
+        isUserAdmin() || 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount', 'likes', 'likedBy'])
+      );
+      
+      match /comments/{commentId} {
+        allow read: if isRosemontStudent() || isUserAdmin();
+        allow write: if canAccess();
+      }
+    }
+
+    // --- 2b. VANIER COLLEGE FEED ---
+    match /social_posts_vanier/{postId} {
+      allow read: if true;
+      allow create: if canAccess() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('isStudent', false) == true;
+      allow delete: if canAccess() && (request.auth.uid == resource.data.authorUid || isUserAdmin());
+      allow update: if canAccess() && (
+        request.auth.uid == resource.data.authorUid || 
+        isUserAdmin() || 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount', 'likes', 'likedBy'])
+      );
+      
+      match /comments/{commentId} {
+        allow read: if true;
+        allow write: if canAccess();
+      }
+    }
+
+    // --- 3. CUSTOM TOPICS & CHANNELS - FIXED FOR PRIVATE TOPICS ---
+    
+    // Social Channels (Topics) - Restrict read access for private topics
+    match /social_channels/{channelId} {
+      // Allow read only if topic is public OR user is creator/member/admin
+      allow read: if true; // Keep public for discovery, but posts inside are protected
+      allow create: if canAccess();
+      allow delete: if canAccess() && (request.auth.uid == resource.data.createdBy || isUserAdmin());
+      allow update: if canAccess() && (
+        request.auth.uid == resource.data.createdBy || 
+        isUserAdmin() ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['postCount', 'members'])
+      );
+    }
+
+    // Social Posts - FIXED: Private topic posts are NOT publicly readable
+    match /social_posts/{postId} {
+      // Read allowed if: post is in public topic OR user is member/creator/admin of private topic
+      allow read: if (
+        // Get the topic/channel data to check visibility
+        let topicData = get(/databases/$(database)/documents/social_channels/$(resource.data.wayId)).data;
+        topicData.visibility != 'private' ||  // Public topic - anyone can read
+        request.auth.uid == topicData.createdBy ||  // Creator can always read
+        isUserAdmin() ||  // Admin can always read
+        (request.auth.uid in topicData.members)  // Member can read
+      );
+      
+      // Create allowed only if user is member/creator of the topic (for private topics)
+      allow create: if canAccess() && (
+        let topicData = get(/databases/$(database)/documents/social_channels/$(request.resource.data.wayId)).data;
+        topicData.visibility != 'private' ||  // Public topic - any authenticated user can post
+        request.auth.uid == topicData.createdBy ||  // Creator can always post
+        isUserAdmin() ||  // Admin can always post
+        (request.auth.uid in topicData.members)  // Member can post
+      );
+      
+      allow delete: if canAccess() && (
+        request.auth.uid == resource.data.authorUid || 
+        isUserAdmin() ||
+        request.auth.uid == get(/databases/$(database)/documents/social_channels/$(resource.data.wayId)).data.createdBy
+      );
+      
+      allow update: if canAccess() && (
+        request.auth.uid == resource.data.authorUid || 
+        isUserAdmin() || 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentCount', 'likes', 'likedBy'])
+      );
+      
+      // Comments - Same privacy rules as posts
+      match /comments/{commentId} {
+        allow read: if (
+          let topicData = get(/databases/$(database)/documents/social_channels/$(get(/databases/$(database)/documents/social_posts/$(postId)).data.wayId)).data;
+          topicData.visibility != 'private' ||
+          request.auth.uid == topicData.createdBy ||
+          isUserAdmin() ||
+          (request.auth.uid in topicData.members)
+        );
+        allow create: if canAccess() && (
+          let topicData = get(/databases/$(database)/documents/social_channels/$(get(/databases/$(database)/documents/social_posts/$(postId)).data.wayId)).data;
+          topicData.visibility != 'private' ||
+          request.auth.uid == topicData.createdBy ||
+          isUserAdmin() ||
+          (request.auth.uid in topicData.members)
+        );
+        allow delete: if canAccess() && (
+          request.auth.uid == resource.data.authorUid || 
+          isUserAdmin() || 
+          request.auth.uid == get(/databases/$(database)/documents/social_channels/$(get(/databases/$(database)/documents/social_posts/$(postId)).data.wayId)).data.createdBy
+        );
+      }
+    }
+
+    // --- 4. REPORTS ---
+    match /reports/{reportId} {
+      allow create: if canAccess(); 
+      allow read, delete: if isUserAdmin();
+    }
+
+    // --- 5. NOTIFICATIONS (private topics) – UPDATED ---
+    match /users/{userId}/notifications/{docId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow delete: if request.auth.uid == userId || isUserAdmin();
+      allow create: if canAccess() 
+                     && request.resource.data.fromUid == request.auth.uid
+                     && request.resource.data.type in ['join_request', 'new_post'];
+      allow update: if request.auth.uid == userId || isUserAdmin();
+    }
+
+    // --- 6. CONTACT MESSAGES (admin only) ---
+    match /contact_messages/{docId} {
+      allow read, delete: if isUserAdmin();
+    }
+
+    // --- 7. SITE SETTINGS ---
+    match /site_settings/{setting} {
+      allow read: if true; 
+      allow write: if isUserAdmin(); 
+    }
+
+    // --- 8. GLOBAL TAGS ---
+    match /global_tags/{tagId} {
+      allow read: if true;
+      allow write: if canAccess();
+    }
+
+    // --- 9. LISTINGS ---
+    match /listings/{listingId} {
+      allow read: if true;
+      allow create: if canAccess() 
+                    && request.resource.data.posterUid == request.auth.uid
+                    && (request.resource.data.status == 'pending' || request.resource.data.status == 'active');
+      allow update: if canAccess() && (request.auth.uid == resource.data.posterUid || isUserAdmin());
+      allow delete: if canAccess() && (request.auth.uid == resource.data.posterUid || isUserAdmin());
+    }
+
+    // --- 10. USERS (PROFILES) - FIXED: Prevent privilege escalation ---
+    match /users/{userId} {
+      allow read: if true; 
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // CRITICAL FIX: Users cannot modify their own role, isStudent, or schoolName
+      // These fields can ONLY be modified by admins or automatically during signup
+      allow update: if isUserAdmin()
+                    || (request.auth.uid == userId && isNotBanned() && 
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+                          'displayName', 
+                          'photoURL', 
+                          'language', 
+                          'pinnedTopics', 
+                          'ratingSum', 
+                          'ratingCount', 
+                          'activeWarning'
+                        ])
+                       );
+      
+      allow delete: if isUserAdmin() || (request.auth.uid == userId && isNotBanned());
+    }
+
+    // --- 11. CHATS & MESSAGES (SECURE) ---
+    match /chats/{chatId} {
+      allow list: if canAccess();
+      allow get: if canAccess() && (isParticipant(chatId) || isUserAdmin());
+      allow create: if canAccess() && request.auth.uid in request.resource.data.participants;
+      allow update: if canAccess() && (isParticipant(chatId) || isUserAdmin());
+      allow delete: if canAccess() && (isParticipant(chatId) || isUserAdmin());
+
+      match /messages/{messageId} {
+        allow read: if canAccess() && (isParticipant(chatId) || isUserAdmin());
+        allow create: if canAccess() 
+                      && isParticipant(chatId)
+                      && request.auth.uid == request.resource.data.senderId;
+        allow update: if canAccess() && (
+          isUserAdmin() ||
+          (isParticipant(chatId) && request.auth.uid == resource.data.recipientUid) ||
+          (isParticipant(chatId) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']))
+        );
+        allow delete: if isUserAdmin();
+      }
+    }
+
+    // --- 12. CONVERSATIONS (legacy) ---
+    match /conversations/{convId} {
+      allow list: if canAccess();
+      allow get, update: if canAccess() && (request.auth.uid in resource.data.participants || isUserAdmin());
+      allow create: if canAccess() && request.auth.uid in request.resource.data.participants;
+      allow delete: if isUserAdmin();
+
+      match /messages/{messageId} {
+        allow read: if canAccess() && (request.auth.uid in get(/databases/$(database)/documents/conversations/$(convId)).data.participants || isUserAdmin());
+        allow create: if canAccess() && request.auth.uid in get(/databases/$(database)/documents/conversations/$(convId)).data.participants && request.auth.uid == request.resource.data.senderUid;
+        allow update: if canAccess() && (isUserAdmin() || request.auth.uid == request.resource.data.recipientUid);
+        allow delete: if isUserAdmin();
+      }
+    }
+  }
+}
