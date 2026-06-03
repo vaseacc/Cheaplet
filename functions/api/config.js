@@ -8,7 +8,7 @@ export async function onRequest({ request, env }) {
 
   const firebaseConfig = {
     apiKey: env.VITE_FIREBASE_API_KEY,
-    authDomain: 'chaeplet.firebaseapp.com',
+    authDomain: 'auth.scoralia.ca',
     projectId: env.VITE_FIREBASE_PROJECT_ID,
     storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
     messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
