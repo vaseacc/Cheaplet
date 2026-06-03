@@ -921,11 +921,23 @@
                 if (btnSendPost) btnSendPost.disabled = !(hasText || hasImg || hasListing);
             }
 
-            if (postInput) postInput.addEventListener('input', function() {
-                this.style.height = '40px';
-                this.style.height = (this.scrollHeight) + 'px';
-                updateComposerSendButton();
-            });
+            if (postInput) {
+                postInput.addEventListener('input', function() {
+                    this.style.height = '40px';
+                    this.style.height = (this.scrollHeight) + 'px';
+                    updateComposerSendButton();
+                });
+                
+                // Allow pressing Enter to send the post (on both mobile and desktop)
+                postInput.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        if (!btnSendPost.disabled) {
+                            btnSendPost.click();
+                        }
+                    }
+                });
+            }
 
             function renderComposerPreview() {
                 if (!previewArea) return;
