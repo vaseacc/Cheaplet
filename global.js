@@ -200,8 +200,8 @@ if (document.readyState === 'loading') {
 // =========================================================================
 
 window.checkBotLimits = async () => {
-    const MAX_LISTINGS = 67; 
-    const MAX_IMAGES = 67;
+    const MAX_LISTINGS = 7; 
+    const MAX_IMAGES = 5;
 
     console.log('[checkBotLimits] Starting bot shield verification...');
 
