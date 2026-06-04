@@ -109,24 +109,28 @@ service cloud.firestore {
 
     // Social Posts - FIXED: Private topic posts are NOT publicly readable
     match /social_posts/{postId} {
-      // Read allowed if: post is in public topic OR user is member/creator/admin of private topic
-      allow read: if (
-        // Get the topic/channel data to check visibility
+      // Helper function to check if user can read this post
+      function canReadPost() {
         let topicData = get(/databases/$(database)/documents/social_channels/$(resource.data.wayId)).data;
-        topicData.visibility != 'private' ||  // Public topic - anyone can read
-        request.auth.uid == topicData.createdBy ||  // Creator can always read
-        isUserAdmin() ||  // Admin can always read
-        (request.auth.uid in topicData.members)  // Member can read
-      );
+        return topicData.visibility != 'private' ||  // Public topic - anyone can read
+               request.auth.uid == topicData.createdBy ||  // Creator can always read
+               isUserAdmin() ||  // Admin can always read
+               (request.auth.uid in topicData.members);  // Member can read
+      }
+      
+      // Helper function to check if user can create post in topic
+      function canCreateInTopic(wayId) {
+        let topicData = get(/databases/$(database)/documents/social_channels/$(wayId)).data;
+        return topicData.visibility != 'private' ||  // Public topic - any authenticated user can post
+               request.auth.uid == topicData.createdBy ||  // Creator can always post
+               isUserAdmin() ||  // Admin can always post
+               (request.auth.uid in topicData.members);  // Member can post
+      }
+      
+      allow read: if canReadPost();
       
       // Create allowed only if user is member/creator of the topic (for private topics)
-      allow create: if canAccess() && (
-        let topicData = get(/databases/$(database)/documents/social_channels/$(request.resource.data.wayId)).data;
-        topicData.visibility != 'private' ||  // Public topic - any authenticated user can post
-        request.auth.uid == topicData.createdBy ||  // Creator can always post
-        isUserAdmin() ||  // Admin can always post
-        (request.auth.uid in topicData.members)  // Member can post
-      );
+      allow create: if canAccess() && canCreateInTopic(request.resource.data.wayId);
       
       allow delete: if canAccess() && (
         request.auth.uid == resource.data.authorUid || 
@@ -143,14 +147,16 @@ service cloud.firestore {
       // Comments - Same privacy rules as posts
       match /comments/{commentId} {
         allow read: if (
-          let topicData = get(/databases/$(database)/documents/social_channels/$(get(/databases/$(database)/documents/social_posts/$(postId)).data.wayId)).data;
+          let postData = get(/databases/$(database)/documents/social_posts/$(postId)).data;
+          let topicData = get(/databases/$(database)/documents/social_channels/$(postData.wayId)).data;
           topicData.visibility != 'private' ||
           request.auth.uid == topicData.createdBy ||
           isUserAdmin() ||
           (request.auth.uid in topicData.members)
         );
         allow create: if canAccess() && (
-          let topicData = get(/databases/$(database)/documents/social_channels/$(get(/databases/$(database)/documents/social_posts/$(postId)).data.wayId)).data;
+          let postData = get(/databases/$(database)/documents/social_posts/$(postId)).data;
+          let topicData = get(/databases/$(database)/documents/social_channels/$(postData.wayId)).data;
           topicData.visibility != 'private' ||
           request.auth.uid == topicData.createdBy ||
           isUserAdmin() ||
