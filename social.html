@@ -355,6 +355,13 @@
 
         /* Custom Dialog Modals */
         #custom-dialog-modal .modal-card { text-align: center; }
+        
+        /* Dropdown styles for mobile school selector */
+        .dropdown-content { display: none; position: absolute; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; z-index: 1000; min-width: 200px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); right: 0; top: 100%; margin-top: 5px; }
+        .dropdown-item { display: block; width: 100%; padding: 12px 16px; text-align: left; background: none; border: none; cursor: pointer; font-size: 0.9rem; color: var(--text-main); transition: background 0.2s; }
+        .dropdown-item:hover { background: rgba(43, 92, 146, 0.1); }
+        .dropdown-toggle { background: var(--deep); color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; margin-left: 5px; }
+        .school-dropdown { position: relative; display: inline-block; }
 
         @media (max-width: 850px) {
             .hub-layout { display: flex; flex-direction: column; padding: 0; gap: 0; margin: 0; width: 100%; }
@@ -365,6 +372,12 @@
             .composer-input { font-size: 1rem; min-height: 40px; }
             .post-card { padding: 16px 15px; border-radius: 0; border-left: none; border-right: none; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; box-shadow: none; margin-bottom: 0; width: 100%; }
             .market-break { padding: 20px 15px; margin: 0; border-radius: 0; border-left: none; border-right: none; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; box-shadow: none; width: 100%; }
+            
+            /* Mobile: hide desktop filters, show My School button */
+            .desktop-filters { display: none !important; }
+            #my-school-btn { display: inline-block !important; }
+            #dropdown-toggle { display: inline-block !important; }
+            .school-dropdown { display: inline-block !important; }
         }
     </style>
 </head>
@@ -490,11 +503,28 @@
             <div id="filter-bar" class="filter-bar">
                 <span><i class="fas fa-filter"></i> Feed:</span>
                 <button class="school-filter active" data-filter="all" id="all-filter-btn">All Posts</button>
-                <button class="school-filter" id="rosemont-filter-btn">Cégep de Rosemont</button>
-                <button class="school-filter" id="lasalle-filter-btn">Collège LaSalle</button>
-                <button class="school-filter" id="saintlaurent-filter-btn">Cégep Saint-Laurent</button>
-                <button class="school-filter" id="maisonneuve-filter-btn">Collège de Maisonneuve</button>
-                <button class="school-filter" id="vanier-filter-btn">Vanier College</button>
+                <button class="school-filter" id="my-school-btn" style="display: none;">My School</button>
+                
+                <!-- Mobile dropdown -->
+                <div class="school-dropdown" id="school-dropdown" style="display: none;">
+                    <button class="dropdown-toggle" id="dropdown-toggle" style="display: none;"><i class="fas fa-chevron-down"></i></button>
+                    <div class="dropdown-content" id="dropdown-content" style="display: none;">
+                        <button class="dropdown-item" data-filter="rosemont">Cégep de Rosemont</button>
+                        <button class="dropdown-item" data-filter="lasalle">Collège LaSalle</button>
+                        <button class="dropdown-item" data-filter="saintlaurent">Cégep Saint-Laurent</button>
+                        <button class="dropdown-item" data-filter="maisonneuve">Collège de Maisonneuve</button>
+                        <button class="dropdown-item" data-filter="vanier">Vanier College</button>
+                    </div>
+                </div>
+                
+                <!-- Desktop filters (hidden on mobile via CSS) -->
+                <div class="desktop-filters" style="display: inline-flex;">
+                    <button class="school-filter" id="rosemont-filter-btn">Cégep de Rosemont</button>
+                    <button class="school-filter" id="lasalle-filter-btn">Collège LaSalle</button>
+                    <button class="school-filter" id="saintlaurent-filter-btn">Cégep Saint-Laurent</button>
+                    <button class="school-filter" id="maisonneuve-filter-btn">Collège de Maisonneuve</button>
+                    <button class="school-filter" id="vanier-filter-btn">Vanier College</button>
+                </div>
             </div>
 
             <!-- SEARCH BAR -->
@@ -837,16 +867,103 @@
             const filterBar = document.getElementById('filter-bar');
             const verifyBanner = document.getElementById('verify-banner');
             const allFilterBtn = document.getElementById('all-filter-btn');
+            const mySchoolBtn = document.getElementById('my-school-btn');
+            const dropdownToggle = document.getElementById('dropdown-toggle');
+            const dropdownContent = document.getElementById('dropdown-content');
             const rosemontFilterBtn = document.getElementById('rosemont-filter-btn');
             const lasalleFilterBtn = document.getElementById('lasalle-filter-btn');
             const saintlaurentFilterBtn = document.getElementById('saintlaurent-filter-btn');
             const maisonneuveFilterBtn = document.getElementById('maisonneuve-filter-btn');
             const vanierFilterBtn = document.getElementById('vanier-filter-btn');
+            const dropdownItems = document.querySelectorAll('.dropdown-item');
 
             // Check URL parameter to set initial filter (still allows toggling)
             const urlParams = new URLSearchParams(window.location.search);
             const urlFilter = urlParams.get('filter');
             let currentSchoolFilter = 'all';
+            
+            // Mobile dropdown toggle
+            if (dropdownToggle && dropdownContent) {
+                dropdownToggle.onclick = (e) => {
+                    e.stopPropagation();
+                    if (dropdownContent.style.display === 'none') {
+                        dropdownContent.style.display = 'block';
+                    } else {
+                        dropdownContent.style.display = 'none';
+                    }
+                };
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', (e) => {
+                    if (!dropdownContent.contains(e.target) && !dropdownToggle.contains(e.target)) {
+                        dropdownContent.style.display = 'none';
+                    }
+                });
+                
+                // Handle dropdown item clicks
+                dropdownItems.forEach(item => {
+                    item.onclick = () => {
+                        const school = item.getAttribute('data-filter');
+                        currentSchoolFilter = school;
+                        
+                        // Update active state on desktop buttons too
+                        if (allFilterBtn) allFilterBtn.classList.remove('active');
+                        if (rosemontFilterBtn) rosemontFilterBtn.classList.toggle('active', school === 'rosemont');
+                        if (lasalleFilterBtn) lasalleFilterBtn.classList.toggle('active', school === 'lasalle');
+                        if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.toggle('active', school === 'saintlaurent');
+                        if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.toggle('active', school === 'maisonneuve');
+                        if (vanierFilterBtn) vanierFilterBtn.classList.toggle('active', school === 'vanier');
+                        
+                        // Update My School button text
+                        if (mySchoolBtn) {
+                            mySchoolBtn.textContent = item.textContent;
+                        }
+                        
+                        dropdownContent.style.display = 'none';
+                        updateComposerPlaceholder();
+                        loadFeed();
+                    };
+                });
+            }
+            
+            // My School button - show user's school or prompt
+            if (mySchoolBtn) {
+                mySchoolBtn.onclick = () => {
+                    if (currentUser && currentUser.isStudent && currentUser.schoolName) {
+                        // Map school name to filter
+                        const schoolMap = {
+                            'Cégep de Rosemont': 'rosemont',
+                            'Collège LaSalle': 'lasalle',
+                            'Cégep Saint-Laurent': 'saintlaurent',
+                            'Collège de Maisonneuve': 'maisonneuve',
+                            'Vanier College': 'vanier'
+                        };
+                        const filter = schoolMap[currentUser.schoolName];
+                        if (filter) {
+                            currentSchoolFilter = filter;
+                            
+                            // Update active state
+                            if (allFilterBtn) allFilterBtn.classList.remove('active');
+                            if (rosemontFilterBtn) rosemontFilterBtn.classList.toggle('active', filter === 'rosemont');
+                            if (lasalleFilterBtn) lasalleFilterBtn.classList.toggle('active', filter === 'lasalle');
+                            if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.toggle('active', filter === 'saintlaurent');
+                            if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.toggle('active', filter === 'maisonneuve');
+                            if (vanierFilterBtn) vanierFilterBtn.classList.toggle('active', filter === 'vanier');
+                            
+                            // Update button text
+                            mySchoolBtn.textContent = currentUser.schoolName;
+                            
+                            updateComposerPlaceholder();
+                            loadFeed();
+                        }
+                    } else {
+                        // Not a verified student, show dropdown
+                        if (dropdownContent) {
+                            dropdownContent.style.display = dropdownContent.style.display === 'none' ? 'block' : 'none';
+                        }
+                    }
+                };
+            }
 
             // Set initial active button state based on URL param
             if (urlFilter === 'rosemont') {
@@ -1386,6 +1503,15 @@
                             currentUserData = data;
                             internalSchoolName = data.schoolName || "Global Campus";
                             const isStudent = data.isStudent === true;
+                            
+                            // Update My School button text if user has a school
+                            if (mySchoolBtn && data.isStudent && data.schoolName) {
+                                mySchoolBtn.style.display = 'inline-block';
+                                mySchoolBtn.textContent = data.schoolName;
+                            } else if (mySchoolBtn) {
+                                mySchoolBtn.style.display = 'inline-block';
+                                mySchoolBtn.textContent = lang === 'fr' ? 'Mon école' : 'My School';
+                            }
                             
                             if (dSchoolName) dSchoolName.textContent = "Campus Hub";
                             const composerPfp = document.getElementById('composer-pfp');
