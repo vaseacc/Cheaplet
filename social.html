@@ -491,6 +491,10 @@
                 <span><i class="fas fa-filter"></i> Feed:</span>
                 <button class="school-filter active" data-filter="all" id="all-filter-btn">All Posts</button>
                 <button class="school-filter" id="rosemont-filter-btn">Cégep de Rosemont</button>
+                <button class="school-filter" id="lasalle-filter-btn">Collège LaSalle</button>
+                <button class="school-filter" id="saintlaurent-filter-btn">Cégep Saint-Laurent</button>
+                <button class="school-filter" id="maisonneuve-filter-btn">Collège de Maisonneuve</button>
+                <button class="school-filter" id="vanier-filter-btn">Vanier College</button>
             </div>
 
             <!-- SEARCH BAR -->
@@ -778,8 +782,17 @@
                 if (schoolName === 'Cégep de Rosemont' || schoolName === 'Collège de Rosemont' || schoolName === 'Rosemont Private School' || schoolName === 'Rosemont') {
                     return 'social_posts_rosemont';
                 }
-                if (schoolName === 'Vanier College') {
+                if (schoolName === 'Vanier College' || schoolName === 'Vanier') {
                     return 'social_posts_vanier';
+                }
+                if (schoolName === 'Collège LaSalle' || schoolName === 'LaSalle College' || schoolName === 'LaSalle') {
+                    return 'social_posts_lasalle';
+                }
+                if (schoolName === 'Cégep Saint-Laurent' || schoolName === 'Saint-Laurent' || schoolName === 'St-Laurent') {
+                    return 'social_posts_saintlaurent';
+                }
+                if (schoolName === 'Collège de Maisonneuve' || schoolName === 'Maisonneuve College' || schoolName === 'Maisonneuve') {
+                    return 'social_posts_maisonneuve';
                 }
 
                 const key = schoolName
@@ -825,19 +838,64 @@
             const verifyBanner = document.getElementById('verify-banner');
             const allFilterBtn = document.getElementById('all-filter-btn');
             const rosemontFilterBtn = document.getElementById('rosemont-filter-btn');
+            const lasalleFilterBtn = document.getElementById('lasalle-filter-btn');
+            const saintlaurentFilterBtn = document.getElementById('saintlaurent-filter-btn');
+            const maisonneuveFilterBtn = document.getElementById('maisonneuve-filter-btn');
+            const vanierFilterBtn = document.getElementById('vanier-filter-btn');
 
             // Check URL parameter to set initial filter (still allows toggling)
             const urlParams = new URLSearchParams(window.location.search);
-            const forceRosemont = urlParams.get('filter') === 'rosemont';
-            let currentSchoolFilter = forceRosemont ? 'rosemont' : 'all';
+            const urlFilter = urlParams.get('filter');
+            let currentSchoolFilter = 'all';
 
-            // Set initial active button state
-            if (forceRosemont) {
+            // Set initial active button state based on URL param
+            if (urlFilter === 'rosemont') {
+                currentSchoolFilter = 'rosemont';
                 if (allFilterBtn) allFilterBtn.classList.remove('active');
                 if (rosemontFilterBtn) rosemontFilterBtn.classList.add('active');
+                if (lasalleFilterBtn) lasalleFilterBtn.classList.remove('active');
+                if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.remove('active');
+                if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.remove('active');
+                if (vanierFilterBtn) vanierFilterBtn.classList.remove('active');
+            } else if (urlFilter === 'lasalle') {
+                currentSchoolFilter = 'lasalle';
+                if (allFilterBtn) allFilterBtn.classList.remove('active');
+                if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
+                if (lasalleFilterBtn) lasalleFilterBtn.classList.add('active');
+                if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.remove('active');
+                if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.remove('active');
+                if (vanierFilterBtn) vanierFilterBtn.classList.remove('active');
+            } else if (urlFilter === 'saintlaurent') {
+                currentSchoolFilter = 'saintlaurent';
+                if (allFilterBtn) allFilterBtn.classList.remove('active');
+                if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
+                if (lasalleFilterBtn) lasalleFilterBtn.classList.remove('active');
+                if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.add('active');
+                if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.remove('active');
+                if (vanierFilterBtn) vanierFilterBtn.classList.remove('active');
+            } else if (urlFilter === 'maisonneuve') {
+                currentSchoolFilter = 'maisonneuve';
+                if (allFilterBtn) allFilterBtn.classList.remove('active');
+                if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
+                if (lasalleFilterBtn) lasalleFilterBtn.classList.remove('active');
+                if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.remove('active');
+                if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.add('active');
+                if (vanierFilterBtn) vanierFilterBtn.classList.remove('active');
+            } else if (urlFilter === 'vanier') {
+                currentSchoolFilter = 'vanier';
+                if (allFilterBtn) allFilterBtn.classList.remove('active');
+                if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
+                if (lasalleFilterBtn) lasalleFilterBtn.classList.remove('active');
+                if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.remove('active');
+                if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.remove('active');
+                if (vanierFilterBtn) vanierFilterBtn.classList.add('active');
             } else {
                 if (allFilterBtn) allFilterBtn.classList.add('active');
                 if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
+                if (lasalleFilterBtn) lasalleFilterBtn.classList.remove('active');
+                if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.remove('active');
+                if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.remove('active');
+                if (vanierFilterBtn) vanierFilterBtn.classList.remove('active');
             }
 
             // --- BUTTON HANDLERS ---
@@ -845,7 +903,11 @@
                 allFilterBtn.onclick = () => {
                     currentSchoolFilter = 'all';
                     allFilterBtn.classList.add('active');
-                    rosemontFilterBtn.classList.remove('active');
+                    if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
+                    if (lasalleFilterBtn) lasalleFilterBtn.classList.remove('active');
+                    if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.remove('active');
+                    if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.remove('active');
+                    if (vanierFilterBtn) vanierFilterBtn.classList.remove('active');
                     updateComposerPlaceholder();
                     loadFeed();
                 };
@@ -855,7 +917,67 @@
                 rosemontFilterBtn.onclick = () => {
                     currentSchoolFilter = 'rosemont';
                     rosemontFilterBtn.classList.add('active');
-                    allFilterBtn.classList.remove('active');
+                    if (allFilterBtn) allFilterBtn.classList.remove('active');
+                    if (lasalleFilterBtn) lasalleFilterBtn.classList.remove('active');
+                    if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.remove('active');
+                    if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.remove('active');
+                    if (vanierFilterBtn) vanierFilterBtn.classList.remove('active');
+                    updateComposerPlaceholder();
+                    loadFeed();
+                };
+            }
+
+            if (lasalleFilterBtn) {
+                lasalleFilterBtn.onclick = () => {
+                    currentSchoolFilter = 'lasalle';
+                    lasalleFilterBtn.classList.add('active');
+                    if (allFilterBtn) allFilterBtn.classList.remove('active');
+                    if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
+                    if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.remove('active');
+                    if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.remove('active');
+                    if (vanierFilterBtn) vanierFilterBtn.classList.remove('active');
+                    updateComposerPlaceholder();
+                    loadFeed();
+                };
+            }
+
+            if (saintlaurentFilterBtn) {
+                saintlaurentFilterBtn.onclick = () => {
+                    currentSchoolFilter = 'saintlaurent';
+                    saintlaurentFilterBtn.classList.add('active');
+                    if (allFilterBtn) allFilterBtn.classList.remove('active');
+                    if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
+                    if (lasalleFilterBtn) lasalleFilterBtn.classList.remove('active');
+                    if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.remove('active');
+                    if (vanierFilterBtn) vanierFilterBtn.classList.remove('active');
+                    updateComposerPlaceholder();
+                    loadFeed();
+                };
+            }
+
+            if (maisonneuveFilterBtn) {
+                maisonneuveFilterBtn.onclick = () => {
+                    currentSchoolFilter = 'maisonneuve';
+                    maisonneuveFilterBtn.classList.add('active');
+                    if (allFilterBtn) allFilterBtn.classList.remove('active');
+                    if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
+                    if (lasalleFilterBtn) lasalleFilterBtn.classList.remove('active');
+                    if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.remove('active');
+                    if (vanierFilterBtn) vanierFilterBtn.classList.remove('active');
+                    updateComposerPlaceholder();
+                    loadFeed();
+                };
+            }
+
+            if (vanierFilterBtn) {
+                vanierFilterBtn.onclick = () => {
+                    currentSchoolFilter = 'vanier';
+                    vanierFilterBtn.classList.add('active');
+                    if (allFilterBtn) allFilterBtn.classList.remove('active');
+                    if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
+                    if (lasalleFilterBtn) lasalleFilterBtn.classList.remove('active');
+                    if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.remove('active');
+                    if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.remove('active');
                     updateComposerPlaceholder();
                     loadFeed();
                 };
@@ -866,8 +988,16 @@
                 if (postInput) {
                     if (currentSchoolFilter === 'all') {
                         postInput.placeholder = ui.post_placeholder || "What's happening on Global Campus?";
-                    } else {
+                    } else if (currentSchoolFilter === 'rosemont') {
                         postInput.placeholder = lang === 'fr' ? `Que se passe-t-il à Rosemont ?` : `What's happening at Rosemont?`;
+                    } else if (currentSchoolFilter === 'lasalle') {
+                        postInput.placeholder = lang === 'fr' ? `Que se passe-t-il au Collège LaSalle ?` : `What's happening at LaSalle College?`;
+                    } else if (currentSchoolFilter === 'saintlaurent') {
+                        postInput.placeholder = lang === 'fr' ? `Que se passe-t-il au Cégep Saint-Laurent ?` : `What's happening at Cégep Saint-Laurent?`;
+                    } else if (currentSchoolFilter === 'maisonneuve') {
+                        postInput.placeholder = lang === 'fr' ? `Que se passe-t-il au Collège de Maisonneuve ?` : `What's happening at Maisonneuve College?`;
+                    } else if (currentSchoolFilter === 'vanier') {
+                        postInput.placeholder = lang === 'fr' ? `Que se passe-t-il au Vanier College ?` : `What's happening at Vanier College?`;
                     }
                 }
             }
@@ -1060,7 +1190,18 @@
 
                     let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
                     
-                    const postingToSchool = currentSchoolFilter === 'rosemont' ? "Rosemont Private School" : "Global Campus";
+                    let postingToSchool = "Global Campus";
+                    if (currentSchoolFilter === 'rosemont') {
+                        postingToSchool = "Cégep de Rosemont";
+                    } else if (currentSchoolFilter === 'lasalle') {
+                        postingToSchool = "Collège LaSalle";
+                    } else if (currentSchoolFilter === 'saintlaurent') {
+                        postingToSchool = "Cégep Saint-Laurent";
+                    } else if (currentSchoolFilter === 'maisonneuve') {
+                        postingToSchool = "Collège de Maisonneuve";
+                    } else if (currentSchoolFilter === 'vanier') {
+                        postingToSchool = "Vanier College";
+                    }
                     const collectionName = getSchoolCollection(postingToSchool);
                     
                     const requiresReview = uploadedImgUrl !== null;
@@ -1523,8 +1664,28 @@
                     (targetSchool && currentUserData.schoolName && currentUserData.schoolName.includes(targetSchool))
                 );
 
-                // If user tries to access Rosemont but isn't verified/admin, show lock
-                if (currentSchoolFilter === 'rosemont' && !isAdmin && (!isVerifiedStudent || !matchesSchool)) {
+                // Determine which school is being accessed and its display name
+                let selectedSchoolName = "";
+                let selectedSchoolFilter = "";
+                if (currentSchoolFilter === 'rosemont') {
+                    selectedSchoolName = "Cégep de Rosemont";
+                    selectedSchoolFilter = 'rosemont';
+                } else if (currentSchoolFilter === 'lasalle') {
+                    selectedSchoolName = "Collège LaSalle";
+                    selectedSchoolFilter = 'lasalle';
+                } else if (currentSchoolFilter === 'saintlaurent') {
+                    selectedSchoolName = "Cégep Saint-Laurent";
+                    selectedSchoolFilter = 'saintlaurent';
+                } else if (currentSchoolFilter === 'maisonneuve') {
+                    selectedSchoolName = "Collège de Maisonneuve";
+                    selectedSchoolFilter = 'maisonneuve';
+                } else if (currentSchoolFilter === 'vanier') {
+                    selectedSchoolName = "Vanier College";
+                    selectedSchoolFilter = 'vanier';
+                }
+
+                // If user tries to access a school-specific feed but isn't verified/admin, show lock
+                if (selectedSchoolFilter && !isAdmin && (!isVerifiedStudent || !matchesSchool)) {
                     const composerCard = document.getElementById('composer-card');
                     if (composerCard) composerCard.style.display = 'none';
 
@@ -1535,7 +1696,7 @@
                                     <div style="background: rgba(255,255,255,0.95); padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; max-width: 420px; margin: 0 20px;">
                                         <i class="fas fa-lock" style="font-size: 3.5rem; color: var(--deep); margin-bottom: 20px;"></i>
                                         <h3 style="font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--ink); margin-bottom: 12px;">${ui.private_feed_locked}</h3>
-                                        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; line-height: 1.6;">${ui.private_feed_desc} <strong>Rosemont Private School</strong> can view or participate in this channel.</p>
+                                        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; line-height: 1.6;">${ui.private_feed_desc} <strong>${selectedSchoolName}</strong> can view or participate in this channel.</p>
                                         <button class="btn-action" style="width: 100%;" onclick="window.location.href='/verify'">Verify Student Email</button>
                                     </div>
                                 </div>
@@ -1570,7 +1731,18 @@
 
                 if (feedContainer) feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub || 'Loading campus hub...'}</span></div>`;
 
-                const collectionName = currentSchoolFilter === 'rosemont' ? 'social_posts_rosemont' : 'social_posts_global';
+                let collectionName = 'social_posts_global';
+                if (currentSchoolFilter === 'rosemont') {
+                    collectionName = 'social_posts_rosemont';
+                } else if (currentSchoolFilter === 'lasalle') {
+                    collectionName = 'social_posts_lasalle';
+                } else if (currentSchoolFilter === 'saintlaurent') {
+                    collectionName = 'social_posts_saintlaurent';
+                } else if (currentSchoolFilter === 'maisonneuve') {
+                    collectionName = 'social_posts_maisonneuve';
+                } else if (currentSchoolFilter === 'vanier') {
+                    collectionName = 'social_posts_vanier';
+                }
                 let q = query(collection(db, collectionName), orderBy("timestamp", "desc"), limit(100));
                 
                 try {
