@@ -355,6 +355,13 @@
 
         /* Custom Dialog Modals */
         #custom-dialog-modal .modal-card { text-align: center; }
+        
+        /* Dropdown styles for mobile school selector */
+        .dropdown-content { display: none; position: absolute; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; z-index: 1000; min-width: 200px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); right: 0; top: 100%; margin-top: 5px; }
+        .dropdown-item { display: block; width: 100%; padding: 12px 16px; text-align: left; background: none; border: none; cursor: pointer; font-size: 0.9rem; color: var(--text-main); transition: background 0.2s; }
+        .dropdown-item:hover { background: rgba(43, 92, 146, 0.1); }
+        .dropdown-toggle { background: var(--deep); color: white; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 0.9rem; margin-left: 5px; }
+        .school-dropdown { position: relative; display: inline-block; }
 
         @media (max-width: 850px) {
             .hub-layout { display: flex; flex-direction: column; padding: 0; gap: 0; margin: 0; width: 100%; }
@@ -365,6 +372,12 @@
             .composer-input { font-size: 1rem; min-height: 40px; }
             .post-card { padding: 16px 15px; border-radius: 0; border-left: none; border-right: none; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; box-shadow: none; margin-bottom: 0; width: 100%; }
             .market-break { padding: 20px 15px; margin: 0; border-radius: 0; border-left: none; border-right: none; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; box-shadow: none; width: 100%; }
+            
+            /* Mobile: hide desktop filters, show My School button */
+            .desktop-filters { display: none !important; }
+            #my-school-btn { display: inline-block !important; }
+            #dropdown-toggle { display: inline-block !important; }
+            .school-dropdown { display: inline-block !important; }
         }
     </style>
 </head>
@@ -837,6 +850,9 @@
             const filterBar = document.getElementById('filter-bar');
             const verifyBanner = document.getElementById('verify-banner');
             const allFilterBtn = document.getElementById('all-filter-btn');
+            const mySchoolBtn = document.getElementById('my-school-btn');
+            const dropdownToggle = document.getElementById('dropdown-toggle');
+            const dropdownContent = document.getElementById('dropdown-content');
             const rosemontFilterBtn = document.getElementById('rosemont-filter-btn');
             const lasalleFilterBtn = document.getElementById('lasalle-filter-btn');
             const saintlaurentFilterBtn = document.getElementById('saintlaurent-filter-btn');
@@ -1386,6 +1402,15 @@
                             currentUserData = data;
                             internalSchoolName = data.schoolName || "Global Campus";
                             const isStudent = data.isStudent === true;
+                            
+                            // Update My School button text if user has a school
+                            if (mySchoolBtn && data.isStudent && data.schoolName) {
+                                mySchoolBtn.style.display = 'inline-block';
+                                mySchoolBtn.textContent = data.schoolName;
+                            } else if (mySchoolBtn) {
+                                mySchoolBtn.style.display = 'inline-block';
+                                mySchoolBtn.textContent = lang === 'fr' ? 'Mon école' : 'My School';
+                            }
                             
                             if (dSchoolName) dSchoolName.textContent = "Campus Hub";
                             const composerPfp = document.getElementById('composer-pfp');
