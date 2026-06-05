@@ -509,11 +509,7 @@
             <div id="filter-bar" class="filter-bar">
                 <span><i class="fas fa-filter"></i> Feed:</span>
                 <button class="school-filter active" data-filter="all" id="all-filter-btn">All Posts</button>
-                <button class="school-filter" id="rosemont-filter-btn">Cégep de Rosemont</button>
-                <button class="school-filter" id="lasalle-filter-btn">Collège LaSalle</button>
-                <button class="school-filter" id="saintlaurent-filter-btn">Cégep Saint-Laurent</button>
-                <button class="school-filter" id="maisonneuve-filter-btn">Collège de Maisonneuve</button>
-                <button class="school-filter" id="vanier-filter-btn">Vanier College</button>
+                <button class="school-filter" id="my-school-filter-btn">My School</button>
             </div>
 
             <!-- SEARCH BAR -->
@@ -649,7 +645,10 @@
                     dialog_confirm: "Confirm", dialog_delete_post: "Are you sure you want to delete this post?", dialog_delete_comment: "Delete this comment?",
                     btn_yes: "Yes", btn_no: "No", btn_delete: "Delete", btn_ok: "OK", alert_title: "Notice",
                     private_feed_locked: "Private Campus Feed",
-                    private_feed_desc: "This feed is securely locked to protect student privacy. Only verified students from"
+                    private_feed_desc: "This feed is securely locked to protect student privacy. Only verified students from",
+                    myschool_locked_title: "My School Feed",
+                    myschool_locked_desc: "To view and post in your school's feed, you must verify your student status by signing in with your school's <strong>Microsoft</strong> account. This ensures only real students can access this community.",
+                    myschool_verify_btn: "Sign in with Microsoft"
                 },
                 fr: { 
                     topics_public: "Canaux Publics", topics_campus: "Campus Global", topics_custom: "Sujets Personnalisés", topics_new: "Nouveau Sujet",
@@ -671,7 +670,10 @@
                     dialog_confirm: "Confirmer", dialog_delete_post: "Êtes-vous sûr de vouloir supprimer ce message ?", dialog_delete_comment: "Supprimer ce commentaire ?",
                     btn_yes: "Oui", btn_no: "Non", btn_delete: "Supprimer", btn_ok: "OK", alert_title: "Avis",
                     private_feed_locked: "Fil d'actualité privé",
-                    private_feed_desc: "Ce fil est verrouillé pour protéger la vie privée des étudiants. Seuls les étudiants vérifiés de"
+                    private_feed_desc: "Ce fil est verrouillé pour protéger la vie privée des étudiants. Seuls les étudiants vérifiés de",
+                    myschool_locked_title: "Fil de mon école",
+                    myschool_locked_desc: "Pour voir et publier dans le fil de votre école, vous devez vérifier votre statut d'étudiant en vous connectant avec votre compte <strong>Microsoft</strong> scolaire. Cela garantit que seuls les étudiants réels accèdent à cette communauté.",
+                    myschool_verify_btn: "Se connecter avec Microsoft"
                 }
             };
             const ui = allStrings[lang] || allStrings['en'];
@@ -856,68 +858,21 @@
             const filterBar = document.getElementById('filter-bar');
             const verifyBanner = document.getElementById('verify-banner');
             const allFilterBtn = document.getElementById('all-filter-btn');
-            const mySchoolBtn = document.getElementById('my-school-btn');
-            const dropdownToggle = document.getElementById('dropdown-toggle');
-            const dropdownContent = document.getElementById('dropdown-content');
-            const rosemontFilterBtn = document.getElementById('rosemont-filter-btn');
-            const lasalleFilterBtn = document.getElementById('lasalle-filter-btn');
-            const saintlaurentFilterBtn = document.getElementById('saintlaurent-filter-btn');
-            const maisonneuveFilterBtn = document.getElementById('maisonneuve-filter-btn');
-            const vanierFilterBtn = document.getElementById('vanier-filter-btn');
+            const mySchoolFilterBtn = document.getElementById('my-school-filter-btn');
 
             // Check URL parameter to set initial filter (still allows toggling)
             const urlParams = new URLSearchParams(window.location.search);
             const urlFilter = urlParams.get('filter');
             let currentSchoolFilter = 'all';
 
-            // Set initial active button state based on URL param
-            if (urlFilter === 'rosemont') {
-                currentSchoolFilter = 'rosemont';
+            // Set initial active button state based on URL param (only 'myschool' or default 'all')
+            if (urlFilter === 'myschool') {
+                currentSchoolFilter = 'myschool';
                 if (allFilterBtn) allFilterBtn.classList.remove('active');
-                if (rosemontFilterBtn) rosemontFilterBtn.classList.add('active');
-                if (lasalleFilterBtn) lasalleFilterBtn.classList.remove('active');
-                if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.remove('active');
-                if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.remove('active');
-                if (vanierFilterBtn) vanierFilterBtn.classList.remove('active');
-            } else if (urlFilter === 'lasalle') {
-                currentSchoolFilter = 'lasalle';
-                if (allFilterBtn) allFilterBtn.classList.remove('active');
-                if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
-                if (lasalleFilterBtn) lasalleFilterBtn.classList.add('active');
-                if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.remove('active');
-                if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.remove('active');
-                if (vanierFilterBtn) vanierFilterBtn.classList.remove('active');
-            } else if (urlFilter === 'saintlaurent') {
-                currentSchoolFilter = 'saintlaurent';
-                if (allFilterBtn) allFilterBtn.classList.remove('active');
-                if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
-                if (lasalleFilterBtn) lasalleFilterBtn.classList.remove('active');
-                if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.add('active');
-                if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.remove('active');
-                if (vanierFilterBtn) vanierFilterBtn.classList.remove('active');
-            } else if (urlFilter === 'maisonneuve') {
-                currentSchoolFilter = 'maisonneuve';
-                if (allFilterBtn) allFilterBtn.classList.remove('active');
-                if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
-                if (lasalleFilterBtn) lasalleFilterBtn.classList.remove('active');
-                if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.remove('active');
-                if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.add('active');
-                if (vanierFilterBtn) vanierFilterBtn.classList.remove('active');
-            } else if (urlFilter === 'vanier') {
-                currentSchoolFilter = 'vanier';
-                if (allFilterBtn) allFilterBtn.classList.remove('active');
-                if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
-                if (lasalleFilterBtn) lasalleFilterBtn.classList.remove('active');
-                if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.remove('active');
-                if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.remove('active');
-                if (vanierFilterBtn) vanierFilterBtn.classList.add('active');
+                if (mySchoolFilterBtn) mySchoolFilterBtn.classList.add('active');
             } else {
                 if (allFilterBtn) allFilterBtn.classList.add('active');
-                if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
-                if (lasalleFilterBtn) lasalleFilterBtn.classList.remove('active');
-                if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.remove('active');
-                if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.remove('active');
-                if (vanierFilterBtn) vanierFilterBtn.classList.remove('active');
+                if (mySchoolFilterBtn) mySchoolFilterBtn.classList.remove('active');
             }
 
             // --- BUTTON HANDLERS ---
@@ -925,81 +880,17 @@
                 allFilterBtn.onclick = () => {
                     currentSchoolFilter = 'all';
                     allFilterBtn.classList.add('active');
-                    if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
-                    if (lasalleFilterBtn) lasalleFilterBtn.classList.remove('active');
-                    if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.remove('active');
-                    if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.remove('active');
-                    if (vanierFilterBtn) vanierFilterBtn.classList.remove('active');
+                    if (mySchoolFilterBtn) mySchoolFilterBtn.classList.remove('active');
                     updateComposerPlaceholder();
                     loadFeed();
                 };
             }
 
-            if (rosemontFilterBtn) {
-                rosemontFilterBtn.onclick = () => {
-                    currentSchoolFilter = 'rosemont';
-                    rosemontFilterBtn.classList.add('active');
+            if (mySchoolFilterBtn) {
+                mySchoolFilterBtn.onclick = () => {
+                    currentSchoolFilter = 'myschool';
+                    mySchoolFilterBtn.classList.add('active');
                     if (allFilterBtn) allFilterBtn.classList.remove('active');
-                    if (lasalleFilterBtn) lasalleFilterBtn.classList.remove('active');
-                    if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.remove('active');
-                    if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.remove('active');
-                    if (vanierFilterBtn) vanierFilterBtn.classList.remove('active');
-                    updateComposerPlaceholder();
-                    loadFeed();
-                };
-            }
-
-            if (lasalleFilterBtn) {
-                lasalleFilterBtn.onclick = () => {
-                    currentSchoolFilter = 'lasalle';
-                    lasalleFilterBtn.classList.add('active');
-                    if (allFilterBtn) allFilterBtn.classList.remove('active');
-                    if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
-                    if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.remove('active');
-                    if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.remove('active');
-                    if (vanierFilterBtn) vanierFilterBtn.classList.remove('active');
-                    updateComposerPlaceholder();
-                    loadFeed();
-                };
-            }
-
-            if (saintlaurentFilterBtn) {
-                saintlaurentFilterBtn.onclick = () => {
-                    currentSchoolFilter = 'saintlaurent';
-                    saintlaurentFilterBtn.classList.add('active');
-                    if (allFilterBtn) allFilterBtn.classList.remove('active');
-                    if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
-                    if (lasalleFilterBtn) lasalleFilterBtn.classList.remove('active');
-                    if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.remove('active');
-                    if (vanierFilterBtn) vanierFilterBtn.classList.remove('active');
-                    updateComposerPlaceholder();
-                    loadFeed();
-                };
-            }
-
-            if (maisonneuveFilterBtn) {
-                maisonneuveFilterBtn.onclick = () => {
-                    currentSchoolFilter = 'maisonneuve';
-                    maisonneuveFilterBtn.classList.add('active');
-                    if (allFilterBtn) allFilterBtn.classList.remove('active');
-                    if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
-                    if (lasalleFilterBtn) lasalleFilterBtn.classList.remove('active');
-                    if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.remove('active');
-                    if (vanierFilterBtn) vanierFilterBtn.classList.remove('active');
-                    updateComposerPlaceholder();
-                    loadFeed();
-                };
-            }
-
-            if (vanierFilterBtn) {
-                vanierFilterBtn.onclick = () => {
-                    currentSchoolFilter = 'vanier';
-                    vanierFilterBtn.classList.add('active');
-                    if (allFilterBtn) allFilterBtn.classList.remove('active');
-                    if (rosemontFilterBtn) rosemontFilterBtn.classList.remove('active');
-                    if (lasalleFilterBtn) lasalleFilterBtn.classList.remove('active');
-                    if (saintlaurentFilterBtn) saintlaurentFilterBtn.classList.remove('active');
-                    if (maisonneuveFilterBtn) maisonneuveFilterBtn.classList.remove('active');
                     updateComposerPlaceholder();
                     loadFeed();
                 };
@@ -1007,19 +898,15 @@
 
             // Helper to update composer placeholder
             function updateComposerPlaceholder() {
-                if (postInput) {
-                    if (currentSchoolFilter === 'all') {
-                        postInput.placeholder = ui.post_placeholder || "What's happening on Global Campus?";
-                    } else if (currentSchoolFilter === 'rosemont') {
-                        postInput.placeholder = lang === 'fr' ? `Que se passe-t-il à Rosemont ?` : `What's happening at Rosemont?`;
-                    } else if (currentSchoolFilter === 'lasalle') {
-                        postInput.placeholder = lang === 'fr' ? `Que se passe-t-il au Collège LaSalle ?` : `What's happening at LaSalle College?`;
-                    } else if (currentSchoolFilter === 'saintlaurent') {
-                        postInput.placeholder = lang === 'fr' ? `Que se passe-t-il au Cégep Saint-Laurent ?` : `What's happening at Cégep Saint-Laurent?`;
-                    } else if (currentSchoolFilter === 'maisonneuve') {
-                        postInput.placeholder = lang === 'fr' ? `Que se passe-t-il au Collège de Maisonneuve ?` : `What's happening at Maisonneuve College?`;
-                    } else if (currentSchoolFilter === 'vanier') {
-                        postInput.placeholder = lang === 'fr' ? `Que se passe-t-il au Vanier College ?` : `What's happening at Vanier College?`;
+                if (!postInput) return;
+                if (currentSchoolFilter === 'all') {
+                    postInput.placeholder = ui.post_placeholder || "What's happening on Global Campus?";
+                } else {
+                    const school = currentUserData?.schoolName || '';
+                    if (school) {
+                        postInput.placeholder = lang === 'fr' ? `Que se passe-t-il à ${school} ?` : `What's happening at ${school}?`;
+                    } else {
+                        postInput.placeholder = lang === 'fr' ? `Que se passe-t-il dans votre école ?` : `What's happening at your school?`;
                     }
                 }
             }
@@ -1080,7 +967,7 @@
                     updateComposerSendButton();
                 });
                 
-                // Allow pressing Enter to send the post (on both mobile and desktop)
+                // Allow pressing Enter to send the post
                 postInput.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
@@ -1213,16 +1100,8 @@
                     let photoToSave = currentUser.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${currentUser.uid}&backgroundColor=EBF2FA`;
                     
                     let postingToSchool = "Global Campus";
-                    if (currentSchoolFilter === 'rosemont') {
-                        postingToSchool = "Cégep de Rosemont";
-                    } else if (currentSchoolFilter === 'lasalle') {
-                        postingToSchool = "Collège LaSalle";
-                    } else if (currentSchoolFilter === 'saintlaurent') {
-                        postingToSchool = "Cégep Saint-Laurent";
-                    } else if (currentSchoolFilter === 'maisonneuve') {
-                        postingToSchool = "Collège de Maisonneuve";
-                    } else if (currentSchoolFilter === 'vanier') {
-                        postingToSchool = "Vanier College";
+                    if (currentSchoolFilter === 'myschool' && currentUserData?.schoolName) {
+                        postingToSchool = currentUserData.schoolName;
                     }
                     const collectionName = getSchoolCollection(postingToSchool);
                     
@@ -1409,15 +1288,6 @@
                             internalSchoolName = data.schoolName || "Global Campus";
                             const isStudent = data.isStudent === true;
                             
-                            // Update My School button text if user has a school
-                            if (mySchoolBtn && data.isStudent && data.schoolName) {
-                                mySchoolBtn.style.display = 'inline-block';
-                                mySchoolBtn.textContent = data.schoolName;
-                            } else if (mySchoolBtn) {
-                                mySchoolBtn.style.display = 'inline-block';
-                                mySchoolBtn.textContent = lang === 'fr' ? 'Mon école' : 'My School';
-                            }
-                            
                             if (dSchoolName) dSchoolName.textContent = "Campus Hub";
                             const composerPfp = document.getElementById('composer-pfp');
                             if (composerPfp) composerPfp.src = data.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${user.uid}&backgroundColor=EBF2FA`;
@@ -1444,8 +1314,11 @@
                                 e.preventDefault();
                                 if (!currentUser) {
                                     window.location.href = '/login?redirect=/social';
-                                } else {
+                                } else if (isStudent || data.role === 'admin') {
                                     window.location.href = '/createtopic';
+                                } else {
+                                    const restrictedModal = document.getElementById('restricted-modal');
+                                    if (restrictedModal) restrictedModal.style.display = 'flex';
                                 }
                             };
 
@@ -1686,68 +1559,47 @@
                 Object.values(commentUnsubscribes).forEach(unsub => unsub());
                 commentUnsubscribes = {};
 
-                const isAdmin = currentUserData && currentUserData.role === 'admin';
-                const isVerifiedStudent = currentUserData && currentUserData.isStudent === true;
-                
-                const matchesSchool = currentUserData && (
-                    currentUserData.schoolName === targetSchool || 
-                    (targetSchool && currentUserData.schoolName && targetSchool.includes(currentUserData.schoolName)) ||
-                    (targetSchool && currentUserData.schoolName && currentUserData.schoolName.includes(targetSchool))
-                );
+                const isAdmin = currentUserData?.role === 'admin';
+                const isVerifiedStudent = currentUserData?.isStudent === true;
+                const userSchool = internalSchoolName || '';
 
-                // Determine which school is being accessed and its display name
-                let selectedSchoolName = "";
-                let selectedSchoolFilter = "";
-                if (currentSchoolFilter === 'rosemont') {
-                    selectedSchoolName = "Cégep de Rosemont";
-                    selectedSchoolFilter = 'rosemont';
-                } else if (currentSchoolFilter === 'lasalle') {
-                    selectedSchoolName = "Collège LaSalle";
-                    selectedSchoolFilter = 'lasalle';
-                } else if (currentSchoolFilter === 'saintlaurent') {
-                    selectedSchoolName = "Cégep Saint-Laurent";
-                    selectedSchoolFilter = 'saintlaurent';
-                } else if (currentSchoolFilter === 'maisonneuve') {
-                    selectedSchoolName = "Collège de Maisonneuve";
-                    selectedSchoolFilter = 'maisonneuve';
-                } else if (currentSchoolFilter === 'vanier') {
-                    selectedSchoolName = "Vanier College";
-                    selectedSchoolFilter = 'vanier';
-                }
+                // If "My School" is active
+                if (currentSchoolFilter === 'myschool') {
+                    const canAccessSchool = isAdmin || (isVerifiedStudent && userSchool && getSchoolCollection(userSchool) !== 'social_posts_global');
 
-                // If user tries to access a school-specific feed but isn't verified/admin, show lock
-                if (selectedSchoolFilter && !isAdmin && (!isVerifiedStudent || !matchesSchool)) {
-                    const composerCard = document.getElementById('composer-card');
-                    if (composerCard) composerCard.style.display = 'none';
+                    if (!canAccessSchool) {
+                        const composerCard = document.getElementById('composer-card');
+                        if (composerCard) composerCard.style.display = 'none';
 
-                    if (feedContainer) {
-                        feedContainer.innerHTML = `
-                            <div style="position: relative; min-height: 400px; overflow: hidden; border-radius: var(--radius-md);">
-                                <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; padding: 20px;">
-                                    <div style="background: rgba(255,255,255,0.95); padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; max-width: 420px; margin: 0 20px;">
-                                        <i class="fas fa-lock" style="font-size: 3.5rem; color: var(--deep); margin-bottom: 20px;"></i>
-                                        <h3 style="font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--ink); margin-bottom: 12px;">${ui.private_feed_locked}</h3>
-                                        <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; line-height: 1.6;">${ui.private_feed_desc} <strong>${selectedSchoolName}</strong> can view or participate in this channel.</p>
-                                        <button class="btn-action" style="width: 100%;" onclick="window.location.href='/verify'">Verify Student Email</button>
+                        if (feedContainer) {
+                            feedContainer.innerHTML = `
+                                <div style="position: relative; min-height: 400px; overflow: hidden; border-radius: var(--radius-md);">
+                                    <div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10; padding: 20px;">
+                                        <div style="background: rgba(255,255,255,0.95); padding: 40px; border-radius: 20px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.15); border: 1px solid #e2e8f0; max-width: 420px; margin: 0 20px;">
+                                            <i class="fas fa-lock" style="font-size: 3.5rem; color: var(--deep); margin-bottom: 20px;"></i>
+                                            <h3 style="font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--ink); margin-bottom: 12px;">${ui.myschool_locked_title}</h3>
+                                            <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 25px; line-height: 1.6;">${ui.myschool_locked_desc}</p>
+                                            <button class="btn-action" style="width: 100%;" onclick="window.location.href='/login?redirect=/social&msg=social'">${ui.myschool_verify_btn}</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="post-card" style="filter: blur(8px); opacity: 0.5; pointer-events: none; user-select: none; margin-bottom: 20px;">
+                                        <div class="post-header-top"><div style="display:flex; gap:15px; align-items:center;"><div style="width:48px; height:48px; border-radius:50%; background:#cbd5e1;"></div><div><div style="width:120px; height:12px; background:#cbd5e1; border-radius:10px; margin-bottom:8px;"></div><div style="width:80px; height:10px; background:#e2e8f0; border-radius:10px;"></div></div></div></div>
+                                        <div style="width:100%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
+                                        <div style="width:85%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
+                                        <div style="width:60%; height:12px; background:#e2e8f0; border-radius:10px;"></div>
+                                    </div>
+                                    <div class="post-card" style="filter: blur(8px); opacity: 0.5; pointer-events: none; user-select: none;">
+                                        <div class="post-header-top"><div style="display:flex; gap:15px; align-items:center;"><div style="width:48px; height:48px; border-radius:50%; background:#cbd5e1;"></div><div><div style="width:140px; height:12px; background:#cbd5e1; border-radius:10px; margin-bottom:8px;"></div><div style="width:90px; height:10px; background:#e2e8f0; border-radius:10px;"></div></div></div></div>
+                                        <div style="width:100%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
+                                        <div style="width:95%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
+                                        <div style="width:40%; height:12px; background:#e2e8f0; border-radius:10px;"></div>
                                     </div>
                                 </div>
-                                
-                                <div class="post-card" style="filter: blur(8px); opacity: 0.5; pointer-events: none; user-select: none; margin-bottom: 20px;">
-                                    <div class="post-header-top"><div style="display:flex; gap:15px; align-items:center;"><div style="width:48px; height:48px; border-radius:50%; background:#cbd5e1;"></div><div><div style="width:120px; height:12px; background:#cbd5e1; border-radius:10px; margin-bottom:8px;"></div><div style="width:80px; height:10px; background:#e2e8f0; border-radius:10px;"></div></div></div></div>
-                                    <div style="width:100%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
-                                    <div style="width:85%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
-                                    <div style="width:60%; height:12px; background:#e2e8f0; border-radius:10px;"></div>
-                                </div>
-                                <div class="post-card" style="filter: blur(8px); opacity: 0.5; pointer-events: none; user-select: none;">
-                                    <div class="post-header-top"><div style="display:flex; gap:15px; align-items:center;"><div style="width:48px; height:48px; border-radius:50%; background:#cbd5e1;"></div><div><div style="width:140px; height:12px; background:#cbd5e1; border-radius:10px; margin-bottom:8px;"></div><div style="width:90px; height:10px; background:#e2e8f0; border-radius:10px;"></div></div></div></div>
-                                    <div style="width:100%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
-                                    <div style="width:95%; height:12px; background:#e2e8f0; border-radius:10px; margin-bottom:12px;"></div>
-                                    <div style="width:40%; height:12px; background:#e2e8f0; border-radius:10px;"></div>
-                                </div>
-                            </div>
-                        `;
+                            `;
+                        }
+                        return;
                     }
-                    return; 
                 }
 
                 const composerCard = document.getElementById('composer-card');
@@ -1763,16 +1615,8 @@
                 if (feedContainer) feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub || 'Loading campus hub...'}</span></div>`;
 
                 let collectionName = 'social_posts_global';
-                if (currentSchoolFilter === 'rosemont') {
-                    collectionName = 'social_posts_rosemont';
-                } else if (currentSchoolFilter === 'lasalle') {
-                    collectionName = 'social_posts_lasalle';
-                } else if (currentSchoolFilter === 'saintlaurent') {
-                    collectionName = 'social_posts_saintlaurent';
-                } else if (currentSchoolFilter === 'maisonneuve') {
-                    collectionName = 'social_posts_maisonneuve';
-                } else if (currentSchoolFilter === 'vanier') {
-                    collectionName = 'social_posts_vanier';
+                if (currentSchoolFilter === 'myschool' && userSchool) {
+                    collectionName = getSchoolCollection(userSchool);
                 }
                 let q = query(collection(db, collectionName), orderBy("timestamp", "desc"), limit(100));
                 
