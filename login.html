@@ -264,7 +264,7 @@
 
         input::placeholder { color: rgba(244,238,221,0.22); }
 
-        input:focus, select.form-select:focus {
+        input:focus {
             border-color: rgba(200,169,110,0.50);
             background: rgba(200,169,110,0.05);
             box-shadow: 0 0 0 3px rgba(200,169,110,0.08);
@@ -275,46 +275,6 @@
             -webkit-box-shadow: 0 0 0 1000px rgba(12,20,70,0.95) inset !important;
             -webkit-text-fill-color: var(--text) !important;
             border-color: rgba(200,169,110,0.35) !important;
-        }
-
-        /* Select Styles */
-        select.form-select {
-            display: block;
-            width: 100%;
-            height: 46px;
-            padding: 0 16px;
-            background: rgba(255,255,255,0.055);
-            border: 1px solid rgba(255,255,255,0.10);
-            border-radius: 10px;
-            color: var(--text);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
-            box-sizing: border-box;
-            appearance: none;
-            -webkit-appearance: none;
-            cursor: pointer;
-        }
-        select.form-select option {
-            background: var(--navy);
-            color: var(--text);
-        }
-        select.form-select option:disabled {
-            color: rgba(255,255,255,0.4);
-            font-style: italic;
-        }
-        .select-wrapper { position: relative; }
-        .select-wrapper::after {
-            content: '\f0d7';
-            font-family: 'Font Awesome 6 Free';
-            font-weight: 900;
-            position: absolute;
-            right: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--muted);
-            pointer-events: none;
         }
 
         .input-status { position: relative; }
@@ -546,21 +506,6 @@
                                     <span id="username-availability"></span>
                                 </div>
                             </div>
-
-                            <!-- Gender Field Addition -->
-                            <div class="field-wrap">
-                                <label class="field-label" id="gender-label">Gender / Pronouns</label>
-                                <div class="select-wrapper">
-                                    <select id="gender-select" class="form-select">
-                                        <option value="Prefer not to say">Prefer not to say</option>
-                                        <option value="Male">Male</option>
-                                        <option value="Female">Female</option>
-                                        <option value="show_more">Show more...</option>
-                                        <option value="Custom">Custom...</option>
-                                    </select>
-                                </div>
-                                <input type="text" id="gender-custom" placeholder="Please specify..." style="display:none; margin-top: 8px;">
-                            </div>
                         </div>
 
                         <div class="field-wrap">
@@ -717,9 +662,6 @@
             const usernameHintText = document.getElementById('username-hint-text');
             const usernameAvailability = document.getElementById('username-availability');
 
-            const genderSelect = document.getElementById('gender-select');
-            const genderCustom = document.getElementById('gender-custom');
-
             let isLoginMode = true;
             let isRegistering = false; 
             let usernameCheckTimeout = null;
@@ -744,32 +686,6 @@
                 modalOkBtn.onclick = () => { modal.style.display = 'none'; };
             }
 
-            const extendedGenders =[
-                "Abimegender", "Admasgender", "Aerogender", "Aesthetgender", "Affectugender", "Agender", "Agenderfluid", 
-                "Agenderflux", "Alexigender", "Aliagender", "Amaregender", "Ambigender", "Ambonec", "Androgyne", 
-                "Anisogender", "Apagender", "Apocaliptigender", "Aporagender", "Astergender", "Astralgender", "Autigender", 
-                "Bigender", "Bigenderfluid", "Bigenderflux", "Biogender", "Bipartgender", "Blurgender", "Boi", "Boyflux", 
-                "Butch", "Cadensgender", "Cassflux", "Cassgender", "Cavusgender", "Cendgender", "Ceterofluid", 
-                "Ceterogender", "Cisgender", "Cisgender Female", "Cisgender Male", "Cisgender Man", "Cisgender Woman", 
-                "Cloudgender", "Collgender", "Colorfluid", "Commogender", "Condigender", "Deliciagender", "Demiboy", 
-                "Demifluid", "Demiflux", "Demigender", "Demigirl", "Demi-nonbinary", "Domgender", "Dualgender", 
-                "Duragender", "Egogender", "Enby", "Endogender", "Entrogender", "Epicene", "Espigender", "Exgender", 
-                "Existigender", "Fa'afafine", "Fae/Faer Pronouns", "Fascinugender", "Female", "Female to Male (FTM)", 
-                "Femme", "Fluidflux", "Gemigender", "Gender Blank", "Gender Fluid", "Gender Neutral", 
-                "Gender Nonconforming", "Gender Questioning", "Gender Variant", "Genderblind", "Genderfluid", "Genderflux", 
-                "Genderqueer", "Gendervoid", "Genderwitched", "Girlflux", "He/Him Pronouns", "He/They Pronouns", "Hijra", 
-                "Illusogender", "Impigender", "Intergender", "Intersex", "It/Its Pronouns", "Juxera", "Libragender", 
-                "Magigender", "Male", "Male to Female (MTF)", "Masc", "Masculine of Center", "Maverique", "Mirrorgender", 
-                "Multigender", "Mutogender", "Muxe", "Necrogender", "Neutrois", "Non-binary", "Non-binary Boy", 
-                "Non-binary Girl", "Novigender", "Null", "Omnigender", "Pangender", "Paragender", "Perigender", 
-                "Polygender", "Polysexual", "Proxvir", "Quoigender", "She/Her Pronouns", "She/They Pronouns", "Stud", 
-                "Surgender", "Systemgender", "They/Them Pronouns", "Third Gender", "Trans Female", "Trans Male", "Trans Man", 
-                "Trans Person", "Trans Woman", "Transfeminine", "Transgender", "Transgender Female", "Transgender Male", 
-                "Transmasculine", "Transneutral", "Transsexual", "Transsexual Female", "Transsexual Male", "Trigender", 
-                "Two-Spirit", "Vapogender", "Venngender", "Verangender", "Vibragender", "Vocigender", "Xe/Xem/Xyr Pronouns", 
-                "Xe/Xer Pronouns", "Xenogender", "Ze/Hir/Hirs Pronouns", "Ze/Zir Pronouns"
-            ];
-
             const lang = localStorage.getItem('preferred_language') || 'en';
             const strings = {
                 en: {
@@ -791,21 +707,12 @@
                     usernameUnavailable: "✗ Already taken",
                     usernameChecking: "Checking...",
                     usernameInvalid: "Invalid characters",
-                    genderLabel: "Gender / Pronouns",
-                    genderPreferNot: "Prefer not to say",
-                    genderMale: "Male",
-                    genderFemale: "Female",
-                    genderCustom: "Custom...",
-                    genderShowMore: "Show more...",
-                    genderPlaceholder: "Type your gender...",
-                    genderPrompt: "-- Select from expanded list --",
                     placeEmail: "Email Address", placePass: "Password",
                     google: "Continue with Google", microsoft: "Continue with Microsoft", or: "or", verify: "Verifying...",
                     errBanned: "Account banned.", errVerify: "Please verify your email first! A verification link was sent to your inbox.", 
                     errSent: "Account created! Please check your email to verify your account before logging in.",
                     forgotPass: "Forgot Password?", enterEmailFirst: "Please enter your email address to reset your password.", 
                     resetSent: "Password reset email sent! Check your inbox.",
-                    // Inline error messages
                     errInvalidCredentials: "Invalid email or password. Please try again.",
                     errEmailInUse: "An account with this email already exists.",
                     errWeakPassword: "Password should be at least 6 characters.",
@@ -833,21 +740,12 @@
                     usernameUnavailable: "✗ Déjà pris",
                     usernameChecking: "Vérification...",
                     usernameInvalid: "Caractères invalides",
-                    genderLabel: "Genre / Pronoms",
-                    genderPreferNot: "Préfère ne pas le dire",
-                    genderMale: "Homme",
-                    genderFemale: "Femme",
-                    genderCustom: "Personnalisé...",
-                    genderShowMore: "Afficher plus...",
-                    genderPlaceholder: "Saisissez votre genre...",
-                    genderPrompt: "-- Sélectionnez dans la liste élargie --",
                     placeEmail: "Adresse e-mail", placePass: "Mot de passe",
                     google: "Continuer avec Google", microsoft: "Continuer avec Microsoft", or: "ou", verify: "Vérification...",
                     errBanned: "Compte banni.", errVerify: "Veuillez d'abord vérifier votre e-mail ! Un lien de vérification a été envoyé.",
                     errSent: "Compte créé ! Veuillez vérifier votre boîte mail pour activer votre compte avant de vous connecter.",
                     forgotPass: "Mot de passe oublié ?", enterEmailFirst: "Veuillez entrer votre adresse e-mail pour réinitialiser le mot de passe.", 
                     resetSent: "E-mail de réinitialisation envoyé ! Vérifiez votre boîte de réception.",
-                    // Inline error messages
                     errInvalidCredentials: "Email ou mot de passe invalide. Veuillez réessayer.",
                     errEmailInUse: "Un compte avec cet email existe déjà.",
                     errWeakPassword: "Le mot de passe doit contenir au moins 6 caractères.",
@@ -861,17 +759,6 @@
             const urlParams = new URLSearchParams(window.location.search);
             const msgParam = urlParams.get('msg');
             const redirectTo = urlParams.get('redirect') || '/';
-
-            function updateSelectTranslations() {
-                document.getElementById('gender-label').textContent = strings[lang].genderLabel;
-                const getOpt = val => genderSelect.querySelector(`option[value="${val}"]`);
-                if(getOpt("Prefer not to say")) getOpt("Prefer not to say").textContent = strings[lang].genderPreferNot;
-                if(getOpt("Male")) getOpt("Male").textContent = strings[lang].genderMale;
-                if(getOpt("Female")) getOpt("Female").textContent = strings[lang].genderFemale;
-                if(getOpt("Custom")) getOpt("Custom").textContent = strings[lang].genderCustom;
-                if(getOpt("show_more")) getOpt("show_more").textContent = strings[lang].genderShowMore;
-                genderCustom.placeholder = strings[lang].genderPlaceholder;
-            }
 
             function applyUIText() {
                 formTitle.textContent = isLoginMode ? strings[lang].loginTitle : strings[lang].regTitle;
@@ -895,7 +782,6 @@
                 document.getElementById('loading-text').textContent = strings[lang].verify;
                 forgotPasswordLink.textContent = strings[lang].forgotPass;
                 
-                updateSelectTranslations();
                 updateFullnameUI();
                 updateUsernameUI();
             }
@@ -984,40 +870,6 @@
             document.getElementById('email').addEventListener('input', updateSubmitButton);
             document.getElementById('password').addEventListener('input', updateSubmitButton);
 
-            genderSelect.addEventListener('change', (e) => {
-                if (e.target.value === 'show_more') {
-                    const showMoreOpt = e.target.querySelector('option[value="show_more"]');
-                    if (showMoreOpt) showMoreOpt.remove();
-                    
-                    const fragment = document.createDocumentFragment();
-
-                    const promptOpt = document.createElement('option');
-                    promptOpt.value = 'prompt';
-                    promptOpt.textContent = strings[lang].genderPrompt || "-- Select from expanded list --";
-                    promptOpt.disabled = true;
-                    fragment.appendChild(promptOpt);
-
-                    extendedGenders.forEach(g => {
-                        const opt = document.createElement('option');
-                        opt.value = g;
-                        opt.textContent = g;
-                        fragment.appendChild(opt);
-                    });
-                    
-                    const customOpt = e.target.querySelector('option[value="Custom"]');
-                    e.target.insertBefore(fragment, customOpt);
-                    
-                    e.target.value = 'prompt';
-                    genderCustom.style.display = 'none';
-
-                } else if (e.target.value === 'Custom') {
-                    genderCustom.style.display = 'block';
-                    genderCustom.focus();
-                } else {
-                    genderCustom.style.display = 'none';
-                }
-            });
-
             const schoolDomains = {
                 "@etu.cegepjonquiere.ca": "Cégep de Jonquière",
                 "@cegep-lanaudiere.qc.ca": "Cégep de Lanaudière",
@@ -1099,7 +951,6 @@
                         role: 'user',
                         isStudent: schoolInfo.isStudent,
                         schoolName: schoolInfo.schoolName,
-                        gender: 'Prefer not to say', 
                         createdAt: new Date().toISOString()
                     });
                 }
@@ -1183,18 +1034,9 @@
                     if (isLoginMode) {
                         loadingOverlay.style.display = 'flex';
                         await signInWithEmailAndPassword(auth, email, pass);
-                        // On success, onAuthStateChanged will redirect
                     } else {
                         const fullName = fullNameInput.value.trim();
                         const username = usernameInput.value.trim().toLowerCase();
-                        
-                        let finalGender = genderSelect.value;
-                        if (finalGender === 'show_more' || finalGender === 'prompt') {
-                            finalGender = 'Prefer not to say';
-                        }
-                        if (finalGender === 'Custom') {
-                            finalGender = genderCustom.value.trim() || 'Prefer not to say';
-                        }
 
                         if (!isFullnameValid || !isUsernameValid) {
                             throw { code: 'custom/validation' };
@@ -1215,7 +1057,6 @@
                             role: 'user',
                             isStudent: schoolInfo.isStudent,
                             schoolName: schoolInfo.schoolName,
-                            gender: finalGender,
                             createdAt: new Date().toISOString()
                         });
                         
