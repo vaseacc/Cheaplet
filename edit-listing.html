@@ -172,33 +172,11 @@
     </div>
 
     <div class="form-outer">
-        
-        <div id="isbn-section" class="form-wrapper" style="text-align: center; margin-bottom: 20px;">
-            <div class="section-label" style="justify-content: center;"><i class="fas fa-barcode"></i> <span id="ui-isbn-title">Quick Book Scan</span></div>
-            <p id="ui-isbn-desc" style="color: var(--text-muted); margin-bottom: 20px; font-size: 0.9rem;">Scan your book's barcode to automatically fill in the title and description.</p>
-
-            <div id="reader" style="width: 100%; max-width: 400px; margin: 0 auto 20px; display: none; border-radius: var(--radius-sm); overflow: hidden; border: 2px solid var(--mist);"></div>
-
-            <button type="button" class="btn-submit" id="start-scan-btn" style="margin-bottom: 15px; width: 100%;">
-                <i class="fas fa-camera"></i> <span id="ui-btn-scan">Scan Barcode</span>
-            </button>
-
-            <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
-                <input type="text" id="manual-isbn-input" placeholder="Enter ISBN manually..." style="margin-bottom: 0; flex: 1;">
-                <button type="button" class="btn-submit" id="manual-isbn-btn" style="min-width: 50px; padding: 10px;"><i class="fas fa-search"></i></button>
-            </div>
-            
-            <!-- Allow users to skip re-scanning if they just want to edit photos or price -->
-            <button type="button" class="btn-cancel" id="skip-scan-btn" style="width: 100%;">
-                <span id="ui-btn-skip">Skip Scan (Keep original info)</span>
-            </button>
-        </div>
-
+        <!-- The main form is now visible immediately after loading, no scan step -->
         <div id="main-form-section" style="display: none;">
             <div class="form-wrapper">
                 <form id="listing-form">
-                    
-                    <!-- Hidden field to preserve ISBN -->
+                    <!-- Hidden field for ISBN (kept but not used by scanner) -->
                     <input type="hidden" id="listing-isbn" value="">
 
                     <div class="form-section">
@@ -345,9 +323,7 @@
                     imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type.",
                     imgSizeErr: "Image too large (Max 5MB).", saving: "AI Safety Check…",
                     tagLimit: "Max 15 tags allowed.",
-                    tagUses: "uses",
-                    isbnTitle: "Quick Book Scan", isbnDesc: "Scan your book's barcode to fill in info automatically.",
-                    btnScan: "Scan Barcode", btnSkip: "Skip Scan (Keep original info)", fetching: "Fetching info...", notFound: "Book not found."
+                    tagUses: "uses"
                 },
                 fr: {
                     mainTitle: "Modifier votre annonce", mainSub: "Mettez à jour les détails. Les modifications seront réexaminées par notre IA de sécurité.",
@@ -364,12 +340,11 @@
                     imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté.",
                     imgSizeErr: "Image trop lourde (Max 5MB).", saving: "Vérification IA…",
                     tagLimit: "Maximum 15 tags autorisés.",
-                    tagUses: "utilisations",
-                    isbnTitle: "Scan rapide du livre", isbnDesc: "Scannez le code-barres pour remplir les infos automatiquement.",
-                    btnScan: "Scanner le code-barres", btnSkip: "Ignorer (Garder les infos originales)", fetching: "Recherche en cours...", notFound: "Livre introuvable."
+                    tagUses: "utilisations"
                 }
             };
 
+            // Apply translations to static text
             document.getElementById('ui-main-title').textContent = ui[lang].mainTitle;
             document.getElementById('ui-main-subtitle').textContent = ui[lang].mainSub;
             document.getElementById('ui-sec-basic').textContent = ui[lang].secBasic;
@@ -405,12 +380,6 @@
             document.getElementById('post-btn-text').textContent = ui[lang].btnPost;
             document.getElementById('cancelEditBtn').textContent = ui[lang].btnCancel;
 
-            // ISBN text replacements
-            if(document.getElementById('ui-isbn-title')) document.getElementById('ui-isbn-title').textContent = ui[lang].isbnTitle;
-            if(document.getElementById('ui-isbn-desc')) document.getElementById('ui-isbn-desc').textContent = ui[lang].isbnDesc;
-            if(document.getElementById('ui-btn-scan')) document.getElementById('ui-btn-scan').textContent = ui[lang].btnScan;
-            if(document.getElementById('ui-btn-skip')) document.getElementById('ui-btn-skip').textContent = ui[lang].btnSkip;
-
             const pageLoader = document.getElementById('page-loader');
             const mainForm = document.getElementById('main-form-section');
             const tagInput = document.getElementById('tag-input');
@@ -425,141 +394,7 @@
             let currentListingId = new URLSearchParams(window.location.search).get('id');
             let currentUser = null;
 
-            // --- ISBN LOGIC FOR EDIT (improved) ---
-            let html5QrCode;
-            const isbnCache = {};
-            try {
-                const saved = localStorage.getItem('scoralia_isbn_cache');
-                if (saved) Object.assign(isbnCache, JSON.parse(saved));
-            } catch(e) {}
-
-            function saveCache() {
-                try {
-                    const entries = Object.entries(isbnCache);
-                    if (entries.length > 50) {
-                        const trimmed = Object.fromEntries(entries.slice(-50));
-                        localStorage.setItem('scoralia_isbn_cache', JSON.stringify(trimmed));
-                    } else {
-                        localStorage.setItem('scoralia_isbn_cache', JSON.stringify(isbnCache));
-                    }
-                } catch(e) {}
-            }
-
-            async function fetchBookData(isbn) {
-                const cleanIsbn = isbn.replace(/[^0-9]/g, '');
-                if (cleanIsbn.length < 10) { alert("Invalid ISBN."); return; }
-
-                if (isbnCache[cleanIsbn]) {
-                    const cached = isbnCache[cleanIsbn];
-                    document.getElementById('listing-title').value = cached.title;
-                    document.getElementById('listing-description').value = cached.description || "";
-                    document.getElementById('listing-isbn').value = cleanIsbn;
-                    document.getElementById('isbn-section').style.display = 'none';
-                    document.getElementById('main-form-section').style.display = 'block';
-                    if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
-                    return;
-                }
-
-                const scanBtn = document.getElementById('start-scan-btn');
-                const manualBtn = document.getElementById('manual-isbn-btn');
-                scanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${ui[lang].fetching}</span>`;
-                scanBtn.disabled = true; manualBtn.disabled = true;
-
-                let bookData = { title: "", description: "" };
-
-                // Helper for Google Books
-                const parseGoogleBooks = (data) => {
-                    if (data.items && data.items.length > 0) {
-                        const book = data.items[0].volumeInfo;
-                        let title = book.title || "";
-                        if (book.authors && book.authors.length) title += ` by ${book.authors.join(', ')}`;
-                        const description = book.description ? book.description.replace(/<[^>]*>?/gm, '') : "";
-                        return { title, description };
-                    }
-                    return null;
-                };
-
-                // 1. Google Books by ISBN
-                try {
-                    const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`);
-                    if (res.ok) {
-                        const data = await res.json();
-                        const result = parseGoogleBooks(data);
-                        if (result) bookData = result;
-                    }
-                } catch (e) { console.warn("Google ISBN fetch error:", e); }
-
-                // 2. OpenLibrary fallback
-                if (!bookData.title) {
-                    try {
-                        const res = await fetch(`https://openlibrary.org/isbn/${cleanIsbn}.json`);
-                        if (res.ok) {
-                            const data = await res.json();
-                            let title = data.title || "";
-                            if (data.authors && data.authors.length) {
-                                const authorNames = data.authors.map(a => a.name).join(', ');
-                                title += ` by ${authorNames}`;
-                            }
-                            let description = "";
-                            if (data.description) {
-                                description = typeof data.description === 'string' ? data.description : (data.description.value || "");
-                            }
-                            if (title) bookData = { title, description };
-                        }
-                    } catch (e) { console.warn("OpenLibrary error:", e); }
-                }
-
-                // 3. If still no title, try Google Books search by the raw ISBN string
-                if (!bookData.title) {
-                    try {
-                        const res = await fetch(`https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(isbn)}`);
-                        if (res.ok) {
-                            const data = await res.json();
-                            const result = parseGoogleBooks(data);
-                            if (result) bookData = result;
-                        }
-                    } catch (e) { console.warn("Google title search error:", e); }
-                }
-
-                // 4. Apply result
-                if (bookData.title) {
-                    isbnCache[cleanIsbn] = bookData;
-                    saveCache();
-                    document.getElementById('listing-title').value = bookData.title;
-                    document.getElementById('listing-description').value = bookData.description || "";
-                    document.getElementById('listing-isbn').value = cleanIsbn;
-                    document.getElementById('isbn-section').style.display = 'none';
-                    document.getElementById('main-form-section').style.display = 'block';
-                    if(html5QrCode && html5QrCode.isScanning) await html5QrCode.stop();
-                } else {
-                    alert(ui[lang].notFound);
-                }
-
-                scanBtn.innerHTML = `<i class="fas fa-camera"></i> <span id="ui-btn-scan">${ui[lang].btnScan}</span>`;
-                scanBtn.disabled = false; manualBtn.disabled = false;
-            }
-
-            document.getElementById('start-scan-btn').onclick = () => {
-                if(!html5QrCode) html5QrCode = new Html5Qrcode("reader");
-                document.getElementById('reader').style.display = 'block';
-                html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, (decodedText) => {
-                    html5QrCode.stop().then(() => { document.getElementById('reader').style.display = 'none'; fetchBookData(decodedText); });
-                }).catch(err => { alert("Camera access denied."); });
-            };
-
-            document.getElementById('manual-isbn-btn').onclick = () => {
-                const val = document.getElementById('manual-isbn-input').value.trim();
-                if(val) fetchBookData(val);
-                else alert("Please enter an ISBN.");
-            };
-
-            document.getElementById('skip-scan-btn').onclick = () => {
-                if(html5QrCode && html5QrCode.isScanning) html5QrCode.stop().catch(e=>console.log(e));
-                document.getElementById('isbn-section').style.display = 'none';
-                document.getElementById('main-form-section').style.display = 'block';
-            };
-
-            // --- TAG SYSTEM LOGIC ---
+            // --- TAG SYSTEM LOGIC (unchanged) ---
             function renderTags() {
                 selectedTagsContainer.innerHTML = '';
                 tags.forEach((tag, index) => {
@@ -596,7 +431,7 @@
             };
             tagInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput.value); } };
 
-            // --- IMAGE LOGIC WITH VALIDATION ---
+            // --- IMAGE LOGIC WITH VALIDATION (unchanged) ---
             function renderPreviews() {
                 previewContainer.innerHTML = '';
                 const all = [...existingImageUrls, ...newImageFiles];
@@ -628,10 +463,10 @@
                     if (file.size > 5 * 1024 * 1024) { alert(ui[lang].imgSizeErr); e.target.value = ''; return; }
                     newImageFiles.push(file); renderPreviews(); 
                 }
-                e.target.value = ''; // Reset input
+                e.target.value = '';
             };
 
-            // --- DATA LOAD ---
+            // --- DATA LOAD (no ISBN step) ---
             async function fetchAndPopulate(listingId, userId) {
                 try {
                     const snap = await getDoc(doc(db, 'listings', listingId));
@@ -653,12 +488,10 @@
                         document.getElementById('listing-condition').value = d.condition || "";
                         document.getElementById('listing-digital-code').value = d.digitalCode || "Not applicable";
                         
-                        // Load existing ISBN into hidden field if they skip scanning
                         if (d.isbn) {
                             document.getElementById('listing-isbn').value = d.isbn;
                         }
 
-                        // FIXED: Set the location dropdown to the stored value, fallback to "Rosemont"
                         const locSelect = document.getElementById('listing-location');
                         locSelect.value = d.location || "Rosemont";
 
@@ -673,7 +506,7 @@
                         renderPreviews();
                         
                         pageLoader.style.display = 'none';
-                        // Keep ISBN section visible first, they can skip to go to main form
+                        mainForm.style.display = 'block';   // Show form directly
                     } else {
                         window.location.href = '/';
                     }
@@ -694,7 +527,7 @@
                 }
             });
 
-            // --- SAVE ---
+            // --- SAVE (unchanged) ---
             document.getElementById('updateListingBtn').onclick = async () => {
                 if(!document.getElementById('listing-title').checkValidity() || !document.getElementById('listing-price').checkValidity() || !document.getElementById('listing-description').checkValidity()) {
                     document.getElementById('listing-form').reportValidity();
@@ -735,11 +568,9 @@
 
                     const finalImages = [...existingImageUrls, ...uploadedUrls];
 
-                    // Get ISBN
                     const rawIsbn = document.getElementById('listing-isbn').value.trim();
                     const cleanIsbn = rawIsbn ? rawIsbn.replace(/[^0-9]/g, '') : null;
 
-                    // Payload
                     const updatePayload = {
                         title: document.getElementById('listing-title').value.trim(),
                         description: document.getElementById('listing-description').value.trim(),
@@ -754,7 +585,7 @@
                         hasMissingPages: document.getElementById('cond-missing').checked,
                         tags: tags,
                         imageUrls: finalImages,
-                        status: 'pending' // Force review
+                        status: 'pending'
                     };
 
                     if (cleanIsbn) {
@@ -762,8 +593,6 @@
                     }
 
                     await updateDoc(doc(db, 'listings', currentListingId), updatePayload);
-
-                    // Instantly redirect. Moderation runs in background on my-listings
                     window.location.href = `/my-listings`;
                 } catch (e) { 
                     alert(e.message); 
