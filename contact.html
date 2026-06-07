@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="description" content="Contact the Scoralia team – send us a message or reach us directly by email for support, questions, or feedback.">
+    <meta name="description" content="Contact the Scoralia team – send us a message, email us directly, or follow our Instagram for updates and community.">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="index, follow, max-image-preview:large">
     <meta property="og:title" content="Contact Us - Scoralia">
-    <meta property="og:description" content="Contact the Scoralia team – send us a message or reach us directly by email for support, questions, or feedback.">
+    <meta property="og:description" content="Contact the Scoralia team – send us a message, email us directly, or follow our Instagram for updates and community.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://scoralia.ca/contact.html">
     <link rel="canonical" href="https://scoralia.ca/contact.html">
@@ -93,7 +93,8 @@
         .info-item { display: flex; gap: 15px; margin-bottom: 25px; }
         .info-icon { width: 44px; height: 44px; background: var(--white); border: 1.5px solid var(--gold); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--gold); font-size: 1.1rem; flex-shrink: 0; }
         .info-text h3 { font-size: 0.95rem; color: var(--ink); margin-bottom: 4px; font-weight: 700; }
-        .info-text p, .info-text a { font-size: 0.95rem; color: var(--text-muted); text-decoration: none; }
+        .info-text p, .info-text a { font-size: 0.95rem; color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
+        .info-text a:hover { color: var(--gold); text-decoration: underline; }
 
         .mailto-note { margin-top: 20px; color: var(--text-muted); font-size: 0.9rem; text-align: center; }
         .mailto-note i { margin-right: 6px; }
@@ -153,11 +154,21 @@
 
             <div class="info-section">
                 <div class="info-panel">
+                    <!-- EMAIL US (original) -->
                     <div class="info-item">
                         <div class="info-icon"><i class="fas fa-envelope"></i></div>
                         <div class="info-text">
                             <h3 id="ui-info-email">Email Us</h3>
                             <p><a href="mailto:scoralia.web@gmail.com">scoralia.web@gmail.com</a></p>
+                        </div>
+                    </div>
+                    
+                    <!-- NEW INSTAGRAM SECTION – directly under email us as requested -->
+                    <div class="info-item">
+                        <div class="info-icon"><i class="fab fa-instagram"></i></div>
+                        <div class="info-text">
+                            <h3 id="ui-info-instagram">Instagram</h3>
+                            <p><a href="https://instagram.com/scoralia.ca" target="_blank" rel="noopener noreferrer">@scoralia.ca</a></p>
                         </div>
                     </div>
                     
@@ -204,6 +215,7 @@
                 btn: "Open Email",
                 info: "This will open your email app. If nothing happens, you can also reach us directly at <strong>scoralia.web@gmail.com</strong>.",
                 infoEmail: "Email Us",
+                instagramLabel: "Instagram",
                 infoSafety: "Trust & Safety",
                 infoSafetyText: "Reported issues are reviewed by admins within 24 hours.",
                 infoPurpose: "Our Purpose",
@@ -222,6 +234,7 @@
                 btn: "Ouvrir l'email",
                 info: "Cela ouvrira votre application de messagerie. Si rien ne se passe, vous pouvez aussi nous écrire directement à <strong>scoralia.web@gmail.com</strong>.",
                 infoEmail: "Écrivez-nous",
+                instagramLabel: "Instagram",
                 infoSafety: "Confiance et Sécurité",
                 infoSafetyText: "Les signalements sont examinés par les administrateurs sous 24h.",
                 infoPurpose: "Notre Mission",
@@ -235,6 +248,7 @@
 
         function setLang(lang) {
             const t = translations[lang];
+            // Update main form & header texts
             document.getElementById('ui-title').textContent = t.title;
             document.getElementById('ui-subtitle').textContent = t.subtitle;
             document.getElementById('ui-label-name').textContent = t.lblName;
@@ -242,14 +256,23 @@
             document.getElementById('ui-label-message').textContent = t.lblMsg;
             document.getElementById('ui-btn').textContent = t.btn;
             document.getElementById('ui-info').innerHTML = `<i class="fas fa-info-circle"></i> ${t.info}`;
+            
+            // Info panel dynamic texts
             document.getElementById('ui-info-email').textContent = t.infoEmail;
+            // Instagram label update (added under email us)
+            const instaHeading = document.getElementById('ui-info-instagram');
+            if (instaHeading) instaHeading.textContent = t.instagramLabel;
             document.getElementById('ui-info-safety').textContent = t.infoSafety;
             document.getElementById('ui-info-safety-text').textContent = t.infoSafetyText;
             document.getElementById('ui-info-purpose').textContent = t.infoPurpose;
             document.getElementById('ui-info-purpose-text').textContent = t.infoPurposeText;
+            
+            // Form placeholders
             document.querySelector('input[name="name"]').placeholder = t.namePlace;
             document.querySelector('input[name="email"]').placeholder = t.emailPlace;
             document.querySelector('textarea[name="message"]').placeholder = t.msgPlace;
+            
+            // Language toggle active states
             document.getElementById('btn-en').classList.toggle('active', lang === 'en');
             document.getElementById('btn-fr').classList.toggle('active', lang === 'fr');
             localStorage.setItem('preferred_language', lang);
@@ -262,7 +285,8 @@
             const form = document.getElementById('contact-form');
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
-                const t = translations[lang];
+                const currentLang = localStorage.getItem('preferred_language') || 'en';
+                const t = translations[currentLang];
                 const name = form.name.value.trim();
                 const email = form.email.value.trim();
                 const message = form.message.value.trim();
@@ -275,6 +299,7 @@
         });
     </script>
 
+    <!-- External modules (kept for global functionality) -->
     <script type="module" src="ui-utils.js"></script>
     <script type="module" src="global.js"></script>
 </body>
