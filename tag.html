@@ -242,11 +242,13 @@
 
                 unsubscribeListings = onSnapshot(query(q, ...constraints), snapshot => {
                     listingsContainer.innerHTML = '';
-                    if (snapshot.empty) {
+                    // Filter to only show approved and available listings (status === 'active')
+                    const activeDocs = snapshot.docs.filter(d => d.data().status === 'active');
+                    if (activeDocs.length === 0) {
                         listingsContainer.innerHTML = '<p class="no-listings-message">No items found for this tag.</p>';
                         return;
                     }
-                    snapshot.forEach(doc => listingsContainer.appendChild(renderListing(doc)));
+                    activeDocs.forEach(doc => listingsContainer.appendChild(renderListing(doc)));
                 });
             }
 
