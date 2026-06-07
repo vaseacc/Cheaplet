@@ -1190,7 +1190,9 @@ function listenToUnreadNotifications(uid) {
 }
 
 function injectBottomNav(isLoggedIn = false) {
-    if (bottomNavBar) return bottomNavBar;
+    if (bottomNavBar) {
+        bottomNavBar.remove();
+    }
     const nav = document.createElement('div');
     nav.className = 'bottom-nav';
     
@@ -1260,6 +1262,13 @@ function updateHeaderToLoggedIn(userData) {
         `;
     }
 
+    if (!window.location.pathname.startsWith('/chat')) {
+        injectBottomNav(true);
+        setBottomNavActive();
+    }
+    listenToUnreadMessages(userData.uid);
+    listenToUnreadNotifications(userData.uid);
+
     const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
     if (!container) return;
 
@@ -1304,13 +1313,6 @@ function updateHeaderToLoggedIn(userData) {
         e.preventDefault();
         signOut(auth).then(() => { localStorage.removeItem('scoralia_tour_seen_' + userData.uid); window.location.href = '/'; });
     };
-
-    if (!window.location.pathname.startsWith('/chat')) {
-        injectBottomNav(true);
-        setBottomNavActive();
-    }
-    listenToUnreadMessages(userData.uid);
-    listenToUnreadNotifications(userData.uid);
 }
 
 function updateHeaderToLoggedOut() {
@@ -1324,15 +1326,15 @@ function updateHeaderToLoggedOut() {
         `;
     }
 
-    const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
-    if (!container) return;
-    container.innerHTML = `<button class="btn" onclick="window.location.href='/login'">${t.btn_login}</button>`;
-
     // Inject bottom nav for logged-out users too (mobile)
-    if (!window.location.pathname.startsWith('/chat')) {
+    if (!window.location.pathname.startsWith('/chat') && !window.location.pathname.includes('/login')) {
         injectBottomNav(false);
         setBottomNavActive();
     }
+
+    const container = document.querySelector('.header-right') || document.querySelector('.header-auth-buttons');
+    if (!container) return;
+    container.innerHTML = `<button class="btn" onclick="window.location.href='/login'">${t.btn_login}</button>`;
 }
 
 function showLanguageBanner() {
