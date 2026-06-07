@@ -1189,10 +1189,21 @@ function listenToUnreadNotifications(uid) {
     });
 }
 
-function injectBottomNav() {
+function injectBottomNav(isLoggedIn = false) {
     if (bottomNavBar) return bottomNavBar;
     const nav = document.createElement('div');
     nav.className = 'bottom-nav';
+    
+    // For logged-in users, show profile with notification dot
+    // For logged-out users, hide notification dots and link profile to login
+    const profileLink = isLoggedIn ? '/profile' : '/login';
+    const unreadDots = isLoggedIn ? `
+            <span class="unread-dot" id="bottom-notification-dot"></span>
+        ` : '';
+    const profileUnreadDot = isLoggedIn ? `
+            <span class="unread-dot" id="bottom-unread-dot"></span>
+        ` : '';
+    
     nav.innerHTML = `
         <a href="/">
             <i class="fas fa-home"></i>
@@ -1201,16 +1212,16 @@ function injectBottomNav() {
         <a href="/social">
             <i class="fas fa-users"></i>
             <span>Social</span>
-            <span class="unread-dot" id="bottom-notification-dot"></span>
+            ${unreadDots}
         </a>
         <a href="/search">
             <i class="fas fa-search"></i>
             <span>Browse</span>
         </a>
-        <a href="/profile" id="bottom-nav-profile">
+        <a href="${profileLink}" id="bottom-nav-profile">
             <i class="fas fa-user"></i>
             <span>Profile</span>
-            <span class="unread-dot" id="bottom-unread-dot"></span>
+            ${profileUnreadDot}
         </a>
     `;
     document.body.appendChild(nav);
@@ -1295,7 +1306,7 @@ function updateHeaderToLoggedIn(userData) {
     };
 
     if (!window.location.pathname.startsWith('/chat')) {
-        injectBottomNav();
+        injectBottomNav(true);
         setBottomNavActive();
     }
     listenToUnreadMessages(userData.uid);
@@ -1317,9 +1328,10 @@ function updateHeaderToLoggedOut() {
     if (!container) return;
     container.innerHTML = `<button class="btn" onclick="window.location.href='/login'">${t.btn_login}</button>`;
 
-    if (bottomNavBar) {
-        bottomNavBar.remove();
-        bottomNavBar = null;
+    // Inject bottom nav for logged-out users too (mobile)
+    if (!window.location.pathname.startsWith('/chat')) {
+        injectBottomNav(false);
+        setBottomNavActive();
     }
 }
 
