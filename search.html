@@ -2,114 +2,120 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="description" content="Browse used textbooks and course materials on Scoralia. Search by title, author, or ISBN and find the best deals near your campus.">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Search posts, topics, people, and listings on Scoralia – find conversations, connect with students, and discover great deals.">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="robots" content="index, follow, max-image-preview:large">
+    <meta property="og:title" content="Search — Scoralia">
+    <meta property="og:description" content="Search posts, topics, people, and listings on Scoralia – find conversations, connect with students, and discover great deals.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://scoralia.ca/search.html">
+    <link rel="canonical" href="https://scoralia.ca/search.html">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <title>Browse Books — Scoralia</title>
-    
-    <!-- GLOBAL BRAIN -->
+    <title>Search — Scoralia</title>
     <script type="module" src="ui-utils.js"></script>
     <script type="module" src="global.js"></script>
-    
-    <!-- FONTS & ICONS -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+
     <style>
         :root {
             --ink:       #0C1446;
             --deep:      #2B5C92;
-            --mist:      #B3CDE0;
+            --off-white: #F8FAFC;
             --white:     #FFFFFF;
-            --off-white: #F4F7FC;
-            --surface:   #EBF2FA;
-            --text-body: #1a2a4a;
-            --text-muted:#64748b;
             --gold:      #C8A96E;
-            --green:     #2E7D32;
-            --radius-md: 16px;
-            --shadow-sm: 0 4px 20px rgba(12,20,70,0.06);
-            --font-display: 'Playfair Display', Georgia, serif;
-            --font-body:    'DM Sans', sans-serif;
+            --text-main: #0f172a;
+            --text-muted:#64748b;
+            --radius:    16px;
+            --shadow:    0 4px 20px rgba(12,20,70,0.05);
+            --border:    1px solid #e2e8f0;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: var(--font-body); background-color: var(--off-white); color: var(--text-body); line-height: 1.6; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--off-white); color: var(--text-main); overflow-x: hidden; width: 100%; min-height: 100vh; display: flex; flex-direction: column; }
 
-        .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 20px; }
-
-        /* ── HEADER ── */
-        header { 
-            position: sticky; top: 0; z-index: 200; 
-            background: linear-gradient(135deg, #0C1446 0%, #2B5C92 100%);
-            border-bottom: 1px solid rgba(179,205,224,0.15); 
-        }
-        .header-inner { max-width: 1200px; margin: 0 auto; padding: 0 20px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
-        .logo { font-family: var(--font-display); font-size: 1.6rem; font-weight: 900; color: var(--white); text-decoration: none; letter-spacing: -0.5px; }
+        header { position: sticky; top: 0; z-index: 200; background: linear-gradient(135deg, #0C1446 0%, #2B5C92 100%); border-bottom: 1px solid rgba(255,255,255,0.1); width: 100%; }
+        .header-inner { max-width: 1100px; margin: 0 auto; padding: 0 20px; height: 68px; display: flex; align-items: center; justify-content: space-between; }
+        .logo { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: -0.5px; flex-shrink: 0; }
         .logo em { color: var(--gold); font-style: normal; }
         
         nav ul { display: flex; list-style: none; gap: 28px; }
         nav ul li a { color: rgba(255,255,255,0.75); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
         nav ul li a:hover { color: var(--white); }
 
-        /* ── SEARCH & FILTERS ── */
-        .filter-section { background: var(--white); padding: 30px; border-radius: var(--radius-md); box-shadow: var(--shadow-sm); border: 1px solid rgba(179,205,224,0.3); margin: 30px 0; animation: fadeUp 0.5s ease both; }
-        .filter-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 15px; }
+        .main-wrapper { max-width: 800px; margin: 30px auto; padding: 0 20px; width: 100%; flex-grow: 1; }
 
-        .input-group { position: relative; display: flex; align-items: center; width: 100%; }
-        .input-group i { position: absolute; left: 15px; color: var(--text-muted); z-index: 5; }
+        /* ── SEARCH BAR ── */
+        .search-header { margin-bottom: 25px; animation: fadeUp 0.3s ease; }
+        .search-box { display: flex; align-items: center; background: var(--white); border: var(--border); border-radius: 30px; padding: 5px 15px; box-shadow: var(--shadow); transition: border-color 0.2s; }
+        .search-box:focus-within { border-color: var(--deep); }
+        .search-input { flex-grow: 1; border: none; outline: none; padding: 12px; font-family: inherit; font-size: 1.05rem; background: transparent; color: var(--text-main); }
+        .search-btn { background: var(--gold); color: var(--ink); border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; flex-shrink: 0; font-size: 1.1rem; }
+        .search-btn:hover { transform: scale(1.05); }
+
+        /* ── TABS ── */
+        .tabs-container { display: flex; gap: 10px; margin-bottom: 25px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 5px; }
+        .tabs-container::-webkit-scrollbar { display: none; }
+        .tab-btn { background: var(--white); border: var(--border); color: var(--text-muted); font-family: inherit; font-weight: 600; font-size: 0.95rem; padding: 10px 20px; border-radius: 30px; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
+        .tab-btn:hover { background: #f1f5f9; color: var(--deep); }
+        .tab-btn.active { background: linear-gradient(135deg, #0C1446 0%, #2B5C92 100%); color: var(--white); border-color: var(--ink); }
+
+        /* ── RESULTS AREAS ── */
+        .results-section { display: none; flex-direction: column; gap: 15px; animation: fadeUp 0.3s ease; }
+        .results-section.active { display: flex; }
         
-        #search-input, #sort-filter { 
-            width: 100%; padding: 12px 15px 12px 42px; border: 1.5px solid var(--mist); 
-            border-radius: 10px; font-family: inherit; font-size: 1rem; color: var(--text-body); 
-            background: var(--off-white); outline: none; transition: 0.2s; 
-        }
-        #sort-filter { padding-left: 15px; cursor: pointer; }
-        #search-input:focus, #sort-filter:focus { border-color: var(--deep); background: var(--white); box-shadow: 0 0 0 3px rgba(43,92,146,0.1); }
+        .section-heading { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: var(--ink); margin: 15px 0 5px; padding-bottom: 5px; border-bottom: 2px solid #e2e8f0; display: none; }
+        .show-headings .section-heading { display: block; }
 
-        /* ── GRID HEADER ── */
-        .listings-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        .page-title { font-family: var(--font-display); font-size: 1.8rem; font-weight: 800; color: var(--ink); }
-        .item-count { background: var(--surface); color: var(--deep); padding: 5px 15px; border-radius: 50px; font-size: 0.85rem; font-weight: 700; border: 1px solid var(--mist); }
+        .empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); font-size: 1.05rem; }
+        .empty-state i { font-size: 2.5rem; color: #cbd5e1; margin-bottom: 15px; display: block; }
 
-        /* ── LISTINGS GRID ── */
-        .listings-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 25px; min-height: 400px; padding-bottom: 60px; }
+        /* ── CARDS ── */
+        /* Post Card (Simplified for search) */
+        .post-card { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border: var(--border); text-decoration: none; color: inherit; display: block; transition: 0.2s; }
+        .post-card:hover { border-color: var(--deep); transform: translateY(-2px); }
+        .post-header-top { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+        .post-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #f1f5f9; }
+        .post-author { font-weight: 700; font-size: 0.95rem; color: var(--ink); }
+        .post-topic { font-size: 0.75rem; color: var(--deep); background: #f0f7ff; padding: 2px 8px; border-radius: 12px; margin-left: auto; font-weight: 600; }
+        .post-body { font-size: 1rem; color: #334155; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
-        .listing-card { 
-            background: var(--white); border-radius: var(--radius-md); overflow: hidden; 
-            box-shadow: var(--shadow-sm); text-decoration: none; color: inherit; 
-            transition: transform 0.3s, box-shadow 0.3s; display: flex; flex-direction: column; 
-            border: 1px solid rgba(179,205,224,0.3); animation: fadeUp 0.5s ease both;
-        }
-        .listing-card:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(12,20,70,0.1); border-color: var(--deep); }
-        .listing-image { height: 200px; background-color: var(--surface); background-size: cover; background-position: center; position: relative; }
-        
-        .listing-details { padding: 18px; flex: 1; display: flex; flex-direction: column; }
-        .listing-price { color: var(--green); font-weight: 800; font-size: 1.25rem; font-family: var(--font-display); margin-bottom: 5px; }
-        .listing-title { font-weight: 600; font-size: 1rem; color: var(--ink); margin-bottom: 10px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; height: 2.8em; }
-        .listing-loc { font-size: 0.85rem; color: var(--text-muted); margin-top: auto; display: flex; align-items: center; gap: 5px; font-weight: 500; }
-        .listing-loc i { color: var(--deep); }
+        /* Topic Card */
+        .topic-card { display: flex; align-items: center; justify-content: space-between; background: var(--white); border-radius: 12px; padding: 15px 20px; box-shadow: var(--shadow); border: var(--border); text-decoration: none; transition: 0.2s; }
+        .topic-card:hover { border-color: var(--gold); transform: translateY(-2px); }
+        .topic-info { display: flex; flex-direction: column; }
+        .topic-name { font-weight: 800; font-size: 1.1rem; color: var(--ink); display: flex; align-items: center; gap: 8px; }
+        .topic-name i { color: var(--text-muted); font-size: 0.9rem; }
+        .topic-stats { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; font-weight: 500; }
 
-        /* ── EMPTY STATE ── */
-        .empty-state { grid-column: 1/-1; text-align: center; padding: 80px 20px; color: var(--text-muted); }
-        .empty-state i { font-size: 3.5rem; color: var(--mist); margin-bottom: 20px; display: block; }
+        /* User Card */
+        .user-card { display: flex; align-items: center; gap: 15px; background: var(--white); border-radius: 12px; padding: 15px; box-shadow: var(--shadow); border: var(--border); text-decoration: none; transition: 0.2s; }
+        .user-card:hover { border-color: var(--deep); transform: translateY(-2px); }
+        .user-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: #f1f5f9; }
+        .user-info { display: flex; flex-direction: column; }
+        .user-name { font-weight: 700; font-size: 1.05rem; color: var(--ink); }
+        .user-username { font-size: 0.85rem; color: var(--text-muted); }
+
+        /* Listing Card (Horizontal mini) */
+        .listing-card { display: flex; background: var(--white); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); border: var(--border); text-decoration: none; transition: 0.2s; height: 100px; }
+        .listing-card:hover { border-color: #2B5C92; transform: translateY(-2px); }
+        .listing-img { width: 100px; height: 100%; background-size: cover; background-position: center; background-color: #cbd5e1; flex-shrink: 0; }
+        .listing-info { padding: 10px 15px; display: flex; flex-direction: column; justify-content: center; flex-grow: 1; }
+        .listing-title { font-weight: 600; font-size: 0.95rem; color: var(--text-main); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 4px; }
+        .listing-price { font-weight: 800; font-size: 1.05rem; color: #2B5C92; }
 
         /* ── FOOTER ── */
-        footer { background: linear-gradient(135deg, #0C1446 0%, #2B5C92 100%); color: rgba(255,255,255,0.6); padding: 60px 0 30px; text-align: center; border-top: 1px solid rgba(179,205,224,0.1); margin-top: auto; }
+        footer { background: linear-gradient(135deg, #0C1446 0%, #2B5C92 100%); color: rgba(255,255,255,0.6); padding: 60px 0 30px; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); margin-top: auto; }
         .footer-links { display: flex; justify-content: center; gap: 30px; margin-bottom: 25px; }
         .footer-links a { color: inherit; text-decoration: none; font-size: 0.9rem; }
         .footer-links a:hover { color: var(--white); }
 
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         @media (max-width: 768px) {
-            .filter-grid { grid-template-columns: 1fr; }
-            .listings-header { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .listings-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-            .listing-image { height: 160px; }
-            .listing-title { font-size: 0.9rem; }
+            .tabs-container { margin-left: -20px; margin-right: -20px; padding-left: 20px; padding-right: 20px; }
             nav { display: none; }
         }
     </style>
@@ -126,33 +132,58 @@
                     <li><a href="/messages">Messages</a></li>
                 </ul>
             </nav>
-            <div class="header-right"></div> 
+            <div class="header-right"></div>
         </div>
     </header>
 
-    <main class="container">
-        <section class="filter-section">
-            <div class="filter-grid">
-                <div class="input-group">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="search-input" placeholder="Search by title, author, or ISBN...">
-                </div>
-                <select id="sort-filter">
-                    <option value="newest">Newest First</option>
-                    <option value="price-low">Price: Low to High</option>
-                    <option value="price-high">Price: High to Low</option>
-                </select>
+    <main class="main-wrapper">
+        
+        <div class="search-header">
+            <div class="search-box">
+                <i class="fas fa-search" style="color:var(--text-muted); margin-left:5px;"></i>
+                <input type="text" class="search-input" id="search-input" data-i18n-placeholder="search_place" placeholder="Search posts, topics, people, listings...">
+                <button class="search-btn" id="btn-search"><i class="fas fa-arrow-right"></i></button>
             </div>
-        </section>
-
-        <div class="listings-header">
-            <h1 class="page-title">Browse Books</h1>
-            <span class="item-count" id="itemCount">0 items</span>
         </div>
 
-        <div class="listings-grid" id="listings-container">
-            <div class="empty-state"><i class="fas fa-circle-notch fa-spin"></i> Loading listings...</div>
+        <div class="tabs-container" id="tabs">
+            <button class="tab-btn active" data-tab="all" data-i18n="tab_all">All Results</button>
+            <button class="tab-btn" data-tab="posts" data-i18n="tab_posts">Posts</button>
+            <button class="tab-btn" data-tab="topics" data-i18n="tab_topics">Topics</button>
+            <button class="tab-btn" data-tab="people" data-i18n="tab_people">People</button>
+            <button class="tab-btn" data-tab="listings" data-i18n="tab_listings">Listings</button>
         </div>
+
+        <div id="loading-spinner" class="empty-state" style="display: none;">
+            <i class="fas fa-circle-notch fa-spin" style="color:var(--gold);"></i>
+            <span data-i18n="searching">Searching...</span>
+        </div>
+
+        <!-- Results Container -->
+        <div id="results-container" class="show-headings">
+            
+            <div class="results-section active" id="sec-posts">
+                <h2 class="section-heading" data-i18n="tab_posts">Posts</h2>
+                <div id="res-posts"></div>
+            </div>
+
+            <div class="results-section active" id="sec-topics">
+                <h2 class="section-heading" data-i18n="tab_topics">Topics</h2>
+                <div id="res-topics"></div>
+            </div>
+
+            <div class="results-section active" id="sec-people">
+                <h2 class="section-heading" data-i18n="tab_people">People</h2>
+                <div id="res-people"></div>
+            </div>
+
+            <div class="results-section active" id="sec-listings">
+                <h2 class="section-heading" data-i18n="tab_listings">Listings</h2>
+                <div id="res-listings"></div>
+            </div>
+
+        </div>
+
     </main>
 
     <footer>
@@ -169,114 +200,274 @@
 
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
-        import { getFirestore, collection, query, orderBy, onSnapshot, where } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getFirestore, collection, query, orderBy, limit, getDocs, where, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
 
         async function main() {
             const response = await fetch(getFunctionUrl('config'));
             const config = await response.json();
             const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
+            const auth = getAuth(app);
             const db = getFirestore(app);
 
-            const listingsContainer = document.getElementById('listings-container');
-            const itemCountSpan = document.getElementById('item-count');
-            const searchInput = document.getElementById('search-input');
-            const sortFilter = document.getElementById('sort-filter');
+            // --- BILINGUAL UI ---
+            const lang = localStorage.getItem('preferred_language') || 'en';
+            const allStrings = {
+                en: { 
+                    search_place: "Search posts, topics, people, listings...", tab_all: "All Results", tab_posts: "Posts", tab_topics: "Topics", tab_people: "People", tab_listings: "Listings",
+                    searching: "Searching...", no_results: "No results found for", posts: "posts"
+                },
+                fr: { 
+                    search_place: "Rechercher messages, sujets, personnes, annonces...", tab_all: "Tous les résultats", tab_posts: "Messages", tab_topics: "Sujets", tab_people: "Personnes", tab_listings: "Annonces",
+                    searching: "Recherche en cours...", no_results: "Aucun résultat trouvé pour", posts: "messages"
+                }
+            };
+            const ui = allStrings[lang] || allStrings['en'];
 
-            // Pick up search query from URL if passed from the homepage
+            document.querySelectorAll('[data-i18n]').forEach(el => { if (ui[el.getAttribute('data-i18n')]) el.textContent = ui[el.getAttribute('data-i18n')]; });
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { if (ui[el.getAttribute('data-i18n-placeholder')]) el.placeholder = ui[el.getAttribute('data-i18n-placeholder')]; });
+
+            const searchInput = document.getElementById('search-input');
+            const btnSearch = document.getElementById('btn-search');
+            const tabs = document.querySelectorAll('.tab-btn');
+            const resultsContainer = document.getElementById('results-container');
+            const spinner = document.getElementById('loading-spinner');
+
+            const secPosts = document.getElementById('sec-posts');
+            const secTopics = document.getElementById('sec-topics');
+            const secPeople = document.getElementById('sec-people');
+            const secListings = document.getElementById('sec-listings');
+
+            const resPosts = document.getElementById('res-posts');
+            const resTopics = document.getElementById('res-topics');
+            const resPeople = document.getElementById('res-people');
+            const resListings = document.getElementById('res-listings');
+
+            let currentUser = null;
+            let internalSchoolName = "Global Campus"; 
+            let topicNamesCache = { 'general': ui.tab_all === "All Results" ? 'Campus Public' : 'Campus Public' };
+
+            // Get initial query from URL
             const urlParams = new URLSearchParams(window.location.search);
-            const initialQuery = urlParams.get('q');
+            const initialQuery = urlParams.get('q') || '';
             if (initialQuery) {
                 searchInput.value = initialQuery;
             }
 
-            let unsubscribe;
-
-            function fetchListings() {
-                if (unsubscribe) unsubscribe();
-
-                let q = collection(db, 'listings');
-                const constraints = [];
+            // Auth Check
+            onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    currentUser = user;
+                    const uDoc = await getDoc(doc(db, "users", user.uid));
+                    if (uDoc.exists()) {
+                        internalSchoolName = uDoc.data().schoolName || "Global Campus";
+                    }
+                }
                 
-                // Firestore standard sorting
-                if (sortFilter.value === 'price-low') constraints.push(orderBy('price', 'asc'));
-                else if (sortFilter.value === 'price-high') constraints.push(orderBy('price', 'desc'));
-                else constraints.push(orderBy('timestamp', 'desc'));
+                // Fetch topics cache first to resolve wayId to Names
+                try {
+                    const tSnap = await getDocs(collection(db, "social_channels"));
+                    tSnap.forEach(d => { topicNamesCache[d.id] = d.data().name; });
+                } catch(e) {}
 
-                unsubscribe = onSnapshot(query(q, ...constraints), snapshot => {
-                    listingsContainer.innerHTML = '';
-                    const term = searchInput.value.toLowerCase().trim();
-                    const cleanTerm = term.replace(/[^0-9]/g, ''); // For clean ISBN comparison
-                    
-                    const lang = localStorage.getItem('preferred_language') || 'en';
-                    
-                    const filtered = snapshot.docs.filter(doc => {
-                        const d = doc.data();
-                        if (d.status !== 'active') return false;
+                if (initialQuery) executeSearch(initialQuery);
+            });
 
-                        // Priority 1: ISBN Match (Exact)
-                        const isbnMatch = d.isbn && (d.isbn === cleanTerm || d.isbn === term);
-                        
-                        // Priority 2: Text Match
-                        const textMatch = (d.title || '').toLowerCase().includes(term) || 
-                                          (d.description || '').toLowerCase().includes(term) ||
-                                          (d.location || '').toLowerCase().includes(term);
-
-                        return isbnMatch || textMatch;
-                    });
+            // Tab Switching Logic
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
                     
-                    const itemCountEl = document.getElementById('itemCount');
-                    if (itemCountEl) {
-                        itemCountEl.textContent = `${filtered.length} ${lang === 'fr' ? 'articles' : 'items'}`;
+                    const target = tab.getAttribute('data-tab');
+                    
+                    if (target === 'all') {
+                        resultsContainer.classList.add('show-headings');
+                        secPosts.classList.add('active');
+                        secTopics.classList.add('active');
+                        secPeople.classList.add('active');
+                        secListings.classList.add('active');
+                    } else {
+                        resultsContainer.classList.remove('show-headings');
+                        secPosts.classList.remove('active');
+                        secTopics.classList.remove('active');
+                        secPeople.classList.remove('active');
+                        secListings.classList.remove('active');
+                        document.getElementById(`sec-${target}`).classList.add('active');
                     }
-
-                    if (filtered.length === 0) {
-                        listingsContainer.innerHTML = `
-                            <div class="empty-state">
-                                <i class="fas fa-search"></i>
-                                <p>${lang === 'fr' ? 'Aucun livre trouvé. Essayez un autre terme ou un code ISBN.' : 'No books found. Try a different search term or ISBN code.'}</p>
-                            </div>`;
-                        return;
-                    }
-
-                    const frag = document.createDocumentFragment();
-                    filtered.forEach((doc, index) => {
-                        const d = doc.data();
-                        const card = document.createElement('a');
-                        card.className = 'listing-card';
-                        card.href = `/listing?id=${doc.id}`;
-                        card.style.animationDelay = `${index * 0.05}s`;
-
-                        const imgUrl = d.imageUrls?.[0] || '';
-                        const displayImg = window.optimizeImageUrl ? window.optimizeImageUrl(imgUrl) : imgUrl;
-
-                        card.innerHTML = `
-                            <div class="listing-image" style="background-image: url('${displayImg}')"></div>
-                            <div class="listing-details">
-                                <div class="listing-price">$${d.price.toFixed(2)}</div>
-                                <h3 class="listing-title">${d.title}</h3>
-                                <div class="listing-loc"><i class="fas fa-map-marker-alt"></i> ${d.location || 'Global Campus'}</div>
-                            </div>`;
-                        frag.appendChild(card);
-                    });
-                    listingsContainer.appendChild(frag);
                 });
+            });
+
+            btnSearch.onclick = () => {
+                const q = searchInput.value.trim();
+                if(q) {
+                    window.history.pushState({}, '', `?q=${encodeURIComponent(q)}`);
+                    executeSearch(q);
+                }
+            };
+
+            searchInput.addEventListener('keydown', (e) => {
+                if(e.key === 'Enter') { 
+                    e.preventDefault(); 
+                    searchInput.blur();
+                    btnSearch.click(); 
+                }
+            });
+
+            async function executeSearch(searchTerm) {
+                const term = searchTerm.toLowerCase();
+                
+                // Show loading
+                secPosts.style.display = 'none'; secTopics.style.display = 'none';
+                secPeople.style.display = 'none'; secListings.style.display = 'none';
+                spinner.style.display = 'block';
+                resPosts.innerHTML = ''; resTopics.innerHTML = '';
+                resPeople.innerHTML = ''; resListings.innerHTML = '';
+
+                try {
+                    // We will fetch recent data and filter client-side since Firebase lacks full text search
+                    
+                    // 1. Fetch Posts
+                    const postQ = query(collection(db, "social_posts"), orderBy("timestamp", "desc"), limit(100));
+                    const postSnap = await getDocs(postQ);
+                    let foundPosts = 0;
+                    postSnap.forEach(docSnap => {
+                        const d = docSnap.data();
+                        // Filter school
+                        if (internalSchoolName !== "Global Campus" && d.schoolName && d.schoolName !== internalSchoolName) return;
+                        
+                        if ((d.text && d.text.toLowerCase().includes(term)) || (d.authorName && d.authorName.toLowerCase().includes(term))) {
+                            resPosts.appendChild(renderPostCard(docSnap.id, d));
+                            foundPosts++;
+                        }
+                    });
+                    if (foundPosts === 0) resPosts.innerHTML = `<div class="empty-state"><i class="far fa-comment-dots"></i></div>`;
+
+                    // 2. Fetch Topics
+                    const topicQ = query(collection(db, "social_channels"), orderBy("postCount", "desc"));
+                    const topicSnap = await getDocs(topicQ);
+                    let foundTopics = 0;
+                    topicSnap.forEach(docSnap => {
+                        const d = docSnap.data();
+                        
+                        // Privacy check
+                        const isPrivate = d.visibility === 'private';
+                        const isOwner = currentUser && d.createdBy === currentUser.uid;
+                        const isMember = currentUser && d.members && d.members.includes(currentUser.uid);
+                        if (isPrivate && !isOwner && !isMember) return;
+
+                        if ((d.name && d.name.toLowerCase().includes(term)) || (d.description && d.description.toLowerCase().includes(term))) {
+                            resTopics.appendChild(renderTopicCard(docSnap.id, d));
+                            foundTopics++;
+                        }
+                    });
+                    if (foundTopics === 0) resTopics.innerHTML = `<div class="empty-state"><i class="fas fa-hashtag"></i></div>`;
+
+                    // 3. Fetch People
+                    const userQ = query(collection(db, "users"), limit(100));
+                    const userSnap = await getDocs(userQ);
+                    let foundUsers = 0;
+                    userSnap.forEach(docSnap => {
+                        const d = docSnap.data();
+                        if ((d.displayName && d.displayName.toLowerCase().includes(term)) || (d.username && d.username.toLowerCase().includes(term))) {
+                            resPeople.appendChild(renderUserCard(docSnap.id, d));
+                            foundUsers++;
+                        }
+                    });
+                    if (foundUsers === 0) resPeople.innerHTML = `<div class="empty-state"><i class="fas fa-users"></i></div>`;
+
+                    // 4. Fetch Listings
+                    const listQ = query(collection(db, "listings"), where("status", "==", "active"), orderBy("timestamp", "desc"), limit(100));
+                    const listSnap = await getDocs(listQ);
+                    let foundListings = 0;
+                    listSnap.forEach(docSnap => {
+                        const d = docSnap.data();
+                        // Filter school
+                        if (internalSchoolName !== "Global Campus" && d.location && d.location !== internalSchoolName) return;
+
+                        if ((d.title && d.title.toLowerCase().includes(term)) || (d.description && d.description.toLowerCase().includes(term))) {
+                            resListings.appendChild(renderListingCard(docSnap.id, d));
+                            foundListings++;
+                        }
+                    });
+                    if (foundListings === 0) resListings.innerHTML = `<div class="empty-state"><i class="fas fa-book"></i></div>`;
+
+                } catch (e) { console.error("Search error:", e); } 
+                finally {
+                    spinner.style.display = 'none';
+                    // Reset display based on current tab
+                    secPosts.style.display = ''; secTopics.style.display = '';
+                    secPeople.style.display = ''; secListings.style.display = '';
+                }
             }
 
-            // Listen for input (live search)
-            searchInput.addEventListener('input', () => {
-                // Update URL dynamically without reloading
-                if (searchInput.value.trim()) {
-                    window.history.replaceState({}, '', `?q=${encodeURIComponent(searchInput.value.trim())}`);
-                } else {
-                    window.history.replaceState({}, '', window.location.pathname);
-                }
-                fetchListings();
-            });
-            
-            sortFilter.addEventListener('change', fetchListings);
-            
-            // Execute initial fetch
-            fetchListings();
+            // --- RENDER FUNCTIONS ---
+            function renderPostCard(id, d) {
+                const card = document.createElement('a');
+                card.className = 'post-card';
+                const dest = d.wayId === 'general' ? '/social' : `/topic?id=${d.wayId}`;
+                card.href = dest;
+                
+                let pfp = d.authorPhoto || `https://api.dicebear.com/7.x/identicon/svg?seed=${d.authorUid}&backgroundColor=EBF2FA`;
+                const topicName = topicNamesCache[d.wayId] || 'Topic';
+
+                card.innerHTML = `
+                    <div class="post-header-top">
+                        <div class="post-avatar" style="background-image:url('${pfp}'); background-size:cover;"></div>
+                        <div>
+                            <div class="post-author">${d.authorName}</div>
+                        </div>
+                        <div class="post-topic">#${topicName}</div>
+                    </div>
+                    <div class="post-body">${d.text || '[Image Attachment]'}</div>
+                `;
+                return card;
+            }
+
+            function renderTopicCard(id, d) {
+                const card = document.createElement('a');
+                card.className = 'topic-card';
+                card.href = `/topic?id=${id}`;
+                const lock = d.visibility === 'private' ? ' <i class="fas fa-lock"></i>' : '';
+                card.innerHTML = `
+                    <div class="topic-info">
+                        <div class="topic-name"><i class="fas fa-hashtag"></i> ${d.name}${lock}</div>
+                        <div class="topic-stats">${d.postCount || 0} ${ui.posts}</div>
+                    </div>
+                    <i class="fas fa-chevron-right" style="color:var(--mist);"></i>
+                `;
+                return card;
+            }
+
+            function renderUserCard(id, d) {
+                const card = document.createElement('a');
+                card.className = 'user-card';
+                card.href = `/user?id=${id}`;
+                let pfp = d.photoURL || `https://api.dicebear.com/7.x/identicon/svg?seed=${id}&backgroundColor=EBF2FA`;
+                card.innerHTML = `
+                    <img src="${pfp}" class="user-avatar">
+                    <div class="user-info">
+                        <div class="user-name">${d.displayName || 'User'}</div>
+                        <div class="user-username">@${d.username || id.substring(0,8)}</div>
+                    </div>
+                `;
+                return card;
+            }
+
+            function renderListingCard(id, d) {
+                const card = document.createElement('a');
+                card.className = 'listing-card';
+                card.href = `/listing?id=${id}`;
+                const img = d.imageUrls?.[0] || '';
+                card.innerHTML = `
+                    <div class="listing-img" style="background-image:url('${img}')"></div>
+                    <div class="listing-info">
+                        <div class="listing-title">${d.title}</div>
+                        <div class="listing-price">$${d.price.toFixed(2)}</div>
+                    </div>
+                `;
+                return card;
+            }
         }
         main();
     </script>
