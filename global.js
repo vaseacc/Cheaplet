@@ -53,7 +53,7 @@ if (!document.querySelector('link[rel="apple-touch-icon"]')) {
     document.head.appendChild(appleIcon);
 }
 
-// --- 0.5 PWA REGISTRATION & "ADD TO HOME SCREEN" LOGIC (Index Page Only) ---
+// --- 0.5 PWA REGISTRATION (Index Page Only - handled in index.html) ---
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW reg failed:', err));
