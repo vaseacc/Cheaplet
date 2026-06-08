@@ -69,76 +69,9 @@ if (isIndexPage) {
     }
 }
 
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', (e) => {
-    const isIndex = window.location.pathname === '/' || window.location.pathname.includes('/');
-    if (!isIndex) return;
-
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (!isMobile) return;   // don't call preventDefault on desktop
-
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
-    if (isStandalone) return;
-
-    e.preventDefault();
-    deferredPrompt = e;
-    
-    let indexVisits = parseInt(localStorage.getItem('pwa_index_visits') || '0');
-    if (indexVisits > 0 && indexVisits % 5 === 0) {
-        showInstallPromotion();
-    }
-});
-
-function showInstallPromotion() {
-    if (document.getElementById('pwa-install-banner')) return;
-
-    const lang = localStorage.getItem('preferred_language') || 'en';
-    const textTitle = lang === 'fr' ? 'Installer Scoralia' : 'Install Scoralia';
-    const textSub = lang === 'fr' ? "Ajouter à l'écran d'accueil" : 'Add to home screen for quick access';
-    const btnText = lang === 'fr' ? 'Installer' : 'Install';
-
-    const banner = document.createElement('div');
-    banner.id = 'pwa-install-banner';
-    banner.className = 'terms-banner';
-    banner.style.zIndex = '100000';
-    banner.style.bottom = '80px';
-    
-    banner.innerHTML = `
-        <div style="display:flex; align-items:center; gap:15px; flex-grow:1;">
-            <div style="width:40px; height:40px; background:var(--gold); border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:bold; color:var(--ink); font-size:1.2rem;">S</div>
-            <div style="text-align:left;">
-                <div style="font-weight: bold; font-size: 0.95rem; font-family:'Playfair Display', serif;">${textTitle}</div>
-                <div style="font-size: 0.8rem; opacity: 0.9;">${textSub}</div>
-            </div>
-        </div>
-        <div style="display:flex; gap:15px; align-items:center;">
-            <button class="btn-accept-terms" id="btn-pwa-install">${btnText}</button>
-            <button id="btn-pwa-dismiss" style="background:none; border:none; color:#fff; font-size:1.5rem; cursor:pointer; opacity:0.7;">&times;</button>
-        </div>
-    `;
-    document.body.appendChild(banner);
-
-    document.getElementById('btn-pwa-install').addEventListener('click', async () => {
-        banner.style.display = 'none';
-        if (deferredPrompt) {
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-                localStorage.setItem('pwa_installed', 'true');
-            }
-            deferredPrompt = null;
-        }
-    });
-
-    document.getElementById('btn-pwa-dismiss').addEventListener('click', () => {
-        banner.style.display = 'none';
-    });
-}
-
 window.addEventListener('appinstalled', () => {
     const banner = document.getElementById('pwa-install-banner');
     if (banner) banner.style.display = 'none';
-    deferredPrompt = null;
 });
 
 // --- 1. INITIALIZE CONFIG (With caching for speed) ---
