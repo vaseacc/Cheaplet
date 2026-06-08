@@ -60,11 +60,6 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-window.addEventListener('appinstalled', () => {
-    const banner = document.getElementById('pwa-install-banner');
-    if (banner) banner.style.display = 'none';
-});
-
 // --- 1. INITIALIZE CONFIG (With caching for speed) ---
 let config;
 const savedConfig = sessionStorage.getItem('scoralia_config');
