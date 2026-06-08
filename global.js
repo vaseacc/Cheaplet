@@ -53,20 +53,11 @@ if (!document.querySelector('link[rel="apple-touch-icon"]')) {
     document.head.appendChild(appleIcon);
 }
 
-// --- 0.5 PWA REGISTRATION & "ADD TO HOME SCREEN" LOGIC (Index Page Only) ---
+// --- 0.5 PWA REGISTRATION (Index Page Only - handled in index.html) ---
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW reg failed:', err));
     });
-}
-
-const isIndexPage = window.location.pathname === '/' || window.location.pathname.includes('/');
-if (isIndexPage) {
-    if (!sessionStorage.getItem('index_visited_this_session')) {
-        let visits = parseInt(localStorage.getItem('pwa_index_visits') || '0');
-        localStorage.setItem('pwa_index_visits', (visits + 1).toString());
-        sessionStorage.setItem('index_visited_this_session', 'true');
-    }
 }
 
 window.addEventListener('appinstalled', () => {
