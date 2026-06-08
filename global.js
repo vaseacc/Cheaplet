@@ -60,6 +60,20 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+const isIndexPage = window.location.pathname === '/' || window.location.pathname.includes('/');
+if (isIndexPage) {
+    if (!sessionStorage.getItem('index_visited_this_session')) {
+        let visits = parseInt(localStorage.getItem('pwa_index_visits') || '0');
+        localStorage.setItem('pwa_index_visits', (visits + 1).toString());
+        sessionStorage.setItem('index_visited_this_session', 'true');
+    }
+}
+
+window.addEventListener('appinstalled', () => {
+    const banner = document.getElementById('pwa-install-banner');
+    if (banner) banner.style.display = 'none';
+});
+
 // --- 1. INITIALIZE CONFIG (With caching for speed) ---
 let config;
 const savedConfig = sessionStorage.getItem('scoralia_config');
