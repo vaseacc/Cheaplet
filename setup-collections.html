@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Setup School Collections</title>
+    <!-- Import your global scripts so getFunctionUrl() works -->
+    <script type="module" src="ui-utils.js"></script>
+    <script type="module" src="global.js"></script>
     <style>
         body { font-family: sans-serif; padding: 40px; background: #f8fafc; color: #0f172a; }
         .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
@@ -23,7 +26,6 @@
         <div id="log"></div>
     </div>
 
-    <!-- Make sure ui-utils.js and global.js are accessible if you need them, otherwise we just fetch config directly -->
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-firestore.js";
@@ -42,8 +44,8 @@
 
         async function init() {
             try {
-                // Fetch your firebase config just like in your main files
-                const response = await fetch('/.netlify/functions/config'); // Adjust this path if your function URL is different
+                // Now using your global getFunctionUrl() just like social.html
+                const response = await fetch(getFunctionUrl('config')); 
                 const config = await response.json();
                 
                 const app = getApps().length === 0 ? initializeApp(config.firebaseConfig) : getApp();
@@ -100,7 +102,8 @@
             }
         }
 
-        init();
+        // Wait a tiny bit to ensure global.js sets up getFunctionUrl
+        setTimeout(init, 500);
     </script>
 </body>
 </html>
