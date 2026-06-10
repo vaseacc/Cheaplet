@@ -1611,12 +1611,40 @@
 
                 if (feedContainer) feedContainer.innerHTML = `<div class="loader-msg"><i class="fas fa-circle-notch fa-spin"></i><br><span>${ui.loading_hub || 'Loading campus hub...'}</span></div>`;
 
-                let collectionName = 'social_posts_global';
-                if (currentSchoolFilter === 'myschool' && userSchool) {
-                    collectionName = getSchoolCollection(userSchool);
-                }
-                let q = query(collection(db, collectionName), orderBy("timestamp", "desc"), limit(100));
+                let collectionsToQuery = ['social_posts_global'];
                 
+                // If "My School" is active
+                if (currentSchoolFilter === 'myschool') {
+                    if (isAdmin) {
+                        // Admin sees ALL collections: global + all known school collections
+                        const allKnownCollections = [
+                            'social_posts_global',
+                            'social_posts_rosemont',
+                            'social_posts_vanier',
+                            'social_posts_lasalle',
+                            'social_posts_saintlaurent',
+                            'social_posts_maisonneuve'
+                        ];
+                        collectionsToQuery = allKnownCollections;
+                    } else if (isVerifiedStudent && userSchool) {
+                        const schoolCollection = getSchoolCollection(userSchool);
+                        if (schoolCollection !== 'social_posts_global') {
+                            collectionsToQuery = [schoolCollection];
+                        }
+                    }
+                }
+                
+                // Query single collection (non-admin or non-myschool)
+                if (collectionsToQuery.length === 1) {
+                    const q = query(collection(db, collectionsToQuery[0]), orderBy("timestamp", "desc"), limit(100));
+                    setupFeedSubscription(q, collectionsToQuery[0]);
+                } else {
+                    // Admin viewing multiple collections - merge results
+                    setupMultiCollectionFeed(collectionsToQuery);
+                }
+            }
+            
+            function setupFeedSubscription(q, collectionName) {
                 try {
                     unsubscribePosts = onSnapshot(q, (snapshot) => {
                         if (!feedContainer) return;
@@ -1667,6 +1695,81 @@
                         }
                     });
                 } catch (e) { console.error(e); }
+            }
+            
+            function setupMultiCollectionFeed(collectionNames) {
+                const allPosts = new Map();
+                const unsubscribeFunctions = [];
+                
+                // Subscribe to each collection
+                collectionNames.forEach(collName => {
+                    const q = query(collection(db, collName), orderBy("timestamp", "desc"), limit(100));
+                    const unsub = onSnapshot(q, (snapshot) => {
+                        snapshot.docs.forEach(docSnap => {
+                            allPosts.set(docSnap.id, { id: docSnap.id, data: docSnap.data(), collection: collName });
+                        });
+                        renderMergedFeed();
+                    }, (error) => {
+                        console.error(`Error loading collection ${collName}:`, error);
+                    });
+                    unsubscribeFunctions.push(unsub);
+                });
+                
+                // Store unsubscribe functions
+                if (unsubscribePosts) unsubscribePosts();
+                unsubscribePosts = () => {
+                    unsubscribeFunctions.forEach(unsub => unsub());
+                };
+                
+                function renderMergedFeed() {
+                    if (!feedContainer) return;
+                    
+                    // Convert map to array and sort by timestamp
+                    let postsArray = Array.from(allPosts.values());
+                    postsArray.sort((a, b) => {
+                        const timeA = a.data.timestamp ? a.data.timestamp.toMillis() : 0;
+                        const timeB = b.data.timestamp ? b.data.timestamp.toMillis() : 0;
+                        return timeB - timeA;
+                    });
+                    
+                    feedContainer.innerHTML = '';
+                    
+                    if (postsArray.length === 0) {
+                        feedContainer.innerHTML = `<div class="loader-msg">${ui.noPosts || 'No posts yet.'}</div>`;
+                        feedContainer.appendChild(createMarketBreak());
+                        return;
+                    }
+
+                    const frag = document.createDocumentFragment();
+                    let postCounter = 0;
+
+                    postsArray.forEach(post => {
+                        const d = post.data;
+                        
+                        if (!currentUser) {
+                            if (d.status === 'rejected') return;
+                        } else {
+                            if (d.status === 'pending' && d.authorUid !== currentUser.uid) return;
+                            if (d.status === 'rejected' && d.authorUid !== currentUser.uid) return;
+                        }
+
+                        frag.appendChild(createPostElement(post.id, d, post.collection));
+                        postCounter++;
+
+                        if (postCounter === 3) {
+                            frag.appendChild(createMarketBreak());
+                        }
+                    });
+                    
+                    if (postCounter < 3) {
+                        frag.appendChild(createMarketBreak());
+                    }
+
+                    feedContainer.appendChild(frag);
+                }
+                
+                // Initial render
+                renderMergedFeed();
             }
 
             function createPostElement(id, d, coll) {
