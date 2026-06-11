@@ -298,18 +298,18 @@
                     <input type="hidden" id="listing-isbn" value="">
                     <div class="form-section">
                         <div class="section-label"><i class="fas fa-pen"></i> <span id="ui-sec-basic">Basic Info</span></div>
-                        <label class="field-label" id="ui-label-title">Title</label>
+                        <label class="field-label" for="listing-title" id="ui-label-title">Title</label>
                         <input type="text" id="listing-title" maxlength="80" required>
-                        <label class="field-label" id="ui-label-desc">Description</label>
+                        <label class="field-label" for="listing-description" id="ui-label-desc">Description</label>
                         <textarea id="listing-description" maxlength="1500" required></textarea>
                         <div class="price-row">
                             <div>
-                                <label class="field-label" id="ui-label-price">Sale Price ($)</label>
+                                <label class="field-label" for="listing-price" id="ui-label-price">Sale Price ($)</label>
                                 <input type="text" inputmode="decimal" id="listing-price" placeholder="0.00" required
                                        oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 1200) this.value = '1200';">
                             </div>
                             <div>
-                                <label class="field-label" id="ui-label-orig-price">Original Price ($) (optional)</label>
+                                <label class="field-label" for="listing-original-price" id="ui-label-orig-price">Original Price ($) (optional)</label>
                                 <input type="text" inputmode="decimal" id="listing-original-price" placeholder="0.00"
                                        oninput="this.value = this.value.replace(/[^0-9.]/g, '').replace(/(\..*?)\..*/g, '$1'); if(this.value > 5000) this.value = '5000';">
                             </div>
@@ -320,7 +320,7 @@
                         <label class="field-label" id="ui-label-tags">Tags (Max 15)</label>
                         <div class="tag-container" id="tag-container">
                             <div id="selected-tags"></div>
-                            <input type="text" id="tag-input" autocomplete="off">
+                            <input type="text" id="tag-input" autocomplete="off" aria-label="Enter tags">
                             <div class="suggestions-box" id="suggestions-box"></div>
                         </div>
                     </div>
@@ -328,7 +328,7 @@
                         <div class="section-label"><i class="fas fa-book"></i> <span id="ui-sec-cond">Condition & Details</span></div>
                         <div class="two-col">
                             <div>
-                                <label class="field-label" id="ui-label-condition">Condition</label>
+                                <label class="field-label" for="listing-condition" id="ui-label-condition">Condition</label>
                                 <select id="listing-condition" required>
                                     <option value="" id="opt-cond-select">Select Condition</option>
                                     <option value="New" id="opt-cond-new">New</option>
@@ -338,7 +338,7 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="field-label" id="ui-label-code">Digital Access Code</label>
+                                <label class="field-label" for="listing-digital-code" id="ui-label-code">Digital Access Code</label>
                                 <select id="listing-digital-code">
                                     <option value="Not applicable" id="opt-code-na">Not applicable</option>
                                     <option value="Available / Unused" id="opt-code-avail">Available / Unused</option>
@@ -357,7 +357,7 @@
                         <div class="section-label"><i class="fas fa-location-dot"></i> <span id="ui-sec-loc">Location</span></div>
                         <div class="two-col">
                             <div>
-                                <label class="field-label" id="ui-label-location">Campus Location</label>
+                                <label class="field-label" for="listing-location" id="ui-label-location">Campus Location</label>
                                 <select id="listing-location" required>
                                     <option value="Rosemont" selected>Rosemont</option>
                                     <option value="Dawson">Dawson</option>
@@ -368,7 +368,7 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="field-label" id="ui-label-meet">Meeting Point</label>
+                                <label class="field-label" for="listing-meeting-point" id="ui-label-meet">Meeting Point</label>
                                 <input type="text" id="listing-meeting-point" maxlength="60" placeholder="e.g., Near Library">
                             </div>
                         </div>
@@ -435,7 +435,8 @@
                     tagUses: "uses", uploadFail: "Image upload failed. Please try again.",
                     reviewMessage: "Your listing is being reviewed. You will be notified once approved.",
                     cameraDenied: "Camera permission denied. Please allow camera access in your browser settings.\n\n(On Android/Chrome: tap 🔒 → Permissions → Camera → Allow). Then refresh.",
-                    cameraError: "Could not start camera. Make sure you're on a secure connection (HTTPS) and your device has a camera."
+                    cameraError: "Could not start camera. Make sure you're on a secure connection (HTTPS) and your device has a camera.",
+                    noUserDoc: "User profile not found. Please complete your profile first."
                 },
                 fr: {
                     mainTitle: "Publier un article", mainSub: "Remplissez les détails ci-dessous et votre livre sera automatiquement examiné.",
@@ -458,53 +459,56 @@
                     tagUses: "utilisations", uploadFail: "Échec du téléchargement. Veuillez réessayer.",
                     reviewMessage: "Votre annonce est en cours d'examen. Vous serez notifié une fois approuvée.",
                     cameraDenied: "Permission de la caméra refusée. Veuillez autoriser l'accès dans les paramètres du navigateur.\n\n(Android/Chrome : appuyez sur 🔒 → Autorisations → Caméra → Autoriser). Actualisez ensuite.",
-                    cameraError: "Impossible de démarrer la caméra. Vérifiez que vous êtes en HTTPS et que votre appareil possède une caméra."
+                    cameraError: "Impossible de démarrer la caméra. Vérifiez que vous êtes en HTTPS et que votre appareil possède une caméra.",
+                    noUserDoc: "Profil utilisateur introuvable. Veuillez compléter votre profil d'abord."
                 }
             };
 
+            // Helper to get a text from the UI object
+            const t = (key) => ui[lang][key] || key;
+
             // Apply UI texts
-            document.getElementById('ui-main-title').textContent = ui[lang].mainTitle;
-            document.getElementById('ui-main-subtitle').textContent = ui[lang].mainSub;
-            document.getElementById('ui-isbn-title').textContent = ui[lang].isbnTitle;
-            document.getElementById('ui-isbn-desc').textContent = ui[lang].isbnDesc;
-            document.getElementById('ui-btn-scan').textContent = ui[lang].btnScan;
-            document.getElementById('ui-btn-skip').textContent = ui[lang].btnSkip;
-            document.getElementById('manual-isbn-input').placeholder = ui[lang].isbnPlace;
-            document.getElementById('ui-sec-basic').textContent = ui[lang].secBasic;
-            document.getElementById('ui-sec-tags').textContent = ui[lang].secTags;
-            document.getElementById('ui-sec-cond').textContent = ui[lang].secCond;
-            document.getElementById('ui-sec-loc').textContent = ui[lang].secLoc;
-            document.getElementById('ui-sec-photo').textContent = ui[lang].secPhoto;
-            document.getElementById('ui-label-title').textContent = ui[lang].lblTitle;
-            document.getElementById('ui-label-desc').textContent = ui[lang].lblDesc;
-            document.getElementById('ui-label-price').textContent = ui[lang].lblPrice;
-            document.getElementById('ui-label-orig-price').textContent = ui[lang].lblOrigPrice;
-            document.getElementById('ui-label-tags').textContent = ui[lang].lblTags;
-            document.getElementById('tag-input').placeholder = ui[lang].tagPlace;
-            document.getElementById('ui-label-condition').textContent = ui[lang].lblCond;
-            document.getElementById('opt-cond-select').textContent = ui[lang].optCondSel;
-            document.getElementById('opt-cond-new').textContent = ui[lang].optNew;
-            document.getElementById('opt-cond-likenew').textContent = ui[lang].optLikeNew;
-            document.getElementById('opt-cond-good').textContent = ui[lang].optGood;
-            document.getElementById('opt-cond-fair').textContent = ui[lang].optFair;
-            document.getElementById('ui-label-code').textContent = ui[lang].lblCode;
-            document.getElementById('opt-code-na').textContent = ui[lang].optNa;
-            document.getElementById('opt-code-avail').textContent = ui[lang].optAvail;
-            document.getElementById('opt-code-used').textContent = ui[lang].optUsed;
-            document.getElementById('ui-label-location').textContent = ui[lang].lblLoc;
-            document.getElementById('ui-label-meet').textContent = ui[lang].lblMeet;
-            document.getElementById('listing-meeting-point').placeholder = ui[lang].meetPlace;
-            document.getElementById('ui-label-details').textContent = ui[lang].lblDet;
-            document.getElementById('ui-check-writing').textContent = ui[lang].chkWrite;
-            document.getElementById('ui-check-water').textContent = ui[lang].chkWater;
-            document.getElementById('ui-check-missing').textContent = ui[lang].chkMiss;
-            document.getElementById('ui-label-photos').textContent = ui[lang].lblPhotos;
-            document.getElementById('ui-btn-add-photo').textContent = ui[lang].btnAddPhoto;
-            document.getElementById('post-btn-text').textContent = ui[lang].btnPost;
-            document.getElementById('cancelListingBtn').textContent = ui[lang].btnCancel;
+            document.getElementById('ui-main-title').textContent = t('mainTitle');
+            document.getElementById('ui-main-subtitle').textContent = t('mainSub');
+            document.getElementById('ui-isbn-title').textContent = t('isbnTitle');
+            document.getElementById('ui-isbn-desc').textContent = t('isbnDesc');
+            document.getElementById('ui-btn-scan').textContent = t('btnScan');
+            document.getElementById('ui-btn-skip').textContent = t('btnSkip');
+            document.getElementById('manual-isbn-input').placeholder = t('isbnPlace');
+            document.getElementById('ui-sec-basic').textContent = t('secBasic');
+            document.getElementById('ui-sec-tags').textContent = t('secTags');
+            document.getElementById('ui-sec-cond').textContent = t('secCond');
+            document.getElementById('ui-sec-loc').textContent = t('secLoc');
+            document.getElementById('ui-sec-photo').textContent = t('secPhoto');
+            document.getElementById('ui-label-title').textContent = t('lblTitle');
+            document.getElementById('ui-label-desc').textContent = t('lblDesc');
+            document.getElementById('ui-label-price').textContent = t('lblPrice');
+            document.getElementById('ui-label-orig-price').textContent = t('lblOrigPrice');
+            document.getElementById('ui-label-tags').textContent = t('lblTags');
+            document.getElementById('tag-input').placeholder = t('tagPlace');
+            document.getElementById('ui-label-condition').textContent = t('lblCond');
+            document.getElementById('opt-cond-select').textContent = t('optCondSel');
+            document.getElementById('opt-cond-new').textContent = t('optNew');
+            document.getElementById('opt-cond-likenew').textContent = t('optLikeNew');
+            document.getElementById('opt-cond-good').textContent = t('optGood');
+            document.getElementById('opt-cond-fair').textContent = t('optFair');
+            document.getElementById('ui-label-code').textContent = t('lblCode');
+            document.getElementById('opt-code-na').textContent = t('optNa');
+            document.getElementById('opt-code-avail').textContent = t('optAvail');
+            document.getElementById('opt-code-used').textContent = t('optUsed');
+            document.getElementById('ui-label-location').textContent = t('lblLoc');
+            document.getElementById('ui-label-meet').textContent = t('lblMeet');
+            document.getElementById('listing-meeting-point').placeholder = t('meetPlace');
+            document.getElementById('ui-label-details').textContent = t('lblDet');
+            document.getElementById('ui-check-writing').textContent = t('chkWrite');
+            document.getElementById('ui-check-water').textContent = t('chkWater');
+            document.getElementById('ui-check-missing').textContent = t('chkMiss');
+            document.getElementById('ui-label-photos').textContent = t('lblPhotos');
+            document.getElementById('ui-btn-add-photo').textContent = t('btnAddPhoto');
+            document.getElementById('post-btn-text').textContent = t('btnPost');
+            document.getElementById('cancelListingBtn').textContent = t('btnCancel');
 
             let currentUser = null;
-            let internalSchoolName = "Global Campus";
             let selectedFiles = [];
             let tags = [];
             const pageLoader = document.getElementById('page-loader');
@@ -514,12 +518,17 @@
                 if (user) {
                     const uSnap = await getDoc(doc(db, "users", user.uid));
                     if (uSnap.exists()) {
-                        const data = uSnap.data();
                         currentUser = user;
-                        internalSchoolName = data.schoolName || "Global Campus";
-                        clearTimeout(loaderTimeout); pageLoader.style.display = 'none';
+                        clearTimeout(loaderTimeout);
+                        pageLoader.style.display = 'none';
+                    } else {
+                        // Missing user document – redirect to profile setup
+                        alert(t('noUserDoc'));
+                        window.location.href = '/login?setup=true';
                     }
-                } else { window.location.href = '/login'; }
+                } else {
+                    window.location.href = '/login';
+                }
             });
 
             // ISBN cache
@@ -553,7 +562,7 @@
                 return null;
             }
 
-            // ---------- BOOK FETCH USING OPENLIBRARY ONLY (no Google, no quota) ----------
+            // ---------- BOOK FETCH USING OPENLIBRARY ----------
             async function fetchBookData(isbnInput) {
                 const cleanIsbn = extractIsbn(isbnInput);
                 if (!cleanIsbn) {
@@ -561,7 +570,6 @@
                     return;
                 }
 
-                // Check cache
                 if (isbnCache[cleanIsbn]) {
                     const cached = isbnCache[cleanIsbn];
                     document.getElementById('listing-title').value = cached.title;
@@ -569,9 +577,7 @@
                     document.getElementById('listing-isbn').value = cleanIsbn;
                     document.getElementById('isbn-section').style.display = 'none';
                     document.getElementById('main-form-section').style.display = 'block';
-                    if (html5QrCode && isScanning) {
-                        html5QrCode.stop().then(() => { isScanning = false; }).catch(e => console.log(e));
-                    }
+                    await stopScanner();
                     return;
                 }
 
@@ -580,7 +586,6 @@
                 manualBtn.disabled = true;
 
                 try {
-                    // OpenLibrary API with data format
                     const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`;
                     const response = await fetch(url, {
                         headers: { 'User-Agent': 'ScoraliaBookApp (admin@scoralia.ca)' }
@@ -614,9 +619,7 @@
                         document.getElementById('listing-isbn').value = cleanIsbn;
                         document.getElementById('isbn-section').style.display = 'none';
                         document.getElementById('main-form-section').style.display = 'block';
-                        if (html5QrCode && isScanning) {
-                            html5QrCode.stop().then(() => { isScanning = false; }).catch(e => console.log(e));
-                        }
+                        await stopScanner();
                     } else {
                         alert(`ISBN ${cleanIsbn} not found in OpenLibrary. Please fill in the details manually.`);
                     }
@@ -629,21 +632,24 @@
                 }
             }
 
-            // ---------- WORKING BARCODE SCANNER ----------
+            // ---------- BARCODE SCANNER ----------
             let html5QrCode = null;
             let isScanning = false;
             const startScanBtn = document.getElementById('start-scan-btn');
             const readerDiv = document.getElementById('reader');
 
             async function stopScanner() {
-                if (html5QrCode && isScanning) {
+                if (html5QrCode) {
                     try {
                         await html5QrCode.stop();
-                    } catch(e) { console.warn("stop error", e); }
+                    } catch (e) { console.warn("stop error", e); }
+                    try {
+                        html5QrCode.clear();
+                    } catch (e) { console.warn("clear error", e); }
                     isScanning = false;
                     readerDiv.style.display = 'none';
                     startScanBtn.classList.remove('stop');
-                    startScanBtn.innerHTML = `<i class="fas fa-camera"></i> ${ui[lang].btnScan}`;
+                    startScanBtn.innerHTML = `<i class="fas fa-camera"></i> ${t('btnScan')}`;
                     startScanBtn.disabled = false;
                 }
             }
@@ -658,8 +664,10 @@
                 startScanBtn.disabled = true;
                 startScanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Requesting camera...`;
                 try {
+                    // Quick permission check
                     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                     stream.getTracks().forEach(track => track.stop());
+                    
                     html5QrCode = new Html5Qrcode("reader");
                     await html5QrCode.start(
                         { facingMode: "environment" },
@@ -667,7 +675,7 @@
                         (decodedText) => {
                             stopScanner().then(() => { fetchBookData(decodedText); });
                         },
-                        (errorMessage) => { /* ignore scanning errors */ }
+                        () => { /* ignore scan errors */ }
                     );
                     isScanning = true;
                     startScanBtn.classList.add('stop');
@@ -678,13 +686,18 @@
                     readerDiv.style.display = 'none';
                     let msg = '';
                     if (err.name === 'NotAllowedError') {
-                        msg = ui[lang].cameraDenied;
+                        msg = t('cameraDenied');
                     } else {
-                        msg = ui[lang].cameraError + ' ' + (err.message || err);
+                        msg = t('cameraError') + ' ' + (err.message || err);
                     }
                     alert(msg);
                     startScanBtn.disabled = false;
-                    startScanBtn.innerHTML = `<i class="fas fa-camera"></i> ${ui[lang].btnScan}`;
+                    startScanBtn.innerHTML = `<i class="fas fa-camera"></i> ${t('btnScan')}`;
+                    // If Html5Qrcode was partially created, try to clean it
+                    if (html5QrCode) {
+                        try { html5QrCode.clear(); } catch(e) {}
+                        html5QrCode = null;
+                    }
                 }
             }
 
@@ -715,43 +728,58 @@
                 tags.forEach((tag, index) => {
                     const chip = document.createElement('div');
                     chip.className = 'tag-chip';
-                    chip.innerHTML = `${tag} <span class="remove-tag" onclick="window.removeTag(${index})">&times;</span>`;
+                    chip.innerHTML = `${tag} <span class="remove-tag" data-index="${index}">&times;</span>`;
                     selectedTagsContainer.appendChild(chip);
                 });
             }
-            window.removeTag = (index) => { tags.splice(index, 1); renderTags(); };
+            // Event delegation for removing tags
+            selectedTagsContainer.addEventListener('click', (e) => {
+                if (e.target.classList.contains('remove-tag')) {
+                    const idx = parseInt(e.target.getAttribute('data-index'), 10);
+                    if (!isNaN(idx)) {
+                        tags.splice(idx, 1);
+                        renderTags();
+                    }
+                }
+            });
 
             function addTag(tagName) {
                 const cleaned = tagName.trim();
-                if (tags.length >= 15) { alert(ui[lang].tagLimit); return; }
+                if (tags.length >= 15) { alert(t('tagLimit')); return; }
                 if (cleaned && !tags.includes(cleaned)) { tags.push(cleaned); renderTags(); }
                 tagInput.value = ''; suggestionsBox.style.display = 'none';
             }
 
-            tagInput.oninput = async (e) => {
+            // Debounced tag suggestions
+            let tagDebounceTimer;
+            tagInput.oninput = (e) => {
+                clearTimeout(tagDebounceTimer);
                 const val = e.target.value.trim().toLowerCase();
                 if (val.length < 1) { suggestionsBox.style.display = 'none'; return; }
-                const snap = await getDocs(query(collection(db, "global_tags"), where("tag_lowercase", ">=", val), where("tag_lowercase", "<=", val + "\uf8ff"), limit(5)));
-                suggestionsBox.innerHTML = '';
-                let hasMatch = false;
-                if (!snap.empty) {
-                    snap.forEach(doc => {
-                        hasMatch = true;
-                        const div = document.createElement('div');
-                        div.className = 'suggestion-item';
-                        div.innerHTML = `<span>${doc.data().tag}</span><span class="suggestion-count">${doc.data().count || 1} ${ui[lang].tagUses}</span>`;
-                        div.onmousedown = (ev) => { ev.preventDefault(); addTag(doc.data().tag); };
-                        suggestionsBox.appendChild(div);
-                    });
-                }
-                if (val && !tags.includes(val) && (!hasMatch || ![...suggestionsBox.children].some(child => child.innerText.trim().startsWith(val)))) {
-                    const createDiv = document.createElement('div');
-                    createDiv.className = 'suggestion-item create-tag-item';
-                    createDiv.innerHTML = `<span><i class="fas fa-plus-circle"></i> Create new tag: "<strong>${val}</strong>"</span>`;
-                    createDiv.onmousedown = (ev) => { ev.preventDefault(); addTag(val); };
-                    suggestionsBox.appendChild(createDiv);
-                }
-                if (suggestionsBox.children.length > 0) suggestionsBox.style.display = 'block';
+                tagDebounceTimer = setTimeout(async () => {
+                    const snap = await getDocs(query(collection(db, "global_tags"), where("tag_lowercase", ">=", val), where("tag_lowercase", "<=", val + "\uf8ff"), limit(5)));
+                    suggestionsBox.innerHTML = '';
+                    let hasMatch = false;
+                    if (!snap.empty) {
+                        snap.forEach(doc => {
+                            hasMatch = true;
+                            const div = document.createElement('div');
+                            div.className = 'suggestion-item';
+                            div.innerHTML = `<span>${doc.data().tag}</span><span class="suggestion-count">${doc.data().count || 1} ${t('tagUses')}</span>`;
+                            div.onmousedown = (ev) => { ev.preventDefault(); addTag(doc.data().tag); };
+                            suggestionsBox.appendChild(div);
+                        });
+                    }
+                    if (val && !tags.includes(val) && (!hasMatch || ![...suggestionsBox.children].some(child => child.innerText.trim().startsWith(val)))) {
+                        const createDiv = document.createElement('div');
+                        createDiv.className = 'suggestion-item create-tag-item';
+                        createDiv.innerHTML = `<span><i class="fas fa-plus-circle"></i> Create new tag: "<strong>${val}</strong>"</span>`;
+                        createDiv.onmousedown = (ev) => { ev.preventDefault(); addTag(val); };
+                        suggestionsBox.appendChild(createDiv);
+                    }
+                    if (suggestionsBox.children.length > 0) suggestionsBox.style.display = 'block';
+                    else suggestionsBox.style.display = 'none';
+                }, 300);
             };
             tagInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput.value); } };
 
@@ -765,13 +793,12 @@
                     const wrapper = document.createElement('div'); wrapper.className = 'image-preview-wrapper';
                     const img = document.createElement('img'); img.className = 'image-preview';
                     
-                    // Use FileReader for better compatibility with Samsung and other mobile browsers
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         img.src = e.target.result;
                     };
-                    reader.onerror = () => {
-                        console.error('Failed to load image preview');
+                    reader.onerror = (err) => {
+                        console.error('Failed to load image preview', err);
                         img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23B3CDE0"%3E%3Cpath d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/%3E%3C/svg%3E';
                     };
                     reader.readAsDataURL(file);
@@ -783,144 +810,161 @@
                 document.getElementById('add-photo-label').style.display = selectedFiles.length < 5 ? 'flex' : 'none';
             }
 
-            imageInput.onchange = async (e) => {
-                const isHuman = await window.checkBotLimits();
-                if (!isHuman) { e.target.value = ''; return; }
-                const file = e.target.files[0];
-                if (file) {
-                    // Validate file type
-                    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
-                    if (!validTypes.includes(file.type)) {
-                        alert(ui[lang].imgTypeErr);
-                        e.target.value = '';
-                        return;
+            // ---------- SAFE BOT CHECK (won't break preview) ----------
+            async function safeBotCheck() {
+                try {
+                    if (typeof window.checkBotLimits === 'function') {
+                        return await window.checkBotLimits();
                     }
-                    if (file.size > 5 * 1024 * 1024) { alert(ui[lang].imgSizeErr); return; }
-                    window.recordActivity('images');
-                    selectedFiles.push(file); renderPreviews();
+                    return true; // if not present, allow
+                } catch (e) {
+                    console.warn("Bot check error, treating as pass:", e);
+                    return true; // on error, allow
                 }
+            }
+
+            imageInput.onchange = async (e) => {
+                // Always get the file first (so preview works regardless of bot check)
+                const file = e.target.files[0];
+                if (!file) {
+                    e.target.value = '';
+                    return;
+                }
+
+                // Validate file type
+                const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+                if (!validTypes.includes(file.type)) {
+                    alert(t('imgTypeErr'));
+                    e.target.value = '';
+                    return;
+                }
+                if (file.size > 5 * 1024 * 1024) {
+                    alert(t('imgSizeErr'));
+                    e.target.value = '';
+                    return;
+                }
+
+                // Now check bot shield, but don't block preview on failure, just warn
+                const isHuman = await safeBotCheck();
+                if (!isHuman) {
+                    alert("Action blocked by bot protection. Please try again later.");
+                    e.target.value = '';
+                    return;
+                }
+
+                // Record activity if function exists
+                if (typeof window.recordActivity === 'function') {
+                    try { window.recordActivity('images'); } catch(e) {}
+                }
+
+                selectedFiles.push(file);
+                renderPreviews();
                 e.target.value = '';
             };
 
             // ---------- FORM SUBMISSION ----------
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
-                const logs = [];
-                logs.push('=== LISTING SUBMISSION LOGS ===');
-                logs.push('Timestamp: ' + new Date().toISOString());
-                logs.push('');
-
-                logs.push('[1] Checking bot shield...');
-                const isHuman = await window.checkBotLimits();
-                logs.push('[1] Bot shield result: ' + (isHuman ? 'PASSED (human)' : 'FAILED (bot detected)'));
-                if (!isHuman) {
-                    logs.push('ABORTED: Bot detected');
-                    alert('scoraliaa.vercel.app says:\n\n' + logs.join('\n'));
+                
+                // Verify user is ready
+                if (!currentUser) {
+                    alert("Please wait – user data still loading.");
                     return;
                 }
-                logs.push('');
+
+                // Bot shield check
+                const isHuman = await safeBotCheck();
+                if (!isHuman) {
+                    alert("Your action has been blocked by our security system. Please try again later.");
+                    return;
+                }
 
                 const title = document.getElementById('listing-title').value.trim();
                 const desc = document.getElementById('listing-description').value.trim();
-                const price = parseFloat(document.getElementById('listing-price').value);
-                const originalPriceInput = document.getElementById('listing-original-price').value;
+                const priceVal = document.getElementById('listing-price').value.trim();
+                const price = parseFloat(priceVal);
+                const originalPriceInput = document.getElementById('listing-original-price').value.trim();
                 const originalPrice = originalPriceInput ? parseFloat(originalPriceInput) : null;
 
-                logs.push('[2] Form validation...');
-                logs.push('    Title: ' + title);
-                logs.push('    Description length: ' + desc.length + ' chars');
-                logs.push('    Price: ' + price);
-                logs.push('    Original Price: ' + (originalPrice || 'not set'));
-                logs.push('    Images count: ' + selectedFiles.length);
-
-                if (price > 1200) {
-                    logs.push('VALIDATION FAILED: Price exceeds 1200');
-                    alert(ui[lang].priceErr);
-                    alert('scoraliaa.vercel.app says:\n\n' + logs.join('\n'));
+                // Validation
+                if (!title || !desc) {
+                    alert("Title and description must not be empty.");
                     return;
                 }
-                if (originalPrice && originalPrice > 5000) {
-                    logs.push('VALIDATION FAILED: Original price exceeds 5000');
-                    alert(ui[lang].origPriceErr);
-                    alert('scoraliaa.vercel.app says:\n\n' + logs.join('\n'));
+                if (isNaN(price) || price <= 0) {
+                    alert("Enter a valid sale price greater than 0.");
+                    return;
+                }
+                if (price > 1200) {
+                    alert(t('priceErr'));
+                    return;
+                }
+                if (originalPrice !== null && (isNaN(originalPrice) || originalPrice > 5000)) {
+                    alert(t('origPriceErr'));
                     return;
                 }
                 if (selectedFiles.length === 0) {
-                    logs.push('VALIDATION FAILED: No images selected');
-                    alert(ui[lang].imgErr);
-                    alert('scoraliaa.vercel.app says:\n\n' + logs.join('\n'));
+                    alert(t('imgErr'));
                     return;
                 }
-                logs.push('[2] Validation: PASSED');
-                logs.push('');
 
-                logs.push('[3] Recording activity...');
-                window.recordActivity('listings');
-                logs.push('[3] Activity recorded');
-                logs.push('');
+                // Record activity if available
+                if (typeof window.recordActivity === 'function') {
+                    try { window.recordActivity('listings'); } catch(e) {}
+                }
 
                 const submitBtn = document.getElementById('postListingBtn');
                 const postBtnText = document.getElementById('post-btn-text');
                 submitBtn.disabled = true;
-                postBtnText.textContent = "AI Safety Check... (Please wait)";
+                postBtnText.textContent = "Checking...";
 
                 try {
-                    logs.push('[4] Uploading images to Cloudinary...');
+                    // Upload images
+                    postBtnText.textContent = t('uploading');
                     const imageUrls = [];
                     for (let i = 0; i < selectedFiles.length; i++) {
                         const file = selectedFiles[i];
-                        logs.push('    Uploading image ' + (i + 1) + '/' + selectedFiles.length + ': ' + file.name + ' (' + (file.size / 1024).toFixed(2) + ' KB)');
-                        
-                        // Retry logic for network errors
+                        // Get upload signature (with retry)
                         let signRes;
-                        let retries = 3;
-                        while (retries > 0) {
+                        for (let attempt = 0; attempt < 3; attempt++) {
                             try {
                                 signRes = await fetch(getFunctionUrl('sign-upload')).then(r => r.json());
                                 break;
-                            } catch (e) {
-                                retries--;
-                                if (retries === 0) throw e;
-                                await new Promise(resolve => setTimeout(resolve, 500));
+                            } catch (err) {
+                                if (attempt === 2) throw new Error("Failed to reach sign-upload service. Check your connection.");
+                                await new Promise(r => setTimeout(r, 600));
                             }
                         }
                         
-                        logs.push('    Got signature from sign-upload API');
                         const formData = new FormData();
-                        formData.append('file', file); 
+                        formData.append('file', file);
                         formData.append('api_key', signRes.apiKey);
-                        formData.append('timestamp', signRes.timestamp); 
+                        formData.append('timestamp', signRes.timestamp);
                         formData.append('signature', signRes.signature);
                         formData.append('upload_preset', signRes.uploadPreset);
                         
-                        // Retry Cloudinary upload on network errors
+                        // Upload to Cloudinary with retry
                         let res;
-                        retries = 3;
-                        while (retries > 0) {
+                        for (let attempt = 0; attempt < 3; attempt++) {
                             try {
                                 res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { method: 'POST', body: formData }).then(r => r.json());
                                 break;
-                            } catch (e) {
-                                retries--;
-                                if (retries === 0) throw e;
-                                await new Promise(resolve => setTimeout(resolve, 1000));
+                            } catch (err) {
+                                if (attempt === 2) throw new Error("Failed to upload image. Please try again.");
+                                await new Promise(r => setTimeout(r, 1000));
                             }
                         }
                         
                         if (res.secure_url) {
                             imageUrls.push(res.secure_url);
-                            logs.push('    Uploaded successfully: ' + res.secure_url);
                         } else {
                             throw new Error(res.error?.message || 'Upload failed');
                         }
                     }
-                    logs.push('[4] All images uploaded: ' + imageUrls.length + ' URLs');
-                    logs.push('');
 
                     const rawIsbn = document.getElementById('listing-isbn').value.trim();
                     const cleanIsbn = rawIsbn ? rawIsbn.replace(/[^0-9]/g, '') : null;
 
-                    logs.push('[5] Preparing listing data...');
                     const listingData = {
                         title, description: desc, price, 
                         originalPrice: originalPrice,
@@ -938,111 +982,60 @@
                         status: 'pending',
                         timestamp: serverTimestamp() 
                     };
-                    logs.push('[5] Listing data prepared');
-                    logs.push('');
 
-                    logs.push('[6] Saving listing to Firestore...');
+                    // Save listing
                     const listingRef = await addDoc(collection(db, 'listings'), listingData);
-                    logs.push('[6] Listing saved with ID: ' + listingRef.id);
-                    logs.push('');
 
-                    logs.push('[6b] Updating global_tags collection...');
-                    // Update or create global_tags for each tag used in this listing
+                    // Update tag usage counts
                     const batch = writeBatch(db);
                     for (const tag of tags) {
                         const tagLower = tag.toLowerCase();
                         const tagQuery = query(collection(db, "global_tags"), where("tag_lowercase", "==", tagLower));
                         const tagSnap = await getDocs(tagQuery);
-                        
                         if (tagSnap.empty) {
-                            // Create new tag document
                             const newTagRef = doc(collection(db, "global_tags"));
-                            batch.set(newTagRef, {
-                                tag: tag,
-                                tag_lowercase: tagLower,
-                                count: 1,
-                                createdAt: serverTimestamp()
-                            });
+                            batch.set(newTagRef, { tag, tag_lowercase: tagLower, count: 1, createdAt: serverTimestamp() });
                         } else {
-                            // Increment existing tag count
                             const existingDoc = tagSnap.docs[0];
-                            const currentCount = existingDoc.data().count || 0;
-                            batch.update(existingDoc.ref, {
-                                count: currentCount + 1
-                            });
+                            batch.update(existingDoc.ref, { count: (existingDoc.data().count || 0) + 1 });
                         }
                     }
                     await batch.commit();
-                    logs.push('[6b] Global tags updated successfully');
-                    logs.push('');
 
-                    logs.push('[7] Sending to AI moderation...');
+                    // AI moderation
                     try {
                         const aiRes = await fetch(getFunctionUrl('moderate-listing'), {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ imageUrls, title, description: desc })
                         });
-                        
-                        logs.push('[7] Moderation API response status: ' + aiRes.status);
-                        
-                        if (!aiRes.ok) {
-                            const errorText = await aiRes.text();
-                            logs.push('    Error response: ' + errorText);
-                            throw new Error("Moderation server error: " + aiRes.status);
-                        }
-
+                        if (!aiRes.ok) throw new Error("Moderation server error");
                         const aiData = await aiRes.json();
-                        
-                        logs.push('[7] Moderation response received:');
-                        logs.push('    Verdict: ' + (aiData.verdict || 'unknown'));
-                        logs.push('    Reason: ' + (aiData.reason || 'none'));
-                        if (aiData._debug) {
-                            logs.push('    Debug Info: ' + JSON.stringify(aiData._debug));
-                        }
-
                         if (aiData.verdict === "UNSAFE") {
-                            logs.push('[8] Listing REJECTED by AI moderation');
                             await updateDoc(doc(db, "listings", listingRef.id), {
                                 status: 'rejected',
                                 rejectionReason: aiData.reason || "Violates community guidelines."
                             });
-                            logs.push('[8] Status updated to rejected in Firestore');
-                            alert("Your listing was rejected by safety checks: " + (aiData.reason || "Inappropriate content."));
-                            logs.push('');
-                            logs.push('=== FINAL RESULT: REJECTED ===');
-                            logs.push('Redirecting to my-listings...');
+                            alert("Your listing was rejected: " + (aiData.reason || "Inappropriate content."));
                             window.location.href = `/my-listings.html?rejected=true&id=${listingRef.id}`;
-                            return; 
+                            return;
                         } else {
-                            logs.push('[8] Listing APPROVED by AI moderation');
                             await updateDoc(doc(db, "listings", listingRef.id), {
                                 status: 'active',
                                 approvedAt: serverTimestamp()
                             });
-                            logs.push('[8] Status updated to active in Firestore');
-                            logs.push('');
-                            logs.push('=== FINAL RESULT: APPROVED ===');
-                            logs.push('Redirecting to my-listings...');
                             window.location.href = `/my-listings`;
                         }
                     } catch (err) {
-                        logs.push('[7] Moderation error: ' + err.message);
-                        console.error("Moderation failed or timed out:", err);
-                        logs.push('Proceeding with pending status...');
-                        logs.push('');
-                        logs.push('=== FINAL RESULT: PENDING (moderation error) ===');
+                        console.error("Moderation error:", err);
+                        // If moderation fails, leave as pending
                         window.location.href = `/my-listings?pending=true&id=${listingRef.id}`;
                     }
-
                 } catch (err) {
-                    logs.push('ERROR: ' + err.message);
-                    logs.push('Stack: ' + err.stack);
-                    logs.push('');
-                    logs.push('=== FINAL RESULT: ERROR ===');
-                    alert("Error: " + err.message);
+                    console.error("Submission error:", err);
+                    alert("Error: " + (err.message || "Something went wrong. Please try again."));
                     submitBtn.disabled = false;
-                    postBtnText.textContent = ui[lang].btnPost;
+                    postBtnText.textContent = t('btnPost');
                 }
             };
         }
