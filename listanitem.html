@@ -430,7 +430,7 @@
                     lblPhotos: "Photos (Max 5, Max 5MB each)", btnAddPhoto: "Add Photo", btnPost: "Submit for Review", btnCancel: "Cancel",
                     priceErr: "Price cannot exceed $1200.", origPriceErr: "Original price cannot exceed $5000.",
                     imgErr: "Add at least one photo.", imgTypeErr: "Unsupported file type.",
-                    imgSizeErr: "Image too large (Max 5MB).", uploading: "Uploading Images…",
+                    imgSizeErr: "Image too large (Max 5MB).", uploading: "AI Safety Check... (Please wait)",
                     tagLimit: "Max 15 tags allowed.", lenErr: "Title, Description, or Meeting Point too long.",
                     tagUses: "uses", uploadFail: "Image upload failed. Please try again.",
                     reviewMessage: "Your listing is being reviewed. You will be notified once approved.",
@@ -454,7 +454,7 @@
                     lblPhotos: "Photos (Max 5, Max 5MB chacune)", btnAddPhoto: "Ajouter une photo", btnPost: "Soumettre pour examen", btnCancel: "Annuler",
                     priceErr: "Le prix ne peut dépasser 1200$.", origPriceErr: "Le prix d'origine ne peut dépasser 5000$.",
                     imgErr: "Ajoutez au moins une photo.", imgTypeErr: "Format non supporté.",
-                    imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Téléchargement…",
+                    imgSizeErr: "Image trop lourde (Max 5MB).", uploading: "Vérification IA... (Veuillez patienter)",
                     tagLimit: "Maximum 15 tags autorisés.", lenErr: "Titre, Description ou Point de rencontre trop long.",
                     tagUses: "utilisations", uploadFail: "Échec du téléchargement. Veuillez réessayer.",
                     reviewMessage: "Votre annonce est en cours d'examen. Vous serez notifié une fois approuvée.",
@@ -464,7 +464,6 @@
                 }
             };
 
-            // Helper to get a text from the UI object
             const t = (key) => ui[lang][key] || key;
 
             // Apply UI texts
@@ -522,7 +521,6 @@
                         clearTimeout(loaderTimeout);
                         pageLoader.style.display = 'none';
                     } else {
-                        // Missing user document – redirect to profile setup
                         alert(t('noUserDoc'));
                         window.location.href = '/login?setup=true';
                     }
@@ -640,12 +638,8 @@
 
             async function stopScanner() {
                 if (html5QrCode) {
-                    try {
-                        await html5QrCode.stop();
-                    } catch (e) { console.warn("stop error", e); }
-                    try {
-                        html5QrCode.clear();
-                    } catch (e) { console.warn("clear error", e); }
+                    try { await html5QrCode.stop(); } catch (e) {}
+                    try { html5QrCode.clear(); } catch (e) {}
                     isScanning = false;
                     readerDiv.style.display = 'none';
                     startScanBtn.classList.remove('stop');
@@ -664,7 +658,6 @@
                 startScanBtn.disabled = true;
                 startScanBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Requesting camera...`;
                 try {
-                    // Quick permission check
                     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
                     stream.getTracks().forEach(track => track.stop());
                     
@@ -675,7 +668,7 @@
                         (decodedText) => {
                             stopScanner().then(() => { fetchBookData(decodedText); });
                         },
-                        () => { /* ignore scan errors */ }
+                        () => {}
                     );
                     isScanning = true;
                     startScanBtn.classList.add('stop');
@@ -685,15 +678,11 @@
                     console.error("Camera start error:", err);
                     readerDiv.style.display = 'none';
                     let msg = '';
-                    if (err.name === 'NotAllowedError') {
-                        msg = t('cameraDenied');
-                    } else {
-                        msg = t('cameraError') + ' ' + (err.message || err);
-                    }
+                    if (err.name === 'NotAllowedError') msg = t('cameraDenied');
+                    else msg = t('cameraError') + ' ' + (err.message || err);
                     alert(msg);
                     startScanBtn.disabled = false;
                     startScanBtn.innerHTML = `<i class="fas fa-camera"></i> ${t('btnScan')}`;
-                    // If Html5Qrcode was partially created, try to clean it
                     if (html5QrCode) {
                         try { html5QrCode.clear(); } catch(e) {}
                         html5QrCode = null;
@@ -732,7 +721,6 @@
                     selectedTagsContainer.appendChild(chip);
                 });
             }
-            // Event delegation for removing tags
             selectedTagsContainer.addEventListener('click', (e) => {
                 if (e.target.classList.contains('remove-tag')) {
                     const idx = parseInt(e.target.getAttribute('data-index'), 10);
@@ -750,7 +738,6 @@
                 tagInput.value = ''; suggestionsBox.style.display = 'none';
             }
 
-            // Debounced tag suggestions
             let tagDebounceTimer;
             tagInput.oninput = (e) => {
                 clearTimeout(tagDebounceTimer);
@@ -783,7 +770,7 @@
             };
             tagInput.onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(tagInput.value); } };
 
-            // ---------- IMAGE UPLOADS ----------
+            // ---------- IMAGE UPLOADS (with instant preview) ----------
             const imageInput = document.getElementById('listing-image-input');
             const previewContainer = document.getElementById('image-preview-container');
 
@@ -792,17 +779,10 @@
                 selectedFiles.forEach((file, index) => {
                     const wrapper = document.createElement('div'); wrapper.className = 'image-preview-wrapper';
                     const img = document.createElement('img'); img.className = 'image-preview';
-                    
                     const reader = new FileReader();
-                    reader.onload = (e) => {
-                        img.src = e.target.result;
-                    };
-                    reader.onerror = (err) => {
-                        console.error('Failed to load image preview', err);
-                        img.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23B3CDE0"%3E%3Cpath d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/%3E%3C/svg%3E';
-                    };
+                    reader.onload = (e) => { img.src = e.target.result; };
+                    reader.onerror = () => { img.src = 'data:image/svg+xml,...'; };
                     reader.readAsDataURL(file);
-                    
                     const btn = document.createElement('button'); btn.className = 'remove-image-btn'; btn.type = 'button'; btn.innerHTML = '&times;';
                     btn.onclick = () => { selectedFiles.splice(index, 1); renderPreviews(); };
                     wrapper.appendChild(img); wrapper.appendChild(btn); previewContainer.appendChild(wrapper);
@@ -810,28 +790,21 @@
                 document.getElementById('add-photo-label').style.display = selectedFiles.length < 5 ? 'flex' : 'none';
             }
 
-            // ---------- SAFE BOT CHECK (won't break preview) ----------
             async function safeBotCheck() {
                 try {
-                    if (typeof window.checkBotLimits === 'function') {
-                        return await window.checkBotLimits();
-                    }
-                    return true; // if not present, allow
+                    if (typeof window.checkBotLimits === 'function') return await window.checkBotLimits();
+                    return true;
                 } catch (e) {
                     console.warn("Bot check error, treating as pass:", e);
-                    return true; // on error, allow
+                    return true;
                 }
             }
 
             imageInput.onchange = async (e) => {
-                // Always get the file first (so preview works regardless of bot check)
                 const file = e.target.files[0];
-                if (!file) {
-                    e.target.value = '';
-                    return;
-                }
+                if (!file) { e.target.value = ''; return; }
 
-                // Validate file type
+                // Validate type and size
                 const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
                 if (!validTypes.includes(file.type)) {
                     alert(t('imgTypeErr'));
@@ -844,35 +817,34 @@
                     return;
                 }
 
-                // Now check bot shield, but don't block preview on failure, just warn
-                const isHuman = await safeBotCheck();
-                if (!isHuman) {
-                    alert("Action blocked by bot protection. Please try again later.");
-                    e.target.value = '';
-                    return;
-                }
-
-                // Record activity if function exists
-                if (typeof window.recordActivity === 'function') {
-                    try { window.recordActivity('images'); } catch(e) {}
-                }
-
+                // Show preview immediately (temporary)
+                const tempIndex = selectedFiles.length;
                 selectedFiles.push(file);
                 renderPreviews();
+
+                // Bot check asynchronously
+                const isHuman = await safeBotCheck();
+                if (!isHuman) {
+                    // Remove the preview and file
+                    selectedFiles.splice(tempIndex, 1);
+                    renderPreviews();
+                    alert("Action blocked by bot protection. Please try again later.");
+                } else {
+                    if (typeof window.recordActivity === 'function') {
+                        try { window.recordActivity('images'); } catch(e) {}
+                    }
+                }
                 e.target.value = '';
             };
 
-            // ---------- FORM SUBMISSION ----------
+            // ---------- FORM SUBMISSION (AI moderation intact) ----------
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
-                
-                // Verify user is ready
                 if (!currentUser) {
                     alert("Please wait – user data still loading.");
                     return;
                 }
 
-                // Bot shield check
                 const isHuman = await safeBotCheck();
                 if (!isHuman) {
                     alert("Your action has been blocked by our security system. Please try again later.");
@@ -886,29 +858,12 @@
                 const originalPriceInput = document.getElementById('listing-original-price').value.trim();
                 const originalPrice = originalPriceInput ? parseFloat(originalPriceInput) : null;
 
-                // Validation
-                if (!title || !desc) {
-                    alert("Title and description must not be empty.");
-                    return;
-                }
-                if (isNaN(price) || price <= 0) {
-                    alert("Enter a valid sale price greater than 0.");
-                    return;
-                }
-                if (price > 1200) {
-                    alert(t('priceErr'));
-                    return;
-                }
-                if (originalPrice !== null && (isNaN(originalPrice) || originalPrice > 5000)) {
-                    alert(t('origPriceErr'));
-                    return;
-                }
-                if (selectedFiles.length === 0) {
-                    alert(t('imgErr'));
-                    return;
-                }
+                if (!title || !desc) { alert("Title and description must not be empty."); return; }
+                if (isNaN(price) || price <= 0) { alert("Enter a valid sale price greater than 0."); return; }
+                if (price > 1200) { alert(t('priceErr')); return; }
+                if (originalPrice !== null && (isNaN(originalPrice) || originalPrice > 5000)) { alert(t('origPriceErr')); return; }
+                if (selectedFiles.length === 0) { alert(t('imgErr')); return; }
 
-                // Record activity if available
                 if (typeof window.recordActivity === 'function') {
                     try { window.recordActivity('listings'); } catch(e) {}
                 }
@@ -916,15 +871,13 @@
                 const submitBtn = document.getElementById('postListingBtn');
                 const postBtnText = document.getElementById('post-btn-text');
                 submitBtn.disabled = true;
-                postBtnText.textContent = "Checking...";
+                postBtnText.textContent = t('uploading');  // "AI Safety Check... (Please wait)"
 
                 try {
                     // Upload images
-                    postBtnText.textContent = t('uploading');
                     const imageUrls = [];
                     for (let i = 0; i < selectedFiles.length; i++) {
                         const file = selectedFiles[i];
-                        // Get upload signature (with retry)
                         let signRes;
                         for (let attempt = 0; attempt < 3; attempt++) {
                             try {
@@ -935,7 +888,6 @@
                                 await new Promise(r => setTimeout(r, 600));
                             }
                         }
-                        
                         const formData = new FormData();
                         formData.append('file', file);
                         formData.append('api_key', signRes.apiKey);
@@ -943,7 +895,6 @@
                         formData.append('signature', signRes.signature);
                         formData.append('upload_preset', signRes.uploadPreset);
                         
-                        // Upload to Cloudinary with retry
                         let res;
                         for (let attempt = 0; attempt < 3; attempt++) {
                             try {
@@ -954,20 +905,15 @@
                                 await new Promise(r => setTimeout(r, 1000));
                             }
                         }
-                        
-                        if (res.secure_url) {
-                            imageUrls.push(res.secure_url);
-                        } else {
-                            throw new Error(res.error?.message || 'Upload failed');
-                        }
+                        if (res.secure_url) imageUrls.push(res.secure_url);
+                        else throw new Error(res.error?.message || 'Upload failed');
                     }
 
                     const rawIsbn = document.getElementById('listing-isbn').value.trim();
                     const cleanIsbn = rawIsbn ? rawIsbn.replace(/[^0-9]/g, '') : null;
 
                     const listingData = {
-                        title, description: desc, price, 
-                        originalPrice: originalPrice,
+                        title, description: desc, price, originalPrice,
                         condition: document.getElementById('listing-condition').value,
                         digitalCode: document.getElementById('listing-digital-code').value,
                         location: document.getElementById('listing-location').value,
@@ -975,18 +921,16 @@
                         hasWriting: document.getElementById('cond-writing').checked,
                         hasWaterDamage: document.getElementById('cond-water').checked,
                         hasMissingPages: document.getElementById('cond-missing').checked,
-                        tags, imageUrls,
-                        isbn: cleanIsbn, 
+                        tags, imageUrls, isbn: cleanIsbn,
                         posterUid: currentUser.uid,
                         posterDisplayName: currentUser.displayName || "User",
                         status: 'pending',
-                        timestamp: serverTimestamp() 
+                        timestamp: serverTimestamp()
                     };
 
-                    // Save listing
                     const listingRef = await addDoc(collection(db, 'listings'), listingData);
 
-                    // Update tag usage counts
+                    // Update tag counts
                     const batch = writeBatch(db);
                     for (const tag of tags) {
                         const tagLower = tag.toLowerCase();
@@ -1002,7 +946,7 @@
                     }
                     await batch.commit();
 
-                    // AI moderation
+                    // AI moderation – same as before
                     try {
                         const aiRes = await fetch(getFunctionUrl('moderate-listing'), {
                             method: 'POST',
@@ -1018,7 +962,6 @@
                             });
                             alert("Your listing was rejected: " + (aiData.reason || "Inappropriate content."));
                             window.location.href = `/my-listings.html?rejected=true&id=${listingRef.id}`;
-                            return;
                         } else {
                             await updateDoc(doc(db, "listings", listingRef.id), {
                                 status: 'active',
@@ -1028,7 +971,6 @@
                         }
                     } catch (err) {
                         console.error("Moderation error:", err);
-                        // If moderation fails, leave as pending
                         window.location.href = `/my-listings?pending=true&id=${listingRef.id}`;
                     }
                 } catch (err) {
