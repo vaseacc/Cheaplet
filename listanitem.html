@@ -786,6 +786,13 @@
             // ---------- FORM SUBMISSION ----------
             document.getElementById('listing-form').onsubmit = async (e) => {
                 e.preventDefault();
+
+                // 🔒 Guard: ensure the user is fully loaded before submitting
+                if (!currentUser) {
+                    alert('Please wait while we verify your account. The form will be ready shortly.');
+                    return;
+                }
+
                 const logs = [];
                 logs.push('=== LISTING SUBMISSION LOGS ===');
                 logs.push('Timestamp: ' + new Date().toISOString());
@@ -852,12 +859,16 @@
                         const file = selectedFiles[i];
                         logs.push('    Uploading image ' + (i + 1) + '/' + selectedFiles.length + ': ' + file.name + ' (' + (file.size / 1024).toFixed(2) + ' KB)');
                         
-                        // Retry logic for network errors
+                        // Retry logic for network errors with HTTP error checking
                         let signRes;
                         let retries = 3;
                         while (retries > 0) {
                             try {
-                                signRes = await fetch(getFunctionUrl('sign-upload')).then(r => r.json());
+                                const resp = await fetch(getFunctionUrl('sign-upload'));
+                                if (!resp.ok) {
+                                    throw new Error(`Signature API error: ${resp.status} ${resp.statusText}`);
+                                }
+                                signRes = await resp.json();
                                 break;
                             } catch (e) {
                                 retries--;
@@ -879,7 +890,11 @@
                         retries = 3;
                         while (retries > 0) {
                             try {
-                                res = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { method: 'POST', body: formData }).then(r => r.json());
+                                const uploadResp = await fetch(`https://api.cloudinary.com/v1_1/${signRes.cloudName}/image/upload`, { method: 'POST', body: formData });
+                                if (!uploadResp.ok) {
+                                    throw new Error(`Cloudinary upload failed: ${uploadResp.status} ${uploadResp.statusText}`);
+                                }
+                                res = await uploadResp.json();
                                 break;
                             } catch (e) {
                                 retries--;
