@@ -227,6 +227,53 @@
             text-align: left;
         }
 
+        /* Modal overlay for not found popup */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(12,20,70,0.65);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-box {
+            background: var(--white);
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            padding: 30px 28px;
+            text-align: center;
+            max-width: 380px;
+            width: 90%;
+            animation: popIn 0.2s ease;
+        }
+        .modal-box h3 {
+            font-family: var(--font-display);
+            color: var(--ink);
+            margin-bottom: 12px;
+        }
+        .modal-box p {
+            color: var(--text-muted);
+            font-size: 0.92rem;
+            margin-bottom: 24px;
+        }
+        .modal-box .btn-modal-ok {
+            background: linear-gradient(135deg, #0C1446 0%, #2B5C92 100%);
+            color: var(--white);
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 10px 28px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
         @media (max-width: 767px) {
             nav { display: none; }
             .page-hero { padding: 28px 16px; }
@@ -400,6 +447,15 @@
         </div>
     </div>
 
+    <!-- NOT FOUND MODAL (hidden by default) -->
+    <div class="modal-overlay" id="notFoundModal">
+        <div class="modal-box">
+            <h3 id="modal-title">Book Not Found</h3>
+            <p id="modal-message">We couldn't find this ISBN in any database. Please fill in the details manually.</p>
+            <button class="btn-modal-ok" id="modalOkBtn">OK, I'll fill it in</button>
+        </div>
+    </div>
+
     <script type="module">
         import { initializeApp, getApps, getApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-auth.js";
@@ -435,7 +491,10 @@
                     tagUses: "uses", uploadFail: "Image upload failed. Please try again.",
                     reviewMessage: "Your listing is being reviewed. You will be notified once approved.",
                     cameraDenied: "Camera permission denied. Please allow camera access in your browser settings.\n\n(On Android/Chrome: tap 🔒 → Permissions → Camera → Allow). Then refresh.",
-                    cameraError: "Could not start camera. Make sure you're on a secure connection (HTTPS) and your device has a camera."
+                    cameraError: "Could not start camera. Make sure you're on a secure connection (HTTPS) and your device has a camera.",
+                    modalTitle: "Book Not Found",
+                    modalMessage: "We couldn't find this ISBN in any database. Please fill in the details manually.",
+                    modalOk: "OK, I'll fill it in"
                 },
                 fr: {
                     mainTitle: "Publier un article", mainSub: "Remplissez les détails ci-dessous et votre livre sera automatiquement examiné.",
@@ -458,7 +517,10 @@
                     tagUses: "utilisations", uploadFail: "Échec du téléchargement. Veuillez réessayer.",
                     reviewMessage: "Votre annonce est en cours d'examen. Vous serez notifié une fois approuvée.",
                     cameraDenied: "Permission de la caméra refusée. Veuillez autoriser l'accès dans les paramètres du navigateur.\n\n(Android/Chrome : appuyez sur 🔒 → Autorisations → Caméra → Autoriser). Actualisez ensuite.",
-                    cameraError: "Impossible de démarrer la caméra. Vérifiez que vous êtes en HTTPS et que votre appareil possède une caméra."
+                    cameraError: "Impossible de démarrer la caméra. Vérifiez que vous êtes en HTTPS et que votre appareil possède une caméra.",
+                    modalTitle: "Livre introuvable",
+                    modalMessage: "Nous n'avons trouvé cet ISBN dans aucune base de données. Veuillez remplir les détails manuellement.",
+                    modalOk: "D'accord, je vais le remplir"
                 }
             };
 
@@ -502,6 +564,11 @@
             document.getElementById('ui-btn-add-photo').textContent = ui[lang].btnAddPhoto;
             document.getElementById('post-btn-text').textContent = ui[lang].btnPost;
             document.getElementById('cancelListingBtn').textContent = ui[lang].btnCancel;
+
+            // Modal texts
+            document.getElementById('modal-title').textContent = ui[lang].modalTitle;
+            document.getElementById('modal-message').textContent = ui[lang].modalMessage;
+            document.getElementById('modalOkBtn').textContent = ui[lang].modalOk;
 
             let currentUser = null;
             let internalSchoolName = "Global Campus";
@@ -553,7 +620,18 @@
                 return null;
             }
 
-            // ---------- BOOK FETCH USING /isbn/ISBN.json (FIXED) ----------
+            // Show the custom "not found" modal and then redirect to form
+            function showNotFoundAndProceed() {
+                const modal = document.getElementById('notFoundModal');
+                modal.classList.add('active');
+                document.getElementById('modalOkBtn').onclick = () => {
+                    modal.classList.remove('active');
+                    document.getElementById('isbn-section').style.display = 'none';
+                    document.getElementById('main-form-section').style.display = 'block';
+                };
+            }
+
+            // ---------- BOOK FETCH (OpenLibrary + Google Books) ----------
             async function fetchBookData(isbnInput) {
                 const cleanIsbn = extractIsbn(isbnInput);
                 if (!cleanIsbn) {
@@ -579,48 +657,91 @@
                 manualBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
                 manualBtn.disabled = true;
 
+                // Helper to extract title + description from book data
+                function extractBookInfo(bookData) {
+                    let title = bookData.title || "";
+                    if (bookData.authors && bookData.authors.length) {
+                        const authorNames = bookData.authors
+                            .map(a => (typeof a === 'string' ? a : a.name))
+                            .filter(n => n && n.trim());
+                        if (authorNames.length) title += ` by ${authorNames.join(', ')}`;
+                    }
+                    let description = "";
+                    if (typeof bookData.description === 'string') {
+                        description = bookData.description;
+                    } else if (bookData.description && typeof bookData.description.value === 'string') {
+                        description = bookData.description.value;
+                    }
+                    return { title, description };
+                }
+
+                // Store successfully found book and transition to form
+                function applyFoundBook(info) {
+                    isbnCache[cleanIsbn] = info;
+                    saveCache();
+                    document.getElementById('listing-title').value = info.title;
+                    document.getElementById('listing-description').value = info.description;
+                    document.getElementById('listing-isbn').value = cleanIsbn;
+                    document.getElementById('isbn-section').style.display = 'none';
+                    document.getElementById('main-form-section').style.display = 'block';
+                    if (html5QrCode && isScanning) {
+                        html5QrCode.stop().then(() => { isScanning = false; }).catch(e => console.log(e));
+                    }
+                }
+
                 try {
-                    // Use the direct /isbn endpoint – works with plain digits, no hyphens needed
-                    const url = `https://openlibrary.org/isbn/${cleanIsbn}.json`;
-                    const response = await fetch(url, {
+                    // 1️⃣ OpenLibrary direct endpoint
+                    const directUrl = `https://openlibrary.org/isbn/${cleanIsbn}.json`;
+                    const directRes = await fetch(directUrl, {
                         headers: { 'User-Agent': 'ScoraliaBookApp (admin@scoralia.ca)' }
                     });
-
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const book = await response.json();
-
-                    if (book && book.title) {
-                        let title = book.title;
-                        if (book.authors && book.authors.length) {
-                            const authorNames = book.authors.map(a => a.name).filter(n => n && n.trim());
-                            if (authorNames.length) title += ` by ${authorNames.join(', ')}`;
+                    if (directRes.ok) {
+                        const book = await directRes.json();
+                        if (book && book.title) {
+                            const info = extractBookInfo(book);
+                            applyFoundBook(info);
+                            return;
                         }
-                        // Description can be a string or an object
-                        let description = "";
-                        if (typeof book.description === 'string') {
-                            description = book.description;
-                        } else if (book.description && typeof book.description.value === 'string') {
-                            description = book.description.value;
-                        }
-
-                        const bookData = { title, description };
-                        isbnCache[cleanIsbn] = bookData;
-                        saveCache();
-
-                        document.getElementById('listing-title').value = title;
-                        document.getElementById('listing-description').value = description;
-                        document.getElementById('listing-isbn').value = cleanIsbn;
-                        document.getElementById('isbn-section').style.display = 'none';
-                        document.getElementById('main-form-section').style.display = 'block';
-                        if (html5QrCode && isScanning) {
-                            html5QrCode.stop().then(() => { isScanning = false; }).catch(e => console.log(e));
-                        }
-                    } else {
-                        alert(`ISBN ${cleanIsbn} not found. Please fill in the details manually.`);
                     }
+
+                    // 2️⃣ OpenLibrary search fallback
+                    const searchUrl = `https://openlibrary.org/search.json?q=isbn:${cleanIsbn}`;
+                    const searchRes = await fetch(searchUrl, {
+                        headers: { 'User-Agent': 'ScoraliaBookApp (admin@scoralia.ca)' }
+                    });
+                    if (searchRes.ok) {
+                        const searchData = await searchRes.json();
+                        if (searchData.docs && searchData.docs.length > 0) {
+                            const firstDoc = searchData.docs[0];
+                            const info = extractBookInfo(firstDoc);
+                            applyFoundBook(info);
+                            return;
+                        }
+                    }
+
+                    // 3️⃣ Google Books API (no key needed, rate‑limited)
+                    const googleUrl = `https://www.googleapis.com/books/v1/volumes?q=isbn:${cleanIsbn}`;
+                    const googleRes = await fetch(googleUrl);
+                    if (googleRes.ok) {
+                        const googleData = await googleRes.json();
+                        if (googleData.items && googleData.items.length > 0) {
+                            const vol = googleData.items[0].volumeInfo;
+                            const title = vol.title || "";
+                            let authors = vol.authors ? vol.authors.join(', ') : '';
+                            const fullTitle = authors ? `${title} by ${authors}` : title;
+                            const description = vol.description || "";
+                            const info = { title: fullTitle, description };
+                            applyFoundBook(info);
+                            return;
+                        }
+                    }
+
+                    // 4️⃣ All failed → show centered modal
+                    showNotFoundAndProceed();
+
                 } catch (error) {
-                    console.error("OpenLibrary fetch error:", error);
-                    alert(`Could not find book data for ISBN ${cleanIsbn}. Please fill in the details manually.\n\nError: ${error.message}`);
+                    console.error("Book fetch error:", error);
+                    showNotFoundAndProceed();
                 } finally {
                     manualBtn.innerHTML = `<i class="fas fa-search"></i>`;
                     manualBtn.disabled = false;
@@ -850,7 +971,6 @@
                         const file = selectedFiles[i];
                         logs.push('    Uploading image ' + (i + 1) + '/' + selectedFiles.length + ': ' + file.name + ' (' + (file.size / 1024).toFixed(2) + ' KB)');
                         
-                        // Retry logic for network errors
                         let signRes;
                         let retries = 3;
                         while (retries > 0) {
@@ -872,7 +992,6 @@
                         formData.append('signature', signRes.signature);
                         formData.append('upload_preset', signRes.uploadPreset);
                         
-                        // Retry Cloudinary upload on network errors
                         let res;
                         retries = 3;
                         while (retries > 0) {
@@ -926,7 +1045,6 @@
                     logs.push('');
 
                     logs.push('[6b] Updating global_tags collection...');
-                    // Update or create global_tags for each tag used in this listing
                     const batch = writeBatch(db);
                     for (const tag of tags) {
                         const tagLower = tag.toLowerCase();
@@ -934,7 +1052,6 @@
                         const tagSnap = await getDocs(tagQuery);
                         
                         if (tagSnap.empty) {
-                            // Create new tag document
                             const newTagRef = doc(collection(db, "global_tags"));
                             batch.set(newTagRef, {
                                 tag: tag,
@@ -943,7 +1060,6 @@
                                 createdAt: serverTimestamp()
                             });
                         } else {
-                            // Increment existing tag count
                             const existingDoc = tagSnap.docs[0];
                             const currentCount = existingDoc.data().count || 0;
                             batch.update(existingDoc.ref, {
