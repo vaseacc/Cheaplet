@@ -553,7 +553,7 @@
                 return null;
             }
 
-            // ---------- BOOK FETCH USING OPENLIBRARY ONLY (no Google, no quota) ----------
+            // ---------- BOOK FETCH USING /isbn/ISBN.json (FIXED) ----------
             async function fetchBookData(isbnInput) {
                 const cleanIsbn = extractIsbn(isbnInput);
                 if (!cleanIsbn) {
@@ -580,35 +580,33 @@
                 manualBtn.disabled = true;
 
                 try {
-                    // OpenLibrary API with data format
-                    const url = `https://openlibrary.org/api/books?bibkeys=ISBN:${cleanIsbn}&format=json&jscmd=data`;
+                    // Use the direct /isbn endpoint – works with plain digits, no hyphens needed
+                    const url = `https://openlibrary.org/isbn/${cleanIsbn}.json`;
                     const response = await fetch(url, {
                         headers: { 'User-Agent': 'ScoraliaBookApp (admin@scoralia.ca)' }
                     });
-                    
+
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const data = await response.json();
-                    const key = `ISBN:${cleanIsbn}`;
-                    const book = data[key];
+                    const book = await response.json();
 
                     if (book && book.title) {
-                        let title = book.title || "";
+                        let title = book.title;
                         if (book.authors && book.authors.length) {
                             const authorNames = book.authors.map(a => a.name).filter(n => n && n.trim());
                             if (authorNames.length) title += ` by ${authorNames.join(', ')}`;
                         }
+                        // Description can be a string or an object
                         let description = "";
-                        if (book.description) {
-                            description = typeof book.description === 'string' ? book.description : (book.description.value || "");
+                        if (typeof book.description === 'string') {
+                            description = book.description;
+                        } else if (book.description && typeof book.description.value === 'string') {
+                            description = book.description.value;
                         }
-                        if (!description && book.excerpts && book.excerpts.length) {
-                            description = book.excerpts[0].text || "";
-                        }
-                        
+
                         const bookData = { title, description };
                         isbnCache[cleanIsbn] = bookData;
                         saveCache();
-                        
+
                         document.getElementById('listing-title').value = title;
                         document.getElementById('listing-description').value = description;
                         document.getElementById('listing-isbn').value = cleanIsbn;
@@ -618,7 +616,7 @@
                             html5QrCode.stop().then(() => { isScanning = false; }).catch(e => console.log(e));
                         }
                     } else {
-                        alert(`ISBN ${cleanIsbn} not found in OpenLibrary. Please fill in the details manually.`);
+                        alert(`ISBN ${cleanIsbn} not found. Please fill in the details manually.`);
                     }
                 } catch (error) {
                     console.error("OpenLibrary fetch error:", error);
