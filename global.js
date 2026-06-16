@@ -1082,6 +1082,14 @@ function refreshUI() {
     else { window.applyLanguage(langSelected); showTermsBanner(); }
 }
 
+// Helper: Check if Social/Topic features should be shown in navigation
+function shouldShowSocialNav() {
+    const enableSocial = globalSettings.enableSocial !== false;
+    const enableTopic = globalSettings.enableTopic !== false;
+    // Show nav item if at least one of social or topic is enabled
+    return enableSocial || enableTopic;
+}
+
 function listenToUnreadMessages(uid) {
     if (unsubscribeChats) unsubscribeChats();
     const q = query(collection(db, "chats"), where("participants", "array-contains", uid));
@@ -1122,7 +1130,7 @@ function listenToUnreadNotifications(uid) {
     });
 }
 
-function injectBottomNav(isLoggedIn = false) {
+function injectBottomNav(isLoggedIn = false, showSocial = true) {
     if (bottomNavBar) {
         bottomNavBar.remove();
     }
@@ -1144,11 +1152,11 @@ function injectBottomNav(isLoggedIn = false) {
             <i class="fas fa-home"></i>
             <span>Home</span>
         </a>
-        <a href="/social">
+        ${showSocial ? `<a href="/social">
             <i class="fas fa-users"></i>
             <span>Social</span>
             ${unreadDots}
-        </a>
+        </a>` : ''}
         <a href="/search">
             <i class="fas fa-search"></i>
             <span>Browse</span>
@@ -1185,18 +1193,20 @@ function updateHeaderToLoggedIn(userData) {
     const lang = localStorage.getItem('preferred_language') || 'en';
     const t = translations[lang];
     const navUl = document.querySelector('nav ul');
+    const showSocial = shouldShowSocialNav();
+    
     if (navUl) {
         navUl.innerHTML = `
             <li><a href="/search">${t.nav_browse}</a></li>
             <li><a href="/my-listings">${t.nav_listings}</a></li>
-            <li><a href="/social" class="badge-container">${t.nav_hub}<span class="unread-badge" id="desktop-notification-badge"></span></a></li>
+            ${showSocial ? `<li><a href="/social" class="badge-container">${t.nav_hub}<span class="unread-badge" id="desktop-notification-badge"></span></a></li>` : ''}
             <li><a href="/activity">${t.nav_activity}</a></li>
             <li><a href="/messages" class="badge-container">${t.nav_messages}<span class="unread-badge" id="desktop-unread-badge"></span></a></li>
         `;
     }
 
     if (!window.location.pathname.startsWith('/chat')) {
-        injectBottomNav(true);
+        injectBottomNav(true, showSocial);
         setBottomNavActive();
     }
     listenToUnreadMessages(userData.uid);
@@ -1225,7 +1235,7 @@ function updateHeaderToLoggedIn(userData) {
                 <a href="/listanitem" class="dropdown-item mobile-link" style="color:#2B5C92; font-weight:bold;"><i class="fas fa-plus-circle"></i> ${t.btn_list}</a>
                 <a href="/search" class="dropdown-item mobile-link bottom-nav-dup"><i class="fas fa-search"></i> ${t.nav_browse}</a>
                 <a href="/my-listings" class="dropdown-item mobile-link"><i class="fas fa-book"></i> ${t.nav_listings}</a>
-                <a href="/social" class="dropdown-item mobile-link bottom-nav-dup"><i class="fas fa-users"></i> ${t.nav_hub}</a>
+                ${showSocial ? `<a href="/social" class="dropdown-item mobile-link bottom-nav-dup"><i class="fas fa-users"></i> ${t.nav_hub}</a>` : ''}
                 <a href="/profile" class="dropdown-item bottom-nav-dup"><i class="fas fa-user-circle"></i> ${t.nav_profile}</a>
                 <a href="/activity" class="dropdown-item"><i class="fas fa-history"></i> ${t.nav_activity}</a>
                 <a href="#" class="dropdown-item" id="globalLogout" style="color:#ff4d4d; border-top:1px solid #eee;"><i class="fas fa-sign-out-alt"></i> ${t.btn_signout}</a>
@@ -1252,16 +1262,18 @@ function updateHeaderToLoggedOut() {
     const lang = localStorage.getItem('preferred_language') || 'en';
     const t = translations[lang];
     const navUl = document.querySelector('nav ul');
+    const showSocial = shouldShowSocialNav();
+    
     if (navUl) {
         navUl.innerHTML = `
             <li><a href="/search">${t.nav_browse}</a></li>
-            <li><a href="/social">${t.nav_hub}</a></li>
+            ${showSocial ? `<li><a href="/social">${t.nav_hub}</a></li>` : ''}
         `;
     }
 
     // Inject bottom nav for logged-out users too (mobile)
     if (!window.location.pathname.startsWith('/chat') && !window.location.pathname.includes('/login')) {
-        injectBottomNav(false);
+        injectBottomNav(false, showSocial);
         setBottomNavActive();
     }
 
