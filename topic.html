@@ -495,6 +495,27 @@
             const auth = getAuth(app);
             const db = getFirestore(app);
 
+            // --- CHECK SITE SETTINGS FOR TOPIC ACCESS ---
+            const settingsSnap = await getDoc(doc(db, "site_settings", "config"));
+            const settings = settingsSnap.exists() ? settingsSnap.data() : {};
+            const enableTopic = settings.enableTopic !== false;
+            
+            // Check if user is admin
+            let isAdmin = false;
+            const currentUserAuth = auth.currentUser;
+            if (currentUserAuth) {
+                const userDoc = await getDoc(doc(db, "users", currentUserAuth.uid));
+                if (userDoc.exists() && userDoc.data().role === 'admin') {
+                    isAdmin = true;
+                }
+            }
+            
+            // Redirect non-admin users if topic is disabled
+            if (!enableTopic && !isAdmin) {
+                window.location.href = '/';
+                return;
+            }
+
             const urlParams = new URLSearchParams(window.location.search);
             const topicId = urlParams.get('id');
             if (!topicId) { window.location.href = '/social'; return; }
