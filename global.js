@@ -337,6 +337,9 @@ const translations = {
     }
 };
 
+// Export translations to window for use in other modules
+window.translations = translations;
+
 window.applyLanguage = (lang) => {
     document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.getAttribute('data-i18n');
