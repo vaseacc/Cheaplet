@@ -547,14 +547,17 @@ async function updateUserContent(uid, newDisplayName) {
 window.updateUserContent = updateUserContent;
 
 // --- STATE & LISTENERS ---
-let globalSettings = {};
+let globalSettings = { enableSocial: false, enableTopic: false };
 let currentUserData = null;
 let unsubscribeChats = null;
 let unsubscribeNotifications = null;
 let bottomNavBar = null;
 
 onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
-    if (docSnap.exists()) { globalSettings = docSnap.data(); refreshUI(); }
+    if (docSnap.exists()) { 
+        globalSettings = { enableSocial: false, enableTopic: false, ...docSnap.data() }; 
+        refreshUI(); 
+    }
 });
 
 onAuthStateChanged(auth, async (user) => {
