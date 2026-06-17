@@ -1090,6 +1090,72 @@ function shouldShowSocialNav() {
     return enableSocial || enableTopic;
 }
 
+// Check for maintenance redirect message on page load
+function checkMaintenanceMessage() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('social_maintenance') === 'true') {
+        // Clean the URL without reloading
+        const newUrl = window.location.pathname + window.location.hash;
+        window.history.replaceState({}, document.title, newUrl);
+        
+        // Show maintenance notification
+        showMaintenanceNotification();
+    }
+}
+
+function showMaintenanceNotification() {
+    // Don't show if already shown in this session
+    if (sessionStorage.getItem('maintenance_msg_shown')) return;
+    sessionStorage.setItem('maintenance_msg_shown', 'true');
+    
+    const lang = localStorage.getItem('preferred_language') || 'en';
+    const messages = {
+        en: "Social features are temporarily unavailable due to maintenance, but will be back soon!",
+        fr: "Les fonctionnalités sociales sont temporairement indisponibles en raison de la maintenance, mais elles seront bientôt de retour !"
+    };
+    
+    const message = messages[lang] || messages.en;
+    
+    // Create toast notification
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #0C1446 0%, #2B5C92 100%);
+        color: white;
+        padding: 15px 25px;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        z-index: 100000;
+        font-size: 0.95rem;
+        text-align: center;
+        max-width: 90%;
+        animation: slideDown 0.3s ease-out;
+    `;
+    toast.innerHTML = `<i class="fas fa-wrench" style="margin-right: 8px;"></i>${message}`;
+    
+    // Add animation keyframes
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    document.body.appendChild(toast);
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease-out';
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+}
+
 function listenToUnreadMessages(uid) {
     if (unsubscribeChats) unsubscribeChats();
     const q = query(collection(db, "chats"), where("participants", "array-contains", uid));
@@ -1328,6 +1394,9 @@ function showTermsBanner() {
 document.addEventListener('DOMContentLoaded', () => {
     const logo = document.querySelector('.logo');
     if (logo) logo.onclick = () => window.location.href = '/';
+    
+    // Check for maintenance message redirect
+    checkMaintenanceMessage();
 });
 
 // ==========================================================================
