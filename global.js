@@ -277,7 +277,12 @@ const translations = {
         // NEW: Feedback prompt
         "feedback_prompt_title": "Help us improve Scoralia!",
         "feedback_prompt_text": "Your feedback helps us make the platform better. Would you like to share a suggestion or report an issue?",
-        "feedback_prompt_btn": "Send Feedback"
+        "feedback_prompt_btn": "Send Feedback",
+        // NEW: Social/Topic disabled message
+        "social_disabled_title": "Feature Under Construction",
+        "social_disabled_text": "The Campus Hub is currently under development and will be available soon. Stay tuned!",
+        "topic_disabled_title": "Feature Under Construction",
+        "topic_disabled_text": "Custom Topics are currently under development and will be available soon. Stay tuned!"
     },
     "fr": {
         "nav_browse": "Parcourir", "nav_listings": "Mes Annonces", "nav_messages": "Messages", "nav_profile": "Mon Profil", "nav_hub": "Hub Campus", "nav_activity": "Mon Activité",
@@ -323,7 +328,12 @@ const translations = {
         // NEW: Feedback prompt
         "feedback_prompt_title": "Aidez-nous à améliorer Scoralia !",
         "feedback_prompt_text": "Vos commentaires nous aident à améliorer la plateforme. Souhaitez-vous partager une suggestion ou signaler un problème ?",
-        "feedback_prompt_btn": "Envoyer un commentaire"
+        "feedback_prompt_btn": "Envoyer un commentaire",
+        // NEW: Social/Topic disabled message
+        "social_disabled_title": "Fonctionnalité en Construction",
+        "social_disabled_text": "Le Hub Campus est actuellement en développement et sera bientôt disponible. Restez à l'écoute !",
+        "topic_disabled_title": "Fonctionnalité en Construction",
+        "topic_disabled_text": "Les Sujets Personnalisés sont actuellement en développement et seront bientôt disponibles. Restez à l'écoute !"
     }
 };
 

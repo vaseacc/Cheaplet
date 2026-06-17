@@ -153,6 +153,40 @@
             const auth = getAuth(app);
             const db = getFirestore(app);
 
+            // --- CHECK SITE SETTINGS FOR TOPIC ACCESS ---
+            const settingsSnap = await getDoc(doc(db, "site_settings", "config"));
+            const settings = settingsSnap.exists() ? settingsSnap.data() : {};
+            const enableTopic = settings.enableTopic !== false;
+            
+            // Check if user is admin
+            let isAdmin = false;
+            const currentUserAuth = auth.currentUser;
+            if (currentUserAuth) {
+                const userDoc = await getDoc(doc(db, "users", currentUserAuth.uid));
+                if (userDoc.exists() && userDoc.data().role === 'admin') {
+                    isAdmin = true;
+                }
+            }
+            
+            // Redirect non-admin users if topic is disabled
+            if (!enableTopic && !isAdmin) {
+                const lang = localStorage.getItem('preferred_language') || 'en';
+                const title = translations[lang]?.topic_disabled_title || translations['en'].topic_disabled_title;
+                const text = translations[lang]?.topic_disabled_text || translations['en'].topic_disabled_text;
+                
+                document.body.innerHTML = `
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;padding:20px;text-align:center;font-family:'DM Sans',sans-serif;background:#F8FAFC;">
+                        <div style="background:white;padding:40px;border-radius:16px;box-shadow:0 4px 20px rgba(12,20,70,0.05);border:1px solid #e2e8f0;max-width:450px;width:100%;animation:fadeUp 0.4s ease both;">
+                            <div style="font-size:3rem;color:#C8A96E;margin-bottom:20px;"><i class="fas fa-tools"></i></div>
+                            <h1 style="font-family:'Playfair Display',serif;font-size:1.8rem;color:#0C1446;margin-bottom:15px;">${title}</h1>
+                            <p style="color:#64748b;font-size:1rem;line-height:1.6;margin-bottom:25px;">${text}</p>
+                            <a href="/" style="background:#C8A96E;color:#0C1446;border:none;padding:12px 30px;border-radius:30px;font-weight:800;font-size:1rem;cursor:pointer;text-decoration:none;display:inline-block;transition:0.2s;">Home</a>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
             const lang = localStorage.getItem('preferred_language') || 'en';
             const ui = {
                 en: { back: "Back to Campus Hub", title: "Create Topic", sub: "Start a new conversation space for your campus.", name: "Topic Name", desc: "Description (Optional)", vis: "Visibility", pub: "Public", pubDesc: "Visible in the sidebar to everyone at your school.", priv: "Private", privDesc: "Hidden from the sidebar. Accessible only via direct link.", limits: "You can create up to <strong>10 Public</strong> and <strong>10 Private</strong> topics.", btn: "Create Topic", errShort: "Name must be at least 2 characters.", errLimit: "You have reached the limit for this type of topic.", creating: "Creating..." },
