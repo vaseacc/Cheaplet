@@ -1104,6 +1104,10 @@ function checkMaintenanceMessage() {
 }
 
 function showMaintenanceNotification() {
+    // Don't show if already shown in this session
+    if (sessionStorage.getItem('maintenance_msg_shown')) return;
+    sessionStorage.setItem('maintenance_msg_shown', 'true');
+    
     const lang = localStorage.getItem('preferred_language') || 'en';
     const messages = {
         en: "Social features are temporarily unavailable due to maintenance, but will be back soon!",
