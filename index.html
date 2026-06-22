@@ -823,6 +823,9 @@
                 const selectedSchool = schoolFilter.value;
                 currentTerm = searchInput.value.toLowerCase().trim();
                 
+                console.log("School filter changed to:", selectedSchool);
+                console.log("Total active listings:", window.currentAllActiveListings ? window.currentAllActiveListings.length : 0);
+                
                 // Re-fetch and apply filters
                 if (unsubscribeListings) {
                     // Get current listings from the subscription
@@ -831,8 +834,11 @@
                     if (selectedSchool !== 'all') {
                         allFilteredDocs = allActive.filter(d => {
                             const data = d.data();
-                            return data.location && data.location.toLowerCase() === selectedSchool.toLowerCase();
+                            const loc = data.location || '';
+                            console.log(`Checking listing: "${data.title}", location: "${loc}", comparing with: "${selectedSchool}"`);
+                            return loc && loc.toLowerCase() === selectedSchool.toLowerCase();
                         });
+                        console.log("Filtered results count:", allFilteredDocs.length);
                     } else {
                         allFilteredDocs = allActive;
                     }
