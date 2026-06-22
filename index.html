@@ -660,20 +660,13 @@
                 // Check if topics are enabled in global settings
                 const enableTopic = globalSettings.enableTopic !== false;
                 
-                // Get the topics section element
-                const topicsSection = document.querySelector('.topics-section');
-                
-                // If topics are disabled, keep the section hidden
+                // If topics are disabled, hide the entire section
                 if (!enableTopic) {
+                    const topicsSection = document.querySelector('.topics-section');
                     if (topicsSection) {
                         topicsSection.style.display = 'none';
                     }
                     return;
-                }
-                
-                // If topics are enabled, show the section
-                if (topicsSection) {
-                    topicsSection.style.display = 'block';
                 }
                 
                 try {
@@ -816,37 +809,6 @@
             }
 
             sortFilter.onchange = fetchListings;
-            
-            // School filter change handler
-            const schoolFilter = document.getElementById('school-filter');
-            schoolFilter.addEventListener('change', () => {
-                const selectedSchool = schoolFilter.value;
-                currentTerm = searchInput.value.toLowerCase().trim();
-                
-                console.log("School filter changed to:", selectedSchool);
-                console.log("Total active listings:", window.currentAllActiveListings ? window.currentAllActiveListings.length : 0);
-                
-                // Re-fetch and apply filters
-                if (unsubscribeListings) {
-                    // Get current listings from the subscription
-                    const allActive = window.currentAllActiveListings || [];
-                    
-                    if (selectedSchool !== 'all') {
-                        allFilteredDocs = allActive.filter(d => {
-                            const data = d.data();
-                            const loc = data.location || '';
-                            console.log(`Checking listing: "${data.title}", location: "${loc}", comparing with: "${selectedSchool}"`);
-                            return loc && loc.toLowerCase() === selectedSchool.toLowerCase();
-                        });
-                        console.log("Filtered results count:", allFilteredDocs.length);
-                    } else {
-                        allFilteredDocs = allActive;
-                    }
-                    
-                    displayLimit = 20;
-                    renderListings();
-                }
-            });
             
             // Wait for globalSettings to be loaded before loading topics
             function waitForGlobalSettings() {
