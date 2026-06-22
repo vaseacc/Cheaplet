@@ -386,6 +386,23 @@
                 <h2 class="section-title" id="listings-title">Featured Listings</h2>
                 <span class="item-count" id="itemCount">Loading…</span>
             </div>
+            <!-- School Filter -->
+            <div class="school-filter-container" style="margin-bottom: 20px;">
+                <select id="school-filter" class="school-filter-select" style="width: 100%; max-width: 300px; padding: 10px 14px; border-radius: 8px; border: 1px solid #e0e6ed; font-size: 15px; background: #fff; cursor: pointer;">
+                    <option value="all">All Schools</option>
+                    <option value="Dawson">Dawson</option>
+                    <option value="John Abbott">John Abbott</option>
+                    <option value="Vanier">Vanier</option>
+                    <option value="Ahuntsic">Ahuntsic</option>
+                    <option value="Bois-de-Boulogne">Bois-de-Boulogne</option>
+                    <option value="André-Laurendeau">André-Laurendeau</option>
+                    <option value="Gérald-Godin">Gérald-Godin</option>
+                    <option value="Rosemont">Rosemont</option>
+                    <option value="Saint-Laurent">Saint-Laurent</option>
+                    <option value="Maisonneuve">Maisonneuve</option>
+                    <option value="LaSalle">LaSalle</option>
+                </select>
+            </div>
             <div class="listings-grid" id="listings-container">
                 <div style="border-radius:16px; overflow:hidden; background:#fff; box-shadow:0 2px 8px rgba(12,20,70,0.07);">
                     <div class="skeleton" style="height:190px;"></div>
@@ -775,7 +792,21 @@
                     unsubscribeListings = onSnapshot(query(collection(db, 'listings'), ...constraints), snapshot => {
                         currentTerm = searchInput.value.toLowerCase().trim();
                         const allActive = snapshot.docs.filter(d => d.data().status === 'active');
-                        allFilteredDocs = allActive;
+                        
+                        // Store all active listings globally for filter access
+                        window.currentAllActiveListings = allActive;
+                        
+                        // Apply school filter
+                        const selectedSchool = document.getElementById('school-filter').value;
+                        if (selectedSchool !== 'all') {
+                            allFilteredDocs = allActive.filter(d => {
+                                const data = d.data();
+                                return data.location && data.location.toLowerCase() === selectedSchool.toLowerCase();
+                            });
+                        } else {
+                            allFilteredDocs = allActive;
+                        }
+                        
                         displayLimit = 20;
                         renderListings();
                     });
@@ -785,6 +816,31 @@
             }
 
             sortFilter.onchange = fetchListings;
+            
+            // School filter change handler
+            const schoolFilter = document.getElementById('school-filter');
+            schoolFilter.addEventListener('change', () => {
+                const selectedSchool = schoolFilter.value;
+                currentTerm = searchInput.value.toLowerCase().trim();
+                
+                // Re-fetch and apply filters
+                if (unsubscribeListings) {
+                    // Get current listings from the subscription
+                    const allActive = window.currentAllActiveListings || [];
+                    
+                    if (selectedSchool !== 'all') {
+                        allFilteredDocs = allActive.filter(d => {
+                            const data = d.data();
+                            return data.location && data.location.toLowerCase() === selectedSchool.toLowerCase();
+                        });
+                    } else {
+                        allFilteredDocs = allActive;
+                    }
+                    
+                    displayLimit = 20;
+                    renderListings();
+                }
+            });
             
             // Wait for globalSettings to be loaded before loading topics
             function waitForGlobalSettings() {
