@@ -640,6 +640,18 @@
 
             // ✅ FIXED: Active Topics now load correctly and handle errors gracefully
             async function loadActiveTopics() {
+                // Check if topics are enabled in global settings
+                const enableTopic = globalSettings.enableTopic !== false;
+                
+                // If topics are disabled, hide the entire section
+                if (!enableTopic) {
+                    const topicsSection = document.querySelector('.topics-section');
+                    if (topicsSection) {
+                        topicsSection.style.display = 'none';
+                    }
+                    return;
+                }
+                
                 try {
                     // Query social_channels, limit to 4, order by postCount descending
                     const q = query(collection(db, "social_channels"), orderBy("postCount", "desc"), limit(4));
@@ -767,8 +779,17 @@
 
             sortFilter.onchange = fetchListings;
             
+            // Wait for globalSettings to be loaded before loading topics
+            function waitForGlobalSettings() {
+                if (window.globalSettings) {
+                    loadActiveTopics();
+                } else {
+                    setTimeout(waitForGlobalSettings, 100);
+                }
+            }
+            
             loadGlobalTags();
-            loadActiveTopics();
+            waitForGlobalSettings();
             fetchListings();
         }
         main();

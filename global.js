@@ -555,6 +555,8 @@ let bottomNavBar = null;
 
 onSnapshot(doc(db, "site_settings", "config"), (docSnap) => {
     if (docSnap.exists()) { globalSettings = docSnap.data(); refreshUI(); }
+    // Make globalSettings available to other scripts on the page
+    window.globalSettings = globalSettings;
 });
 
 onAuthStateChanged(auth, async (user) => {
